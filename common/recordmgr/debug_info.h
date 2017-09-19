@@ -25,7 +25,7 @@ struct _memrecl_counters {
 class debugInfo {
 private:
     const int NUM_PROCESSES;
-    _memrecl_counters * c;
+    _memrecl_counters c[MAX_TID_POW2];
 public:
     void clear() {
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
@@ -130,11 +130,11 @@ public:
         return result;
     }
     debugInfo(int numProcesses) : NUM_PROCESSES(numProcesses) {
-        c = new _memrecl_counters[numProcesses];
+//        c = new _memrecl_counters[numProcesses];
         clear();
     }
     ~debugInfo() {
-        delete[] c;
+//        delete[] c;
     }
 };
 
