@@ -1,5 +1,50 @@
+/**
+ * Implementation of the lock-free external BST of Natarajan and Mittal.
+ * Trevor Brown, 2017. (Based on Natarajan's original code.)
+ * 
+ * I made several changes/fixes to the data structure,
+ * and there are four different versions: baseline, stage 0, stage 1, stage 1.
+ * 
+ * Baseline is functionally the same as the original implementation by Natarajan
+ * (but converted to a class, and with templates/generics).
+ *
+ * Stage 0:
+ *  - Fixed a concurrency bug (missing volatiles)
+ * 
+ * Delta from stage 0 to stage 1:
+ *  - Added proper node allocation
+ *    (The original implementation explicitly allocated arrays of 2 nodes at a time,
+ *     which effectively prevents any real memory reclamation.
+ *     [You can't free the nodes individually. Rather, you must free the arrays,
+ *      and only after BOTH nodes are safe to free. This is hard to solve.])
+ * 
+ * Delta from stage 1 to stage 2:
+ *  - Added proper memory reclamation
+ *    (The original implementation leaked all memory.
+ *     The implementation in ASCYLIB tried to reclaim memory (using epoch
+ *     based reclamation?), but still leaked a huge amount of memory.
+ *     It turns out the original algorithm lacks a necessary explanation of
+ *     how you should reclaim memory in a system without garbage collection.
+ *     Because of the way deletions are aggregated and performed at once,
+ *     after you delete a single key, you may have to reclaim many nodes.)
+ *    To my knowledge, this is the only correct, existing implementation
+ *    of this algorithm (as of Mar 2018).
+ * 
+ * To compile baseline, add compilation arguments:
+ *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
+ *  -DBASELINE
+ * 
+ * To compile stage 0, add compilation argument:
+ *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
+ * 
+ * To compile stage 1, add compilation argument:
+ *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage1_impl.h
+ * 
+ * To compile stage 2, add compilation argument:
+ *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage2_impl.h
+ */
+
 /*A Lock Free Binary Search Tree
- 
  * File:
  *   wfrbt.cpp
  * Author(s):

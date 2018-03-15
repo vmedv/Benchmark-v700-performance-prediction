@@ -1,8 +1,6 @@
-/* 
- * File:   bst_adapter.h
- * Author: trbot
- *
- * Created on August 31, 2017, 6:53 PM
+/**
+ * Implementation of a lock-free unbalanced binary search tree using LLX/SCX.
+ * Trevor Brown, 2018.
  */
 
 #ifndef BST_ADAPTER_H

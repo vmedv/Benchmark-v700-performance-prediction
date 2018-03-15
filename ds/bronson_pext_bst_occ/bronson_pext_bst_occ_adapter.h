@@ -1,8 +1,12 @@
-/* 
- * File:   bronson_pext_bst_occ_adapter.h
- * Author: trbot
- *
- * Created on September 5, 2017, 10:33 PM
+/**
+ * Implementation of the relaxed AVL tree of Bronson et al.,
+ * which uses optimistic concurrency control and fine grained locking.
+ * 
+ * This is based on Philip W. Howard's code
+ * (but converted to a class and templated/genericized,
+ *  and with proper memory reclamation).
+ * 
+ * Trevor Brown, 2018.
  */
 
 #ifndef BRONSON_PEXT_BST_OCC_ADAPTER_H
