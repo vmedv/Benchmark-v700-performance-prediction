@@ -1,8 +1,7 @@
 /**
- * Preliminary C++ implementation of unbalanced binary search tree using LLX/SCX.
+ * C++ implementation of unbalanced binary search tree using LLX/SCX.
  * 
- * Copyright (C) 2014 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ * Copyright (C) 2018 Trevor Brown
  */
 
 #ifndef BST_H
@@ -24,10 +23,7 @@
 #include "random.h"
 #include "scxrecord.h"
 #include "node.h"
-
 #include "rq_provider.h"
-
-using namespace std;
 
 namespace bst_ns {
 
@@ -62,7 +58,7 @@ namespace bst_ns {
         //     for i = 0..MAX_NODES-2
         Node<K,V> **allocatedNodes;
         #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
-        #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
+        #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, std::memory_order_relaxed);*/ }
 
         #define IS_SENTINEL(node, parent) ((node)->key == NO_KEY || (parent)->key == NO_KEY)
 
@@ -109,7 +105,7 @@ namespace bst_ns {
                     const int,
                     SCXRecord<K,V> * const,
                     ReclamationInfo<K,V> * const,
-                    atomic_uintptr_t * const,
+                    std::atomic_uintptr_t * const,
                     Node<K,V> * const);
         int rangeQuery_lock(ReclamationInfo<K,V> * const, const int, void **input, void **output);
         int rangeQuery_vlx(ReclamationInfo<K,V> * const, const int, void **input, void **output);
@@ -183,7 +179,7 @@ public:
     #endif
         {
 
-            VERBOSE DEBUG COUTATOMIC("constructor bst"<<endl);
+            VERBOSE DEBUG COUTATOMIC("constructor bst"<<std::endl);
             allocatedNodes = new Node<K,V>*[numProcesses*(PREFETCH_SIZE_WORDS+MAX_NODES)];
             cmp = Compare();
 
@@ -217,8 +213,8 @@ public:
         long long getSizeInNodes() {
             return getSizeInNodes(root);
         }
-        string getSizeString() {
-            stringstream ss;
+        std::string getSizeString() {
+            std::stringstream ss;
             int preallocated = MAX_NODES * recmgr->NUM_PROCESSES;
             ss<<getSizeInNodes()<<" nodes in tree and "<<preallocated<<" preallocated but unused";
             return ss.str();
@@ -251,7 +247,7 @@ public:
             // so, we keep them in a set, then free each set element at the end.
             int numNodes = 0;
             dfsDeallocateBottomUp(root, &numNodes);
-            VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<endl);
+            VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<std::endl);
             for (int tid=0;tid<recmgr->NUM_PROCESSES;++tid) {
                 for (int i=0;i<MAX_NODES;++i) {
                     recmgr->deallocate(tid, GET_ALLOCATED_NODE_PTR(tid, i));
@@ -269,8 +265,8 @@ public:
         Node<K,V> *getRoot(void) { return root; }
         const V insert(const int tid, const K& key, const V& val);
         const V insertIfAbsent(const int tid, const K& key, const V& val);
-        const pair<V,bool> erase(const int tid, const K& key);
-        const pair<V,bool> find(const int tid, const K& key);
+        const std::pair<V,bool> erase(const int tid, const K& key);
+        const std::pair<V,bool> find(const int tid, const K& key);
         int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues);
         bool contains(const int tid, const K& key);
         int size(void); /** warning: size is a LINEAR time operation, and does not return consistent results with concurrency **/
@@ -305,17 +301,17 @@ public:
         void debugPrintAllocatorStatus() {
             recmgr->printStatus();
         }
-        void debugPrintToFile(string prefix, long id1, string infix, long id2, string suffix) {
-            stringstream ss;
+        void debugPrintToFile(std::string prefix, long id1, std::string infix, long id2, std::string suffix) {
+            std::stringstream ss;
             ss<<prefix<<id1<<infix<<id2<<suffix;
-            COUTATOMIC("print to filename \""<<ss.str()<<"\""<<endl);
-            fstream fs (ss.str().c_str(), fstream::out);
+            COUTATOMIC("print to filename \""<<ss.str()<<"\""<<std::endl);
+            std::fstream fs (ss.str().c_str(), std::fstream::out);
             root->printTreeFile(fs);
             fs.close();
         }
 
-        string tagptrToString(uintptr_t tagptr) {
-            stringstream ss;
+        std::string tagptrToString(uintptr_t tagptr) {
+            std::stringstream ss;
             if (tagptr) {
                 if ((void*) tagptr == DUMMY_SCXRECORD) {
                     ss<<"dummy";
@@ -344,7 +340,7 @@ public:
 
     //    friend ostream& operator<<(ostream& os, const SCXRecord<K,V>& obj) {
     //        ios::fmtflags f( os.flags() );
-    ////        cout<<"obj.type = "<<obj.type<<endl;
+    ////        std::cout<<"obj.type = "<<obj.type<<std::endl;
     //        intptr_t mutables = obj.mutables;
     //        os<<"["//<<"type="<<NAME_OF_TYPE[obj.type]
     //          <<" state="<<SCX_READ_STATE(mutables)//obj.state

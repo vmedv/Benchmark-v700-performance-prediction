@@ -14,7 +14,6 @@
 #include "blockpool.h"
 #include "pool_interface.h"
 #include "plaf.h"
-using namespace std;
 
 template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_none : public pool_interface<T, Alloc> {
@@ -28,7 +27,7 @@ public:
         typedef pool_none<_Tp1, _Tp2> other;
     };
     
-    string getSizeString() { return "no pool"; }
+    std::string getSizeString() { return "no pool"; }
     /**
      * if the freebag contains any object, then remove one from the freebag
      * and return a pointer to it.

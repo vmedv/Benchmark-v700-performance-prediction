@@ -11,7 +11,6 @@
 #include <string>
 #include <sstream>
 #include "plaf.h"
-using namespace std;
 
 class debugCounter {
 private:

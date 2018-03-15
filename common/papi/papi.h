@@ -780,9 +780,9 @@ typedef char* PAPI_user_defined_events_file_t;
       int nnodes;                   /**< Total Number of NUMA Nodes */
       int totalcpus;                /**< Total number of CPUs in the entire system */
       int vendor;                   /**< Vendor number of CPU */
-      char vendor_string[PAPI_MAX_STR_LEN];     /**< Vendor string of CPU */
+      char vendor_string[PAPI_MAX_STR_LEN];     /**< Vendor std::string of CPU */
       int model;                    /**< Model number of CPU */
-      char model_string[PAPI_MAX_STR_LEN];      /**< Model string of CPU */
+      char model_string[PAPI_MAX_STR_LEN];      /**< Model std::string of CPU */
       float revision;               /**< Revision of CPU */
       int cpuid_family;             /**< cpuid family */
       int cpuid_model;              /**< cpuid model */
@@ -989,8 +989,8 @@ enum {
 
       char derived[PAPI_MIN_STR_LEN];    /**< name of the derived type
                                               - presets: usually NOT_DERIVED
-                                              - native: empty string */
-      char postfix[PAPI_2MAX_STR_LEN];   /**< string containing postfix 
+                                              - native: empty std::string */
+      char postfix[PAPI_2MAX_STR_LEN];   /**< std::string containing postfix 
                                               operations; only defined for 
                                               preset events of derived type 
                                               DERIVED_POSTFIX */

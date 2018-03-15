@@ -13,7 +13,6 @@
 #include "globals.h"
 #include <iostream>
 #include <cstdlib>
-using namespace std;
 
 template <typename T>
 struct set_of_bags {
@@ -40,7 +39,7 @@ public:
     };
     
     long long getSizeInNodes() { return 0; }
-    string getSizeString() { return ""; }
+    std::string getSizeString() { return ""; }
 
     inline static bool quiescenceIsPerRecordType() { return true; }
     inline static bool shouldHelp() { return true; } // FOR DEBUGGING PURPOSES

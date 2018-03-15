@@ -85,7 +85,7 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
     typedef bool DESCRIPTOR_TYPE; // no descriptor
     typedef record_manager<RECLAIMER_TYPE, ALLOCATOR_TYPE, POOL_TYPE, NODE_TYPE> RECORD_MANAGER_TYPE;
     typedef citrustree<KEY_TYPE, VALUE_TYPE, RECORD_MANAGER_TYPE> INDEX_TYPE;
-    #define INDEX_CONSTRUCTOR_ARGS numeric_limits<KEY_TYPE>::max(), __NO_VALUE, g_thread_cnt
+    #define INDEX_CONSTRUCTOR_ARGS std::numeric_limits<KEY_TYPE>::max(), __NO_VALUE, g_thread_cnt
     #define CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(x, depth) { \
         calculate_index_stats((x)->child[0], (depth)); \
         calculate_index_stats((x)->child[1], (depth)); \
@@ -107,7 +107,7 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
     typedef record_manager<RECLAIMER_TYPE, ALLOCATOR_TYPE, POOL_TYPE, NODE_TYPE> RECORD_MANAGER_TYPE;
 #endif
     typedef skiplist<KEY_TYPE, VALUE_TYPE, RECORD_MANAGER_TYPE> INDEX_TYPE;
-    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, numeric_limits<KEY_TYPE>::min(), numeric_limits<KEY_TYPE>::max()-1, __NO_VALUE, rngs
+    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, std::numeric_limits<KEY_TYPE>::min(), std::numeric_limits<KEY_TYPE>::max()-1, __NO_VALUE, rngs
     #define CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(x, depth) 
     #define ISLEAF(x) false
     #define VALUES_ARRAY_TYPE VALUE_TYPE *
@@ -117,7 +117,7 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
     typedef node_t<KEY_TYPE, VALUE_TYPE> NODE_TYPE;
     typedef bool DESCRIPTOR_TYPE; // no descriptor
     typedef rlucitrus<KEY_TYPE, VALUE_TYPE> INDEX_TYPE;
-    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, numeric_limits<KEY_TYPE>::max(), __NO_VALUE
+    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, std::numeric_limits<KEY_TYPE>::max(), __NO_VALUE
     #define CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(x, depth) { \
         calculate_index_stats((x)->child[0], (depth)); \
         calculate_index_stats((x)->child[1], (depth)); \
@@ -212,9 +212,9 @@ public:
         const void * oldVal = index->insertIfAbsent(tid, key, newItem);
 //#ifndef NDEBUG
 //        if (oldVal != index->NO_VALUE) {
-//            cout<<"index_insert found element already existed."<<endl;
-//            cout<<"index name="<<index_name<<endl;
-//            cout<<"key="<<key<<endl;
+//            cout<<"index_insert found element already existed."<<std::endl;
+//            cout<<"index name="<<index_name<<std::endl;
+//            cout<<"key="<<key<<std::endl;
 //        }
 //        assert(oldVal == index->NO_VALUE);
 //#endif

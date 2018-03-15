@@ -9,8 +9,6 @@
 #include "plaf.h"
 #include <iostream>
 
-using namespace std;
-
 int event_sets[MAX_THREADS_POW2] = {0,};
 long long counter_values[nall_cpu_counters];
 
@@ -123,10 +121,10 @@ void papi_print_counters(long long num_operations){
     for (i = j = 0; i < nall_cpu_counters; i++) {
         int c = all_cpu_counters[i];
         if (PAPI_query_event(c) != PAPI_OK) {
-            cout<<all_cpu_counters_strings[i]<<"=-1"<<endl;
+            std::cout<<all_cpu_counters_strings[i]<<"=-1"<<std::endl;
             continue;
         }
-        cout<<all_cpu_counters_strings[i]<<"="<<((double)counter_values[j]/num_operations)<<endl;
+        std::cout<<all_cpu_counters_strings[i]<<"="<<((double)counter_values[j]/num_operations)<<std::endl;
         //printf("%s=%.3f\n", cpu_counter(c), (double)counter_values[j]/num_operations);
         j++;
     }

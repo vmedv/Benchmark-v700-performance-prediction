@@ -52,8 +52,8 @@ protected:
     char initializedThreads[MAX_THREADS_POW2*PREFETCH_SIZE_BYTES];
     unsigned long long numInserts[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
     unsigned long long numReads[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
-//    #define INCREMENT_NUM_INSERTS(tid) { if ((++numInserts[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numInserts="<<numInserts[(tid)*PREFETCH_SIZE_WORDS]<<endl; }
-//    #define INCREMENT_NUM_READS(tid) { if ((++numReads[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numReads="<<numReads[(tid)*PREFETCH_SIZE_WORDS]<<endl; }
+//    #define INCREMENT_NUM_INSERTS(tid) { if ((++numInserts[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numInserts="<<numInserts[(tid)*PREFETCH_SIZE_WORDS]<<std::endl; }
+//    #define INCREMENT_NUM_READS(tid) { if ((++numReads[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numReads="<<numReads[(tid)*PREFETCH_SIZE_WORDS]<<std::endl; }
     #define INCREMENT_NUM_INSERTS(tid) 
     #define INCREMENT_NUM_READS(tid) 
     #define INCREMENT_NUM_RQS(tid) 

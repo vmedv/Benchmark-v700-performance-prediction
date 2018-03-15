@@ -5,14 +5,14 @@
  * Created on July 12, 2017, 8:06 PM
  * 
  * Usage:
- *  Define the macro __HANDLE_STATS with a new line for each statistic you want
+ *  Define the macro GSTATS_HANDLE_STATS with a new line for each statistic you want
  *      to create BEFORE including this header. See the example below.
- *  Add stat_output_item structs to the initializer list to configure
- *      stats.print_all() to produce output for this statistic.
- *  Invoke the macro GSTATS_DECLARE_STATS_OBJECT to declare a stats object
+ *  Add gstats_output_item structs to the initializer list to configure
+ *      gstats_t.print_all() to produce output for this statistic.
+ *  Invoke the macro GSTATS_DECLARE_STATS_OBJECT to declare a gstats_t object
  *      (and make it globally visible).
  *  Invoke GSTATS_DECLARE_ALL_STAT_IDS to declare (and make globally visible)
- *      integer identifiers for each statistic defined in __HANDLE_STATS.
+ *      integer identifiers for each statistic defined in GSTATS_HANDLE_STATS.
  *  Invoke GSTATS_CREATE_ALL at run time before starting your experiments.
  *  Invoke GSTATS_ADD and/or GSTATS_ADD_IX to add some value to a statistic
  *      (when using statistics with multiple indices, for example, for different
@@ -20,13 +20,13 @@
  *  You can clear all gathered stats by invoking GSTATS_CLEAR_ALL.
  *  Print all stats by invoking GSTATS_PRINT.
  * 
- * Example __HANDLE_STATS definition:
- * #define __HANDLE_STATS(handle_stat) \
- *      handle_stat(visited_in_bags, 1, {stat_output_item(PRINT_HISTOGRAM_LOG, SUM, BY_INDEX)}) \
- *      handle_stat(insertions, 1, {stat_output_item(PRINT_RAW, SUM, TOTAL)}) \
- *      handle_stat(insertions_stdev, 1, {stat_output_item(PRINT_RAW, STDEV, TOTAL)}) \
- *      handle_stat(insertions_per_thread, num_threads, {stat_output_item(PRINT_RAW, SUM, BY_THREAD)}) \
- *      handle_stat(tree_size_over_time_histogram, 1000000, {stat_output_item(PRINT_HISTOGRAM_LIN, SUM, BY_INDEX, 10)})
+ * Example GSTATS_HANDLE_STATS definition:
+ * #define GSTATS_HANDLE_STATS(gstats_handle_stat) \
+ *      gstats_handle_stat(visited_in_bags, 1, {gstats_output_item(PRINT_HISTOGRAM_LOG, SUM, BY_INDEX)}) \
+ *      gstats_handle_stat(insertions, 1, {gstats_output_item(PRINT_RAW, SUM, TOTAL)}) \
+ *      gstats_handle_stat(insertions_stdev, 1, {gstats_output_item(PRINT_RAW, STDEV, TOTAL)}) \
+ *      gstats_handle_stat(insertions_per_thread, num_threads, {gstats_output_item(PRINT_RAW, SUM, BY_THREAD)}) \
+ *      gstats_handle_stat(tree_size_over_time_histogram, 1000000, {gstats_output_item(PRINT_HISTOGRAM_LIN, SUM, BY_INDEX, 10)})
  *          note: in the last line, 10 is the desired number of buckets in the linear histogram
  */
 
@@ -35,13 +35,12 @@
 
 #ifdef USE_GSTATS
 
-#ifndef __HANDLE_STATS
-#error "Must define __HANDLE_STATS before including this file"
+#ifndef GSTATS_HANDLE_STATS
+#error "Must define GSTATS_HANDLE_STATS before including this file"
 #endif
 
-#include "stats.h"
+#include "gstats.h"
 #include "locks_impl.h"
-using namespace stats_ns;
 
 /**
  * CONFIGURATION
@@ -51,27 +50,27 @@ using namespace stats_ns;
 #define GSTATS_OBJECT_NAME _stats
 #define GSTATS_DECLARE_STATS_OBJECT(max_num_processes) \
     volatile char _stats_padding0[256]; \
-    stats * const GSTATS_OBJECT_PTR_NAME = new stats(max_num_processes); \
-    stats& GSTATS_OBJECT_NAME = *GSTATS_OBJECT_PTR_NAME; \
+    gstats_t * const GSTATS_OBJECT_PTR_NAME = new gstats_t(max_num_processes); \
+    gstats_t& GSTATS_OBJECT_NAME = *GSTATS_OBJECT_PTR_NAME; \
     volatile char _stats_padding1[256];
-extern stats& GSTATS_OBJECT_NAME;
+extern gstats_t& GSTATS_OBJECT_NAME;
 #define GSTATS_DESTROY delete GSTATS_OBJECT_PTR_NAME
 
 /**
  * DO NOT EDIT BELOW
  */
 
-#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stat_output_items) int stat_name_token;
-#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stat_output_items) extern int stat_name_token;
-#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stat_output_items) \
-    stat_name_token = GSTATS_OBJECT_NAME.create_stat(data_type, #stat_name_token, stat_capacity, stat_output_items);
+#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) int stat_name_token;
+#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) extern int stat_name_token;
+#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stats_output_items) \
+    stat_name_token = GSTATS_OBJECT_NAME.create_stat(data_type, #stat_name_token, stat_capacity, stats_output_items);
 
 #define GSTATS_DECLARE_ALL_STAT_IDS \
     volatile char _stats_padding2[256]; \
-    __HANDLE_STATS(__DECLARE_STAT_ID); \
+    GSTATS_HANDLE_STATS(__DECLARE_STAT_ID); \
     volatile char _stats_padding3[256];
-#define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS __HANDLE_STATS(__DECLARE_EXTERN_STAT_ID)
-#define GSTATS_CREATE_ALL __HANDLE_STATS(__CREATE_STAT)
+#define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS GSTATS_HANDLE_STATS(__DECLARE_EXTERN_STAT_ID)
+#define GSTATS_CREATE_ALL GSTATS_HANDLE_STATS(__CREATE_STAT)
 #define GSTATS_ADD_IX(tid, stat, val, index) GSTATS_OBJECT_NAME.add_stat<long long>(tid, stat, val, index)
 #define GSTATS_ADD_IX_D(tid, stat, val, index) GSTATS_OBJECT_NAME.add_stat<double>(tid, stat, val, index)
 #define GSTATS_ADD(tid, stat, val) GSTATS_ADD_IX(tid, stat, val, 0)
@@ -121,9 +120,9 @@ GSTATS_DECLARE_EXTERN_ALL_STAT_IDS;
  * DO NOT EDIT BELOW
  */
 
-#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stat_output_items) 
-#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stat_output_items) 
-#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stat_output_items) 
+#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) 
+#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) 
+#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stats_output_items) 
 
 #define GSTATS_DECLARE_ALL_STAT_IDS 
 #define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS 

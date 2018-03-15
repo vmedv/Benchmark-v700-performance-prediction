@@ -11,7 +11,6 @@
 #include <atomic>
 #include <iostream>
 #include "blockbag.h"
-using namespace std;
 
 #ifndef VERBOSE
 #define VERBOSE if(0)
@@ -43,7 +42,7 @@ public:
     }
     ~lockfreeblockbag() {
         VERBOSE DEBUG std::cout<<"destructor lockfreeblockbag; ";
-        block<T> *curr = head.load(memory_order_relaxed).ptr;
+        block<T> *curr = head.load(std::memory_order_relaxed).ptr;
         int debugFreed = 0;
         while (curr) {
             block<T> * const temp = curr;
@@ -55,7 +54,7 @@ public:
     }
     block<T>* getBlock() {
         while (true) {
-            tagged_ptr expHead = head.load(memory_order_relaxed);
+            tagged_ptr expHead = head.load(std::memory_order_relaxed);
             if (expHead.ptr != NULL) {
                 if (head.compare_exchange_weak(
                         expHead,
@@ -71,7 +70,7 @@ public:
     }
     void addBlock(block<T> *b) {
         while (true) {
-            tagged_ptr expHead = head.load(memory_order_relaxed);
+            tagged_ptr expHead = head.load(std::memory_order_relaxed);
             b->next = expHead.ptr;
             if (head.compare_exchange_weak(
                     expHead,
@@ -83,7 +82,7 @@ public:
     // NOT thread safe
     int sizeInBlocks() {
         int result = 0;
-        block<T> *curr = head.load(memory_order_relaxed).ptr;
+        block<T> *curr = head.load(std::memory_order_relaxed).ptr;
         while (curr) {
             ++result;
             curr = curr->next;
@@ -94,13 +93,13 @@ public:
     long long size() {
         while (1) {
             long long result = 0;
-            block<T> *originalHead = head.load(memory_order_relaxed).ptr;
+            block<T> *originalHead = head.load(std::memory_order_relaxed).ptr;
             block<T> *curr = originalHead;
             while (curr) {
                 result += curr->computeSize();
                 curr = curr->next;
             }
-            if (head.load(memory_order_relaxed).ptr == originalHead) {
+            if (head.load(std::memory_order_relaxed).ptr == originalHead) {
                 return result;
             }
         }

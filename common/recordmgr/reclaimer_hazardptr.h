@@ -18,8 +18,6 @@
 #include "hashtable.h"
 #include "reclaimer_interface.h"
 #include "arraylist.h"
-using namespace std;
-using namespace hashset_namespace;
 
 #define MAX_HAZARDPTRS_PER_THREAD 16
 
@@ -125,9 +123,9 @@ public:
     }
     inline static void rotateEpochBags(const int tid) {}
     
-    string debugPointerOutput(T* p) {
+    std::string debugPointerOutput(T* p) {
         long x = (long) p;
-        ostringstream os;
+        std::ostringstream os;
         const int base = 10+26+26;
         while (x > 0) {
             int c = x % base;

@@ -18,8 +18,6 @@
 #include "arraylist.h"
 #include "hashtable.h"
 #include "record_manager_single_type.h"
-using namespace std;
-using namespace hashset_namespace;
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debraplus : public reclaimer_interface<T, Pool> {
@@ -40,7 +38,7 @@ private:
 #define NUMBER_OF_EPOCH_BAGS_CR 3
     // for epoch based reclamation
     volatile long epoch;
-    atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] = bits 1..end contain the last epoch seen by thread tid, and bit 0 indicates quiescence
+    std::atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] = bits 1..end contain the last epoch seen by thread tid, and bit 0 indicates quiescence
     long *checked;                      // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
     blockbag<T> **epochbags;            // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> **currentBag;           // pointer to current epoch bag for each process
@@ -94,7 +92,7 @@ private:
                 for (int i=0;i<20;++i) COUTATOMICTID("######################################################"<<std::endl);
                 COUTATOMICTID("error "<<error<<" when trying to pthread_kill(pthread_tFor("<<otherTid<<"), "<<this->recoveryMgr->neutralizeSignal<<")"<<std::endl);
                 assert(isQuiescent(tid));
-                const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+                const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
                 COUTATOMICTID("otherThread has newann="<<newann<<" with quiescent bit "<<QUIESCENT(newann)<<std::endl);
                 // this can happen because otherTid has terminated.
                 // if otherTid is now quiescent, then we can return true...
@@ -107,7 +105,7 @@ private:
                 for (;;) {
                     TRACE COUTATOMICTID("thread "<<tid<<" waiting for quiescence of thread "<<otherTid<<std::endl);
                     __sync_synchronize();
-                    const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+                    const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
                     if (QUIESCENT(newann) || BITS_EPOCH(newann) != BITS_EPOCH(announceOther)) {
                         return true;
                     }
@@ -139,7 +137,7 @@ public:
     inline static bool supportsCrashRecovery() { return true; }
     inline bool isQuiescent(const int tid) {
         //COUTATOMICTID("IS QUIESCENT EXECUTED"<<std::endl);
-        return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed));
+        return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed));
     }
     
     inline static bool isProtected(const int tid, T * const obj) {
@@ -255,7 +253,7 @@ public:
         long readEpoch = epoch; // multiple of EPOCH_INCREMENT
         assert(!QUIESCENT(readEpoch));
         // if our announced epoch is different from the current epoch
-        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
         DEBUG2 if (!QUIESCENT(ann)) {
             COUTATOMICTID("NOT QUIESCENT"<<std::endl);
             exit(-1);
@@ -282,7 +280,7 @@ public:
             }
         } else {
             assert(otherTid >= 0);
-            long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+            long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
             if (BITS_EPOCH(otherAnnounce) == readEpoch
                     || QUIESCENT(otherAnnounce)
                     || neutralizeOther(tid, otherTid, readEpoch, otherAnnounce)) {
@@ -299,13 +297,13 @@ public:
         // (on another arch, we'd have to prevent this write from being moved before the write to checked[].)
         assert(isQuiescent(tid));
         SOFTWARE_BARRIER;
-        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(readEpoch, memory_order_relaxed);
+        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(readEpoch, std::memory_order_relaxed);
         return result;
     }
     // IN A SCHEME THAT SUPPORTS CRASH RECOVERY, THIS IMPLIES A FULL MEMORY BARRIER IFF THIS MOVES THE THREAD FROM AN ACTIVE STATE TO A QUIESCENT STATE
     inline void enterQuiescentState(const int tid) {
-        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
-        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), memory_order_relaxed);
+        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
+        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), std::memory_order_relaxed);
         assert(isQuiescent(tid));
     }
     
@@ -319,7 +317,7 @@ public:
     void debugPrintStatus(const int tid) {
 //        assert(tid >= 0);
 //        assert(tid < this->NUM_PROCESSES);
-//        long announce = BITS_EPOCH(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed))/EPOCH_INCREMENT;
+//        long announce = BITS_EPOCH(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed))/EPOCH_INCREMENT;
 //        std::cout<<"announce="<<announce;
 //        std::cout<<" bags:";
 //        for (int i=0;i<NUMBER_OF_EPOCH_BAGS_CR;++i) {
@@ -348,7 +346,7 @@ public:
         epochbags = new blockbag<T>*[NUMBER_OF_EPOCH_BAGS_CR*numProcesses];
         currentBag = new blockbag<T>*[numProcesses*PREFETCH_SIZE_WORDS];
         index = new long[numProcesses*PREFETCH_SIZE_WORDS];
-        announcedEpoch = new atomic_long[numProcesses*PREFETCH_SIZE_WORDS];
+        announcedEpoch = new std::atomic_long[numProcesses*PREFETCH_SIZE_WORDS];
         checked = new long[numProcesses*PREFETCH_SIZE_WORDS];
         announce = new AtomicArrayList<T>*[numProcesses];
         comparing = new hashset_new<T>*[numProcesses];
@@ -358,7 +356,7 @@ public:
             }
             currentBag[tid*PREFETCH_SIZE_WORDS] = epochbags[NUMBER_OF_EPOCH_BAGS_CR*tid];
             index[tid*PREFETCH_SIZE_WORDS] = 0;
-            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(0), memory_order_relaxed);
+            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(0), std::memory_order_relaxed);
             checked[tid*PREFETCH_SIZE_WORDS] = 0;
             announce[tid] = new AtomicArrayList<T>(MAX_PROTECT_EVEN_IF_QUIESCENT);
             comparing[tid] = new hashset_new<T>(numProcesses*MAX_PROTECT_EVEN_IF_QUIESCENT);

@@ -20,7 +20,6 @@
 #else
 #define RECLAIM_RCU_RCUHEAD_DEFN 
 #endif
-using namespace std;
 
 namespace bst_ns {
 
@@ -31,9 +30,9 @@ namespace bst_ns {
     public:
         V value;
         K key;
-        atomic_uintptr_t scxRecord;
+        std::atomic_uintptr_t scxRecord;
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-        atomic_bool marked; // might be able to combine this elegantly with scx record pointer... (maybe we can piggyback on the version number mechanism, using the same bit to indicate ver# OR marked)
+        std::atomic_bool marked; // might be able to combine this elegantly with scx record pointer... (maybe we can piggyback on the version number mechanism, using the same bit to indicate ver# OR marked)
 #endif
         nodeptr left;
         nodeptr right;
@@ -46,10 +45,10 @@ namespace bst_ns {
         Node() {}
         Node(const Node& node) {}
 
-        friend ostream& operator<<(ostream& os, const Node<K,V>& obj) {}
-        void printTreeFile(ostream& os) {}
-        void printTreeFileWeight(ostream& os, set< Node<K,V>* > *seen) {}
-        void printTreeFileWeight(ostream& os) {}
+        friend std::ostream& operator<<(std::ostream& os, const Node<K,V>& obj) {}
+        void printTreeFile(std::ostream& os) {}
+        void printTreeFileWeight(std::ostream& os, std::set< Node<K,V>* > *seen) {}
+        void printTreeFileWeight(std::ostream& os) {}
 
     };
 }

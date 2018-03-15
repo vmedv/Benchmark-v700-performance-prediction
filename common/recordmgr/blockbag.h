@@ -12,7 +12,6 @@
 #include <iostream>
 #include "blockpool.h"
 #include "plaf.h"
-using namespace std;
 
 template <typename T>
 class blockpool;

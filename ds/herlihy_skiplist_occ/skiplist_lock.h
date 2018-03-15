@@ -5,8 +5,6 @@
 #include "random.h"
 #include "plaf.h"
 
-using namespace std;
-
 /////////////////////////////////////////////////////////
 // DEFINES
 /////////////////////////////////////////////////////////
@@ -77,7 +75,7 @@ public:
     ~skiplist();
 
     bool contains(const int tid, K key);
-    const pair<V,bool> find(const int tid, const K& key);
+    const std::pair<V,bool> find(const int tid, const K& key);
     V insert(const int tid, const K& key, const V& value) {
         return doInsert(tid, key, value, false);
     }
@@ -108,8 +106,8 @@ public:
         }
         return size;
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }

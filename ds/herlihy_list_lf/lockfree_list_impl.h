@@ -126,7 +126,7 @@ nodeptr lflist<K,V,RecManager>::new_node(const int tid, const K& key, const V& v
     nnode->key = key;
     nnode->val = val;
     rqProvider->write_addr(tid, &nnode->next, next);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) nnode)%(1<<12));
 #endif
     return nnode;
@@ -340,11 +340,11 @@ int lflist<K,V,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, 
         }
         curr = (nodeptr) getUnmarked(rqProvider->read_addr(tid, &curr->next));
 //        if (++iterations > 10) {
-//            cout<<"iterations > 10"<<endl;
+//            std::cout<<"iterations > 10"<<std::endl;
 //            exit(-1);
 //        }
 //        else {
-//            cout<<"traversal ["<<lo<<", "<<hi<<") sees key="<<curr->key<<" (KEY_MAX="<<KEY_MAX<<")"<<endl;
+//            std::cout<<"traversal ["<<lo<<", "<<hi<<") sees key="<<curr->key<<" (KEY_MAX="<<KEY_MAX<<")"<<std::endl;
 //        }
 //    while (curr && curr->key < KEY_MAX && rqProvider->traversal_is_active(tid)) {
 //        curr = rqProvider->traversal_try_add(tid, curr, resultKeys, resultValues, &cnt, lo, hi);
@@ -363,7 +363,7 @@ int lflist<K,V,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, 
 #endif
     rqProvider->traversal_end(tid, resultKeys, resultValues, &cnt, lo, hi);
 #ifdef SNAPCOLLECTOR_PRINT_RQS
-    cout<<"rqSize="<<cnt<<endl;
+    std::cout<<"rqSize="<<cnt<<std::endl;
 #endif
     recordmgr->enterQuiescentState(tid);
     return cnt;

@@ -12,7 +12,6 @@
 #include <cassert>
 #include <stdint.h>
 #include <sstream>
-using namespace std;
 
 #define BOOL_CAS __sync_bool_compare_and_swap
 #define VAL_CAS __sync_val_compare_and_swap
@@ -73,7 +72,7 @@ void dcsspProvider<PAYLOAD_T>::dcsspHelpOther(const int tid, dcssptagptr_t tagpt
     if (DESC_SNAPSHOT(dcsspdesc_t<PAYLOAD_T>, dcsspDescriptors, &newSnapshot, tagptr, sz)) {
         dcsspHelp(tid, tagptr, &newSnapshot, true);
     } else {
-        //TRACE COUTATOMICTID("helpOther unable to get snapshot of "<<tagptrToString(tagptr)<<endl);
+        //TRACE COUTATOMICTID("helpOther unable to get snapshot of "<<tagptrToString(tagptr)<<std::endl);
     }
 }
 
@@ -248,7 +247,7 @@ void dcsspProvider<PAYLOAD_T>::deinitThread(const int tid) {}
 template <typename PAYLOAD_T>
 void dcsspProvider<PAYLOAD_T>::debugPrint() {
 #ifdef USE_DEBUGCOUNTERS
-    cout<<"dcssp helping : "<<this->dcsspHelpCounter->getTotal()<<endl;
+    std::cout<<"dcssp helping : "<<this->dcsspHelpCounter->getTotal()<<std::endl;
 #endif
 }
 

@@ -11,8 +11,6 @@
 #include "snapcollector.h"
 #include "rq_snapcollector.h"
 
-using namespace std;
-
 class Node {
 public:
     int key;

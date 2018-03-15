@@ -28,14 +28,13 @@
     #include <cassert>
     #include <string>
     #include <iostream>
-    using namespace std;
     
     #define MAX_NUM_RQ_IN_EXECUTION (1<<20)
 
     #ifdef RQ_VISITED_IN_BAGS_HISTOGRAM
         #include <sstream>
-        string twoDigits(int x) {
-            stringstream ss;
+        std::string twoDigits(int x) {
+            std::stringstream ss;
             if (x >= 0 && x < 10) {
                 ss<<"0";
             }
@@ -65,10 +64,10 @@
             }
             for (int i=0;i<=numBits;++i) {
                 if (histogram[i] > 0) {
-                    cout<<"    (2^"<<twoDigits(i)<<", 2^"<<twoDigits(i+1)<<"]: "<<histogram[i]<<endl;
+                    std::cout<<"    (2^"<<twoDigits(i)<<", 2^"<<twoDigits(i+1)<<"]: "<<histogram[i]<<std::endl;
                 }
             }
-            cout<<"    average = "<<(sum / (double) cntNonZero)<<endl;
+            std::cout<<"    average = "<<(sum / (double) cntNonZero)<<std::endl;
         }
 
         int ** threadNumNodesVisitedInBags; //[MAX_THREADS_POW2][MAX_NUM_RQ_IN_EXECUTION];
@@ -110,7 +109,7 @@
     #ifdef RQ_VALIDATION
             if (timestamp >= MAX_NUM_RQ_IN_EXECUTION) {
                 return;
-    //            cout << "timestamp is: " << timestamp << endl;
+    //            std::cout << "timestamp is: " << timestamp << std::endl;
     //            setbench_error("timestamp > MAX_NUM_RQ_IN_EXECUTION");
             }
             for (int i=0;insertedNodes[i];++i) {
@@ -187,7 +186,7 @@
 
             for (int tid=0;tid<numProcesses;++tid) {
                 for (int timestamp=0;timestamp<MAX_NUM_RQ_IN_EXECUTION;++timestamp) {
-                    //if (threadUpdateChecksum[tid][timestamp]) cout<<"threadUpdateChecksum[tid="<<tid<<", timestamp="<<timestamp<<"]="<<threadUpdateChecksum[tid][timestamp]<<endl;
+                    //if (threadUpdateChecksum[tid][timestamp]) std::cout<<"threadUpdateChecksum[tid="<<tid<<", timestamp="<<timestamp<<"]="<<threadUpdateChecksum[tid][timestamp]<<std::endl;
                     rqChecksum[timestamp] += threadRQChecksum[tid][timestamp];
                     updateChecksum[timestamp] += threadUpdateChecksum[tid][timestamp];
     #ifdef RQ_VISITED_IN_BAGS_HISTOGRAM
@@ -206,9 +205,9 @@
                     if (rqChecksum[timestamp] != prefixSum) {
                         ++numberFailed;
                         if (numberFailed < 100) {
-                            cout<<"RQ VALIDATION ERROR: rqChecksum[timestamp="<<timestamp<<"]="<<rqChecksum[timestamp]<<" is not equal to prefixSum=updateChecksum[0, 1, ..., timestamp-1]="<<prefixSum<<endl;
+                            std::cout<<"RQ VALIDATION ERROR: rqChecksum[timestamp="<<timestamp<<"]="<<rqChecksum[timestamp]<<" is not equal to prefixSum=updateChecksum[0, 1, ..., timestamp-1]="<<prefixSum<<std::endl;
                         } else if (numberFailed == 100) {
-                            cout<<"RQ VALIDATION: too many errors to list..."<<endl;
+                            std::cout<<"RQ VALIDATION: too many errors to list..."<<std::endl;
                         }
                         good = false;
                         //exit(-1);
@@ -226,9 +225,9 @@
                         if (threadRQChecksum[tid][timestamp] != prefixSum) {
                             ++numberFailed;
                             if (numberFailed < 100) {
-                                cout<<"RQ VALIDATION ERROR: threadRQChecksum[tid="<< tid <<"][timestamp="<<timestamp<<"]="<<threadRQChecksum[tid][timestamp]<<" is not equal to prefixSum=updateChecksum[0, 1, ..., timestamp-1]="<<prefixSum<<endl;
+                                std::cout<<"RQ VALIDATION ERROR: threadRQChecksum[tid="<< tid <<"][timestamp="<<timestamp<<"]="<<threadRQChecksum[tid][timestamp]<<" is not equal to prefixSum=updateChecksum[0, 1, ..., timestamp-1]="<<prefixSum<<std::endl;
                             } else if (numberFailed == 100) {
-                                cout<<"RQ VALIDATION: too many errors to list..."<<endl;
+                                std::cout<<"RQ VALIDATION: too many errors to list..."<<std::endl;
                             }
                             good = false;
                             //exit(-1);
@@ -241,18 +240,18 @@
             }
     #endif
             if (numberFailed > 0) {
-                cout<<"RQ VALIDATION TOTAL FAILURES: "<<numberFailed<<endl;
-                cout<<"    (note: validation only works for RQs over the entire data structure)"<<endl;
+                std::cout<<"RQ VALIDATION TOTAL FAILURES: "<<numberFailed<<std::endl;
+                std::cout<<"    (note: validation only works for RQs over the entire data structure)"<<std::endl;
             }
-            cout<<"RQ VALIDATION TOTAL SUCCESSES: "<<numberSucc<<endl;
-            cout<<"    (note: this captures only non-empty RQs, and is at most "<<MAX_NUM_RQ_IN_EXECUTION<<")"<<endl;
-            if (good) cout<<"RQ Validation OK"<<endl;
-            cout<<endl;
+            std::cout<<"RQ VALIDATION TOTAL SUCCESSES: "<<numberSucc<<std::endl;
+            std::cout<<"    (note: this captures only non-empty RQs, and is at most "<<MAX_NUM_RQ_IN_EXECUTION<<")"<<std::endl;
+            if (good) std::cout<<"RQ Validation OK"<<std::endl;
+            std::cout<<std::endl;
 
     #ifdef RQ_VISITED_IN_BAGS_HISTOGRAM
-            cout<<"histogram: how many RQs visited x nodes in limbo bags?"<<endl;
+            std::cout<<"histogram: how many RQs visited x nodes in limbo bags?"<<std::endl;
             printLogarithmicHistogram(numNodesVisitedInBags, MAX_NUM_RQ_IN_EXECUTION);
-            cout<<endl;
+            std::cout<<std::endl;
     #endif
 
             delete[] updateChecksum;
@@ -263,10 +262,10 @@
 
         void DEBUG_DEINIT_RQPROVIDER(const int numProcesses) {
     #ifdef RQ_HISTOGRAM
-            ofs<<"x,y"<<endl;
+            ofs<<"x,y"<<std::endl;
             for (int size=0;size<=MAX_RQ_SIZE;++size) {
                 if (totalNumRQs[size]) {
-                    ofs<<size<<","<<totalNumRQs[size]<<endl;
+                    ofs<<size<<","<<totalNumRQs[size]<<std::endl;
                 }
             }
             ofs.close();

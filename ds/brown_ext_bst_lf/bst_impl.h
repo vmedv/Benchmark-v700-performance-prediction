@@ -8,7 +8,6 @@
 #include "bst.h"
 #include <cassert>
 #include <cstdlib>
-using namespace std;
 
 #ifdef NOREBALANCING
 #define IFREBALANCING if (0)
@@ -21,10 +20,10 @@ bst_ns::Node<K,V>* bst_ns::bst<K,V,Compare,RecManager>::allocateNode(const int t
     //this->recmgr->getDebugInfo(NULL)->addToPool(tid, 1);
     Node<K,V> *newnode = recmgr->template allocate<Node<K,V> >(tid);
     if (newnode == NULL) {
-        COUTATOMICTID("ERROR: could not allocate node"<<endl);
+        COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
         exit(-1);
     }
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, (long long) newnode);
 #endif
     return newnode;
@@ -67,7 +66,7 @@ inline int bst_ns::bst<K,V,Compare,RecManager>::computeSize(Node<K,V> * const ro
 
 template<class K, class V, class Compare, class RecManager>
 bool bst_ns::bst<K,V,Compare,RecManager>::contains(const int tid, const K& key) {
-    pair<V,bool> result = find(tid, key);
+    std::pair<V,bool> result = find(tid, key);
     return result.second;
 }
 
@@ -108,23 +107,23 @@ int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, 
 }
 
 template<class K, class V, class Compare, class RecManager>
-const pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid, const K& key) {
-    pair<V,bool> result;
+const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid, const K& key) {
+    std::pair<V,bool> result;
     Node<K,V> *p;
     Node<K,V> *l;
     for (;;) {
-        TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<endl);
+        TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<std::endl);
         recmgr->leaveQuiescentState(tid);
         p = rqProvider->read_addr(tid, &root->left);
         l = rqProvider->read_addr(tid, &p->left);
         if (l == NULL) {
-            result = pair<V,bool>(NO_VALUE, false); // no keys in data structure
+            result = std::pair<V,bool>(NO_VALUE, false); // no keys in data structure
             recmgr->enterQuiescentState(tid);
             return result; // success
         }
 
         while (rqProvider->read_addr(tid, &l->left) != NULL) {
-            TRACE COUTATOMICTID("traversing tree; l="<<*l<<endl);
+            TRACE COUTATOMICTID("traversing tree; l="<<*l<<std::endl);
             p = l; // note: the new p is currently protected
             assert(p->key != NO_KEY);
             if (cmp(key, p->key)) {
@@ -134,15 +133,15 @@ const pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid, cons
             }
         }
         if (key == l->key) {
-            result = pair<V,bool>(l->value, true);
+            result = std::pair<V,bool>(l->value, true);
         } else {
-            result = pair<V,bool>(NO_VALUE, false);
+            result = std::pair<V,bool>(NO_VALUE, false);
         }
         recmgr->enterQuiescentState(tid);
         return result; // success
     }
     assert(0);
-    return pair<V,bool>(NO_VALUE, false);
+    return std::pair<V,bool>(NO_VALUE, false);
 }
 
 //template<class K, class V, class Compare, class RecManager>
@@ -195,7 +194,7 @@ const V bst_ns::bst<K,V,Compare,RecManager>::insert(const int tid, const K& key,
 }
 
 template<class K, class V, class Compare, class RecManager>
-const pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::erase(const int tid, const K& key) {
+const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::erase(const int tid, const K& key) {
     V result = NO_VALUE;
     void *input[] = {(void*) &key};
     void *output[] = {(void*) &result};
@@ -210,7 +209,7 @@ const pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::erase(const int tid, con
             break;
         }
     }
-    return pair<V,bool>(result, (result != NO_VALUE));
+    return std::pair<V,bool>(result, (result != NO_VALUE));
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -221,7 +220,7 @@ inline bool bst_ns::bst<K,V,Compare,RecManager>::updateInsert_search_llx_scx(
     const bool onlyIfAbsent = *((const bool*) input[2]);
     V *result = (V*) output[0];
     
-    TRACE COUTATOMICTID("updateInsert_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<endl);
+    TRACE COUTATOMICTID("updateInsert_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<std::endl);
     
     Node<K,V> *p = root, *l;
     l = rqProvider->read_addr(tid, &root->left);
@@ -312,7 +311,7 @@ inline bool bst_ns::bst<K,V,Compare,RecManager>::updateErase_search_llx_scx(
     const K& key = *((const K*) input[0]);
     V *result = (V*) output[0];
 
-    TRACE COUTATOMICTID("updateErase_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<endl);
+    TRACE COUTATOMICTID("updateErase_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<std::endl);
 
     Node<K,V> *gp, *p, *l;
     l = rqProvider->read_addr(tid, &root->left);
@@ -384,9 +383,9 @@ bst_ns::Node<K,V>* bst_ns::bst<K,V,Compare,RecManager>::initializeNode(
     // from an entry point to the data structure.
     rqProvider->write_addr(tid, &newnode->left, left);
     rqProvider->write_addr(tid, &newnode->right, right);
-    newnode->scxRecord.store((uintptr_t) DUMMY_SCXRECORD, memory_order_relaxed);
+    newnode->scxRecord.store((uintptr_t) DUMMY_SCXRECORD, std::memory_order_relaxed);
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-    newnode->marked.store(false, memory_order_relaxed);
+    newnode->marked.store(false, std::memory_order_relaxed);
 #else
     // taken care of by scxRecord store above
 #endif
@@ -425,7 +424,7 @@ void bst_ns::bst<K,V,Compare,RecManager>::reclaimMemoryAfterSCX(
         // if the state was COMMITTED, then we cannot reuse the nodes the we
         // took from allocatedNodes[], either, so we must replace these nodes.
         if (state == SCXRecord<K,V>::STATE_COMMITTED) {
-            //cout<<"replacing allocated nodes"<<endl;
+            //cout<<"replacing allocated nodes"<<std::endl;
             for (int i=0;i<info->numberOfNodesAllocated;++i) {
                 REPLACE_ALLOCATED_NODE(tid, i);
             }
@@ -448,7 +447,7 @@ bool bst_ns::bst<K,V,Compare,RecManager>::scx(
             Node<K,V> *newNode,
             Node<K,V> * const * const insertedNodes,
             Node<K,V> * const * const deletedNodes) {
-    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<endl);
+    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<std::endl);
     
     SCXRecord<K,V> *newdesc = DESC1_NEW(tid);
     newdesc->c.newNode = newNode;
@@ -470,13 +469,13 @@ bool bst_ns::bst<K,V,Compare,RecManager>::scx(
     newdesc->c.numberOfNodesToFreeze = (char) info->numberOfNodesToFreeze;
 
     // note: writes equivalent to the following two are already done by DESC1_NEW()
-    //rec->state.store(SCXRecord<K,V>::STATE_INPROGRESS, memory_order_relaxed);
-    //rec->allFrozen.store(false, memory_order_relaxed);
+    //rec->state.store(SCXRecord<K,V>::STATE_INPROGRESS, std::memory_order_relaxed);
+    //rec->allFrozen.store(false, std::memory_order_relaxed);
     DESC1_INITIALIZED(tid); // mark descriptor as being in a consistent state
     
     SOFTWARE_BARRIER;
     int state = help(tid, TAGPTR1_NEW(tid, newdesc->c.mutables), newdesc, false);
-    info->state = state; // rec->state.load(memory_order_relaxed);
+    info->state = state; // rec->state.load(std::memory_order_relaxed);
     reclaimMemoryAfterSCX(tid, info);
     return state & SCXRecord<K,V>::STATE_COMMITTED;
 }
@@ -484,22 +483,22 @@ bool bst_ns::bst<K,V,Compare,RecManager>::scx(
 template <class K, class V, class Compare, class RecManager>
 void bst_ns::bst<K,V,Compare,RecManager>::helpOther(const int tid, tagptr_t tagptr) {
     if ((void*) tagptr == DUMMY_SCXRECORD) {
-        TRACE COUTATOMICTID("helpOther dummy descriptor"<<endl);
+        TRACE COUTATOMICTID("helpOther dummy descriptor"<<std::endl);
         return; // deal with the dummy descriptor
     }
     SCXRecord<K,V> newdesc;
-    //cout<<"sizeof(newrec)="<<sizeof(newrec)<<" computed size="<<SCXRecord<K,V>::size<<endl;
+    //cout<<"sizeof(newrec)="<<sizeof(newrec)<<" computed size="<<SCXRecord<K,V>::size<<std::endl;
     if (DESC1_SNAPSHOT(&newdesc, tagptr, SCXRecord<K comma1 V>::size /* sizeof(newrec) /*- sizeof(newrec.padding)*/)) {
         help(tid, tagptr, &newdesc, true);
     } else {
-        TRACE COUTATOMICTID("helpOther unable to get snapshot of "<<tagptrToString(tagptr)<<endl);
+        TRACE COUTATOMICTID("helpOther unable to get snapshot of "<<tagptrToString(tagptr)<<std::endl);
     }
 }
 
 // returns the state field of the scx record "scx."
 template <class K, class V, class Compare, class RecManager>
 int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SCXRecord<K,V> *snap, bool helpingOther) {
-    TRACE COUTATOMICTID("help "<<tagptrToString(tagptr)<<endl);
+    TRACE COUTATOMICTID("help "<<tagptrToString(tagptr)<<std::endl);
     SCXRecord<K,V> *ptr = TAGPTR1_UNPACK_PTR(tagptr);
     
     // TODO: make SCX_WRITE_STATE into regular write for the owner of this descriptor
@@ -525,7 +524,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
         if (!succ) return SCXRecord<K,V>::STATE_ABORTED;
         
         int newState = (allFrozen) ? SCXRecord<K,V>::STATE_COMMITTED : SCXRecord<K,V>::STATE_ABORTED;
-        TRACE COUTATOMICTID("help return state "<<newState<<" after failed freezing cas on nodes["<<i<<"]"<<endl);
+        TRACE COUTATOMICTID("help return state "<<newState<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
         MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, newState, MUTABLES_MASK_STATE, MUTABLES_OFFSET_STATE);
         return newState;
     }
@@ -534,9 +533,9 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
     for (int i=1; i<snap->c.numberOfNodesToFreeze; ++i) {
         if (snap->c.scxRecordsSeen[i] == LLX_RETURN_IS_LEAF) continue; // do not mark leaves
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-        snap->c.nodes[i]->marked.store(true, memory_order_relaxed); // finalize all but first node
+        snap->c.nodes[i]->marked.store(true, std::memory_order_relaxed); // finalize all but first node
 #else
-        snap->c.nodes[i]->scxRecord.fetch_or(0x1, memory_order_relaxed);
+        snap->c.nodes[i]->scxRecord.fetch_or(0x1, std::memory_order_relaxed);
         // could this be done more efficiently with bit-test-and-set?
 #endif
     }
@@ -573,7 +572,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
     
     MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, SCXRecord<K comma1 V>::STATE_COMMITTED, MUTABLES_MASK_STATE, MUTABLES_OFFSET_STATE);
     
-    TRACE COUTATOMICTID("help return COMMITTED after performing update cas"<<endl);
+    TRACE COUTATOMICTID("help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<K,V>::STATE_COMMITTED; // success
 }
 
@@ -584,12 +583,12 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
             Node<K,V> *node,
             Node<K,V> **retLeft,
             Node<K,V> **retRight) {
-    TRACE COUTATOMICTID("llx(tid="<<tid<<", node="<<*node<<")"<<endl);
+    TRACE COUTATOMICTID("llx(tid="<<tid<<", node="<<*node<<")"<<std::endl);
     
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-    tagptr_t tagptr1 = node->scxRecord.load(memory_order_relaxed);
+    tagptr_t tagptr1 = node->scxRecord.load(std::memory_order_relaxed);
 #else
-    tagptr_t tagptr1 = node->scxRecord.load(memory_order_relaxed) & ~0x1;
+    tagptr_t tagptr1 = node->scxRecord.load(std::memory_order_relaxed) & ~0x1;
 #endif
     
     // read mutable state field of descriptor
@@ -600,9 +599,9 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
     
     SOFTWARE_BARRIER;       // prevent compiler from moving the read of marked before the read of state (no hw barrier needed on x86/64, since there is no read-read reordering)
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-    bool marked = node->marked.load(memory_order_relaxed);
+    bool marked = node->marked.load(std::memory_order_relaxed);
 #else
-    bool marked = node->scxRecord.load(memory_order_relaxed) & 0x1;
+    bool marked = node->scxRecord.load(std::memory_order_relaxed) & 0x1;
 #endif
     SOFTWARE_BARRIER;       // prevent compiler from moving the reads tagptr2=node->scxRecord or tagptr3=node->scxRecord before the read of marked. (no h/w barrier needed on x86/64 since there is no read-read reordering)
     if ((state & SCXRecord<K,V>::STATE_COMMITTED && !marked) || state & SCXRecord<K,V>::STATE_ABORTED) {
@@ -615,9 +614,9 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
         }
         SOFTWARE_BARRIER; // prevent compiler from moving the read of node->scxRecord before the read of left or right
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-        tagptr_t tagptr2 = node->scxRecord.load(memory_order_relaxed);
+        tagptr_t tagptr2 = node->scxRecord.load(std::memory_order_relaxed);
 #else
-        tagptr_t tagptr2 = node->scxRecord.load(memory_order_relaxed) & ~0x1;
+        tagptr_t tagptr2 = node->scxRecord.load(std::memory_order_relaxed) & ~0x1;
 #endif
         if (tagptr1 == tagptr2) {
             TRACE COUTATOMICTID("llx return2 (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<" desc1="<<tagptr1<<")\n"); 
@@ -625,13 +624,13 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
             return (void*) tagptr1;    // success
         } else {
             if (recmgr->shouldHelp()) {
-                TRACE COUTATOMICTID("llx help 1 tid="<<tid<<endl);
+                TRACE COUTATOMICTID("llx help 1 tid="<<tid<<std::endl);
                 helpOther(tid, tagptr2);
             }
         }
     } else if (state == SCXRecord<K,V>::STATE_INPROGRESS) {
         if (recmgr->shouldHelp()) {
-            TRACE COUTATOMICTID("llx help 2 tid="<<tid<<endl);
+            TRACE COUTATOMICTID("llx help 2 tid="<<tid<<std::endl);
             helpOther(tid, tagptr1);
         }
     } else {
@@ -640,11 +639,11 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
         assert(marked);
         if (recmgr->shouldHelp()) {
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
-            tagptr_t tagptr3 = node->scxRecord.load(memory_order_relaxed);
+            tagptr_t tagptr3 = node->scxRecord.load(std::memory_order_relaxed);
 #else
-            tagptr_t tagptr3 = node->scxRecord.load(memory_order_relaxed) & ~0x1;
+            tagptr_t tagptr3 = node->scxRecord.load(std::memory_order_relaxed) & ~0x1;
 #endif
-            TRACE COUTATOMICTID("llx help 3 tid="<<tid<<" tagptr3="<<tagptrToString(tagptr3)<<endl);
+            TRACE COUTATOMICTID("llx help 3 tid="<<tid<<" tagptr3="<<tagptrToString(tagptr3)<<std::endl);
             helpOther(tid, tagptr3);
         }
     }

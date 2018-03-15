@@ -35,7 +35,7 @@ RC ycsb_wl::init() {
     return RCOK;
 }
 
-RC ycsb_wl::init_schema(string schema_file) {
+RC ycsb_wl::init_schema(std::string schema_file) {
     workload::init_schema(schema_file);
     the_table = tables["MAIN_TABLE"];
     the_index = indexes["MAIN_INDEX"];
@@ -149,7 +149,7 @@ void * ycsb_wl::init_table_slice() {
     //	set_affinity(__tid);
 
     tid = __tid;
-    cout<<"YCSB_WL INIT: Assigned thread ID="<<tid<<endl;
+    cout<<"YCSB_WL INIT: Assigned thread ID="<<tid<<std::endl;
     this->initThread(tid);
 
     mem_allocator.register_thread(__tid);

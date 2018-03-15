@@ -12,7 +12,6 @@
 #include "bst.h"
 #include <cassert>
 #include <cstdlib>
-using namespace std;
 
 #ifdef NOREBALANCING
 #define IFREBALANCING if (0)
@@ -35,7 +34,7 @@ SCXRecord<K,V>* bst<K,V,Compare,RecManager>::allocateSCXRecord(
             const int tid) {
     SCXRecord<K,V> *newop = recmgr->template allocate<SCXRecord<K,V> >(tid);
     if (newop == NULL) {
-        COUTATOMICTID("ERROR: could not allocate scx record"<<endl);
+        COUTATOMICTID("ERROR: could not allocate scx record"<<std::endl);
         exit(-1);
     }
     return newop;
@@ -46,7 +45,7 @@ SCXRecord<K,V>* bst<K,V,Compare,RecManager>::initializeSCXRecord(
             const int tid,
             SCXRecord<K,V> * const newop,
             ReclamationInfo<K,V> * const info,
-            atomic_uintptr_t * const field,
+            std::atomic_uintptr_t * const field,
             Node<K,V> * const newNode) {
     //newop->type = info->type;
     newop->newNode = newNode;
@@ -61,8 +60,8 @@ SCXRecord<K,V>* bst<K,V,Compare,RecManager>::initializeSCXRecord(
     // note: synchronization is not necessary for the following accesses,
     // since a memory barrier will occur before this object becomes reachable
     // from an entry point to the data structure.
-    newop->state.store(SCXRecord<K,V>::STATE_INPROGRESS, memory_order_relaxed);
-    newop->allFrozen.store(false, memory_order_relaxed);
+    newop->state.store(SCXRecord<K,V>::STATE_INPROGRESS, std::memory_order_relaxed);
+    newop->allFrozen.store(false, std::memory_order_relaxed);
     newop->field = field;
     newop->numberOfNodes = (char) info->numberOfNodes;
     newop->numberOfNodesToFreeze = (char) info->numberOfNodesToFreeze;
@@ -74,7 +73,7 @@ Node<K,V>* bst<K,V,Compare,RecManager>::allocateNode(
             const int tid) {
     Node<K,V> *newnode = recmgr->template allocate<Node<K,V> >(tid);
     if (newnode == NULL) {
-        COUTATOMICTID("ERROR: could not allocate node"<<endl);
+        COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
         exit(-1);
     }
     return newnode;
@@ -94,19 +93,19 @@ Node<K,V>* bst<K,V,Compare,RecManager>::initializeNode(
     // note: synchronization is not necessary for the following accesses,
     // since a memory barrier will occur before this object becomes reachable
     // from an entry point to the data structure.
-    newnode->left.store((uintptr_t) left, memory_order_relaxed);
-    newnode->right.store((uintptr_t) right, memory_order_relaxed);
-    newnode->scxRecord.store((uintptr_t) dummy, memory_order_relaxed);
-    newnode->marked.store(false, memory_order_relaxed);
+    newnode->left.store((uintptr_t) left, std::memory_order_relaxed);
+    newnode->right.store((uintptr_t) right, std::memory_order_relaxed);
+    newnode->scxRecord.store((uintptr_t) dummy, std::memory_order_relaxed);
+    newnode->marked.store(false, std::memory_order_relaxed);
     return newnode;
 }
 
 template<class K, class V, class Compare, class RecManager>
 long long bst<K,V,Compare,RecManager>::debugKeySum(Node<K,V> * node) {
     if (node == NULL) return 0;
-    if ((void*) node->left.load(memory_order_relaxed) == NULL) return (long long) node->key;
-    return debugKeySum((Node<K,V> *) node->left.load(memory_order_relaxed))
-         + debugKeySum((Node<K,V> *) node->right.load(memory_order_relaxed));
+    if ((void*) node->left.load(std::memory_order_relaxed) == NULL) return (long long) node->key;
+    return debugKeySum((Node<K,V> *) node->left.load(std::memory_order_relaxed))
+         + debugKeySum((Node<K,V> *) node->right.load(std::memory_order_relaxed));
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -121,15 +120,15 @@ bool bst<K,V,Compare,RecManager>::validate(const long long keysum, const bool ch
 
 template<class K, class V, class Compare, class RecManager>
 inline int bst<K,V,Compare,RecManager>::size() {
-    return computeSize((Node<K,V> *) ((Node<K,V> *) root->left.load(memory_order_relaxed))->left.load(memory_order_relaxed));
+    return computeSize((Node<K,V> *) ((Node<K,V> *) root->left.load(std::memory_order_relaxed))->left.load(std::memory_order_relaxed));
 }
     
 template<class K, class V, class Compare, class RecManager>
 inline int bst<K,V,Compare,RecManager>::computeSize(Node<K,V> * const root) {
     if (root == NULL) return 0;
-    if ((Node<K,V> *) root->left.load(memory_order_relaxed) != NULL) { // if internal node
-        return computeSize((Node<K,V> *) root->left.load(memory_order_relaxed))
-                + computeSize((Node<K,V> *) root->right.load(memory_order_relaxed));
+    if ((Node<K,V> *) root->left.load(std::memory_order_relaxed) != NULL) { // if internal node
+        return computeSize((Node<K,V> *) root->left.load(std::memory_order_relaxed))
+                + computeSize((Node<K,V> *) root->right.load(std::memory_order_relaxed));
     } else { // if leaf
         return 1;
 //        printf(" %d", root->key);
@@ -163,7 +162,7 @@ int bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& low, const K
 
 template<class K, class V, class Compare, class RecManager>
 int bst<K,V,Compare,RecManager>::rangeQuery_vlx(ReclamationInfo<K,V> * const info, const int tid, void **input, void **output) {
-//    COUTATOMICTID("rangeQuery(low="<<low<<", hi="<<hi<<", size="<<size<<")"<<endl);
+//    COUTATOMICTID("rangeQuery(low="<<low<<", hi="<<hi<<", size="<<size<<")"<<std::endl);
 
     Node<K,V> const ** result = (Node<K,V> const **) output[0];
     int *cnt = (int*) output[1];
@@ -183,7 +182,7 @@ int bst<K,V,Compare,RecManager>::rangeQuery_vlx(ReclamationInfo<K,V> * const inf
         Node<K,V> * left;
         Node<K,V> * right;
         
-        //COUTATOMICTID("    visiting node "<<*node<<endl);
+        //COUTATOMICTID("    visiting node "<<*node<<std::endl);
         // if llx on node fails, then retry
         if (llx(tid, node, &left, &right) == NULL) { // marked bit checked in here
             //cout<<"Retry because of failed llx\n";
@@ -192,30 +191,30 @@ int bst<K,V,Compare,RecManager>::rangeQuery_vlx(ReclamationInfo<K,V> * const inf
 
         // else if internal node, explore its children
         } else if (left != NULL) {
-            //COUTATOMICTID("    internal node key="<<node->key<<" low="<<low<<" hi="<<hi<<" cmp(hi, node->key)="<<cmp(hi, node->key)<<" cmp(low, node->key)="<<cmp(low, node->key)<<endl);
+            //COUTATOMICTID("    internal node key="<<node->key<<" low="<<low<<" hi="<<hi<<" cmp(hi, node->key)="<<cmp(hi, node->key)<<" cmp(low, node->key)="<<cmp(low, node->key)<<std::endl);
             if (node->key != this->NO_KEY && !cmp(hi, node->key)) {
-                //COUTATOMICTID("    stack.push right: "<<right<<endl);
+                //COUTATOMICTID("    stack.push right: "<<right<<std::endl);
                 stack.push(right);
             }
             if (node->key == this->NO_KEY || cmp(low, node->key)) {
-                //COUTATOMICTID("    stack.push left: "<<left<<endl);
+                //COUTATOMICTID("    stack.push left: "<<left<<std::endl);
                 stack.push(left);
             }
             
         // else if leaf node, check if we should return it
         } else {
-            //COUTATOMICTID("    leaf node"<<endl);
+            //COUTATOMICTID("    leaf node"<<std::endl);
             //visitedNodes[cnt] = node;
             if (node->key != this->NO_KEY && !cmp(node->key, low) && !cmp(hi, node->key)) {
-                //COUTATOMICTID("    result["<<cnt<<"] = node "<<node<<endl);
+                //COUTATOMICTID("    result["<<cnt<<"] = node "<<node<<std::endl);
                 result[(*cnt)++] = node;
             }
         }
     }
     // validation
     for (int i=0;i<*cnt;++i) {
-        if (result[i]->marked.load(memory_order_relaxed)) {
-            //cout<<"Retry because of failed validation, return set size "<<cnt<<endl;
+        if (result[i]->marked.load(std::memory_order_relaxed)) {
+            //cout<<"Retry because of failed validation, return set size "<<cnt<<std::endl;
 //            goto retry; // abort because of concurrency
             return false;
         }
@@ -232,24 +231,24 @@ const pair<V,bool> bst<K,V,Compare,RecManager>::find(const int tid, const K& key
     Node<K,V> *p;
     Node<K,V> *l;
     for (;;) {
-        TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<endl);
+        TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<std::endl);
         recmgr->leaveQuiescentState(tid);
-        p = (Node<K,V>*) root->left.load(memory_order_relaxed);
-        l = (Node<K,V>*) p->left.load(memory_order_relaxed);
+        p = (Node<K,V>*) root->left.load(std::memory_order_relaxed);
+        l = (Node<K,V>*) p->left.load(std::memory_order_relaxed);
         if (l == NULL) {
             result = pair<V,bool>(NO_VALUE, false); // no keys in data structure
             recmgr->enterQuiescentState(tid);
             return result; // success
         }
 
-        while ((Node<K,V>*) l->left.load(memory_order_relaxed) != NULL) {
-            TRACE COUTATOMICTID("traversing tree; l="<<*l<<endl);
+        while ((Node<K,V>*) l->left.load(std::memory_order_relaxed) != NULL) {
+            TRACE COUTATOMICTID("traversing tree; l="<<*l<<std::endl);
             p = l; // note: the new p is currently protected
             assert(p->key != NO_KEY);
             if (cmp(key, p->key)) {
-                l = (Node<K,V>*) p->left.load(memory_order_relaxed);
+                l = (Node<K,V>*) p->left.load(std::memory_order_relaxed);
             } else {
-                l = (Node<K,V>*) p->right.load(memory_order_relaxed);
+                l = (Node<K,V>*) p->right.load(std::memory_order_relaxed);
             }
         }
         if (key == l->key) {
@@ -319,19 +318,19 @@ inline bool bst<K,V,Compare,RecManager>::updateInsert_search_llx_scx(
     const bool onlyIfAbsent = *((const bool*) input[2]);
     V *result = (V*) output[0];
     
-    TRACE COUTATOMICTID("updateInsert_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<endl);
+    TRACE COUTATOMICTID("updateInsert_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<std::endl);
     
     Node<K,V> *p = root, *l;
-    l = (Node<K,V>*) root->left.load(memory_order_relaxed);
-    if ((Node<K,V>*) l->left.load(memory_order_relaxed) != NULL) { // the tree contains some node besides sentinels...
+    l = (Node<K,V>*) root->left.load(std::memory_order_relaxed);
+    if ((Node<K,V>*) l->left.load(std::memory_order_relaxed) != NULL) { // the tree contains some node besides sentinels...
         p = l;
-        l = (Node<K,V>*) l->left.load(memory_order_relaxed);    // note: l must have key infinity, and l->left must not.
-        while ((Node<K,V>*) l->left.load(memory_order_relaxed) != NULL) {
+        l = (Node<K,V>*) l->left.load(std::memory_order_relaxed);    // note: l must have key infinity, and l->left must not.
+        while ((Node<K,V>*) l->left.load(std::memory_order_relaxed) != NULL) {
             p = l;
             if (cmp(key, p->key)) {
-                l = (Node<K,V>*) p->left.load(memory_order_relaxed);
+                l = (Node<K,V>*) p->left.load(std::memory_order_relaxed);
             } else {
-                l = (Node<K,V>*) p->right.load(memory_order_relaxed);
+                l = (Node<K,V>*) p->right.load(std::memory_order_relaxed);
             }
         }
     }
@@ -396,24 +395,24 @@ inline bool bst<K,V,Compare,RecManager>::updateErase_search_llx_scx(
     V *result = (V*) output[0];
 //    bool *shouldRebalance = (bool*) output[1];
 
-    TRACE COUTATOMICTID("updateErase_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<endl);
+    TRACE COUTATOMICTID("updateErase_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<std::endl);
 
     Node<K,V> *gp, *p, *l;
-    l = (Node<K,V>*) root->left.load(memory_order_relaxed);
-    if ((Node<K,V>*) l->left.load(memory_order_relaxed) == NULL) {
+    l = (Node<K,V>*) root->left.load(std::memory_order_relaxed);
+    if ((Node<K,V>*) l->left.load(std::memory_order_relaxed) == NULL) {
         *result = NO_VALUE;
         return true;
     } // only sentinels in tree...
     gp = root;
     p = l;
-    l = (Node<K,V>*) p->left.load(memory_order_relaxed);    // note: l must have key infinity, and l->left must not.
-    while ((Node<K,V>*) l->left.load(memory_order_relaxed) != NULL) {
+    l = (Node<K,V>*) p->left.load(std::memory_order_relaxed);    // note: l must have key infinity, and l->left must not.
+    while ((Node<K,V>*) l->left.load(std::memory_order_relaxed) != NULL) {
         gp = p;
         p = l;
         if (cmp(key, p->key)) {
-            l = (Node<K,V>*) p->left.load(memory_order_relaxed);
+            l = (Node<K,V>*) p->left.load(std::memory_order_relaxed);
         } else {
-            l = (Node<K,V>*) p->right.load(memory_order_relaxed);
+            l = (Node<K,V>*) p->right.load(std::memory_order_relaxed);
         }
     }
     // if we fail to find the key in the tree
@@ -453,14 +452,14 @@ template<class K, class V, class Compare, class RecManager>
 inline bool bst<K,V,Compare,RecManager>::tryRetireSCXRecord(const int tid, SCXRecord<K,V> * const otherSCX, Node<K,V> * const node) {
     if (otherSCX == dummy) return false; // never retire the dummy scx record!
     if (IS_VERSION_NUMBER(otherSCX)) return false; // can't retire version numbers!
-    if (otherSCX->state.load(memory_order_relaxed) == SCXRecord<K,V>::STATE_COMMITTED) {
+    if (otherSCX->state.load(std::memory_order_relaxed) == SCXRecord<K,V>::STATE_COMMITTED) {
         // in this tree, committed scx records are only pointed to by one node.
         // so, when this function is called, the scx record is already retired.
         recmgr->retire(tid, otherSCX);
         return true;
     } else { // assert: scx->state >= STATE_ABORTED
         const int state_aborted = SCXRecord<K,V>::STATE_ABORTED;
-        assert(otherSCX->state.load(memory_order_relaxed) >= state_aborted); /* state is aborted */
+        assert(otherSCX->state.load(std::memory_order_relaxed) >= state_aborted); /* state is aborted */
         // node->scxRecord no longer points to scx, so we set
         // the corresponding bit in scx->state to 0.
         // when state == ABORT_STATE_NO_FLAGS(state), scx is retired.
@@ -471,8 +470,8 @@ inline bool bst<K,V,Compare,RecManager>::tryRetireSCXRecord(const int tid, SCXRe
         for (int i=0;i<n;++i) {
             if (otherNodes[i] == node) {
                 while (!casSucceeded) {
-                    TRACE COUTATOMICTID("attempting state CAS..."<<endl);
-                    int stateOld = otherSCX->state.load(memory_order_relaxed);
+                    TRACE COUTATOMICTID("attempting state CAS..."<<std::endl);
+                    int stateOld = otherSCX->state.load(std::memory_order_relaxed);
                     stateNew = STATE_GET_WITH_FLAG_OFF(stateOld, i);
                     DEBUG assert(stateOld >= state_aborted);
                     DEBUG assert(stateNew >= state_aborted);
@@ -545,7 +544,7 @@ void bst<K,V,Compare,RecManager>::reclaimMemoryAfterSCX(
         // since we entered a quiescent state.
         // furthermore, we don't need to check if nodes[0]->left == NULL, since
         // we know nodes[0] is never a leaf.
-//        cout<<"trying to retire scx records"<<endl;
+//        cout<<"trying to retire scx records"<<std::endl;
         for (int j=0;j<highestIndexReached;++j) {
             // if nodes[j] is not a leaf, then we froze it, changing the scx record
             // that nodes[j] points to. so, we try to retire the scx record is
@@ -571,13 +570,13 @@ void bst<K,V,Compare,RecManager>::reclaimMemoryAfterSCX(
         // alternatively, we could just move this out into the data structure code,
         // to be performed AFTER an scx completes.
         if (state == SCXRecord<K,V>::STATE_COMMITTED) {
-//            cout<<"replacing allocated nodes"<<endl;
+//            cout<<"replacing allocated nodes"<<std::endl;
             for (int i=0;i<info->numberOfNodesAllocated;++i) {
                 REPLACE_ALLOCATED_NODE(tid, i);
             }
             // nodes[1], nodes[2], ..., nodes[nNodes-1] are now retired
             for (int j=0;j<info->numberOfNodesToReclaim;++j) {
-//                cout<<"retiring nodes["<<(1+j)<<"]"<<endl;
+//                cout<<"retiring nodes["<<(1+j)<<"]"<<std::endl;
                 recmgr->retire(tid, nodes[1+j]);
             }
         } else {
@@ -591,16 +590,16 @@ template<class K, class V, class Compare, class RecManager>
 bool bst<K,V,Compare,RecManager>::scx(
             const int tid,
             ReclamationInfo<K,V> * const info,
-            atomic_uintptr_t *field,        // pointer to a "field pointer" that will be changed
+            std::atomic_uintptr_t *field,        // pointer to a "field pointer" that will be changed
             Node<K,V> *newNode) {
-    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<endl);
+    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<std::endl);
 
     SCXRecord<K,V> *newscxrecord = GET_ALLOCATED_SCXRECORD_PTR(tid);
     initializeSCXRecord(tid, newscxrecord, info, field, newNode);
     
     SOFTWARE_BARRIER;
     int state = help(tid, newscxrecord, false);
-    info->state = newscxrecord->state.load(memory_order_relaxed);
+    info->state = newscxrecord->state.load(std::memory_order_relaxed);
     reclaimMemoryAfterSCX(tid, info);
     return state & SCXRecord<K,V>::STATE_COMMITTED;
 }
@@ -617,9 +616,9 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
     Node<K,V> ** const nodes                = scx->nodes;
     SCXRecord<K,V> ** const scxRecordsSeen  = scx->scxRecordsSeen;
     Node<K,V> * const newNode               = scx->newNode;
-    TRACE COUTATOMICTID("help(tid="<<tid<<" scx="<<*scx<<" helpingOther="<<helpingOther<<"), nFreeze="<<nFreeze<<endl);
+    TRACE COUTATOMICTID("help(tid="<<tid<<" scx="<<*scx<<" helpingOther="<<helpingOther<<"), nFreeze="<<nFreeze<<std::endl);
     LWSYNC;
-    int __state = scx->state.load(memory_order_relaxed);
+    int __state = scx->state.load(std::memory_order_relaxed);
     if (__state != SCXRecord<K,V>::STATE_INPROGRESS) { // TODO: optimize by taking this out, somehow?
         //assert(helpingOther);
         // if state is not in progress here, then helpingOther == true,
@@ -629,7 +628,7 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
         // this changed when crash recovery was added, because now you can
         // help yourself after being suspected of crashing.
         // in this case, the return value of this function is NOT ignored.
-        TRACE COUTATOMICTID("help return 0 after state != in progress"<<endl);
+        TRACE COUTATOMICTID("help return 0 after state != in progress"<<std::endl);
         //return 0; // return anything since this will be ignored.
         return __state;
     }
@@ -715,9 +714,9 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
         bool successfulCAS = nodes[i]->scxRecord.compare_exchange_strong(exp, (uintptr_t) scx);     // MEMBAR ON X86/64 // and on power, since seq_cst semantics?
         
         if (!successfulCAS && (SCXRecord<K,V> *) exp != scx) { // if work was not done
-            if (scx->allFrozen.load(memory_order_relaxed)) {
-                assert(scx->state.load(memory_order_relaxed) == 1); /*STATE_COMMITTED*/
-                TRACE COUTATOMICTID("help return COMMITTED after failed freezing cas on nodes["<<i<<"]"<<endl);
+            if (scx->allFrozen.load(std::memory_order_relaxed)) {
+                assert(scx->state.load(std::memory_order_relaxed) == 1); /*STATE_COMMITTED*/
+                TRACE COUTATOMICTID("help return COMMITTED after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                 return SCXRecord<K,V>::STATE_COMMITTED; // success
             } else {
                 if (i == 0) {
@@ -728,8 +727,8 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
                     //  so i>0 for every helper. thus, if and only if i==0,
                     //  we created this scx record and failed our first CAS.)
                     assert(!helpingOther);
-                    TRACE COUTATOMICTID("help return ABORTED after failed freezing cas on nodes["<<i<<"]"<<endl);
-                    scx->state.store(ABORT_STATE_INIT(0, 0), memory_order_relaxed);
+                    TRACE COUTATOMICTID("help return ABORTED after failed freezing cas on nodes["<<i<<"]"<<std::endl);
+                    scx->state.store(ABORT_STATE_INIT(0, 0), std::memory_order_relaxed);
                     return ABORT_STATE_INIT(0, 0); // scx is aborted (but no one else will ever know)
                 } else {
                     // if this is the first failed freezing CAS to occur for this SCX,
@@ -744,10 +743,10 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
                     assert(scx->state & 2); /* SCXRecord<K,V>::STATE_ABORTED */
                     // ABORTED THE SCX AFTER PERFORMING ONE OR MORE SUCCESSFUL FREEZING CASs
                     if (success) {
-                        TRACE COUTATOMICTID("help return ABORTED(changed to "<<newState<<") after failed freezing cas on nodes["<<i<<"]"<<endl);
+                        TRACE COUTATOMICTID("help return ABORTED(changed to "<<newState<<") after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                         return newState;
                     } else {
-                        TRACE COUTATOMICTID("help return ABORTED(failed to change to "<<newState<<" because encountered "<<expectedState<<" instead of in progress) after failed freezing cas on nodes["<<i<<"]"<<endl);
+                        TRACE COUTATOMICTID("help return ABORTED(failed to change to "<<newState<<" because encountered "<<expectedState<<" instead of in progress) after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                         return expectedState; // this has been overwritten by compare_exchange_strong with the value that caused the CAS to fail.
                     }
                 }
@@ -755,11 +754,11 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
         } else {
             flags |= (1<<i); // nodes[i] was frozen for scx
             const int state_inprogress = SCXRecord<K,V>::STATE_INPROGRESS;
-            assert((SCXRecord<K,V> *) exp == scx || IS_VERSION_NUMBER(exp) || (((SCXRecord<K,V> *) exp)->state.load(memory_order_relaxed) != state_inprogress));
+            assert((SCXRecord<K,V> *) exp == scx || IS_VERSION_NUMBER(exp) || (((SCXRecord<K,V> *) exp)->state.load(std::memory_order_relaxed) != state_inprogress));
         }
     }
     //LWSYNC; // not needed, since last step in prev loop is a successful cas, which implies a membar
-    scx->allFrozen.store(true, memory_order_relaxed);
+    scx->allFrozen.store(true, std::memory_order_relaxed);
     // note: i think the sequential consistency memory model is not actually needed here...
     // why? in an execution where no reads are moved before allFrozen by the
     // compiler/cpu (because we added a barrier here), any process that sees
@@ -772,16 +771,16 @@ int bst<K,V,Compare,RecManager>::help(const int tid, SCXRecord<K,V> *scx, bool h
     LWSYNC;
     for (int i=1; i<nFreeze; ++i) {
         if (scxRecordsSeen[i] == LLX_RETURN_IS_LEAF) continue; // do not mark leaves
-        nodes[i]->marked.store(true, memory_order_relaxed); // finalize all but first node
+        nodes[i]->marked.store(true, std::memory_order_relaxed); // finalize all but first node
     }
     LWSYNC;
     // CAS in the new sub-tree (update CAS)
     uintptr_t expected = (uintptr_t) nodes[1];
     scx->field->compare_exchange_strong(expected, (uintptr_t) newNode);                             // MEMBAR ON X86/64
-    assert(scx->state.load(memory_order_relaxed) < 2); // not aborted
-    scx->state.store(SCXRecord<K,V>::STATE_COMMITTED, memory_order_relaxed);
+    assert(scx->state.load(std::memory_order_relaxed) < 2); // not aborted
+    scx->state.store(SCXRecord<K,V>::STATE_COMMITTED, std::memory_order_relaxed);
     
-    TRACE COUTATOMICTID("help return COMMITTED after performing update cas"<<endl);
+    TRACE COUTATOMICTID("help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<K,V>::STATE_COMMITTED; // success
 }
 
@@ -792,32 +791,32 @@ void *bst<K,V,Compare,RecManager>::llx(
             Node<K,V> *node,
             Node<K,V> **retLeft,
             Node<K,V> **retRight) {
-    TRACE COUTATOMICTID("llx(tid="<<tid<<", node="<<*node<<")"<<endl);
+    TRACE COUTATOMICTID("llx(tid="<<tid<<", node="<<*node<<")"<<std::endl);
     bst_retired_info info;
-    SCXRecord<K,V> *scx1 = (SCXRecord<K,V>*) node->scxRecord.load(memory_order_relaxed);
-    int state = (IS_VERSION_NUMBER(scx1) ? SCXRecord<K,V>::STATE_COMMITTED : scx1->state.load(memory_order_relaxed));
+    SCXRecord<K,V> *scx1 = (SCXRecord<K,V>*) node->scxRecord.load(std::memory_order_relaxed);
+    int state = (IS_VERSION_NUMBER(scx1) ? SCXRecord<K,V>::STATE_COMMITTED : scx1->state.load(std::memory_order_relaxed));
     LWSYNC;
     SOFTWARE_BARRIER;       // prevent compiler from moving the read of marked before the read of state (no hw barrier needed on x86/64, since there is no read-read reordering)
-    bool marked = node->marked.load(memory_order_relaxed);
+    bool marked = node->marked.load(std::memory_order_relaxed);
     SOFTWARE_BARRIER;       // prevent compiler from moving the reads scx2=node->scxRecord or scx3=node->scxRecord before the read of marked. (no h/w barrier needed on x86/64 since there is no read-read reordering)
     if ((state & SCXRecord<K,V>::STATE_COMMITTED && !marked) || state & SCXRecord<K,V>::STATE_ABORTED) {
         SOFTWARE_BARRIER;       // prevent compiler from moving the reads scx2=node->scxRecord or scx3=node->scxRecord before the read of marked. (no h/w barrier needed on x86/64 since there is no read-read reordering)
-        *retLeft = (Node<K,V>*) node->left.load(memory_order_relaxed);
-        *retRight = (Node<K,V>*) node->right.load(memory_order_relaxed);
+        *retLeft = (Node<K,V>*) node->left.load(std::memory_order_relaxed);
+        *retRight = (Node<K,V>*) node->right.load(std::memory_order_relaxed);
         if (*retLeft == NULL) {
             TRACE COUTATOMICTID("llx return2.a (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<")\n"); 
             return (void *) LLX_RETURN_IS_LEAF;
         }
         SOFTWARE_BARRIER; // prevent compiler from moving the read of node->scxRecord before the read of left or right
         LWSYNC;
-        SCXRecord<K,V> *scx2 = (SCXRecord<K,V>*) node->scxRecord.load(memory_order_relaxed);
+        SCXRecord<K,V> *scx2 = (SCXRecord<K,V>*) node->scxRecord.load(std::memory_order_relaxed);
         if (scx1 == scx2) {
             TRACE COUTATOMICTID("llx return2 (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<" scx1="<<scx1<<")\n"); 
             // on x86/64, we do not need any memory barrier here to prevent mutable fields of node from being moved before our read of scx1, because the hardware does not perform read-read reordering. on another platform, we would need to ensure no read from after this point is reordered before this point (technically, before the read that becomes scx1)...
             return scx1;    // success
         } else {
             if (recmgr->shouldHelp()) {
-                TRACE COUTATOMICTID("llx help 1 tid="<<tid<<endl);
+                TRACE COUTATOMICTID("llx help 1 tid="<<tid<<std::endl);
                 if (!IS_VERSION_NUMBER(scx2)) {
                     help(tid, scx2, true);
                 }
@@ -827,7 +826,7 @@ void *bst<K,V,Compare,RecManager>::llx(
         if (recmgr->shouldHelp()) {
             assert(scx1 != dummy);
             assert(recmgr->isProtected(tid, scx1));
-            TRACE COUTATOMICTID("llx help 2 tid="<<tid<<endl);
+            TRACE COUTATOMICTID("llx help 2 tid="<<tid<<std::endl);
             if (!IS_VERSION_NUMBER(scx1)) {
                 help(tid, scx1, true);
             }
@@ -838,8 +837,8 @@ void *bst<K,V,Compare,RecManager>::llx(
         assert(marked);
         if (recmgr->shouldHelp()) {
             LWSYNC;
-            SCXRecord<K,V> *scx3 = (SCXRecord<K,V>*) node->scxRecord.load(memory_order_relaxed);
-            TRACE COUTATOMICTID("llx help 3 tid="<<tid<<endl);
+            SCXRecord<K,V> *scx3 = (SCXRecord<K,V>*) node->scxRecord.load(std::memory_order_relaxed);
+            TRACE COUTATOMICTID("llx help 3 tid="<<tid<<std::endl);
             if (!IS_VERSION_NUMBER(scx3)) {
                 help(tid, scx3, true);
             }

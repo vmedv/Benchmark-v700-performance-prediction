@@ -2,8 +2,6 @@
 
 namespace thread_pinning {
 
-    using namespace std;
-
     cpu_set_t ** cpusets;
     int * customBinding;
     int numCustomBindings;
@@ -42,7 +40,7 @@ namespace thread_pinning {
             }
         }
         if (bindings > 1) {
-            cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<endl;
+            cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
             exit(-1);
         }
         return result;

@@ -32,7 +32,6 @@
 #include <signal.h>
 
 #include "rq_provider.h"
-using namespace std;
 
 #define LOGICAL_DELETION_USAGE false
 
@@ -97,8 +96,8 @@ public:
 
     const V insert(const int tid, const K& key, const V& value);
     const V insertIfAbsent(const int tid, const K& key, const V& value);
-    const pair<V, bool> erase(const int tid, const K& key);
-    const pair<V, bool> find(const int tid, const K& key);
+    const std::pair<V, bool> erase(const int tid, const K& key);
+    const std::pair<V, bool> find(const int tid, const K& key);
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues);
     bool contains(const int tid, const K& key);
     int size(); // warning: this is a linear time operation, and is not linearizable
@@ -153,8 +152,8 @@ public:
     long long getSizeInNodes() {
         return getSizeInNodes(root);
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }

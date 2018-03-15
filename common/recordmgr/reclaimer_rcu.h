@@ -27,7 +27,6 @@
 #else
     #error ONLY SUPPORTS BST(main.cpp) and KCAS(ubench.cpp)
 #endif
-using namespace std;
 
 #include <cstddef>
 
@@ -126,8 +125,8 @@ public:
         long long sum = 0;
         return sum;
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" in reclaimer_rcu";
         return ss.str();
     }

@@ -16,7 +16,6 @@
 #include "plaf.h"
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
-using namespace std;
 
 
 
@@ -41,7 +40,7 @@ protected:
     
     // for epoch based reclamation
     volatile long epoch;
-    atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] // todo: figure out if volatile here would help processes notice changes more quickly.
+    std::atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] // todo: figure out if volatile here would help processes notice changes more quickly.
     long *checked;                      // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
     blockbag<T> **epochbags;            // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> **currentBag;           // pointer to current epoch bag for each process
@@ -179,8 +178,8 @@ public:
         }
         return sum;
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" in epoch bags";
         return ss.str();
     }
@@ -188,7 +187,7 @@ public:
     inline static bool quiescenceIsPerRecordType() { return false; }
     
     inline bool isQuiescent(const int tid) {
-        return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed));
+        return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed));
     }
 
     inline static bool isProtected(const int tid, T * const obj) {
@@ -228,9 +227,9 @@ public:
 
         // ver 1
         long readEpoch = epoch;
-        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //        // debug ver2
-//        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+//        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //        ++opsSinceRead[tid*PREFETCH_SIZE_WORDS];
 //        long readEpoch = ((opsSinceRead[tid*PREFETCH_SIZE_WORDS] % MIN_OPS_BEFORE_READ) == 0) ? epoch : BITS_EPOCH(ann);
 
@@ -251,7 +250,7 @@ public:
         // incrementally scan the announced epochs of all threads
         int otherTid = checked[tid*PREFETCH_SIZE_WORDS];
         if ((++opsSinceRead[tid*PREFETCH_SIZE_WORDS] % MIN_OPS_BEFORE_READ) == 0) {
-            long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+            long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
             if (BITS_EPOCH(otherAnnounce) == readEpoch
                     || QUIESCENT(otherAnnounce)) {
                 const int c = ++checked[tid*PREFETCH_SIZE_WORDS];
@@ -262,14 +261,14 @@ public:
         }
         SOFTWARE_BARRIER;
         if (readEpoch != ann) {
-            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(readEpoch, memory_order_relaxed);
+            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(readEpoch, std::memory_order_relaxed);
         }
         return result;
     }
     
     inline void enterQuiescentState(const int tid) {
-        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
-        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), memory_order_relaxed);
+        const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
+        announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), std::memory_order_relaxed);
     }
     
     // for all schemes except reference counting
@@ -289,7 +288,7 @@ public:
         if (tid == 0) {
             std::cout<<"global epoch counter="<<epoch<<std::endl;
         }
-//        long announce = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
+//        long announce = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //        std::cout<<"tid="<<tid<<": announce="<<announce<<" bags(";
 //        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
 //            std::cout<<(i?",":"")<</*" bag"<<i<<"="<<*/epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]->computeSize();
@@ -305,7 +304,7 @@ public:
         currentBag = new blockbag<T>*[numProcesses*PREFETCH_SIZE_WORDS];
         index = new long[numProcesses*PREFETCH_SIZE_WORDS];
         opsSinceRead = new long[numProcesses*PREFETCH_SIZE_WORDS];
-        announcedEpoch = new atomic_long[numProcesses*PREFETCH_SIZE_WORDS];
+        announcedEpoch = new std::atomic_long[numProcesses*PREFETCH_SIZE_WORDS];
         checked = new long[numProcesses*PREFETCH_SIZE_WORDS];
         for (int tid=0;tid<numProcesses;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
@@ -314,7 +313,7 @@ public:
             currentBag[tid*PREFETCH_SIZE_WORDS] = epochbags[NUMBER_OF_EPOCH_BAGS*tid];
             index[tid*PREFETCH_SIZE_WORDS] = 0;
             opsSinceRead[tid*PREFETCH_SIZE_WORDS] = 0;
-            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(0), memory_order_relaxed);
+            announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(0), std::memory_order_relaxed);
             checked[tid*PREFETCH_SIZE_WORDS] = 0;
         }
     }

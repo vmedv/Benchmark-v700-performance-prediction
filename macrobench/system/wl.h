@@ -29,7 +29,7 @@ public:
 	
 	// initialize the tables and indexes.
 	virtual RC init();
-	virtual RC init_schema(string schema_file);
+	virtual RC init_schema(std::string schema_file);
 	virtual RC init_table()=0;
 	virtual RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd)=0;
         
@@ -38,7 +38,7 @@ public:
 	
 	bool sim_done;
 protected:
-	void index_insert(string index_name, uint64_t key, row_t * row);
+	void index_insert(std::string index_name, uint64_t key, row_t * row);
 	void index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id = -1);
 };
 

@@ -1,8 +1,5 @@
-/* 
- * File:   bst_adapter.h
- * Author: trbot
- *
- * Created on August 31, 2017, 6:53 PM
+/**
+ * Copy this template and modify it to fit your data structure.
  */
 
 #ifndef DS_ADAPTER_H
@@ -29,11 +26,11 @@ private:
 
 public:
     ds_adapter(const int NUM_THREADS,
-               const K& KEY_ANY,
-               const K& unused1,
-               const V& unused2,
-               Random * const unused3)
-    : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
+               const K& KEY_NEG_INFTY,
+               const K& KEY_POS_INFTY,
+               const V& VALUE_RESERVED,
+               Random * const RNGS)
+    : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
     {
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");

@@ -15,7 +15,6 @@
 #include <iostream>
 #include <dlfcn.h>
 #include <pthread.h>
-using namespace std;
 
 //__thread long long currentAllocatedBytes = 0;
 //__thread long long maxAllocatedBytes = 0;

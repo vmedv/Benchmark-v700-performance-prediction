@@ -15,7 +15,6 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
-using namespace std;
 
 template<typename T = void>
 class allocator_bump : public allocator_interface<T> {
@@ -25,7 +24,7 @@ class allocator_bump : public allocator_interface<T> {
         T ** mem;             // mem[tid*PREFETCH_SIZE_WORDS] = pointer to current array to perform bump allocation from
         int * memBytes;       // memBytes[tid*PREFETCH_SIZE_WORDS] = size of mem in bytes
         T ** current;         // current[tid*PREFETCH_SIZE_WORDS] = pointer to current position in array mem
-        vector<T*> ** toFree; // toFree[tid] = pointer to vector of bump allocation arrays to free when this allocator is destroyed
+        std::vector<T*> ** toFree; // toFree[tid] = pointer to vector of bump allocation arrays to free when this allocator is destroyed
 
         T* bump_memory_next(const int tid) {
             T* result = current[tid*PREFETCH_SIZE_WORDS];
@@ -79,7 +78,7 @@ class allocator_bump : public allocator_interface<T> {
                             COUTATOMICTID("allocated "<<(memBytes[tid*PREFETCH_SIZE_WORDS] / cachelines / BYTES_IN_CACHE_LINE)/*this->debug->getAllocated(tid)*/<<" records of size "<<sizeof(T)<<std::endl);
 //                            COUTATOMIC(" ");
 //                            this->pool->debugPrintStatus(tid);
-//                            COUTATOMIC(endl);
+//                            COUTATOMIC(std::endl);
 //                        }
                     }
                 }
@@ -109,12 +108,12 @@ class allocator_bump : public allocator_interface<T> {
             mem = new T*[numProcesses*PREFETCH_SIZE_WORDS];
             memBytes = new int[numProcesses*PREFETCH_SIZE_WORDS];
             current = new T*[numProcesses*PREFETCH_SIZE_WORDS];
-            toFree = new vector<T*>*[numProcesses];
+            toFree = new std::vector<T*>*[numProcesses];
             for (int tid=0;tid<numProcesses;++tid) {
                 mem[tid*PREFETCH_SIZE_WORDS] = 0;
                 memBytes[tid*PREFETCH_SIZE_WORDS] = 0;
                 current[tid*PREFETCH_SIZE_WORDS] = 0;
-                toFree[tid] = new vector<T*>();
+                toFree[tid] = new std::vector<T*>();
             }
         }
         ~allocator_bump() {

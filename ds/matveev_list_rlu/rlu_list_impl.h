@@ -68,7 +68,7 @@ nodeptr rlulist<K,V>::new_node(const int tid) {
         printf("out of memory\n");
 	exit(1); 
     }    
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) p_new_node)%(1<<12));
 #endif
     return p_new_node;
@@ -81,7 +81,7 @@ void rlulist<K,V>::free_node(const int tid, nodeptr p_node){
 
 template <typename K, typename V>
 bool rlulist<K,V>::contains(const int tid, const K& key) {
-    TRACE COUTATOMICTID("contains "<<key<<endl);
+    TRACE COUTATOMICTID("contains "<<key<<std::endl);
     bool result;
     K k;
     nodeptr p_prev;
@@ -107,7 +107,7 @@ bool rlulist<K,V>::contains(const int tid, const K& key) {
 
 template <typename K, typename V>
 V rlulist<K,V>::doInsert(const int tid, const K& key, const V& val, bool onlyIfAbsent) {
-    TRACE COUTATOMICTID("insert "<<key<<endl);
+    TRACE COUTATOMICTID("insert "<<key<<std::endl);
     int result;
     nodeptr p_prev;
     nodeptr p_next;
@@ -159,7 +159,7 @@ restart:
     } else {
         // key already exists
         if (!onlyIfAbsent) {
-            cout<<"ERROR: insert-replace functionality not implemented for rlu_list_impl"<<endl;
+            std::cout<<"ERROR: insert-replace functionality not implemented for rlu_list_impl"<<std::endl;
             exit(-1);
         }
     }
@@ -167,8 +167,8 @@ restart:
 }
 
 template <typename K, typename V>
-const pair<V,bool> rlulist<K,V>::erase(const int tid, const K& key) {
-    TRACE COUTATOMICTID("erase "<<key<<endl);
+const std::pair<V,bool> rlulist<K,V>::erase(const int tid, const K& key) {
+    TRACE COUTATOMICTID("erase "<<key<<std::endl);
     int result;
     nodeptr p_prev;
     nodeptr p_next;
@@ -212,10 +212,10 @@ restart:
             DEBUG_RECORD_UPDATE_CHECKSUM<K,V>(tid, rlu_self->last_writer_version, insertedNodes, deletedNodes, this);
 #endif
             //}
-            return pair<V,bool>(result_val, true);
+            return std::pair<V,bool>(result_val, true);
     }
     RLU_READER_UNLOCK(rlu_self);
-    return pair<V,bool>(NO_VALUE, false);
+    return std::pair<V,bool>(NO_VALUE, false);
 }
 
 template <typename K, typename V>

@@ -23,7 +23,7 @@
 
 #include "pthread.h"
 #include "config.h"
-#include "stats.h"
+#include "gstats.h"
 #include "dl_detect.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
@@ -34,8 +34,6 @@
 #include "rlu.h"
 extern __thread rlu_thread_data_t * rlu_self;
 extern rlu_thread_data_t * rlu_tdata;
-
-using namespace std;
 
 extern __thread int tid;
 

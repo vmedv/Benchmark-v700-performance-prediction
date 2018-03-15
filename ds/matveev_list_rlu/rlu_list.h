@@ -12,7 +12,6 @@
 #define USE_RLU
 
 #include <limits>
-using namespace std;
 
 template <typename K, typename V>
 class node_t;
@@ -45,7 +44,7 @@ public:
     V insertIfAbsent(const int tid, const K& key, const V& value) {
         return doInsert(tid, key, value, true);
     }
-    const pair<V,bool> erase(const int tid, const K& key);
+    const std::pair<V,bool> erase(const int tid, const K& key);
     int rangeQuery(const int tid, int lo, int hi, K * const resultKeys, V * const resultValues);
     
     /**
@@ -79,8 +78,8 @@ public:
         }
         return size;
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }

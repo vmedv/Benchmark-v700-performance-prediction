@@ -69,8 +69,6 @@ namespace abtree_ns {
 
     #define ABTREE_ENABLE_DESTRUCTOR
 
-    using namespace std;
-    
     template <int DEGREE, typename K>
     struct Node;
     
@@ -306,7 +304,7 @@ public:
 
             SCXRecord<DEGREE,K> *dummy = TAGPTR1_UNPACK_PTR(DUMMY);
             dummy->c.mutables = MUTABLES1_INIT_DUMMY;
-            TRACE COUTATOMICTID("DUMMY mutables="<<dummy->c.mutables<<endl);
+            TRACE COUTATOMICTID("DUMMY mutables="<<dummy->c.mutables<<std::endl);
 
             // initial tree: entry is a sentinel node (with one pointer and no keys)
             //               that points to an empty node (no pointers and no keys)
@@ -341,7 +339,7 @@ public:
         ~abtree() {
             int nodes = 0;
             freeSubtree(entry, &nodes);
-//            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<endl);
+//            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
             delete rqProvider;
 //            recordmgr->printStatus();
             delete recordmgr;
@@ -464,7 +462,7 @@ public:
         }
 
         long long getSumOfKeys(Node<DEGREE,K>* node) {
-            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): isLeaf="<<node->isLeaf()<<endl);
+            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): isLeaf="<<node->isLeaf()<<std::endl);
             long long sum = 0;
             if (node->isLeaf()) {
                 TRACE COUTATOMIC("      leaf sum +=");
@@ -472,31 +470,31 @@ public:
                     sum += (long long) node->keys[i];
                     TRACE COUTATOMIC(node->keys[i]);
                 }
-                TRACE COUTATOMIC(endl);
+                TRACE COUTATOMIC(std::endl);
             } else {
                 for (int i=0;i<node->getABDegree();++i) {
                     sum += getSumOfKeys(node->ptrs[i]);
                 }
             }
-            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): sum="<<sum<<endl);
+            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): sum="<<sum<<std::endl);
             return sum;
         }
         long long getSumOfKeys() {
-            TRACE COUTATOMIC("getSumOfKeys()"<<endl);
+            TRACE COUTATOMIC("getSumOfKeys()"<<std::endl);
             return getSumOfKeys(entry);
         }
 
-        void abtree_error(string s) {
-            cerr<<"ERROR: "<<s<<endl;
+        void abtree_error(std::string s) {
+            std::cerr<<"ERROR: "<<s<<std::endl;
             exit(-1);
         }
 
         void debugPrint() {
-            cout<<"averageDegree="<<getAverageDegree()<<endl;
-            cout<<"averageDepth="<<getAverageKeyDepth()<<endl;
-            cout<<"height="<<getHeight()<<endl;
-            cout<<"internalNodes="<<getNumberOfInternals()<<endl;
-            cout<<"leafNodes="<<getNumberOfLeaves()<<endl;
+            std::cout<<"averageDegree="<<getAverageDegree()<<std::endl;
+            std::cout<<"averageDepth="<<getAverageKeyDepth()<<std::endl;
+            std::cout<<"height="<<getHeight()<<std::endl;
+            std::cout<<"internalNodes="<<getNumberOfInternals()<<std::endl;
+            std::cout<<"leafNodes="<<getNumberOfLeaves()<<std::endl;
         }
 
     public:
@@ -506,15 +504,15 @@ public:
         void * const insertIfAbsent(const int tid, const K& key, void * const val) {
             return doInsert(tid, key, val, false);
         }
-        const pair<void*,bool> erase(const int tid, const K& key);
-        const pair<void*,bool> find(const int tid, const K& key);
+        const std::pair<void*,bool> erase(const int tid, const K& key);
+        const std::pair<void*,bool> find(const int tid, const K& key);
         bool contains(const int tid, const K& key);
         int rangeQuery(const int tid, const K& low, const K& hi, K * const resultKeys, void ** const resultValues);
         bool validate(const long long keysum, const bool checkkeysum) {
             if (checkkeysum) {
                 long long treekeysum = getSumOfKeys();
                 if (treekeysum != keysum) {
-                    cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<endl;
+                    std::cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<std::endl;
                     return false;
                 }
             }
@@ -554,8 +552,8 @@ public:
         long long getSizeInNodes() {
             return getNumberOfNodes();
         }
-        string getSizeString() {
-            stringstream ss;
+        std::string getSizeString() {
+            std::stringstream ss;
             int preallocated = wrapper_info<DEGREE,K>::MAX_NODES * recordmgr->NUM_PROCESSES;
             ss<<getSizeInNodes()<<" nodes in tree";
             return ss.str();

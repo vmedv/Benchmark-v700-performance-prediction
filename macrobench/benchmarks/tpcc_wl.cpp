@@ -20,9 +20,9 @@ RC tpcc_wl::init() {
 #else
     path += "TPCC_full_schema.txt";
 #endif
-    cout<<"reading schema file: "<<path<<endl;
+    cout<<"reading schema file: "<<path<<std::endl;
     init_schema(path.c_str());
-    cout<<"TPCC schema initialized"<<endl;
+    cout<<"TPCC schema initialized"<<std::endl;
     init_table();
     next_tid = 0;
     return RCOK;
@@ -93,7 +93,7 @@ RC tpcc_wl::get_txn_man(txn_man *& txn_manager, thread_t * h_thd) {
 
 void tpcc_wl::init_tab_item() {
 #ifdef VERBOSE_1
-    cout<<"init_tab_item "<<endl;
+    cout<<"init_tab_item "<<std::endl;
 #endif 
     uint64_t perm[g_max_items];
     init_permutation(perm, g_max_items, 1); //wid = 1 tid =0 
@@ -125,7 +125,7 @@ void tpcc_wl::init_tab_item() {
 
 void tpcc_wl::init_tab_wh(uint32_t wid) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_wh("<<wid<<")"<<endl;
+    cout<<"init_tab_wh("<<wid<<")"<<std::endl;
 #endif 
     assert(wid>=1&&wid<=g_num_wh);
     row_t * row;
@@ -161,7 +161,7 @@ void tpcc_wl::init_tab_wh(uint32_t wid) {
 
 void tpcc_wl::init_tab_dist(uint64_t wid) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_dist("<<wid<<")"<<endl;
+    cout<<"init_tab_dist("<<wid<<")"<<std::endl;
 #endif
     uint64_t perm_did[DIST_PER_WARE];
     init_permutation(perm_did, DIST_PER_WARE, wid);
@@ -205,7 +205,7 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
 
 void tpcc_wl::init_tab_stock(uint64_t wid) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_stock("<<wid<<")"<<endl;
+    cout<<"init_tab_stock("<<wid<<")"<<std::endl;
 #endif
     uint64_t perm_sid[g_max_items];
     init_permutation(perm_sid, g_max_items, wid);
@@ -253,7 +253,7 @@ void tpcc_wl::init_tab_stock(uint64_t wid) {
 
 void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_cust("<<did<<", "<<wid<<")"<<endl;
+    cout<<"init_tab_cust("<<did<<", "<<wid<<")"<<std::endl;
 #endif
     assert(g_cust_per_dist>=1000);
     uint64_t perm_cid[g_cust_per_dist];
@@ -331,7 +331,7 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
 
 void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_hist("<<c_id<<", "<<d_id<<", "<<w_id<<")"<<endl;
+    cout<<"init_tab_hist("<<c_id<<", "<<d_id<<", "<<w_id<<")"<<std::endl;
 #endif
     row_t * row;
     uint64_t row_id;
@@ -354,7 +354,7 @@ void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
 
 void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
 #ifdef VERBOSE_1
-    cout<<"init_tab_order("<<did<<", "<<wid<<")"<<endl;
+    cout<<"init_tab_order("<<did<<", "<<wid<<")"<<std::endl;
 #endif
     uint64_t perm_cid[g_cust_per_dist];
     init_permutation(perm_cid, g_cust_per_dist, wid); /* initialize permutation of customer numbers */
@@ -470,7 +470,7 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
 
     tid = __tid;
 #ifdef VERBOSE_1
-    cout<<"TPCC_WL INIT: Assigned thread ID="<<tid<<endl;
+    cout<<"TPCC_WL INIT: Assigned thread ID="<<tid<<std::endl;
 #endif
     wl->initThread(tid);
 

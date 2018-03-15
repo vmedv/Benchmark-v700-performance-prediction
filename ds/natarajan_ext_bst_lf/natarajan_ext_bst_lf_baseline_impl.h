@@ -495,10 +495,10 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
     node_t<skey_t, sval_t> * allocedNodeArr = (node_t<skey_t, sval_t> *)malloc(2 * sizeof (struct node_t<skey_t, sval_t>)); // new pointerNode_t[2];
     newInt = &allocedNodeArr[0];
     newLeaf = &allocedNodeArr[1];
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newInt);
 #endif
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newLeaf);
 #endif
 

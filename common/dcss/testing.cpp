@@ -3,8 +3,6 @@
 #include <iostream>
 #include "dcss_plus_impl.h"
 
-using namespace std;
-
 #define NUM_OPS 10000000
 #define INCREMENT 1
 
@@ -34,13 +32,13 @@ dcsspProvider * prov;
 
 void * test_kernel1(void * arg) {
     const int tid = *((int *) arg);
-    //const unsigned long long numOps = min(1ULL<<20, 1ULL<<(62/numProcesses)-1);
+    //const unsigned long long numOps = std::min(1ULL<<20, 1ULL<<(62/numProcesses)-1);
     //const unsigned long long increment = 1ULL<<(tid*(62/numProcesses));
     prov->initThread(tid);
     __sync_fetch_and_add(&running, 1);
     while (!start) { __sync_synchronize(); }
     
-    //COUTATOMICTID("performing "<<numOps<<" operations"<<endl);
+    //COUTATOMICTID("performing "<<numOps<<" operations"<<std::endl);
     int numSucc = 0;
     while (numSucc < NUM_OPS) {
 #if 1
@@ -67,25 +65,25 @@ bool validate1() {
     for (int i=0;i<numProcesses;++i) {
         unsigned long long c = prov->readVal(i,(casword_t*)&(COUNTER(i)));
         if (c != NUM_OPS) {
-            cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match NUM_OPS="<<NUM_OPS<<endl;
+            std::cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match NUM_OPS="<<NUM_OPS<<std::endl;
             good = false;
         } else {
-            cout<<"thread "<<i<<": counter="<<c<<" NUM_OPS="<<NUM_OPS<<endl;
+            std::cout<<"thread "<<i<<": counter="<<c<<" NUM_OPS="<<NUM_OPS<<std::endl;
         }
 
 //        if (c != GET_FAA_FOR_TID(i)) {
-//            cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match FAA subword="<<(GET_FAA_FOR_TID(i))<<endl;
+//            std::cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match FAA subword="<<(GET_FAA_FOR_TID(i))<<std::endl;
 //            good = false;
 //        }
-//        cout<<"thread "<<i<<": counter="<<c<<" faa="<<(GET_FAA_FOR_TID(i))<<endl;
+//        std::cout<<"thread "<<i<<": counter="<<c<<" faa="<<(GET_FAA_FOR_TID(i))<<std::endl;
     }
     
     const unsigned long long f = faa;
     if (f != NUM_OPS * numProcesses) {
-        cout<<"ERROR: faa="<<f<<" does not match NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<endl;
+        std::cout<<"ERROR: faa="<<f<<" does not match NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<std::endl;
         good = false;
     } else {
-        cout<<"faa="<<f<<" and NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<endl;
+        std::cout<<"faa="<<f<<" and NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<std::endl;
     }
     return good;
 }
@@ -96,7 +94,7 @@ void * test_kernel2(void * arg) {
     __sync_fetch_and_add(&running, 1);
     while (!start) { __sync_synchronize(); }
     
-    //COUTATOMICTID("performing "<<numOps<<" operations"<<endl);
+    //COUTATOMICTID("performing "<<numOps<<" operations"<<std::endl);
     int numSucc = 0;
     while (numSucc < NUM_OPS) {
         void * deletedNodes[] = {NULL};
@@ -117,27 +115,27 @@ bool validate2() {
     for (int i=0;i<numProcesses;++i) {
         unsigned long long c = COUNTER(i);
         if (c != NUM_OPS) {
-            cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match NUM_OPS="<<NUM_OPS<<endl;
+            std::cout<<"ERROR: counters["<<i<<"]="<<c<<" does not match NUM_OPS="<<NUM_OPS<<std::endl;
             good = false;
         } else {
-            cout<<"thread "<<i<<": counter="<<c<<" NUM_OPS="<<NUM_OPS<<endl;
+            std::cout<<"thread "<<i<<": counter="<<c<<" NUM_OPS="<<NUM_OPS<<std::endl;
         }
     }
     
     const int tid = 0;
     const unsigned long long f = prov->readVal(tid, (casword_t *) &faa);
     if (f != NUM_OPS * numProcesses) {
-        cout<<"ERROR: faa="<<f<<" does not match NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<endl;
+        std::cout<<"ERROR: faa="<<f<<" does not match NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<std::endl;
         good = false;
     } else {
-        cout<<"faa="<<f<<" and NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<endl;
+        std::cout<<"faa="<<f<<" and NUM_OPS*numProcesses="<<(NUM_OPS*numProcesses)<<std::endl;
     }
     return good;
 }
 
 int main(int argc, char** argv) {
     if (argc != 2) {
-        cout<<"Usage: "<<argv[0]<<" NUM_THREADS"<<endl;
+        std::cout<<"Usage: "<<argv[0]<<" NUM_THREADS"<<std::endl;
         exit(-1);
     }
     numProcesses = atoi(argv[1]);
@@ -165,32 +163,32 @@ int main(int argc, char** argv) {
     __sync_synchronize();
     for (int i=0;i<numProcesses;++i) {
         if (pthread_create(threads[i], NULL, KERNEL, &ids[i])) {
-            cerr<<"ERROR: could not create thread"<<endl;
+            std::cerr<<"ERROR: could not create thread"<<std::endl;
             exit(-1);
         }
     }
     while (running < numProcesses) {
-        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running<<endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running<<std::endl);
         __sync_synchronize();
     } // wait for all threads to be ready
-    COUTATOMIC("main thread: starting trial..."<<endl);
+    COUTATOMIC("main thread: starting trial..."<<std::endl);
     __sync_synchronize();
     start = true;
     __sync_synchronize();
     
     // join all threads
     for (int i=0;i<numProcesses;++i) {
-//        COUTATOMIC("joining thread "<<i<<endl);
+//        COUTATOMIC("joining thread "<<i<<std::endl);
         if (pthread_join(*(threads[i]), NULL)) {
-            cerr<<"ERROR: could not join thread"<<endl;
+            std::cerr<<"ERROR: could not join thread"<<std::endl;
             exit(-1);
         }
     }
     
     if (VALIDATE()) {
-        COUTATOMIC("main thread: "<<"All tests passed."<<endl);
+        COUTATOMIC("main thread: "<<"All tests passed."<<std::endl);
     } else {
-        COUTATOMIC("main thread: "<<"ERROR occurred."<<endl);
+        COUTATOMIC("main thread: "<<"ERROR occurred."<<std::endl);
     }
     
     delete prov;

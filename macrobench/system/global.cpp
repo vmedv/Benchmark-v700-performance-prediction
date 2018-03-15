@@ -1,6 +1,6 @@
 #include "global.h"
 #include "mem_alloc.h"
-#include "stats.h"
+#include "gstats.h"
 #include "dl_detect.h"
 #include "manager.h"
 #include "query.h"

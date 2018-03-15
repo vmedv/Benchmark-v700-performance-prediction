@@ -37,7 +37,7 @@ RC ycsb_txn_man::run_txn(base_query * query) {
             if (iteration==0) {
                 m_item = index_read(_wl->the_index, key, part_id);
                 if (m_item==NULL) {
-                    cout<<"item in null, key is "<<key<<endl;
+                    cout<<"item in null, key is "<<key<<std::endl;
                 }
                 assert(m_item!=NULL);
             }

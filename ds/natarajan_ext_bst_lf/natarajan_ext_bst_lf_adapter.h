@@ -62,15 +62,15 @@ public:
         return tree->insertIfAbsent(tid, key, val);
     }
     V erase(const int tid, const K& key) {
-    //const std::pair<V,bool> erase(const int tid, const K& key) {
+    //const std::std::pair<V,bool> erase(const int tid, const K& key) {
         //V retval = tree->erase(tid, key);
-        //return std::pair<V,bool>(retval, retval != getNoValue());
+        //return std::std::pair<V,bool>(retval, retval != getNoValue());
         return tree->erase(tid, key);
     }
     V find(const int tid, const K& key) {                                  //////////// TODO: USE FIND WITH VALUE RETURN TYPE FOR DBX!!!!
-//    //const std::pair<V,bool> find(const int tid, const K& key) {
+//    //const std::std::pair<V,bool> find(const int tid, const K& key) {
 //        //V retval = tree->find(tid, key);
-//        //return std::pair<V,bool>(retval, retval != getNoValue());
+//        //return std::std::pair<V,bool>(retval, retval != getNoValue());
         return tree->find(tid, key);
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {

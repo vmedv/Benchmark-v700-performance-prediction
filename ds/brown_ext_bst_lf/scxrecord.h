@@ -17,47 +17,46 @@
 
 #include "bst.h"
 #include "descriptors.h"
-using namespace std;
 
 namespace bst_ns {
 
     template <class K, class V>
     class Node;
 
-    string const NAME_OF_TYPE[33] = {
-        string("INS"),
-        string("DEL"),
-        string("BLK"),
-        string("RB1"),
-        string("RB2"),
-        string("PUSH"),
-        string("W1"),
-        string("W2"),
-        string("W3"),
-        string("W4"),
-        string("W5"),
-        string("W6"),
-        string("W7"),
-        string("DBL1"),
-        string("DBL2"),
-        string("DBL3"),
-        string("DBL4"),
-        string("RB1SYM"),
-        string("RB2SYM"),
-        string("PUSHSYM"),
-        string("W1SYM"),
-        string("W2SYM"),
-        string("W3SYM"),
-        string("W4SYM"),
-        string("W5SYM"),
-        string("W6SYM"),
-        string("W7SYM"),
-        string("DBL1SYM"),
-        string("DBL2SYM"),
-        string("DBL3SYM"),
-        string("DBL4SYM"),
-        string("REPLACE"),
-        string("NOOP")
+    std::string const NAME_OF_TYPE[33] = {
+        std::string("INS"),
+        std::string("DEL"),
+        std::string("BLK"),
+        std::string("RB1"),
+        std::string("RB2"),
+        std::string("PUSH"),
+        std::string("W1"),
+        std::string("W2"),
+        std::string("W3"),
+        std::string("W4"),
+        std::string("W5"),
+        std::string("W6"),
+        std::string("W7"),
+        std::string("DBL1"),
+        std::string("DBL2"),
+        std::string("DBL3"),
+        std::string("DBL4"),
+        std::string("RB1SYM"),
+        std::string("RB2SYM"),
+        std::string("PUSHSYM"),
+        std::string("W1SYM"),
+        std::string("W2SYM"),
+        std::string("W3SYM"),
+        std::string("W4SYM"),
+        std::string("W5SYM"),
+        std::string("W6SYM"),
+        std::string("W7SYM"),
+        std::string("DBL1SYM"),
+        std::string("DBL2SYM"),
+        std::string("DBL3SYM"),
+        std::string("DBL4SYM"),
+        std::string("REPLACE"),
+        std::string("NOOP")
     };
 
     //int const NUM_INSERTED[33] = {

@@ -87,7 +87,7 @@ template <int DEGREE, typename K, class Compare, class RecManager>
 bslack_SCXRecord<DEGREE,K>* bslack<DEGREE,K,Compare,RecManager>::allocateSCXRecord(const int tid) {
     bslack_SCXRecord<DEGREE,K> *newop = recordmgr->template allocate<bslack_SCXRecord<DEGREE,K> >(tid);
     if (newop == NULL) {
-        COUTATOMICTID("ERROR: could not allocate scx record"<<endl);
+        COUTATOMICTID("ERROR: could not allocate scx record"<<std::endl);
         exit(-1);
     }
 
@@ -104,7 +104,7 @@ template <int DEGREE, typename K, class Compare, class RecManager>
 bslack_Node<DEGREE,K>* bslack<DEGREE,K,Compare,RecManager>::allocateNode(const int tid) {
     bslack_Node<DEGREE,K> *newnode = recordmgr->template allocate<bslack_Node<DEGREE,K> >(tid);
     if (newnode == NULL) {
-        COUTATOMICTID("ERROR: could not allocate node"<<endl);
+        COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
         exit(-1);
     }
 
@@ -228,7 +228,7 @@ class circular_queue { // queue implemented as a circular array
 template<int DEGREE, typename K, class Compare, class RecManager>
 bool bslack<DEGREE,K,Compare,RecManager>::rangeQuery_fallback(const int tid, const K& lo, const K& hi, bslack_Node<DEGREE,K> const ** result, int * const cnt) {
     const int size = hi - lo + 1;
-    TRACE COUTATOMICTID("rangeQuery(lo="<<lo<<", hi="<<hi<<", size="<<size<<")"<<endl);
+    TRACE COUTATOMICTID("rangeQuery(lo="<<lo<<", hi="<<hi<<", size="<<size<<")"<<std::endl);
 
     #define MAX_NODES (1<<12)
     bslack_Node<DEGREE,K>* V[MAX_NODES];
@@ -248,7 +248,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::rangeQuery_fallback(const int tid, con
         bslack_Node<DEGREE,K>* node = q.deq();
         bslack_Node<DEGREE,K>* children[DEGREE];
         
-        //COUTATOMICTID("    visiting node "<<*node<<endl);
+        //COUTATOMICTID("    visiting node "<<*node<<std::endl);
         // if llx on node fails, then retry
         llxResults[sizeV] = llx(tid, node, children);
         if (llxResults[sizeV] == FINALIZED || llxResults[sizeV] == FAILED) {
@@ -261,13 +261,13 @@ bool bslack<DEGREE,K,Compare,RecManager>::rangeQuery_fallback(const int tid, con
         // add node to V sequence for VLX
         V[sizeV] = node;
         if (++sizeV >= MAX_NODES) {
-            cerr<<"ERROR: sizeV >= MAX_NODES = "<<MAX_NODES<<endl;
+            std::cerr<<"ERROR: sizeV >= MAX_NODES = "<<MAX_NODES<<std::endl;
             exit(-1);
         }
 
         // if internal node, explore its children
         if (!node->isLeaf()) {
-            //COUTATOMICTID("    internal node key="<<node->key<<" low="<<low<<" hi="<<hi<<" cmp(hi, node->key)="<<cmp(hi, node->key)<<" cmp(low, node->key)="<<cmp(low, node->key)<<endl);
+            //COUTATOMICTID("    internal node key="<<node->key<<" low="<<low<<" hi="<<hi<<" cmp(hi, node->key)="<<cmp(hi, node->key)<<" cmp(low, node->key)="<<cmp(low, node->key)<<std::endl);
             // find right-most sub-tree that could contain a key in [lo, hi]
             int nkeys = node->getKeyCount();
             int r = nkeys;
@@ -303,7 +303,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::rangeQuery_fallback(const int tid, con
          */
         if ((V[i]->leaf && V[i]->marked) || (!V[i]->leaf && V[i]->scxPtr != llxResults[i])) {
             //this->counters->rqFail->inc(tid);
-            //cout<<"Retry because of failed validation, return set size "<<cnt<<endl;
+            //cout<<"Retry because of failed validation, return set size "<<cnt<<std::endl;
             this->recordmgr->enterQuiescentState(tid);
             return false;
         }
@@ -378,14 +378,14 @@ void* bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, const K& key,
             info->newNode = n;
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
 #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
                 fixDegreeOrSlackViolation(tid, n);
 #endif
                 this->recordmgr->enterQuiescentState(tid);
                 return oldValue;
             }
-            TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
             this->recordmgr->enterQuiescentState(tid);
             deallocate(tid, n);
 
@@ -432,14 +432,14 @@ void* bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, const K& key,
                 info->newNode = n;
                 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
 #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
                     fixDegreeOrSlackViolation(tid, n);
 #endif
                     this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
-                TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 this->recordmgr->enterQuiescentState(tid);
                 deallocate(tid, n);
                 
@@ -512,7 +512,7 @@ void* bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, const K& key,
                 info->newNode = n;
 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
                     if (SEQUENTIAL_STAT_TRACKING) ++overflows;
 
                     // after overflow, there may be a weight violation at n,
@@ -527,7 +527,7 @@ void* bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, const K& key,
                     this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
-                TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 this->recordmgr->enterQuiescentState(tid);
                 deallocate(tid, n);
                 deallocate(tid, left);
@@ -603,7 +603,7 @@ const pair<void*,bool> bslack<DEGREE,K,Compare,RecManager>::erase(const int tid,
 
             void* oldValue = l->ptrs[keyIndex];
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX succeeded"<<std::endl);
 
                 /**
                  * Compress may be needed at p after removing key from l.
@@ -618,7 +618,7 @@ const pair<void*,bool> bslack<DEGREE,K,Compare,RecManager>::erase(const int tid,
                 this->recordmgr->enterQuiescentState(tid);
                 return pair<void*,bool>(oldValue, true);
             }
-            TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<std::endl);
             this->recordmgr->enterQuiescentState(tid);
             deallocate(tid, n);
         }
@@ -803,7 +803,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const int tid, bsla
             info->newNode = n;
             
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("absorb: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("absorb: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++weightFixes;
                 if (SEQUENTIAL_STAT_TRACKING) ++weightEliminated;
 
@@ -822,7 +822,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const int tid, bsla
                 fixDegreeOrSlackViolation(tid, n);
                 return true;
             }
-            TRACE COUTATOMICTID("absorb: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("absorb: SCX FAILED"<<std::endl);
             deallocate(tid, n);
 
         } else {
@@ -897,7 +897,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const int tid, bsla
             info->newNode = n;
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("split: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("split: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++weightFixes;
                 if (SEQUENTIAL_STAT_TRACKING) if (gp == entry) ++weightEliminated;
 
@@ -920,7 +920,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const int tid, bsla
 #endif
                 return true;
             }
-            TRACE COUTATOMICTID("split: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("split: SCX FAILED"<<std::endl);
             deallocate(tid, n);
             deallocate(tid, left);
             deallocate(tid, right);
@@ -1078,13 +1078,13 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(const int ti
                 info->newNode = newl;
                 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<std::endl);
                     if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
 
                     fixDegreeOrSlackViolation(tid, newl);
                     return true;
                 }
-                TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<std::endl);
                 deallocate(tid, newl);
                 
             } else {
@@ -1130,14 +1130,14 @@ deallocate(tid, newl);
 return false;
 #endif
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("absorbsibling: SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("absorbsibling: SCX succeeded"<<std::endl);
                     if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
 
                     fixDegreeOrSlackViolation(tid, newl);
                     fixDegreeOrSlackViolation(tid, n);
                     return true;
                 }
-                TRACE COUTATOMICTID("absorbsibling: SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("absorbsibling: SCX FAILED"<<std::endl);
                 deallocate(tid, newl);
                 deallocate(tid, n);
             }
@@ -1237,13 +1237,13 @@ deallocate(tid, newright);
 return false;
 #endif
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("distribute: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("distribute: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
 
                 fixDegreeOrSlackViolation(tid, n);
                 return true;
             }
-            TRACE COUTATOMICTID("distribute: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("distribute: SCX FAILED"<<std::endl);
             deallocate(tid, n);
             deallocate(tid, newleft);
             deallocate(tid, newright);
@@ -1585,7 +1585,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(const int ti
             info->newNode = newChildren[0];
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("compress/one-child AND root-replace: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("compress/one-child AND root-replace: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
 
                 //    compress [check: slack@children(n), slack@p, degree@n]
@@ -1624,7 +1624,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(const int ti
                 // note: it is impossible for there to be a weight violation at childrenNewP or p, since these nodes must have weight=true for the compress/one-child+root-replace operation to be applicable, and we consequently CREATE childrenNewP[0] and p with weight=true above
                 return true;
             }
-            TRACE COUTATOMICTID("compress/one-child AND root-replace: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("compress/one-child AND root-replace: SCX FAILED"<<std::endl);
             deallocate(tid, newChildren[0]);
 
         } else {
@@ -1672,7 +1672,7 @@ return false;
 #endif
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("compress/one-child: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("compress/one-child: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
 
                 //    compress [check: slack@children(n), slack@p, degree@n]
@@ -1709,7 +1709,7 @@ return false;
                 fixDegreeOrSlackViolation(tid, gp);
                 return true;
             }
-            TRACE COUTATOMICTID("compress/one-child: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("compress/one-child: SCX FAILED"<<std::endl);
             deallocate(tid, n);
             for (int i=0;i<numberOfNewChildren;++i) {
                 deallocate(tid, newChildren[i]);
@@ -1735,7 +1735,7 @@ bool bslack<DEGREE,K,Compare,RecManager>::tryRetireSCXRecord(const int tid, bsla
         // by the appropriate amount to reduce the reference count by one.
         // when STATE_GET_NUMBER_OF_NODES_FROZEN(state) == 0, otherSCX is no longer reachable.
 //        if (STATE_GET_NUMBER_OF_NODES_FROZEN(otherSCX->state) == 0) {
-//            cout<<"ERROR"<<endl;
+//            cout<<"ERROR"<<std::endl;
 //            exit(-1);
 //        }
         const int postState = __sync_add_and_fetch(&otherSCX->state, -STATE_FROZEN_NODE_INCREMENT);
@@ -1779,7 +1779,7 @@ void bslack<DEGREE,K,Compare,RecManager>::reclaimMemoryAfterSCX(
         return;
     } else {
 //        if (highestIndexReached > info->numberOfNodesToFreeze) {
-//            COUTATOMICTID("ERROR!"<<" ix="<<highestIndexReached<<" numFreeze="<<(int)info->numberOfNodesToFreeze<<endl);
+//            COUTATOMICTID("ERROR!"<<" ix="<<highestIndexReached<<" numFreeze="<<(int)info->numberOfNodesToFreeze<<std::endl);
 //            exit(-1);
 //        }
 //        assert(highestIndexReached > 0);
@@ -1844,7 +1844,7 @@ bslack_SCXRecord<DEGREE,K>* bslack<DEGREE,K,Compare,RecManager>::llx(const int t
 
 template<int DEGREE, typename K, class Compare, class RecManager>
 bool bslack<DEGREE,K,Compare,RecManager>::scx(const int tid, bslack_wrapper_info<DEGREE,K> * info) {
-//    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<endl);
+//    TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<std::endl);
 //    const int init_state = bslack_SCXRecord<DEGREE,K>::STATE_INPROGRESS;
     bslack_SCXRecord<DEGREE,K> * rec = createSCXRecord(tid, info->field, info->newNode, info->nodes, info->scxPtrs, info->numberOfNodes, info->numberOfNodesToFreeze);
     bool result = help(tid, rec, false) & bslack_SCXRecord<DEGREE,K>::STATE_COMMITTED;
@@ -1864,7 +1864,7 @@ int bslack<DEGREE,K,Compare,RecManager>::help(const int tid, bslack_SCXRecord<DE
     bslack_Node<DEGREE,K> * volatile * const nodes                  = scx->nodes;
     bslack_SCXRecord<DEGREE,K> * volatile * const scxPtrsSeen       = scx->scxPtrsSeen;
     bslack_Node<DEGREE,K> volatile * const newNode                  = scx->newNode;
-//    TRACE COUTATOMICTID("help(tid="<<tid<<" scx="<<*scx<<" helpingOther="<<helpingOther<<"), nFreeze="<<nFreeze<<endl);
+//    TRACE COUTATOMICTID("help(tid="<<tid<<" scx="<<*scx<<" helpingOther="<<helpingOther<<"), nFreeze="<<nFreeze<<std::endl);
     //SOFTWARE_BARRIER; // prevent compiler from reordering read(state) before read(nodes), read(scxPtrsSeen), read(newNode); an x86/64 cpu will not reorder these reads
     LWSYNC;
     int __state = scx->state;
@@ -1954,7 +1954,7 @@ int bslack<DEGREE,K,Compare,RecManager>::help(const int tid, bslack_SCXRecord<DE
         if (!successfulCAS && exp != scx) { // if work was not done
             if (scx->allFrozen) {
 //                assert(scx->state == 1); /*STATE_COMMITTED*/
-//                TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after failed freezing cas on nodes["<<i<<"]"<<endl);
+//                TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                 return bslack_SCXRecord<DEGREE,K>::STATE_COMMITTED; // success
             } else {
                 if (i == 0) {
@@ -1965,7 +1965,7 @@ int bslack<DEGREE,K,Compare,RecManager>::help(const int tid, bslack_SCXRecord<DE
                     //  so i>0 for every helper; thus, if and only if i==0,
                     //  we created this scx record and failed our first CAS)
 //                    assert(!helpingOther);
-//                    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED after failed freezing cas on nodes["<<i<<"]"<<endl);
+//                    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                     scx->state = ABORT_STATE_INIT(0, 0); // scx is aborted (but no one else will ever know)
                     return ABORT_STATE_INIT(0, 0);
                 } else {
@@ -1983,10 +1983,10 @@ int bslack<DEGREE,K,Compare,RecManager>::help(const int tid, bslack_SCXRecord<DE
 //                    assert(expectedState & state_aborted);
                     // ABORTED THE SCX AFTER PERFORMING ONE OR MORE SUCCESSFUL FREEZING CASs
                     if (success) {
-//                        TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED(changed to "<<newState<<") after failed freezing cas on nodes["<<i<<"]"<<endl);
+//                        TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED(changed to "<<newState<<") after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                         return newState;
                     } else {
-//                        TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED(failed to change to "<<newState<<" because encountered "<<expectedState<<" instead of in progress) after failed freezing cas on nodes["<<i<<"]"<<endl);
+//                        TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return ABORTED(failed to change to "<<newState<<" because encountered "<<expectedState<<" instead of in progress) after failed freezing cas on nodes["<<i<<"]"<<std::endl);
                         return expectedState; // this has been overwritten by compare_exchange_strong with the value that caused the CAS to fail
                     }
                 }
@@ -2021,7 +2021,7 @@ int bslack<DEGREE,K,Compare,RecManager>::help(const int tid, bslack_SCXRecord<DE
     // CAS in the new sub-tree (update CAS)
     bslack_Node<DEGREE,K> * expected = nodes[1];
     bool result = __sync_bool_compare_and_swap(scx->field, expected, newNode);
-    TRACE COUTATOMICTID("attempting CAS on "<<(void*) scx->field<<" from "<<expected<<" to "<<(void*) newNode<<": "<<(result ? "success" : "failure")<<endl);
+    TRACE COUTATOMICTID("attempting CAS on "<<(void*) scx->field<<" from "<<expected<<" to "<<(void*) newNode<<": "<<(result ? "success" : "failure")<<std::endl);
 //    assert(scx->state < 2); // not aborted
     scx->state = bslack_SCXRecord<DEGREE,K>::STATE_COMMITTED;
     return bslack_SCXRecord<DEGREE,K>::STATE_COMMITTED; // success

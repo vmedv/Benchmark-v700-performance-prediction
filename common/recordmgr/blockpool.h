@@ -11,7 +11,6 @@
 #include "blockbag.h"
 #include "plaf.h"
 #include <iostream>
-using namespace std;
 
 #define MAX_BLOCK_POOL_SIZE 32
 

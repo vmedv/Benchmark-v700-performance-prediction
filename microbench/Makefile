@@ -16,7 +16,7 @@ LDFLAGS += -ldl
 #LDFLAGS += -lpapi
 
 #all: natarajan_ext_bst_lf
-all: brown_ext_abtree_lf.minimal_example
+all: minimal_examples
 
 abtree: abtree.rq_lockfree abtree.rq_rwlock abtree.rq_htm_rwlock abtree.rq_unsafe abtree.rq_unsafe_ts
 abtree.rq_lockfree:
@@ -100,6 +100,12 @@ rlulist:
 rlucitrus:
 	$(GPP) $(FLAGS) -o citrus.rq_rlu.out -DRLU_CITRUS main.cpp ../common/rlu/rlu.cpp $(LDFLAGS)
 
+minimal_examples: brown_ext_abtree_lf.minimal_example brown_ext_bst_lf.minimal_example
+brown_ext_abtree_lf.minimal_example:
+	$(GPP) $(FLAGS) ../ds/brown_ext_abtree_lf/minimal_example.cpp -o $@.out $(LDFLAGS)
+brown_ext_bst_lf.minimal_example:
+	$(GPP) $(FLAGS) ../ds/brown_ext_bst_lf/minimal_example.cpp -o $@.out $(LDFLAGS)
+
 natarajan_ext_bst_lf: natarajan_ext_bst_lf.baseline natarajan_ext_bst_lf.stage0 natarajan_ext_bst_lf.stage1 natarajan_ext_bst_lf.stage2
 natarajan_ext_bst_lf.baseline:
 	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_baseline_impl.h" -DBASELINE main.cpp $(LDFLAGS)
@@ -139,6 +145,3 @@ natarajan_ext_bst_lf.stage2.reclaim_none.pool:
 	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage2_impl.h" -DRECLAIM_TYPE=none -DALLOC_TYPE=new -DPOOL_TYPE=perthread_and_shared main.cpp $(LDFLAGS)
 natarajan_ext_bst_lf.stage2.reclaim_none.nopool:
 	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage2_impl.h" -DRECLAIM_TYPE=none -DALLOC_TYPE=new -DPOOL_TYPE=none main.cpp $(LDFLAGS)
-
-brown_ext_abtree_lf.minimal_example:
-	$(GPP) $(FLAGS) ../ds/brown_ext_abtree_lf/minimal_example.cpp -o $@.out $(LDFLAGS)

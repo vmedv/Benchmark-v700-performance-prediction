@@ -11,7 +11,6 @@
 #include "debug_info.h"
 #include "blockbag.h"
 #include <iostream>
-using namespace std;
 
 template <typename T = void>
 class allocator_interface {

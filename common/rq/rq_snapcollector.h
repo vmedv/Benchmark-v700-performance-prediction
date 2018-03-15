@@ -67,7 +67,7 @@ public:
         
         // initialize dummy snap collector
         snapPointer = recmgr->template allocate<SnapCollector<NodeType,K> >(dummyTid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(dummyTid, extra_type1_allocated_addresses, ((long long) snapPointer)%(1<<12));
 #endif
         snapPointer->init(dummyTid, numProcesses, recmgr, ds->KEY_MIN, ds->KEY_MAX+1);
@@ -274,7 +274,7 @@ public:
         SOFTWARE_BARRIER;
         if (!threadData[tid].currentSnapCollector->IsActive()) {
             SnapCollector<NodeType,K> * candidate = recmgr->template allocate<SnapCollector<NodeType,K> >(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_APPEND(tid, extra_type1_allocated_addresses, ((long long) candidate)%(1<<12));
 #endif
             candidate->init(tid, NUM_PROCESSES, recmgr, ds->KEY_MIN, ds->KEY_MAX+1);
@@ -326,9 +326,9 @@ public:
         
 #ifdef SNAPCOLLECTOR_PRINT_RQS
 //        for (int i=0;i<*startIndex;++i) {
-//            cout<<" "<<rqResultKeys[i];
+//            std::cout<<" "<<rqResultKeys[i];
 //        }
-//        cout<<endl;
+//        std::cout<<std::endl;
 #endif
         
         DEBUG_RECORD_RQ_SIZE(*startIndex);

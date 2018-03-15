@@ -20,7 +20,6 @@
 #else
 #define RECLAIM_RCU_RCUHEAD_DEFN 
 #endif
-using namespace std;
 
 template <class K, class V>
 class Node;
@@ -141,11 +140,11 @@ public:
 
     atomic_bool allFrozen;
     char numberOfNodes, numberOfNodesToFreeze;
-    atomic_int state; // state of the scx
+    std::atomic_int state; // state of the scx
     Node<K,V> *nodes[MAX_NODES];                // array of pointers to nodes ; these are CASd to NULL as pointers nodes[i]->scxPtr are changed so that they no longer point to this scx record.
     SCXRecord<K,V> *scxRecordsSeen[MAX_NODES];  // array of pointers to scx records
     Node<K,V> *newNode;
-    atomic_uintptr_t *field;
+    std::atomic_uintptr_t *field;
     RECLAIM_RCU_RCUHEAD_DEFN;
 //    char bytes[8]; // set size to prevent false sharing
 //    char padding[PREFETCH_SIZE_BYTES-sizeof(allFrozen)-sizeof(numberOfNodes)-sizeof(numberOfNodesToFreeze)-sizeof(state)-sizeof(nodes)-sizeof(scxRecordsSeen)-sizeof(newNode)-sizeof(field)];
@@ -169,7 +168,7 @@ public:
     
     friend ostream& operator<<(ostream& os, const SCXRecord<K,V>& obj) {
         ios::fmtflags f( os.flags() );
-//        cout<<"obj.type = "<<obj.type<<endl;
+//        cout<<"obj.type = "<<obj.type<<std::endl;
         os<<"["//<<"type="<<NAME_OF_TYPE[obj.type]
           <<" state="<<obj.state
           <<" allFrozen="<<obj.allFrozen

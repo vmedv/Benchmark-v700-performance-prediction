@@ -16,7 +16,6 @@
 
 #ifdef USE_STL_HASHLIST
     #include <unordered_set>
-    using namespace std;
 
     template <typename T>
     class HashList {
@@ -59,7 +58,6 @@
     #ifndef ERROR
         #include <iostream>
 
-        using namespace std;
         #define aout(x) { std::cout<<x<<std::endl; }
         #define ERROR(s) { aout("ERROR: "<<s); exit(-1); }
     #endif
@@ -129,7 +127,7 @@
             
             const long long oldCapacity = capacity;
             capacity = oldCapacity*2;
-            //cout<<"expanding table from "<<oldCapacity<<" to "<<capacity<<" because size="<<size<<endl;
+            //cout<<"expanding table from "<<oldCapacity<<" to "<<capacity<<" because size="<<size<<std::endl;
             delete[] data;
             data = new HLNode<T> * [capacity];
             memset(data, 0, sizeof(HLNode<T> *) * capacity);
@@ -195,7 +193,7 @@
                 cnt = capacity;
             }
             
-            //cout<<" cells set to NULL="<<cnt<<endl;
+            //cout<<" cells set to NULL="<<cnt<<std::endl;
         }
     };
     

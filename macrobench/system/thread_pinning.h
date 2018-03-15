@@ -30,8 +30,6 @@
 
 namespace thread_pinning {
     
-    using namespace std;
-
     extern cpu_set_t ** cpusets;
     extern int * customBinding;
     extern int numCustomBindings;
@@ -62,7 +60,7 @@ namespace thread_pinning {
     // place bindings for the token at the end of customBinding, and
     // return the index of the first character in the next token,
     //     or the size of the string argv if there are no further tokens.
-    static unsigned parseToken(string argv, int ix) {
+    static unsigned parseToken(std::string argv, int ix) {
         // token is of one of following forms:
         //      INT
         //      INT-INT
@@ -80,7 +78,7 @@ namespace thread_pinning {
         if (ix >= argv.size() || argv[ix] == ',') {
 
             // add single binding
-            //cout<<"a="<<a<<endl;
+            //cout<<"a="<<a<<std::endl;
             //customBinding.push_back(a);
             customBinding[numCustomBindings++] = a;
 
@@ -92,7 +90,7 @@ namespace thread_pinning {
             // read second INT
             token = argv.substr(ix, ix2-ix+1);
             int b = atoi(token.c_str());
-            //cout<<"a="<<a<<" b="<<b<<endl;
+            //cout<<"a="<<a<<" b="<<b<<std::endl;
 
             // add range of bindings
             for (int i=a;i<=b;++i) {
@@ -109,7 +107,7 @@ namespace thread_pinning {
 
     // argv contains a custom thread binding pattern, e.g., "1,2,3,8-11,4-7,0"
     // threads will be bound according to this binding
-    static void parseCustom(string argv) {
+    static void parseCustom(std::string argv) {
         numCustomBindings = 0;
 
         unsigned ix = 0;
@@ -120,7 +118,7 @@ namespace thread_pinning {
 
     static void doBindThread(const int tid, const int nprocessors) {
         if (sched_setaffinity(0, CPU_ALLOC_SIZE(nprocessors), cpusets[tid%nprocessors])) { // bind thread to core
-            cout<<"ERROR: could not bind thread "<<tid<<" to cpuset "<<cpusets[tid%nprocessors]<<endl;
+            cout<<"ERROR: could not bind thread "<<tid<<" to cpuset "<<cpusets[tid%nprocessors]<<std::endl;
             exit(-1);
         }
     }

@@ -9,9 +9,9 @@
  * Instructions:
  * 1. invoke binding_configurePolicy, passing the number of logical processors.
  * 2. either #define one of the binding policies below, OR
- *    invoke binding_parseCustom, passing a string that describes the desired
+ *    invoke binding_parseCustom, passing a std::string that describes the desired
  *    thread binding policy, e.g., "1,2,3,8-11,4-7,0".
- *    the string contains the ids of logical processors, or ranges of ids,
+ *    the std::string contains the ids of logical processors, or ranges of ids,
  *    separated by commas.
  * 3. have each thread invoke binding_bindThread.
  * 4. after your experiments run, you can confirm the binding for a given thread
@@ -25,7 +25,7 @@
 
 #ifdef __CYGWIN__
 
-void binding_parseCustom(string argv) {}
+void binding_parseCustom(std::string argv) {}
 
 int binding_getActualBinding(const int tid, const int nprocessors) {
     return -1;
@@ -48,7 +48,6 @@ void binding_configurePolicy(const int nprocessors) {}
 #include <vector>
 
 #include <plaf.h>
-using namespace std;
 
 //const int NONE = 0;
 //const int IDENTITY = 1;
@@ -66,7 +65,7 @@ static cpu_set_t *cpusets[LOGICAL_PROCESSORS];
 
 static int customBinding[LOGICAL_PROCESSORS];
 static int numCustomBindings = 0;
-//static vector<int> customBinding;
+//static std::vector<int> customBinding;
 
 static unsigned digits(unsigned x) {
     int d = 1;
@@ -80,8 +79,8 @@ static unsigned digits(unsigned x) {
 // parse token starting at argv[ix],
 // place bindings for the token at the end of customBinding, and
 // return the index of the first character in the next token,
-//     or the size of the string argv if there are no further tokens.
-static unsigned parseToken(string argv, int ix) {
+//     or the size of the std::string argv if there are no further tokens.
+static unsigned parseToken(std::string argv, int ix) {
     // token is of one of following forms:
     //      INT
     //      INT-INT
@@ -91,7 +90,7 @@ static unsigned parseToken(string argv, int ix) {
     // read first INT
     int ix2 = ix;
     while (ix2 < argv.size() && argv[ix2] != ',') ++ix2;
-    string token = argv.substr(ix, ix2-ix+1);
+    std::string token = argv.substr(ix, ix2-ix+1);
     int a = atoi(token.c_str());
     
     // check if the token is of the first form: INT
@@ -99,7 +98,7 @@ static unsigned parseToken(string argv, int ix) {
     if (ix >= argv.size() || argv[ix] == ',') {
         
         // add single binding
-        //cout<<"a="<<a<<endl;
+        //cout<<"a="<<a<<std::endl;
         //customBinding.push_back(a);
         customBinding[numCustomBindings++] = a;
     
@@ -111,7 +110,7 @@ static unsigned parseToken(string argv, int ix) {
         // read second INT
         token = argv.substr(ix, ix2-ix+1);
         int b = atoi(token.c_str());
-        //cout<<"a="<<a<<" b="<<b<<endl;
+        //cout<<"a="<<a<<" b="<<b<<std::endl;
         
         // add range of bindings
         for (int i=a;i<=b;++i) {
@@ -122,13 +121,13 @@ static unsigned parseToken(string argv, int ix) {
         ix = ix+digits(b);          // first character AFTER second INT
     }
     // note: ix is the first character AFTER the last INT in the token
-    // this is either a comma (',') or the end of the string argv.
+    // this is either a comma (',') or the end of the std::string argv.
     return (ix >= argv.size() ? argv.size() : ix+1 /* skip ',' */);
 }
 
 // argv contains a custom thread binding pattern, e.g., "1,2,3,8-11,4-7,0"
 // threads will be bound according to this binding
-void binding_parseCustom(string argv) {
+void binding_parseCustom(std::string argv) {
     //customBinding.clear();
     numCustomBindings = 0;
     
@@ -136,23 +135,23 @@ void binding_parseCustom(string argv) {
     while (ix < argv.size()) {
         ix = parseToken(argv, ix);
     }
-//    cout<<"custom thread binding :";
+//    std::cout<<"custom thread binding :";
 //    for (int i=0;i<customBinding.size();++i) {
-//        cout<<" "<<customBinding[i];
+//        std::cout<<" "<<customBinding[i];
 //    }
-//    cout<<endl;
+//    std::cout<<std::endl;
 }
 
 static void doBindThread(const int tid, const int nprocessors) {
     if (sched_setaffinity(0, CPU_ALLOC_SIZE(nprocessors), cpusets[tid%nprocessors])) { // bind thread to core
-        cout<<"ERROR: could not bind thread "<<tid<<" to cpuset "<<cpusets[tid%nprocessors]<<endl;
+        std::cout<<"ERROR: could not bind thread "<<tid<<" to cpuset "<<cpusets[tid%nprocessors]<<std::endl;
         exit(-1);
     }
 //    for (int i=0;i<nprocessors;++i) {
 //        if (CPU_ISSET_S(i, CPU_ALLOC_SIZE(nprocessors), cpusets[tid%nprocessors])) {
-//            //COUTATOMICTID("binding thread "<<tid<<" to cpu "<<i<<endl);
+//            //COUTATOMICTID("binding thread "<<tid<<" to cpu "<<i<<std::endl);
 //        } else {
-//            COUTATOMICTID("ERROR binding to cpu "<<i<<endl);
+//            COUTATOMICTID("ERROR binding to cpu "<<i<<std::endl);
 //            exit(-1);
 //        }
 //    }
@@ -173,12 +172,12 @@ int binding_getActualBinding(const int tid, const int nprocessors) {
         }
     }
     if (bindings > 1) {
-        cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<endl;
+        std::cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
         exit(-1);
     }
     if (bindings == 0) {
-        cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<endl;
-        cout<<"DEBUG INFO: number of physical processors (set in Makefile)="<<nprocessors<<endl;
+        std::cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
+        std::cout<<"DEBUG INFO: number of physical processors (set in Makefile)="<<nprocessors<<std::endl;
         exit(-1);
     }
     return result;
@@ -195,7 +194,7 @@ bool binding_isInjectiveMapping(const int nthreads, const int nprocessors) {
     for (int i=0;i<nthreads;++i) {
         int ix = binding_getActualBinding(i, nprocessors);
         if (covered[ix]) {
-            cout<<"thread i="<<i<<" bound to index="<<ix<<" but covered["<<ix<<"]="<<covered[ix]<<" already {function args: nprocessors="<<nprocessors<<" nthreads="<<nthreads<<"}"<<endl;
+            std::cout<<"thread i="<<i<<" bound to index="<<ix<<" but covered["<<ix<<"]="<<covered[ix]<<" already {function args: nprocessors="<<nprocessors<<" nthreads="<<nthreads<<"}"<<std::endl;
             return false;
         }
         covered[ix] = 1;
@@ -304,14 +303,14 @@ void binding_configurePolicy(const int nthreads, const int nprocessors) {
             CPU_SET_S(customBinding[i%numCustomBindings], size, cpusets[i]);
 
 //            if (i < customBinding.size()) {
-//                //cout<<"setting up thread binding for thread "<<i<<" to processor "<<customBinding[i]<<endl;
+//                //cout<<"setting up thread binding for thread "<<i<<" to processor "<<customBinding[i]<<std::endl;
 //                CPU_SET_S(customBinding[i], size, cpusets[i]);
 //            } else {
 //                warning = true;
 //            }
         }
 //        if (warning) {
-//            cout<<"WARNING: "<<nprocessors<<" threads mapped to "<<customBinding.size()<<" processors"<<endl;
+//            std::cout<<"WARNING: "<<nprocessors<<" threads mapped to "<<customBinding.size()<<" processors"<<std::endl;
 //        }
     }
 }

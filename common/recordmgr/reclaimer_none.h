@@ -12,7 +12,6 @@
 #include <iostream>
 #include "pool_interface.h"
 #include "reclaimer_interface.h"
-using namespace std;
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_none : public reclaimer_interface<T, Pool> {
@@ -27,7 +26,7 @@ public:
         typedef reclaimer_none<_Tp1, _Tp2> other;
     };
     
-    string getSizeString() { return "no reclaimer"; }
+    std::string getSizeString() { return "no reclaimer"; }
     inline static bool shouldHelp() {
         return true;
     }

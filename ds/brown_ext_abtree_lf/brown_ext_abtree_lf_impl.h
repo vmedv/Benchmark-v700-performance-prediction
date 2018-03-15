@@ -55,7 +55,7 @@
 
 #include "brown_ext_abtree_lf.h"
 
-#define eassert(x, y) if ((x) != (y)) { cout<<"ERROR: "<<#x<<" != "<<#y<<" :: "<<#x<<"="<<x<<" "<<#y<<"="<<y<<endl; exit(-1); }
+#define eassert(x, y) if ((x) != (y)) { std::cout<<"ERROR: "<<#x<<" != "<<#y<<" :: "<<#x<<"="<<x<<" "<<#y<<"="<<y<<std::endl; exit(-1); }
 
 template <int DEGREE, typename K, class Compare, class RecManager>
 abtree_ns::SCXRecord<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::createSCXRecord(const int tid, wrapper_info<DEGREE,K> * info) {
@@ -86,11 +86,11 @@ template <int DEGREE, typename K, class Compare, class RecManager>
 abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allocateNode(const int tid) {
     Node<DEGREE,K> *newnode = recordmgr->template allocate<Node<DEGREE,K> >(tid);
     if (newnode == NULL) {
-        COUTATOMICTID("ERROR: could not allocate node"<<endl);
+        COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
         exit(-1);
     }
     rqProvider->init_node(tid, newnode);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
 #endif
     return newnode;
@@ -100,8 +100,8 @@ abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allo
  * Returns the value associated with key, or NULL if key is not present.
  */
 template <int DEGREE, typename K, class Compare, class RecManager>
-const pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
-    pair<void*,bool> result;
+const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
+    std::pair<void*,bool> result;
     this->recordmgr->leaveQuiescentState(tid);
     Node<DEGREE,K> * l = rqProvider->read_addr(tid, &entry->ptrs[0]);
     while (!l->isLeaf()) {
@@ -133,7 +133,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
 
     // depth first traversal (of interesting subtrees)
     int size = 0;
-    TRACE COUTATOMICTID("rangeQuery(lo="<<lo<<", hi="<<hi<<", size="<<(hi-lo+1)<<")"<<endl);
+    TRACE COUTATOMICTID("rangeQuery(lo="<<lo<<", hi="<<hi<<", size="<<(hi-lo+1)<<")"<<std::endl);
 
     stack.push(entry);
     while (!stack.isEmpty()) {
@@ -240,12 +240,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             info->deletedNodes[1] = NULL;
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("replace std::pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
                 fixDegreeViolation(tid, n);
                 this->recordmgr->enterQuiescentState(tid);
                 return oldValue;
             }
-            TRACE COUTATOMICTID("replace pair ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("replace std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
             this->recordmgr->enterQuiescentState(tid);
             this->recordmgr->deallocate(tid, n);
 
@@ -263,7 +263,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             
             if (l->getKeyCount() < b) {
                 /**
-                 * Insert pair
+                 * Insert std::pair
                  */
                 
                 // create new node(s)
@@ -293,12 +293,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 info->deletedNodes[1] = NULL;
                 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
                     fixDegreeViolation(tid, n);
                     this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
-                TRACE COUTATOMICTID("insert pair ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 this->recordmgr->enterQuiescentState(tid);
                 this->recordmgr->deallocate(tid, n);
                 
@@ -307,7 +307,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                  * Overflow
                  */
                 
-                // first, we create a pair of large arrays
+                // first, we create a std::pair of large arrays
                 // containing too many keys and pointers to fit in a single node
                 K keys[DEGREE+1];
                 Node<DEGREE,K>* ptrs[DEGREE+1];
@@ -377,7 +377,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 info->deletedNodes[1] = NULL;
 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
 
                     // after overflow, there may be a weight violation at n,
                     // and there may be a slack violation at p
@@ -385,7 +385,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
-                TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 this->recordmgr->enterQuiescentState(tid);
                 this->recordmgr->deallocate(tid, n);
                 this->recordmgr->deallocate(tid, left);
@@ -396,7 +396,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
 }
 
 template <int DEGREE, typename K, class Compare, class RecManager>
-const pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::erase(const int tid, const K& key) {
+const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::erase(const int tid, const K& key) {
     wrapper_info<DEGREE,K> _info;
     wrapper_info<DEGREE,K>* info = &_info;
     while (true) {
@@ -426,7 +426,7 @@ const pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::erase(con
              * if l does not contain key, we are done.
              */
             this->recordmgr->enterQuiescentState(tid);
-            return pair<void*,bool>(NO_VALUE,false);
+            return std::pair<void*,bool>(NO_VALUE,false);
         } else {
             /**
              * if l contains key, replace l by a new copy that does not contain key.
@@ -465,16 +465,16 @@ const pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::erase(con
 
             void* oldValue = l->ptrs[keyIndex]; // since the node is a leaf, ptrs is not modified by any call to rqProvider->linearize_update_at_..., so we do not need to use read_addr to access it
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("delete std::pair ("<<key<<", "<<oldValue<<"): SCX succeeded"<<std::endl);
 
                 /**
                  * Compress may be needed at p after removing key from l.
                  */
                 fixDegreeViolation(tid, n);
                 this->recordmgr->enterQuiescentState(tid);
-                return pair<void*,bool>(oldValue, true);
+                return std::pair<void*,bool>(oldValue, true);
             }
-            TRACE COUTATOMICTID("delete pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("delete std::pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<std::endl);
             this->recordmgr->enterQuiescentState(tid);
             this->recordmgr->deallocate(tid, n);
         }
@@ -582,7 +582,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             info->deletedNodes[2] = NULL;
             
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("absorb: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("absorb: SCX succeeded"<<std::endl);
 
                 //    absorb [check: slack@n]
                 //        no weight at pi(u)
@@ -599,7 +599,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
                 fixDegreeViolation(tid, n);
                 return true;
             }
-            TRACE COUTATOMICTID("absorb: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("absorb: SCX FAILED"<<std::endl);
             this->recordmgr->deallocate(tid, n);
 
         } else {
@@ -682,13 +682,13 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             info->deletedNodes[2] = NULL;
 
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("split: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("split: SCX succeeded"<<std::endl);
 
                 fixWeightViolation(tid, n);
                 fixDegreeViolation(tid, n);
                 return true;
             }
-            TRACE COUTATOMICTID("split: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("split: SCX FAILED"<<std::endl);
             this->recordmgr->deallocate(tid, n);
             this->recordmgr->deallocate(tid, left);
             this->recordmgr->deallocate(tid, right);
@@ -859,12 +859,12 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 info->deletedNodes[3] = NULL;
                 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<std::endl);
 
                     fixDegreeViolation(tid, newl);
                     return true;
                 }
-                TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<std::endl);
                 this->recordmgr->deallocate(tid, newl);
                 
             } else {
@@ -910,13 +910,13 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 info->deletedNodes[3] = NULL;
                 
                 if (scx(tid, info)) {
-                    TRACE COUTATOMICTID("absorbsibling: SCX succeeded"<<endl);
+                    TRACE COUTATOMICTID("absorbsibling: SCX succeeded"<<std::endl);
 
                     fixDegreeViolation(tid, newl);
                     fixDegreeViolation(tid, n);
                     return true;
                 }
-                TRACE COUTATOMICTID("absorbsibling: SCX FAILED"<<endl);
+                TRACE COUTATOMICTID("absorbsibling: SCX FAILED"<<std::endl);
                 this->recordmgr->deallocate(tid, newl);
                 this->recordmgr->deallocate(tid, n);
             }
@@ -1034,12 +1034,12 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             info->deletedNodes[3] = NULL;
             
             if (scx(tid, info)) {
-                TRACE COUTATOMICTID("distribute: SCX succeeded"<<endl);
+                TRACE COUTATOMICTID("distribute: SCX succeeded"<<std::endl);
 
                 fixDegreeViolation(tid, n);
                 return true;
             }
-            TRACE COUTATOMICTID("distribute: SCX FAILED"<<endl);
+            TRACE COUTATOMICTID("distribute: SCX FAILED"<<std::endl);
             this->recordmgr->deallocate(tid, n);
             this->recordmgr->deallocate(tid, newleft);
             this->recordmgr->deallocate(tid, newright);
@@ -1071,10 +1071,10 @@ abtree_ns::SCXRecord<DEGREE,K>* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::
     
     // read mutable state field of descriptor
     bool succ;
-    TRACE COUTATOMICTID("tagged ptr seq="<<UNPACK1_SEQ(tagptr)<<" descriptor seq="<<UNPACK1_SEQ(TAGPTR1_UNPACK_PTR(tagptr)->c.mutables)<<endl);
+    TRACE COUTATOMICTID("tagged ptr seq="<<UNPACK1_SEQ(tagptr)<<" descriptor seq="<<UNPACK1_SEQ(TAGPTR1_UNPACK_PTR(tagptr)->c.mutables)<<std::endl);
     int state = DESC1_READ_FIELD(succ, TAGPTR1_UNPACK_PTR(tagptr)->c.mutables, tagptr, MUTABLES1_MASK_STATE, MUTABLES1_OFFSET_STATE);
     if (!succ) state = SCXRecord<DEGREE,K>::STATE_COMMITTED;
-    TRACE { mutables_t debugmutables = TAGPTR1_UNPACK_PTR(tagptr)->c.mutables; COUTATOMICTID("llx scxrecord succ="<<succ<<" state="<<state<<" mutables="<<debugmutables<<" desc-seq="<<UNPACK1_SEQ(debugmutables)<<endl); }
+    TRACE { mutables_t debugmutables = TAGPTR1_UNPACK_PTR(tagptr)->c.mutables; COUTATOMICTID("llx scxrecord succ="<<succ<<" state="<<state<<" mutables="<<debugmutables<<" desc-seq="<<UNPACK1_SEQ(debugmutables)<<std::endl); }
     // note: special treatment for alg in the case where the descriptor has already been reallocated (impossible before the transformation, assuming safe memory reclamation)
     SOFTWARE_BARRIER;
     
@@ -1123,7 +1123,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
     int IGNORED_RETURN_VALUE = -1;
     if (helpingOther) return IGNORED_RETURN_VALUE;
 #endif
-//    TRACE COUTATOMICTID("help "<<tagptrToString(tagptr)<<" helpingOther="<<helpingOther<<" numNodes="<<snap->c.numberOfNodes<<" numToFreeze="<<snap->c.numberOfNodesToFreeze<<endl);
+//    TRACE COUTATOMICTID("help "<<tagptrToString(tagptr)<<" helpingOther="<<helpingOther<<" numNodes="<<snap->c.numberOfNodes<<" numToFreeze="<<snap->c.numberOfNodesToFreeze<<std::endl);
     SCXRecord<DEGREE,K> *ptr = TAGPTR1_UNPACK_PTR(tagptr);
     //if (helpingOther) { eassert(UNPACK1_SEQ(snap->c.mutables), UNPACK1_SEQ(tagptr)); /*assert(UNPACK1_SEQ(snap->c.mutables) == UNPACK1_SEQ(tagptr));*/ }
     // freeze sub-tree
@@ -1136,7 +1136,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
         
         bool successfulCAS = __sync_bool_compare_and_swap(&snap->c.nodes[i]->scxPtr, snap->c.scxPtrsSeen[i], tagptr);
         SCXRecord<DEGREE,K> *exp = snap->c.nodes[i]->scxPtr;
-//        TRACE if (successfulCAS) COUTATOMICTID((helpingOther?"    ":"")<<"help froze nodes["<<i<<"]@0x"<<((uintptr_t)snap->c.nodes[i])<<" with tagptr="<<tagptrToString((tagptr_t) snap->c.nodes[i]->scxPtr)<<endl);
+//        TRACE if (successfulCAS) COUTATOMICTID((helpingOther?"    ":"")<<"help froze nodes["<<i<<"]@0x"<<((uintptr_t)snap->c.nodes[i])<<" with tagptr="<<tagptrToString((tagptr_t) snap->c.nodes[i]->scxPtr)<<std::endl);
         if (successfulCAS || exp == (void*) tagptr) continue; // if node is already frozen for our operation
 
         // note: we can get here only if:
@@ -1150,11 +1150,11 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
         if (!succ) return SCXRecord<DEGREE,K>::STATE_ABORTED;
         
         if (allFrozen) {
-            TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<SCXRecord<DEGREE comma K>::STATE_COMMITTED<<" after failed freezing cas on nodes["<<i<<"]"<<endl);
+            TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<SCXRecord<DEGREE comma K>::STATE_COMMITTED<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
             return SCXRecord<DEGREE,K>::STATE_COMMITTED;
         } else {
             const int newState = SCXRecord<DEGREE,K>::STATE_ABORTED;
-            TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<newState<<" after failed freezing cas on nodes["<<i<<"]"<<endl);
+            TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<newState<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
             MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, newState, MUTABLES1_MASK_STATE, MUTABLES1_OFFSET_STATE);
             return newState;
         }
@@ -1170,11 +1170,11 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
     // CAS in the new sub-tree (update CAS)
     rqProvider->linearize_update_at_cas(tid, snap->c.field, snap->c.nodes[1], snap->c.newNode, snap->c.insertedNodes, snap->c.deletedNodes);
 //    __sync_bool_compare_and_swap(snap->c.field, snap->c.nodes[1], snap->c.newNode);
-    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help CAS'ed to newNode@0x"<<((uintptr_t)snap->c.newNode)<<endl);
+    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help CAS'ed to newNode@0x"<<((uintptr_t)snap->c.newNode)<<std::endl);
 
     MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, SCXRecord<DEGREE comma K>::STATE_COMMITTED, MUTABLES1_MASK_STATE, MUTABLES1_OFFSET_STATE);
     
-    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after performing update cas"<<endl);
+    TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<DEGREE,K>::STATE_COMMITTED; // success
 }
 

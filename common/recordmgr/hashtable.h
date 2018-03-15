@@ -12,73 +12,72 @@
 #include <cstdlib>
 #include <iostream>
 #include "plaf.h"
-using namespace std;
 
-namespace hashset_namespace {
-// note: TABLE_SIZE must be a power of two for bitwise operations below to work
-#define TABLE_SIZE 32
-#define FIRST_INDEX(key) (hash((key)) & (TABLE_SIZE-1))
-#define NEXT_INDEX(ix) ((ix)+1 % TABLE_SIZE)
-#define EMPTY_CELL 0
-    template<typename K>
-    class hashset {
-        private:
-            bool cleared;
-            K* keys[TABLE_SIZE];
-            inline int hash(K * const key) {
-                // MurmurHash3's integer finalizer
-                long long k = (long long) key;
-                k ^= k >> 33;
-                k *= 0xff51afd7ed558ccd;
-                k ^= k >> 33;
-                k *= 0xc4ceb9fe1a85ec53;
-                k ^= k >> 33;
-                return k;
-            }
-            int getIndex(K * const key) {
-                int ix;
-                for (ix=FIRST_INDEX(key)
-                        ; keys[ix] != EMPTY_CELL && keys[ix] != key
-                        ; ix=NEXT_INDEX(ix)) {
-                    assert(ix >= 0);
-                    assert(ix < TABLE_SIZE);
-                }
+// note: HASHSET_TABLE_SIZE must be a power of two for bitwise operations below to work
+#define HASHSET_TABLE_SIZE 32
+#define HASHSET_FIRST_INDEX(key) (hash((key)) & (HASHSET_TABLE_SIZE-1))
+#define HASHSET_NEXT_INDEX(ix) ((ix)+1 % HASHSET_TABLE_SIZE)
+#define HASHSET_EMPTY_CELL 0
+
+template<typename K>
+class hashset {
+    private:
+        bool cleared;
+        K* keys[HASHSET_TABLE_SIZE];
+        inline int hash(K * const key) {
+            // MurmurHash3's integer finalizer
+            long long k = (long long) key;
+            k ^= k >> 33;
+            k *= 0xff51afd7ed558ccd;
+            k ^= k >> 33;
+            k *= 0xc4ceb9fe1a85ec53;
+            k ^= k >> 33;
+            return k;
+        }
+        int getIndex(K * const key) {
+            int ix;
+            for (ix=HASHSET_FIRST_INDEX(key)
+                    ; keys[ix] != HASHSET_EMPTY_CELL && keys[ix] != key
+                    ; ix=HASHSET_NEXT_INDEX(ix)) {
                 assert(ix >= 0);
-                assert(ix < TABLE_SIZE);
-                return ix;
+                assert(ix < HASHSET_TABLE_SIZE);
             }
-        public:
-            hashset() {
-                VERBOSE DEBUG std::cout<<"constructor hashset"<<std::endl;
-                cleared = false;
-                clear();
+            assert(ix >= 0);
+            assert(ix < HASHSET_TABLE_SIZE);
+            return ix;
+        }
+    public:
+        hashset() {
+            VERBOSE DEBUG std::cout<<"constructor hashset"<<std::endl;
+            cleared = false;
+            clear();
+        }
+        ~hashset() {
+            VERBOSE DEBUG std::cout<<"destructor hashset"<<std::endl;
+        }
+        void clear() {
+            if (!cleared) {
+                memset(keys, HASHSET_EMPTY_CELL, HASHSET_TABLE_SIZE*sizeof(K*));
+                cleared = true;
             }
-            ~hashset() {
-                VERBOSE DEBUG std::cout<<"destructor hashset"<<std::endl;
-            }
-            void clear() {
-                if (!cleared) {
-                    memset(keys, EMPTY_CELL, TABLE_SIZE*sizeof(K*));
-                    cleared = true;
-                }
-            }
-            bool contains(K * const key) {
-                return get(key) != EMPTY_CELL;
-            }
-            K* get(K * const key) {
-                return keys[getIndex(key)];
-            }
-            void insert(K * const key) {
-                int ix = getIndex(key);
-                keys[ix] = key;
-            }
-            void erase(K * const key) {
-                int ix = getIndex(key);
-                // no need for an if statement, because keys[ix] is either key or null.
-                keys[ix] = EMPTY_CELL;
-            }
-    } __attribute__ ((aligned(PREFETCH_SIZE_BYTES)));
-    
+        }
+        bool contains(K * const key) {
+            return get(key) != HASHSET_EMPTY_CELL;
+        }
+        K* get(K * const key) {
+            return keys[getIndex(key)];
+        }
+        void insert(K * const key) {
+            int ix = getIndex(key);
+            keys[ix] = key;
+        }
+        void erase(K * const key) {
+            int ix = getIndex(key);
+            // no need for an if statement, because keys[ix] is either key or null.
+            keys[ix] = HASHSET_EMPTY_CELL;
+        }
+} __attribute__ ((aligned(PREFETCH_SIZE_BYTES)));
+
 //    // hash set that allows multiple readers and ONE updater.
 //    // i am pretty certain this is NOT linearizable.
 //    // note: to use this with reclaim_hazardptr_hash, this would need to
@@ -89,7 +88,7 @@ namespace hashset_namespace {
 //        private:
 //            int size;       // NOT ATOMICALLY ACCESSIBLE BY OTHER THREADS THAN OWNER
 //            bool cleared;   // NOT ATOMICALLY ACCESSIBLE BY OTHER THREADS THAN OWNER
-//            atomic_uintptr_t keys[TABLE_SIZE];
+//            std::atomic_uintptr_t keys[HASHSET_TABLE_SIZE];
 //            inline int hash(K * const key) {
 //                // MurmurHash3's integer finalizer
 //                long long k = (long long) key;
@@ -102,14 +101,14 @@ namespace hashset_namespace {
 //            }
 //            int getIndex(K * const key) {
 //                int ix;
-//                for (ix=FIRST_INDEX(key)
-//                        ; keys[ix] != EMPTY_CELL && keys[ix] != key
-//                        ; ix=NEXT_INDEX(ix)) {
+//                for (ix=HASHSET_FIRST_INDEX(key)
+//                        ; keys[ix] != HASHSET_EMPTY_CELL && keys[ix] != key
+//                        ; ix=HASHSET_NEXT_INDEX(ix)) {
 //                    assert(ix >= 0);
-//                    assert(ix < TABLE_SIZE);
+//                    assert(ix < HASHSET_TABLE_SIZE);
 //                }
 //                assert(ix >= 0);
-//                assert(ix < TABLE_SIZE);
+//                assert(ix < HASHSET_TABLE_SIZE);
 //                return ix;
 //            }
 //        public:
@@ -123,12 +122,12 @@ namespace hashset_namespace {
 //            }
 //            void clear() {
 //                if (!cleared) {
-//                    memset(keys, EMPTY_CELL, TABLE_SIZE*sizeof(K*));
+//                    memset(keys, HASHSET_EMPTY_CELL, HASHSET_TABLE_SIZE*sizeof(K*));
 //                    cleared = true;
 //                }
 //            }
 //            bool contains(K * const key) {
-//                return get(key) != EMPTY_CELL;
+//                return get(key) != HASHSET_EMPTY_CELL;
 //            }
 //            K* get(K * const key) {
 //                return (K*) keys[getIndex(key)].load();
@@ -141,15 +140,15 @@ namespace hashset_namespace {
 //            void erase(K * const key) {
 //                int ix = getIndex(key);
 //                // no need for an if statement, because keys[ix] is either key or null.
-//                if (keys[ix] == EMPTY_CELL) {
-//                    keys[ix].store(EMPTY_CELL);
+//                if (keys[ix] == HASHSET_EMPTY_CELL) {
+//                    keys[ix].store(HASHSET_EMPTY_CELL);
 //                    --size;
 //                }
 //            }
 //    } __attribute__ ((aligned(BYTES_IN_CACHE_LINE)));
 
-    template<typename K>
-    class hashset_new {
+template<typename K>
+class hashset_new {
     private:
         int tableSize;
         K** keys;
@@ -169,7 +168,7 @@ namespace hashset_namespace {
             assert(ix >= 0);
             assert(ix < tableSize);
             while (true) {
-                if (keys[ix] == EMPTY_CELL || keys[ix] == key) {
+                if (keys[ix] == HASHSET_EMPTY_CELL || keys[ix] == key) {
                     return ix;
                 }
                 ix = nextIndex(ix);
@@ -200,19 +199,19 @@ namespace hashset_namespace {
         }
         void clear() {
             if (__size) {
-                memset(keys, EMPTY_CELL, tableSize*sizeof(K*));
+                memset(keys, HASHSET_EMPTY_CELL, tableSize*sizeof(K*));
                 __size = 0;
             }
         }
         bool contains(K * const key) {
-            return get(key) != EMPTY_CELL;
+            return get(key) != HASHSET_EMPTY_CELL;
         }
         K* get(K * const key) {
             return keys[getIndex(key)];
         }
         void insert(K * const key) {
             int ix = getIndex(key);
-            if (keys[ix] == EMPTY_CELL) {
+            if (keys[ix] == HASHSET_EMPTY_CELL) {
                 keys[ix] = key;
                 ++__size;
                 assert(__size < tableSize);
@@ -222,8 +221,6 @@ namespace hashset_namespace {
             return __size;
         }
     };
-
-}
 
 #endif	/* HASHTABLE_H */
 

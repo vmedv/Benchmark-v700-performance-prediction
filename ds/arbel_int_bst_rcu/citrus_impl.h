@@ -33,8 +33,6 @@
 #include "citrus.h"
 #include "urcu.h"
 #include "locks_impl.h"
-using namespace std;
-using namespace urcu;
 
 static bool pred(predicate_info info, uint64_t val1, uint64_t val2){
     assert(info->min_key <= info->max_key); 
@@ -61,7 +59,7 @@ nodeptr citrustree<K,V,RecManager>::newNode(const int tid, K key, V value) {
 //        printf("\n mutex init failed\n");
 //    }
     nnode->lock = false;
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) nnode)%(1<<12));
 #endif
     return nnode;
@@ -77,7 +75,7 @@ citrustree<K,V,RecManager>::citrustree(const K bigger_than_max_key, const V _NO_
         , NO_KEY(bigger_than_max_key)
         , NO_VALUE(_NO_VALUE)
 {
-//    cout<<"IN CONSTRUCTOR: NO_VALUE="<<NO_VALUE<<" AND _NO_VALUE="<<_NO_VALUE<<endl;
+//    std::cout<<"IN CONSTRUCTOR: NO_VALUE="<<NO_VALUE<<" AND _NO_VALUE="<<_NO_VALUE<<std::endl;
     const int tid = 0;
     initThread(tid);
     // finish initializing RCU   
@@ -104,7 +102,7 @@ template <typename K, typename V, class RecManager>
 citrustree<K,V,RecManager>::~citrustree() {
     int numNodes = 0;
     dfsDeallocateBottomUp(root, &numNodes);
-    VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<endl);
+    VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<std::endl);
     delete rqProvider;
     recordmgr->printStatus();
     delete recordmgr;
@@ -114,7 +112,7 @@ citrustree<K,V,RecManager>::~citrustree() {
 }
 
 template <typename K, typename V, class RecManager>
-const pair<V, bool> citrustree<K,V,RecManager>::find(const int tid, const K& key) {
+const std::pair<V, bool> citrustree<K,V,RecManager>::find(const int tid, const K& key) {
     recordmgr->leaveQuiescentState(tid);
     readLock(key,key);
     nodeptr curr = rqProvider->read_addr(tid, &root->child[0]);
@@ -130,11 +128,11 @@ const pair<V, bool> citrustree<K,V,RecManager>::find(const int tid, const K& key
     readUnlock();
     if (curr == NULL) {
         recordmgr->enterQuiescentState(tid);
-        return pair<V, bool>(NO_VALUE, false);
+        return std::pair<V, bool>(NO_VALUE, false);
     }
     V result = curr->value;
     recordmgr->enterQuiescentState(tid);
-    return pair<V, bool>(result, true);
+    return std::pair<V, bool>(result, true);
 }
 
 template <typename K, typename V, class RecManager>
@@ -192,7 +190,7 @@ retry:
         if (onlyIfAbsent) {
             V result = curr->value;
             recordmgr->enterQuiescentState(tid);
-            //cout<<"NO_VALUE="<<NO_VALUE<<endl;
+            //cout<<"NO_VALUE="<<NO_VALUE<<std::endl;
             assert(result != NO_VALUE);
             return result;
         } else {
@@ -252,7 +250,7 @@ const V citrustree<K,V,RecManager>::insert(const int tid, const K& key, const V&
 }
 
 template <typename K, typename V, class RecManager>
-const pair<V, bool> citrustree<K,V,RecManager>::erase(const int tid, const K& key) {
+const std::pair<V, bool> citrustree<K,V,RecManager>::erase(const int tid, const K& key) {
     nodeptr prev;
     nodeptr curr;
     int direction;
@@ -275,7 +273,7 @@ retry:
     readUnlock();
     if (curr == NULL) {
         recordmgr->enterQuiescentState(tid);
-        return pair<V, bool>(NO_VALUE, false);
+        return std::pair<V, bool>(NO_VALUE, false);
     }
     acquireLock(&(prev->lock));
     acquireLock(&(curr->lock));
@@ -301,7 +299,7 @@ retry:
         releaseLock(&(prev->lock));
         releaseLock(&(curr->lock));
         recordmgr->enterQuiescentState(tid);
-        return pair<V, bool>(result, true);
+        return std::pair<V, bool>(result, true);
     }
     if (rqProvider->read_addr(tid, &curr->child[1]) == NULL) {
         curr->marked = true;
@@ -319,7 +317,7 @@ retry:
         releaseLock(&(prev->lock));
         releaseLock(&(curr->lock));
         recordmgr->enterQuiescentState(tid);
-        return pair<K, bool>(result, true);
+        return std::pair<K, bool>(result, true);
     }
     prevSucc = curr;
     succ = rqProvider->read_addr(tid, &curr->child[1]);
@@ -370,7 +368,7 @@ retry:
         if (prevSucc != curr) releaseLock(&(prevSucc->lock));
         releaseLock(&(succ->lock));
         recordmgr->enterQuiescentState(tid);
-        return pair<V, bool>(result, true);
+        return std::pair<V, bool>(result, true);
     }
     releaseLock(&(prev->lock));
     releaseLock(&(curr->lock));

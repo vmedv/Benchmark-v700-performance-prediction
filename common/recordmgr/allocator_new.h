@@ -13,7 +13,6 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
-using namespace std;
 
 //__thread long long currentAllocatedBytes = 0;
 //__thread long long maxAllocatedBytes = 0;

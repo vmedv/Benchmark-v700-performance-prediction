@@ -16,14 +16,12 @@
 #include "blockbag.h"
 #include "blockpool.h"
 
-using namespace std;
-
 /*
  * 
  */
 int main(int argc, char** argv) {
     if (argc != 2) {
-        cout<<"USAGE: "<<argv[0]<<" NUMBER_OF_DATA_ITEMS_TO_TEST"<<endl;
+        std::cout<<"USAGE: "<<argv[0]<<" NUMBER_OF_DATA_ITEMS_TO_TEST"<<std::endl;
         exit(-1);
     }
     int n = atoi(argv[1]);
@@ -38,9 +36,9 @@ int main(int argc, char** argv) {
     }
     
     for (blockbag_iterator<int> it = bag.begin(); it != bag.end(); it++) {
-        cout<<*(*it)<<" ";
+        std::cout<<*(*it)<<" ";
     }
-    cout<<endl;
+    std::cout<<std::endl;
     
     delete[] data;
     return 0;

@@ -98,7 +98,7 @@ public:
         this->reportTails = new ReportItem * volatile [NUM_THREADS*PREFETCH_SIZE_WORDS];
         // head = new NodeWrapper(std::numeric_limits<int>::min())
         this->head = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) head)%(1<<12));
 #endif
         this->head->init(this->KEY_MIN);
@@ -106,7 +106,7 @@ public:
 //        oldTail = NULL;
         // blocker = new ReportItem(NULL, ReportType::Add, -1)
         this->blocker = recmgr->template allocate<ReportItem>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) blocker)%(1<<12));
 #endif
         this->blocker->init(NULL, ReportType::Add, -1);
@@ -116,7 +116,7 @@ public:
         this->gAllReports = NULL;
         for (int i=0;i<NUM_THREADS;++i) {
             this->reportHeads[i*PREFETCH_SIZE_WORDS] = recmgr->template allocate<ReportItem>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) reportHeads[i*PREFETCH_SIZE_WORDS])%(1<<12));
 #endif
             this->reportHeads[i*PREFETCH_SIZE_WORDS]->init(NULL, ReportType::Add, -1); // sentinel head.
@@ -184,7 +184,7 @@ public:
         }
         
         NodeWrapper * newNode = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) newNode)%(1<<12));
 #endif
         newNode->init(node, key);
@@ -201,7 +201,7 @@ public:
     void Report(int tid, NodeType * Node, ReportType t, K key, RecordManager * recmgr) {
         ReportItem * reportTail = reportTails[tid*PREFETCH_SIZE_WORDS];
         ReportItem * newItem = recmgr->template allocate<ReportItem>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) newItem)%(1<<12));
 #endif
         newItem->init(Node, t, key);
@@ -223,7 +223,7 @@ public:
     template <typename RecordManager>
     void BlockFurtherPointers(const int tid, RecordManager * recmgr) {
         NodeWrapper * blocker = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) blocker)%(1<<12));
 #endif
         blocker->init(NULL, KEY_MAX);
@@ -284,7 +284,7 @@ private:
         curr = curr->next;
         while (curr != NULL && curr != blocker) {
             CompactReportItem * newItem = recmgr->template allocate<CompactReportItem>(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_APPEND(tid, extra_type4_allocated_addresses, ((long long) newItem)%(1<<12));
 #endif
             newItem->init(curr->node, curr->t, curr->key);

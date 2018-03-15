@@ -13,53 +13,52 @@
 #include <atomic>
 #include "plaf.h"
 #include "globals.h"
-using namespace std;
 
 // this list allows multiple readers, but only ONE writer.
 // i don't know if it is linearizable; maybe linearize at __size.load()/store()
 template <typename T>
 class AtomicArrayList {
 private:
-    atomic_int __size;
-    atomic_uintptr_t *data;
+    std::atomic_int __size;
+    std::atomic_uintptr_t *data;
 public:
     const int capacity;
     AtomicArrayList(const int _capacity) : capacity(_capacity) {
         VERBOSE DEBUG COUTATOMIC("constructor AtomicArrayList capacity="<<capacity<<std::endl);
-        __size.store(0, memory_order_relaxed);
-        data = new atomic_uintptr_t[capacity];
+        __size.store(0, std::memory_order_relaxed);
+        data = new std::atomic_uintptr_t[capacity];
     }
     ~AtomicArrayList() {
         delete[] data;
     }
     inline T* get(const int ix) {
-        return (T*) data[ix].load(memory_order_relaxed);
+        return (T*) data[ix].load(std::memory_order_relaxed);
     }
     inline int size() {
-        return __size.load(memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
+        return __size.load(std::memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
     }
     inline void add(T * const obj) {
-        int sz = __size.load(memory_order_relaxed);
+        int sz = __size.load(std::memory_order_relaxed);
         assert(sz < capacity);
         SOFTWARE_BARRIER;
-        data[sz].store((uintptr_t) obj, memory_order_relaxed);
+        data[sz].store((uintptr_t) obj, std::memory_order_relaxed);
         SOFTWARE_BARRIER;
-        __size.store(sz+1, memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
+        __size.store(sz+1, std::memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
     }
     inline void erase(const int ix) {
-        int sz = __size.load(memory_order_relaxed);
+        int sz = __size.load(std::memory_order_relaxed);
         assert(ix >= 0 && ix < sz);
-        if (ix != sz-1) data[ix].store(data[sz-1].load(memory_order_relaxed), memory_order_relaxed);
-        __size.store(sz-1, memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
+        if (ix != sz-1) data[ix].store(data[sz-1].load(std::memory_order_relaxed), std::memory_order_relaxed);
+        __size.store(sz-1, std::memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
     }
     inline void erase(T * const obj) {
         int ix = getIndex(obj);
         if (ix != -1) erase(ix);
     }
     inline int getIndex(T * const obj) {
-        int sz = __size.load(memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
+        int sz = __size.load(std::memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
         for (int i=0;i<sz;++i) {
-            if (data[i].load(memory_order_relaxed) == (uintptr_t) obj) return i;
+            if (data[i].load(std::memory_order_relaxed) == (uintptr_t) obj) return i;
         }
         return -1;
     }
@@ -68,14 +67,14 @@ public:
     }
     inline void clear() {
         SOFTWARE_BARRIER;
-        __size.store(0, memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
+        __size.store(0, std::memory_order_relaxed); // note: this must be seq_cst if membars are not manually added
         SOFTWARE_BARRIER;
     }
     inline bool isFull() {
-        return __size.load(memory_order_relaxed) == capacity; // note: this must be seq_cst if membars are not manually added
+        return __size.load(std::memory_order_relaxed) == capacity; // note: this must be seq_cst if membars are not manually added
     }
     inline bool isEmpty() {
-        return __size.load(memory_order_relaxed) == 0; // note: this must be seq_cst if membars are not manually added
+        return __size.load(std::memory_order_relaxed) == 0; // note: this must be seq_cst if membars are not manually added
     }
 };
 

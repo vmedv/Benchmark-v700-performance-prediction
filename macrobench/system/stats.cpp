@@ -1,6 +1,6 @@
 #include "global.h"
 #include "helper.h"
-#include "stats.h"
+#include "gstats.h"
 #include "mem_alloc.h"
 #include "wl.h"
 

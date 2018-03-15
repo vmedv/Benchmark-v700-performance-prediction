@@ -9,7 +9,6 @@
 #define	GLOBALS_H
 
 #include <string>
-using namespace std;
 
 #include "plaf.h"
 
@@ -31,90 +30,88 @@ int RQ_THREADS;
 int TOTAL_THREADS;
 
 /**
- * Configure global statistics using stats_global.h and stats.h
+ * Configure global statistics using gstats_global.h and gstats.h
  */
 
-#define __HANDLE_STATS(handle_stat) \
-    handle_stat(LONG_LONG, node_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+#define __AND ,
+#define GSTATS_HANDLE_STATS(gstats_handle_stat) \
+    gstats_handle_stat(LONG_LONG, node_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, descriptor_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    gstats_handle_stat(LONG_LONG, descriptor_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, extra_type1_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    gstats_handle_stat(LONG_LONG, extra_type1_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, extra_type2_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    gstats_handle_stat(LONG_LONG, extra_type2_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, extra_type3_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    gstats_handle_stat(LONG_LONG, extra_type3_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, extra_type4_allocated_addresses, 100, { \
-            stat_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    gstats_handle_stat(LONG_LONG, extra_type4_allocated_addresses, 100, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    handle_stat(LONG_LONG, num_updates, 1, { \
-            stat_output_item(PRINT_RAW, SUM, TOTAL) \
+    gstats_handle_stat(LONG_LONG, num_updates, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, num_searches, 1, { \
-            stat_output_item(PRINT_RAW, SUM, TOTAL) \
+    gstats_handle_stat(LONG_LONG, num_searches, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, num_rq, 1, { \
-            stat_output_item(PRINT_RAW, SUM, TOTAL) \
+    gstats_handle_stat(LONG_LONG, num_rq, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, num_operations, 1, { \
-            stat_output_item(PRINT_RAW, SUM, BY_THREAD) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
+    gstats_handle_stat(LONG_LONG, num_operations, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, visited_in_bags, 100, { \
-            stat_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, STDEV, TOTAL) \
+    gstats_handle_stat(LONG_LONG, visited_in_bags, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, skipped_in_bags, 100, { \
-            stat_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, STDEV, TOTAL) \
+    gstats_handle_stat(LONG_LONG, skipped_in_bags, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, latency_rqs, 100, { \
-            stat_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-          /*C stat_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, STDEV, TOTAL) \
-          C stat_output_item(PRINT_RAW, MIN, TOTAL) \
-          C stat_output_item(PRINT_RAW, MAX, TOTAL) \
+    gstats_handle_stat(LONG_LONG, latency_rqs, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, latency_updates, 100, { \
-            stat_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-          /*C stat_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, STDEV, TOTAL) \
-          C stat_output_item(PRINT_RAW, MIN, TOTAL) \
-          C stat_output_item(PRINT_RAW, MAX, TOTAL) \
+    gstats_handle_stat(LONG_LONG, latency_updates, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, latency_searches, 100, { \
-            stat_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-          /*C stat_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
-          C stat_output_item(PRINT_RAW, SUM, TOTAL) \
-          C stat_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-          C stat_output_item(PRINT_RAW, STDEV, TOTAL) \
-          C stat_output_item(PRINT_RAW, MIN, TOTAL) \
-          C stat_output_item(PRINT_RAW, MAX, TOTAL) \
+    gstats_handle_stat(LONG_LONG, latency_searches, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    handle_stat(LONG_LONG, skiplist_inserted_on_level, 30, { \
-            /*stat_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
-          /*C stat_output_item(PRINT_RAW, SUM, BY_INDEX)*/ \
+    gstats_handle_stat(LONG_LONG, skiplist_inserted_on_level, 30, { \
+         /* gstats_output_item(PRINT_RAW, NONE, FULL_DATA) */ \
+   /* __AND gstats_output_item(PRINT_RAW, SUM, BY_INDEX) */ \
     }) \
-    handle_stat(LONG_LONG, key_checksum, 1, {}) \
-    handle_stat(LONG_LONG, prefill_size, 1, {}) \
-    handle_stat(LONG_LONG, timer_latency, 1, {})
+    gstats_handle_stat(LONG_LONG, key_checksum, 1, {}) \
+    gstats_handle_stat(LONG_LONG, prefill_size, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_latency, 1, {})
 
-#include "stats_global.h"
+#include "gstats_global.h"
 GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 GSTATS_DECLARE_ALL_STAT_IDS;
 

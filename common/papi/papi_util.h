@@ -18,7 +18,7 @@ int all_cpu_counters[] = {
     PAPI_TOT_CYC,
     PAPI_TOT_INS //,
 };
-string all_cpu_counters_strings[] = {
+std::string all_cpu_counters_strings[] = {
     "PAPI_L1_DCM",
     "PAPI_L2_TCM",
     "PAPI_L3_TCM",

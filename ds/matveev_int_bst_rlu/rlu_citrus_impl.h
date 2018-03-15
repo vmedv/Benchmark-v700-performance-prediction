@@ -70,7 +70,7 @@ nodeptr rlucitrus<K,V>::new_node(const int tid, const K& key, const V& val) {
     p_new_node->child[0]=NULL;
     p_new_node->child[1]=NULL;
     
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) p_new_node)%(1<<12));
 #endif
     return p_new_node;
@@ -97,7 +97,7 @@ nodeptr rlucitrus<K,V>::copy_node(const int tid, nodeptr node_to_copy, const K& 
 //}
 
 template <typename K, typename V>
-const pair<V,bool> rlucitrus<K,V>::find(const int tid, const K& key) {
+const std::pair<V,bool> rlucitrus<K,V>::find(const int tid, const K& key) {
     K ckey;
     nodeptr curr;
 
@@ -122,7 +122,7 @@ const pair<V,bool> rlucitrus<K,V>::find(const int tid, const K& key) {
     V result = NO_VALUE;
     if (curr) result = curr->val;
     RLU_READER_UNLOCK(rlu_self);
-    return pair<V,bool>(result, curr != NULL);
+    return std::pair<V,bool>(result, curr != NULL);
 }
 
 template <typename K, typename V>
@@ -198,7 +198,7 @@ V rlucitrus<K,V>::insert(const int tid, const K& key, const V& val) {
 }
 
 template <typename K, typename V>
-const pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
+const std::pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
     restart:
 	RLU_READER_LOCK(rlu_self);	
     
@@ -223,7 +223,7 @@ const pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
 	
 	if (curr == NULL){
             RLU_READER_UNLOCK(rlu_self);	
-            return pair<V,bool>(NO_VALUE, false);
+            return std::pair<V,bool>(NO_VALUE, false);
 	}
 	
 	if (!RLU_TRY_LOCK(rlu_self, &prev)) {
@@ -240,7 +240,7 @@ const pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
             V result = curr->val;
             RLU_FREE(rlu_self, curr);
             RLU_READER_UNLOCK(rlu_self);
-            return pair<V,bool>(result, true);
+            return std::pair<V,bool>(result, true);
 	}
 	
 	if (curr->child[1] == NULL) {
@@ -248,7 +248,7 @@ const pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
             V result = curr->val;
             RLU_FREE(rlu_self, curr);
             RLU_READER_UNLOCK(rlu_self);
-            return pair<V,bool>(result, true);
+            return std::pair<V,bool>(result, true);
 	}
 	
 	nodeptr prevSucc = curr;
@@ -284,7 +284,7 @@ const pair<V,bool> rlucitrus<K,V>::erase(const int tid, const K& key) {
         V result = curr->val;
 	RLU_FREE(rlu_self, curr);
         RLU_READER_UNLOCK(rlu_self);
-        return pair<V,bool>(result, true);
+        return std::pair<V,bool>(result, true);
 }
 
 template <typename K, typename V>

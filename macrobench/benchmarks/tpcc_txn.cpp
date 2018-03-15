@@ -53,7 +53,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
             WHERE w_id=:w_id;
     +===================================================================*/
 
-    // TODO for variable length variable (string). Should store the size of 
+    // TODO for variable length variable (std::string). Should store the size of 
     // the variable.
     key = query->w_id;
     INDEX * index = _wl->i_warehouse;
@@ -163,7 +163,7 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
         itemid_t * it = item;
         itemid_t * mid = item;
         while (it!=NULL) {
-            //                            cout<<"it="<<(unsigned long long) it<<endl;
+            //                            cout<<"it="<<(unsigned long long) it<<std::endl;
             cnt++;
             it = it->next;
             if (cnt%2==0)
@@ -282,7 +282,7 @@ RC tpcc_txn_man::run_new_order(tpcc_query * query) {
     item = index_read(index, key, wh_to_part(w_id));
 #ifndef NDEBUG
     if (item == NULL) {
-        cout<<"key="<<key<<endl;
+        cout<<"key="<<key<<std::endl;
     }
 #endif
     assert(item!=NULL);

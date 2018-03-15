@@ -16,7 +16,6 @@
 #include <exception>
 #include <stdexcept>
 #include <typeinfo>
-using namespace std;
 
 inline CallbackReturn callbackReturnTrue(CallbackArg arg) {
     return true;
@@ -28,7 +27,7 @@ template <typename T> void check_duplicates(void) {}
 template <typename T, typename First, typename... Rest>
 void check_duplicates(void) {
     if (typeid(T) == typeid(First)) {
-        throw logic_error("duplicate template arguments provided to RecordManagerSet");
+        throw std::logic_error("duplicate template arguments provided to RecordManagerSet");
     }
     check_duplicates<T, Rest...>();
 }
@@ -41,7 +40,7 @@ public:
     RecordManagerSet(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr) {}
     template <typename T>
     record_manager_single_type<T, Reclaim, Alloc, Pool> * get(T * const recordType) {
-        throw logic_error("invalid type passed to RecordManagerSet::get()");
+        throw std::logic_error("invalid type passed to RecordManagerSet::get()");
         return NULL;
     }
     void clearCounters(void) {}

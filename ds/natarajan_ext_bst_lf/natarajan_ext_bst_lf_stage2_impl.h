@@ -533,14 +533,14 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
     if (newInt == NULL) {
         setbench_error("out of memory");
     }
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newInt);
 #endif
     newLeaf = recmgr->template allocate<node_t<skey_t, sval_t>>(data->id);
     if (newLeaf == NULL) {
         setbench_error("out of memory");
     }
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newLeaf);
 #endif
 
@@ -618,7 +618,7 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_delete_wi
         markResult = mark_Node(&R->parent->child.AO_val1);
         pS = R->parent->child.AO_val1;
     }
-    //cout<<"key="<<R->leafKey<<" markResult="<<markResult<<endl;
+    //cout<<"key="<<R->leafKey<<" markResult="<<markResult<<std::endl;
 //    if (!markResult) {
 //        // if we won the marking test&set, then we retire R->parent
 //        recmgr->retire(data->id, R->parent);

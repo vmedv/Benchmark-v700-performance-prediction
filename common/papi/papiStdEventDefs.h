@@ -35,7 +35,7 @@ platform's documentation carefully.
 
 #define PAPI_MAX_PRESET_EVENTS 128		/*The maxmimum number of preset events */
 #define PAPI_MAX_USER_EVENTS 50			/*The maxmimum number of user defined events */
-#define USER_EVENT_OPERATION_LEN 512	/*The maximum length of the operation string for user defined events */
+#define USER_EVENT_OPERATION_LEN 512	/*The maximum length of the operation std::string for user defined events */
 
 /*
    NOTE: The table below defines each entry in terms of a mask and an integer.

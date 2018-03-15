@@ -67,8 +67,6 @@
 
 //#define USE_SIMPLIFIED_ABTREE_REBALANCING
 
-using namespace std;
-
 template <int DEGREE, typename K>
 struct bslack_Node;
 
@@ -371,9 +369,9 @@ public:
     {
         
 #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
-        cout<<"USING INDEX TYPE (a,b)-tree with a="<<a<<" and b="<<b<<endl;
+        cout<<"USING INDEX TYPE (a,b)-tree with a="<<a<<" and b="<<b<<std::endl;
 #else
-        cout<<"USING INDEX TYPE B-slack tree with degree "<<DEGREE<<endl;
+        cout<<"USING INDEX TYPE B-slack tree with degree "<<DEGREE<<std::endl;
 #endif
         const int tid = 0;
         initThread(tid);
@@ -418,9 +416,9 @@ public:
         slackFixes = 0;
         
 #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
-        COUTATOMIC("NOTICE: (a,b)-tree rebalancing enabled"<<endl);
+        COUTATOMIC("NOTICE: (a,b)-tree rebalancing enabled"<<std::endl);
 #else
-        COUTATOMIC("NOTICE: B-slack tree rebalancing enabled"<<endl);
+        COUTATOMIC("NOTICE: B-slack tree rebalancing enabled"<<std::endl);
 #endif
     }
 
@@ -434,7 +432,7 @@ public:
         recordmgr->retire(tid, DUMMY);
         recordmgr->retire(tid, FAILED);
         recordmgr->retire(tid, FINALIZED);
-        COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes and "<<scxRecords<<" (+3) SCX records"<<endl);
+        COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes and "<<scxRecords<<" (+3) SCX records"<<std::endl);
         delete recordmgr;
     }
 #endif
@@ -553,7 +551,7 @@ private:
     }
 
     long long getSumOfKeys(bslack_Node<DEGREE,K>* node) {
-        TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): isLeaf="<<node->isLeaf()<<endl);
+        TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): isLeaf="<<node->isLeaf()<<std::endl);
         long long sum = 0;
         if (node->isLeaf()) {
             TRACE COUTATOMIC("      leaf sum +=");
@@ -561,17 +559,17 @@ private:
                 sum += (long long) node->keys[i];
                 TRACE COUTATOMIC(node->keys[i]);
             }
-            TRACE COUTATOMIC(endl);
+            TRACE COUTATOMIC(std::endl);
         } else {
             for (int i=0;i<node->getABDegree();++i) {
                 sum += getSumOfKeys(node->ptrs[i]);
             }
         }
-        TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): sum="<<sum<<endl);
+        TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): sum="<<sum<<std::endl);
         return sum;
     }
     long long getSumOfKeys() {
-        TRACE COUTATOMIC("getSumOfKeys()"<<endl);
+        TRACE COUTATOMIC("getSumOfKeys()"<<std::endl);
         return getSumOfKeys(entry);
     }
     
@@ -619,7 +617,7 @@ private:
 #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
     bool abtree_noDegreeViolations(bslack_Node<DEGREE,K>* node) {
         if (!(node->size >= a || node == entry || node == entry->ptrs[0])) {
-            cerr<<"degree violation found: node->size="<<node->size<<" a="<<a<<endl;
+            std::cerr<<"degree violation found: node->size="<<node->size<<" a="<<a<<std::endl;
             return false;
         }
         if (!node->isLeaf()) {
@@ -666,8 +664,8 @@ private:
         return satisfiesP4(entry->ptrs[0]);
     }
     
-    void bslack_error(string s) {
-        cerr<<"ERROR: "<<s<<endl;
+    void bslack_error(std::string s) {
+        std::cerr<<"ERROR: "<<s<<std::endl;
         exit(-1);
     }
     
@@ -686,25 +684,25 @@ private:
     
     void debugPrint() {
         if (SEQUENTIAL_STAT_TRACKING) {
-            cout<<"overflows="<<overflows<<endl;
-            cout<<"weightChecks="<<weightChecks<<endl;
-            cout<<"weightCheckSearches="<<weightCheckSearches<<endl;
-            cout<<"weightFixAttempts="<<weightFixAttempts<<endl;
-            cout<<"weightFixes="<<weightFixes<<endl;
-            cout<<"weightEliminated="<<weightEliminated<<endl;
-            cout<<"slackChecks="<<slackChecks<<endl;
-            cout<<"slackCheckTotaling="<<slackCheckTotaling<<endl;
-            cout<<"slackCheckSearches="<<slackCheckSearches<<endl;
-            cout<<"slackFixTotaling="<<slackFixTotaling<<endl;
-            cout<<"slackFixAttempts="<<slackFixAttempts<<endl;
-            cout<<"slackFixSCX="<<slackFixSCX<<endl;
-            cout<<"slackFixes="<<slackFixes<<endl;
+            cout<<"overflows="<<overflows<<std::endl;
+            cout<<"weightChecks="<<weightChecks<<std::endl;
+            cout<<"weightCheckSearches="<<weightCheckSearches<<std::endl;
+            cout<<"weightFixAttempts="<<weightFixAttempts<<std::endl;
+            cout<<"weightFixes="<<weightFixes<<std::endl;
+            cout<<"weightEliminated="<<weightEliminated<<std::endl;
+            cout<<"slackChecks="<<slackChecks<<std::endl;
+            cout<<"slackCheckTotaling="<<slackCheckTotaling<<std::endl;
+            cout<<"slackCheckSearches="<<slackCheckSearches<<std::endl;
+            cout<<"slackFixTotaling="<<slackFixTotaling<<std::endl;
+            cout<<"slackFixAttempts="<<slackFixAttempts<<std::endl;
+            cout<<"slackFixSCX="<<slackFixSCX<<std::endl;
+            cout<<"slackFixes="<<slackFixes<<std::endl;
         }
-        cout<<"averageDegree="<<getAverageDegree()<<endl;
-        cout<<"averageDepth="<<getAverageKeyDepth()<<endl;
-        cout<<"height="<<getHeight()<<endl;
-        cout<<"internalNodes="<<getNumberOfInternals()<<endl;
-        cout<<"leafNodes="<<getNumberOfLeaves()<<endl;
+        cout<<"averageDegree="<<getAverageDegree()<<std::endl;
+        cout<<"averageDepth="<<getAverageKeyDepth()<<std::endl;
+        cout<<"height="<<getHeight()<<std::endl;
+        cout<<"internalNodes="<<getNumberOfInternals()<<std::endl;
+        cout<<"leafNodes="<<getNumberOfLeaves()<<std::endl;
     }
     
 public:
@@ -721,7 +719,7 @@ public:
         if (checkkeysum) {
             long long treekeysum = getSumOfKeys();
             if (treekeysum != keysum) {
-                cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<endl;
+                std::cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<std::endl;
                 return false;
             }
         }
@@ -735,7 +733,7 @@ public:
         return getNumberOfNodes();
     }
     string getSizeString() {
-        stringstream ss;
+        std::stringstream ss;
         int preallocated = bslack_wrapper_info<DEGREE,K>::MAX_NODES * recordmgr->NUM_PROCESSES;
         ss<<getSizeInNodes()<<" nodes in tree";
         return ss.str();
@@ -758,10 +756,10 @@ public:
 //    void debugPrintTree() {
 //        entry->printTreeFile(cout);
 //    }
-    void debugPrintToFile(string prefix, long id1, string infix, long id2, string suffix) {
-        stringstream ss;
+    void debugPrintToFile(std::string prefix, long id1, string infix, long id2, string suffix) {
+        std::stringstream ss;
         ss<<prefix<<id1<<infix<<id2<<suffix;
-        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<endl);
+        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<std::endl);
         fstream fs (ss.str().c_str(), fstream::out);
         entry->printTreeFile(fs);
         fs.close();

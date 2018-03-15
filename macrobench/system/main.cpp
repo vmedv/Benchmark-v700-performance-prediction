@@ -198,7 +198,7 @@ void * f_warmup(void * id) {
         thread_pinning::bindThread(__tid, g_thread_cnt);
         tid = __tid;
 #ifdef VERBOSE_1
-        cout<<"WARMUP: Assigned thread ID="<<tid<<endl;
+        cout<<"WARMUP: Assigned thread ID="<<tid<<std::endl;
 #endif
         rlu_self = &rlu_tdata[__tid];
         RLU_THREAD_INIT(rlu_self);
@@ -216,7 +216,7 @@ void * f_real(void * id) {
         urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid, g_thread_cnt);
 #ifdef VERBOSE_1
-        cout<<"REAL: Assigned thread ID="<<tid<<endl;
+        cout<<"REAL: Assigned thread ID="<<tid<<std::endl;
 #endif
         rlu_self = &rlu_tdata[__tid];
         RLU_THREAD_INIT(rlu_self);

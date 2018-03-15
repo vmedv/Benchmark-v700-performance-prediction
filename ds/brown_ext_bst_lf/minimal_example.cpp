@@ -17,17 +17,17 @@
 #include <limits>
 #include <cassert>
 
-#include "brown_ext_abtree_lf_adapter.h"
+#include "brown_ext_bst_lf_adapter.h"
 
 int main(int argc, char** argv) {
 
     const int NUM_THREADS = 1;
+    const int ANY_KEY = 0;
     const int unused1 = 0;
-    const int KEY_POS_INFTY = std::numeric_limits<int>::max();
-    void * const VALUE_RESERVED = (void *) (uintptr_t) (-1);
+    void * const unused2 = NULL;
     Random * const unused3 = NULL;
     
-    auto tree = new ds_adapter<int, void *>(NUM_THREADS, unused1, KEY_POS_INFTY, VALUE_RESERVED, unused3);
+    auto tree = new ds_adapter<int, void *>(NUM_THREADS, ANY_KEY, unused1, unused2, unused3);
     
     const int threadID = 0;
 

@@ -94,7 +94,7 @@ template <typename K, typename V, class RecManager>
 nodeptr lazylist<K,V,RecManager>::new_node(const int tid, const K& key, const V& val, nodeptr next) {
     nodeptr nnode = recordmgr->template allocate<node_t<K,V> >(tid);
     if (nnode == NULL) {
-        cout<<"out of memory"<<endl;
+        std::cout<<"out of memory"<<std::endl;
         exit(1);
     }
     rqProvider->init_node(tid, nnode);
@@ -103,7 +103,7 @@ nodeptr lazylist<K,V,RecManager>::new_node(const int tid, const K& key, const V&
     rqProvider->write_addr(tid, &nnode->next, next);
     rqProvider->write_addr(tid, &nnode->marked, 0LL);
     nnode->lock = false;
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) nnode)%(1<<12));
 #endif
     return nnode;

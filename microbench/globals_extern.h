@@ -8,11 +8,10 @@
 #ifndef GLOBALS_EXTERN_H
 #define	GLOBALS_EXTERN_H
 
-// enable USE_TRACE if you want low level functionality tracing using cout
+// enable USE_TRACE if you want low level functionality tracing using std::cout
 //#define USE_TRACE
 
 #include <string>
-using namespace std;
 
 #include "debugprinting.h"
 #include "plaf.h"
@@ -63,10 +62,10 @@ extern int TOTAL_THREADS;
 #define NUMBER_OF_PATHS 1
 
 /**
- * Configure global statistics using stats_global.h and stats.h
+ * Configure global statistics using gstats_global.h and gstats.h
  */
 
-#include "stats_global.h"
+#include "gstats_global.h"
 
 /**
  * Setup timing code

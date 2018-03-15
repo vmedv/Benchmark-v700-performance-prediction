@@ -19,7 +19,6 @@
 #else
 #define RECLAIM_RCU_RCUHEAD_DEFN 
 #endif
-using namespace std;
 
 template <class K, class V>
 class Node {
@@ -27,10 +26,10 @@ public:
 //    int weight;
     V value;
     K key;
-    atomic_uintptr_t scxRecord;
+    std::atomic_uintptr_t scxRecord;
     atomic_bool marked; // might be able to combine this elegantly with scx record pointer... (maybe we can piggyback on the version number mechanism, using the same bit to indicate ver# OR marked)
-    atomic_uintptr_t left;
-    atomic_uintptr_t right;
+    std::atomic_uintptr_t left;
+    std::atomic_uintptr_t right;
     RECLAIM_RCU_RCUHEAD_DEFN;
 //    char padding[24+64];
 //    char padding[10000];

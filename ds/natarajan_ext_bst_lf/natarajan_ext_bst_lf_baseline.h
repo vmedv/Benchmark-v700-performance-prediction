@@ -128,7 +128,7 @@ struct thread_data_t {
 
 //static __thread thread_data_t<skey_t, sval_t> * data = NULL;
 
-template <typename skey_t, typename sval_t, class RecMgr, class Compare = less<skey_t> >
+template <typename skey_t, typename sval_t, class RecMgr, class Compare = std::less<skey_t> >
 class natarajan_ext_bst_lf {
 private:
     Compare cmp;
@@ -279,9 +279,9 @@ public:
     }    
 
     void printSummary() {
-        stringstream ss;
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in tree";
-        cout<<ss.str()<<endl;
+        std::cout<<ss.str()<<std::endl;
     }
 };
 #endif /* NATARAJAN_EXT_BST_LF_H */

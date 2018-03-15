@@ -39,7 +39,6 @@
 #include "reclaimer_rcu.h"
 #endif
 
-using namespace std;
 
 // maybe Record should be a size
 template <typename Record, class Reclaim, class Alloc, class Pool>
@@ -167,12 +166,12 @@ public:
         COUTATOMIC("pool        : "<<pool->getSizeString()<<std::endl);
         COUTATOMIC("reclaim     : "<<reclaim->getSizeString()<<std::endl);
         COUTATOMIC("unreclaimed : "<<(allocated - deallocated - atoi(reclaim->getSizeString().c_str()))<<std::endl);
-//        COUTATOMIC(endl);
+//        COUTATOMIC(std::endl);
 
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
             reclaim->debugPrintStatus(tid);
         }
-        COUTATOMIC(endl);
+        COUTATOMIC(std::endl);
         
 //        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
 //            COUTATOMIC("thread "<<tid<<" ");
@@ -187,7 +186,7 @@ public:
 //            pool->debugPrintStatus(tid);
 //            COUTATOMIC(" ");
 //            COUTATOMIC("(given="<<debugInfoRecord.getGiven(tid)<<" taken="<<debugInfoRecord.getTaken(tid)<<") toPool="<<debugInfoRecord.getToPool(tid)<<" fromPool="<<debugInfoRecord.getFromPool(tid));
-//            COUTATOMIC(endl);
+//            COUTATOMIC(std::endl);
 //        }
     }
 };

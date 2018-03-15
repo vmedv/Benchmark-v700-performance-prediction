@@ -16,7 +16,6 @@
 #include "pool_interface.h"
 #include "plaf.h"
 #include "globals.h"
-using namespace std;
 
 #define POOL_THRESHOLD_IN_BLOCKS 10
 
@@ -67,8 +66,8 @@ public:
 ////        sum += sharedBag->sizeInBlocks() * BLOCK_SIZE;
 //        return sum;
 //    }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         long long insharedbag = sharedBag->size();
         long long infreebags = 0;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {

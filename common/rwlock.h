@@ -43,15 +43,15 @@ public:
         if (pthread_rwlock_unlock(&lock)) setbench_error("could not write-unlock rwlock");
     }
     inline bool isWriteLocked() {
-        cout<<"ERROR: isWriteLocked() is not implemented"<<endl;
+        std::cout<<"ERROR: isWriteLocked() is not implemented"<<std::endl;
         exit(-1);
     }
     inline bool isReadLocked() {
-        cout<<"ERROR: isReadLocked() is not implemented"<<endl;
+        std::cout<<"ERROR: isReadLocked() is not implemented"<<std::endl;
         exit(-1);
     }
     inline bool isLocked() {
-        cout<<"ERROR: isReadLocked() is not implemented"<<endl;
+        std::cout<<"ERROR: isReadLocked() is not implemented"<<std::endl;
         exit(-1);
     }
 };

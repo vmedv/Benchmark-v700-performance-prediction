@@ -12,7 +12,7 @@ RC workload::init() {
 	return RCOK;
 }
 
-RC workload::init_schema(string schema_file) {
+RC workload::init_schema(std::string schema_file) {
     
     RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
     rlu_self = &rlu_tdata[tid];
@@ -32,7 +32,7 @@ RC workload::init_schema(string schema_file) {
             getline(fin, line);
             int col_count = 0;
             // Read all fields for this table.
-            vector<string> lines;
+            std::vector<string> lines;
             while (line.length()>1) {
                 lines.push_back(line);
                 getline(fin, line);
@@ -75,7 +75,7 @@ RC workload::init_schema(string schema_file) {
             iname = &line[6];
             getline(fin, line);
 
-            vector<string> items;
+            std::vector<string> items;
             string token;
             size_t pos;
             while (line.length()!=0) {
@@ -104,7 +104,7 @@ RC workload::init_schema(string schema_file) {
 #else
             index->init(part_cnt, tables[tname]);
 #endif
-            cout<<"tname="<<tname<<" iname="<<iname<<endl;
+            cout<<"tname="<<tname<<" iname="<<iname<<std::endl;
             indexes[iname] = index;
             index->index_id = indexesCreated;
             index->index_name = iname;
@@ -121,7 +121,7 @@ RC workload::init_schema(string schema_file) {
 
 
 
-void workload::index_insert(string index_name, uint64_t key, row_t * row) {
+void workload::index_insert(std::string index_name, uint64_t key, row_t * row) {
 	assert(false);
 	INDEX * index = (INDEX *) indexes[index_name];
 	index_insert(index, key, row);

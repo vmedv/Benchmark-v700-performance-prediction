@@ -13,7 +13,6 @@
 #include "debug_info.h"
 #include "blockpool.h"
 #include "blockbag.h"
-using namespace std;
 
 template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_interface {
@@ -33,7 +32,7 @@ public:
         typedef pool_interface<_Tp1, _Tp2> other;
     };
     
-    string getSizeString() { return ""; }
+    std::string getSizeString() { return ""; }
 //    long long getSizeInNodes() { return 0; }
     /**
      * if the pool contains any object, then remove one from the pool

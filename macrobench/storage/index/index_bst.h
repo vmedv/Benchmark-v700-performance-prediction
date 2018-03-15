@@ -61,13 +61,13 @@ private:
         if (depth > max_depth) {
             max_depth = depth;
         }
-        if (((NODE_TYPE *) curr->left.load(memory_order_relaxed)) == NULL) {
+        if (((NODE_TYPE *) curr->left.load(std::memory_order_relaxed)) == NULL) {
             ++num_leafs;
             ++num_keys;
             sum_leaf_depths += depth; 
         } else {
-            calculate_index_stats((NODE_TYPE *) curr->left.load(memory_order_relaxed), 1+depth);
-            calculate_index_stats((NODE_TYPE *) curr->right.load(memory_order_relaxed), 1+depth);
+            calculate_index_stats((NODE_TYPE *) curr->left.load(std::memory_order_relaxed), 1+depth);
+            calculate_index_stats((NODE_TYPE *) curr->right.load(std::memory_order_relaxed), 1+depth);
         }
     }
 public:

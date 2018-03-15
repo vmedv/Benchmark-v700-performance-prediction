@@ -15,7 +15,6 @@
 #include <cassert>
 #include <iostream>
 #include <vector>
-using namespace std;
 
 // this allocator only performs allocation once, at the beginning of the program.
 // define the following to specify how much memory should be allocated.
@@ -97,7 +96,7 @@ public:
 
             mem[tid] = (T*) malloc((size_t) newSizeBytes);
             if (mem[tid] == NULL) {
-                cerr<<"could not allocate memory"<<std::endl;
+                std::cerr<<"could not allocate memory"<<std::endl;
                 exit(-1);
             }
             //COUTATOMIC("successfully allocated"<<std::endl);

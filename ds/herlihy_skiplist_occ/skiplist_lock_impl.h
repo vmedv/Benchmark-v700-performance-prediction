@@ -77,7 +77,7 @@ template <typename K, typename V, class RecordMgr>
 nodeptr skiplist<K,V,RecordMgr>::allocateNode(const int tid) {
     nodeptr nnode = recmgr->template allocate<node_t<K,V> >(tid);
     if (nnode == NULL) {
-        cout<<"ERROR: out of memory"<<endl;
+        std::cout<<"ERROR: out of memory"<<std::endl;
         exit(-1);
     }
     return nnode;
@@ -192,7 +192,7 @@ bool skiplist<K,V,RecManager>::contains(const int tid, K key) {
 }
 
 template <typename K, typename V, class RecManager>
-const pair<V,bool> skiplist<K,V,RecManager>::find(const int tid, const K& key) {
+const std::pair<V,bool> skiplist<K,V,RecManager>::find(const int tid, const K& key) {
     nodeptr p_preds[SKIPLIST_MAX_LEVEL] = {0,};
     nodeptr p_succs[SKIPLIST_MAX_LEVEL] = {0,};
     nodeptr p_found = NULL;
@@ -208,9 +208,9 @@ const pair<V,bool> skiplist<K,V,RecManager>::find(const int tid, const K& key) {
 #endif
     recmgr->enterQuiescentState(tid);
     if (res) {
-        return pair<V,bool>(p_found->val, true);
+        return std::pair<V,bool>(p_found->val, true);
     } else {
-        return pair<V,bool>(NO_VALUE, false);
+        return std::pair<V,bool>(NO_VALUE, false);
     }
 }
 
@@ -246,7 +246,7 @@ V skiplist<K,V,RecManager>::doInsert(const int tid, const K& key, const V& value
 #endif
                     return ret;
                 } else {
-                   cout<<"ERROR: insert-replace functionality not implemented for lockfree_skiplist_impl"<<endl;
+                   std::cout<<"ERROR: insert-replace functionality not implemented for lockfree_skiplist_impl"<<std::endl;
                    exit(-1);
                 }
             }
@@ -272,7 +272,7 @@ V skiplist<K,V,RecManager>::doInsert(const int tid, const K& key, const V& value
 
         if (valid) {
             p_new_node = allocateNode(tid); // shmem_none->allocateNode(tid);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_APPEND(tid, node_allocated_addresses, ((long long) p_new_node)%(1<<12));
 #endif
             initNode(tid, p_new_node, key, value, topLevel);
@@ -287,7 +287,7 @@ V skiplist<K,V,RecManager>::doInsert(const int tid, const K& key, const V& value
             nodeptr insertedNodes[] = {p_new_node, NULL};
             nodeptr deletedNodes[] = {NULL};
             rqProvider->linearize_update_at_write(tid, &p_new_node->fullyLinked, (long long) 1, insertedNodes, deletedNodes);
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_ADD_IX(tid, skiplist_inserted_on_level, 1, topLevel);
 #endif
             //p_new_node->fullyLinked = 1;
@@ -402,7 +402,7 @@ V skiplist<K,V,RecManager>::erase(const int tid, const K& key) {
 
 template <typename K, typename V, class RecManager>
 int skiplist<K,V,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
-//    cout<<"rangeQuery(lo="<<lo<<" hi="<<hi<<")"<<endl;
+//    std::cout<<"rangeQuery(lo="<<lo<<" hi="<<hi<<")"<<std::endl;
     recmgr->leaveQuiescentState(tid);
     rqProvider->traversal_start(tid);
     int cnt = 0;
@@ -437,13 +437,13 @@ int skiplist<K,V,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi
 //        nodesVisited++;
     }
 #endif
-//    cout<<"BEFORE END: rqSize="<<cnt<<" nodesSkipped="<<nodesSkipped<<" nodesVisited="<<nodesVisited<<endl;
+//    std::cout<<"BEFORE END: rqSize="<<cnt<<" nodesSkipped="<<nodesSkipped<<" nodesVisited="<<nodesVisited<<std::endl;
     rqProvider->traversal_end(tid, resultKeys, resultValues, &cnt, lo, hi);
 #ifdef SNAPCOLLECTOR_PRINT_RQS
-    cout<<"rqSize="<<cnt<<endl;
+    std::cout<<"rqSize="<<cnt<<std::endl;
 #endif
-//    cout<<"AFTER END: rqSize="<<cnt<<" nodesSkipped="<<nodesSkipped<<" nodesVisited="<<nodesVisited<<endl;
-//    cout<<endl;
+//    std::cout<<"AFTER END: rqSize="<<cnt<<" nodesSkipped="<<nodesSkipped<<" nodesVisited="<<nodesVisited<<std::endl;
+//    std::cout<<std::endl;
     
     recmgr->enterQuiescentState(tid);
     return cnt;

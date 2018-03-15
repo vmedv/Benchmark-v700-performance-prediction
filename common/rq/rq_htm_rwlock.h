@@ -76,11 +76,11 @@ public:
     }
 
     ~RQProvider() {
-        cout<<"writer commits : "<<dosum(commitWriter)<<endl;
-        cout<<"writer aborts  : "<<dosum(abortWriter)<<endl;
-        cout<<"reader commits : "<<dosum(commitReader)<<endl;
-        cout<<"reader aborts  : "<<dosum(abortReader)<<endl;
-        cout<<"fallback       : "<<dosum(fallback)<<endl;
+        std::cout<<"writer commits : "<<dosum(commitWriter)<<std::endl;
+        std::cout<<"writer aborts  : "<<dosum(abortWriter)<<std::endl;
+        std::cout<<"reader commits : "<<dosum(commitReader)<<std::endl;
+        std::cout<<"reader aborts  : "<<dosum(abortReader)<<std::endl;
+        std::cout<<"fallback       : "<<dosum(fallback)<<std::endl;
 
 //        for (int tid=0;tid<NUM_PROCESSES;++tid) {
 //            threadData[tid].hashlist->destroy();
@@ -437,12 +437,12 @@ doNotAddToRQ: (0);
 //#if defined MICROBENCH && !defined NDEBUG
 //        assert(*startIndex < 2*RQSIZE); // note: this assert is a hack. it should be *startIndex < size of rqResultKeys
 //        if (*startIndex >= RQSIZE) {
-//            cout<<"ERROR: *startIndex="<<(*startIndex)<<" is unexpectedly greater than or equal to RQSIZE="<<RQSIZE<<" (lo="<<lo<<" hi="<<hi<<")"<<endl;
-//            cout<<"results:";
+//            std::cout<<"ERROR: *startIndex="<<(*startIndex)<<" is unexpectedly greater than or equal to RQSIZE="<<RQSIZE<<" (lo="<<lo<<" hi="<<hi<<")"<<std::endl;
+//            std::cout<<"results:";
 //            for (int i=0;i<*startIndex;++i) {
-//                cout<<" "<<rqResultKeys[i];
+//                std::cout<<" "<<rqResultKeys[i];
 //            }
-//            cout<<endl;
+//            std::cout<<std::endl;
 //            exit(-1);
 //        }
 //#endif
@@ -489,7 +489,7 @@ public:
         
         // collect epoch bags of other processes (MUST be after checking announcements!)
         blockbag<NodeType> * all_bags[NUM_PROCESSES*NUMBER_OF_EPOCH_BAGS+1];
-        vector<blockbag_iterator<NodeType>> all_iterators;
+        std::vector<blockbag_iterator<NodeType>> all_iterators;
         int numIterators = 0;
         for (int otherTid=0;otherTid<NUM_PROCESSES;++otherTid) if (otherTid != tid) {
             blockbag<NodeType> * thread_bags[NUMBER_OF_EPOCH_BAGS+1];
@@ -533,17 +533,17 @@ public:
 
 #if defined MICROBENCH && !defined NDEBUG
         if (*startIndex > RQSIZE) {
-            cout<<"ERROR: *startIndex="<<(*startIndex)<<" is unexpectedly greater than or equal to RQSIZE="<<RQSIZE<<" (lo="<<lo<<" hi="<<hi<<")"<<endl;
-            cout<<"results:";
+            std::cout<<"ERROR: *startIndex="<<(*startIndex)<<" is unexpectedly greater than or equal to RQSIZE="<<RQSIZE<<" (lo="<<lo<<" hi="<<hi<<")"<<std::endl;
+            std::cout<<"results:";
             for (int i=0;i<*startIndex;++i) {
-                cout<<" "<<rqResultKeys[i];
+                std::cout<<" "<<rqResultKeys[i];
             }
-            cout<<endl;
+            std::cout<<std::endl;
             exit(-1);
         }
 #endif
         
-#ifdef __HANDLE_STATS
+#ifdef GSTATS_HANDLE_STATS
 
         GSTATS_ADD_IX(tid, skipped_in_bags, numSkippedInEpochBags, threadData[tid].rq_lin_time);
         GSTATS_ADD_IX(tid, visited_in_bags, numVisitedInEpochBags, threadData[tid].rq_lin_time);

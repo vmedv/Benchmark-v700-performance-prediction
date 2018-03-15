@@ -9,7 +9,7 @@
 
 typedef long long test_type;
 
-// TODO: use system clock (chrono::) to precisely calibrate CPU_FREQ_GHZ in a setup program (rather than having the user enter a specific GHZ number); then, get rid of chrono:: usage.
+// TODO: use system clock (std::chrono::) to precisely calibrate CPU_FREQ_GHZ in a setup program (rather than having the user enter a specific GHZ number); then, get rid of std::chrono:: usage.
 
 #define USE_GSTATS
 
@@ -26,7 +26,6 @@ typedef long long test_type;
 #include "plaf.h"
 #include "binding.h"
 #include "papi_util_impl.h"
-using namespace std;
 
 #ifndef STR
     #define STR(x) XSTR(x)
@@ -44,8 +43,8 @@ using namespace std;
 #endif
 
 static void * const NO_VALUE = NULL;
-static const test_type KEY_MIN = numeric_limits<test_type>::min()+1;
-static const test_type KEY_MAX = numeric_limits<test_type>::max()-1; // must be less than max(), because the snap collector needs a reserved key larger than this!
+static const test_type KEY_MIN = std::numeric_limits<test_type>::min()+1;
+static const test_type KEY_MAX = std::numeric_limits<test_type>::max()-1; // must be less than std::max(), because the snap collector needs a reserved key larger than this!
 
 #ifdef RQ_SNAPCOLLECTOR
     #define RQ_SNAPCOLLECTOR_OBJECT_TYPES , SnapCollector<node_t<test_type, test_type>, test_type>, SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper, ReportItem, CompactReportItem
@@ -122,8 +121,8 @@ volatile char padding1[PREFETCH_SIZE_BYTES];
 
 // variables used in the concurrent test
 volatile char padding2[PREFETCH_SIZE_BYTES];
-chrono::time_point<chrono::high_resolution_clock> startTime;
-chrono::time_point<chrono::high_resolution_clock> endTime;
+std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
 volatile char padding3[PREFETCH_SIZE_BYTES];
 long elapsedMillis;
 long elapsedMillisNapping;
@@ -132,7 +131,7 @@ volatile char padding4[PREFETCH_SIZE_BYTES];
 bool start = false;
 bool done = false;
 volatile char padding5[PREFETCH_SIZE_BYTES];
-atomic_int running; // number of threads that are running
+std::atomic_int running; // number of threads that are running
 volatile char padding6[PREFETCH_SIZE_BYTES];
 volatile char padding7[PREFETCH_SIZE_BYTES];
 
@@ -148,8 +147,8 @@ volatile char padding10[PREFETCH_SIZE_BYTES];
 long long prefillKeySum = 0;
 volatile char padding11[PREFETCH_SIZE_BYTES];
 
-#define PRINTI(name) { cout<<#name<<"="<<name<<endl; }
-#define PRINTS(name) { cout<<#name<<"="<<STR(name)<<endl; }
+#define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
+#define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
 
 #ifndef OPS_BETWEEN_TIME_CHECKS
 #define OPS_BETWEEN_TIME_CHECKS 500
@@ -172,20 +171,20 @@ void *thread_prefill(void *_id) {
     INIT_THREAD(tid);
     running.fetch_add(1);
     __sync_synchronize();
-    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
+    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     int cnt = 0;
-    chrono::time_point<chrono::high_resolution_clock> __endTime = startTime;
+    std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = startTime;
     while (!done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
-            __endTime = chrono::high_resolution_clock::now();
-            if (chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count() >= PREFILL_INTERVAL_MILLIS) {
+            __endTime = std::chrono::high_resolution_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-startTime).count() >= PREFILL_INTERVAL_MILLIS) {
                 done = true;
                 __sync_synchronize();
                 break;
             }
         }
         
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
+        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         int key = rng->nextNatural(MAXKEY);
         double op = rng->nextNatural(100000000) / 1000000.;
         GSTATS_TIMER_RESET(tid, timer_latency);
@@ -213,12 +212,12 @@ void *thread_prefill(void *_id) {
     
     DEINIT_THREAD(tid);
     __garbage += garbage;
-    __sync_bool_compare_and_swap(&prefillIntervalElapsedMillis, 0, chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count());
+    __sync_bool_compare_and_swap(&prefillIntervalElapsedMillis, 0, std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-startTime).count());
     pthread_exit(NULL);
 }
 
 void prefill() {
-    chrono::time_point<chrono::high_resolution_clock> prefillStartTime = chrono::high_resolution_clock::now();
+    std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
     const double PREFILL_THRESHOLD = 0.01;
     const int MAX_ATTEMPTS = 1000;
@@ -243,15 +242,15 @@ void prefill() {
         // start all threads
         for (int i=0;i<TOTAL_THREADS;++i) {
             if (pthread_create(&threads[i], NULL, thread_prefill, &ids[i])) {
-                cerr<<"ERROR: could not create thread"<<endl;
+                std::cerr<<"ERROR: could not create thread"<<std::endl;
                 exit(-1);
             }
         }
 
-        TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<running.load()<<endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<running.load()<<std::endl);
         while (running.load() < TOTAL_THREADS) {}
-        TRACE COUTATOMIC("main thread: starting prefilling timer..."<<endl);
-        startTime = chrono::high_resolution_clock::now();
+        TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
+        startTime = std::chrono::high_resolution_clock::now();
         
         prefillIntervalElapsedMillis = 0;
         __sync_synchronize();
@@ -274,28 +273,28 @@ void prefill() {
         __sync_synchronize();
 
         const long MAX_NAPPING_MILLIS = 5000;
-        elapsedMillis = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - startTime).count();
+        elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
         elapsedMillisNapping = 0;
         while (running.load() > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
             nanosleep(&tsNap, NULL);
-            elapsedMillisNapping = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - startTime).count() - elapsedMillis;
+            elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() - elapsedMillis;
         }
         if (running.load() > 0) {
-            COUTATOMIC(endl);
-            COUTATOMIC("Validation FAILURE: "<<running.load()<<" non-responsive thread(s) [during prefill]"<<endl);
-            COUTATOMIC(endl);
+            COUTATOMIC(std::endl);
+            COUTATOMIC("Validation FAILURE: "<<running.load()<<" non-responsive thread(s) [during prefill]"<<std::endl);
+            COUTATOMIC(std::endl);
             exit(-1);
         }
         /**
          * END INFINITE LOOP DETECTION CODE
          */
         
-        TRACE COUTATOMIC("main thread: waiting for threads to STOP prefilling running="<<running.load()<<endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to STOP prefilling running="<<running.load()<<std::endl);
         while (running.load() > 0) {}
 
         for (int i=0;i<TOTAL_THREADS;++i) {
             if (pthread_join(threads[i], NULL)) {
-                cerr<<"ERROR: could not join prefilling thread"<<endl;
+                std::cerr<<"ERROR: could not join prefilling thread"<<std::endl;
                 exit(-1);
             }
         }
@@ -310,7 +309,7 @@ void prefill() {
         if (sz > expectedSize*(1-PREFILL_THRESHOLD)) {
             break;
         } else {
-            cout << " finished prefilling round with ds size: " << sz << endl; 
+            std::cout << " finished prefilling round with ds size: " << sz << std::endl; 
         }
         
         totalThreadsPrefillElapsedMillis += prefillIntervalElapsedMillis;
@@ -318,17 +317,17 @@ void prefill() {
     }
     
     if (attempts >= MAX_ATTEMPTS) {
-        cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<endl;
+        std::cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<std::endl;
         exit(-1);
     }
     
-    chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
+    std::chrono::time_point<std::chrono::high_resolution_clock> prefillEndTime = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
     GSTATS_PRINT;
     const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
     prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
-    COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< prefillKeySum <<" dskeysum="<<ds->getKeyChecksum()<<" dssize="<<ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<endl);
+    COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< prefillKeySum <<" dskeysum="<<ds->getKeyChecksum()<<" dssize="<<ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<std::endl);
     GSTATS_CLEAR_ALL;
 }
 
@@ -345,14 +344,14 @@ void *thread_timed(void *_id) {
     papi_create_eventset(tid);
     running.fetch_add(1);
     __sync_synchronize();
-    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
+    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     papi_start_counters(tid);
     int cnt = 0;
     int rq_cnt = 0;
     while (!done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
-            if (chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count() >= abs(MILLIS_TO_RUN)) {
+            std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = std::chrono::high_resolution_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-startTime).count() >= std::abs(MILLIS_TO_RUN)) {
                 __sync_synchronize();
                 done = true;
                 __sync_synchronize();
@@ -360,7 +359,7 @@ void *thread_timed(void *_id) {
             }
         }
         
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
+        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         int key = rng->nextNatural(MAXKEY);
         double op = rng->nextNatural(100000000) / 1000000.;
         if (op < INS) {
@@ -378,10 +377,10 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_updates, 1);
         } else if (op < INS+DEL+RQ) {
-            unsigned _key = rng->nextNatural() % max(1, MAXKEY - RQSIZE);
+            unsigned _key = rng->nextNatural() % std::max(1, MAXKEY - RQSIZE);
             assert(_key >= 0);
             assert(_key < MAXKEY);
-            assert(_key < max(1, MAXKEY - RQSIZE));
+            assert(_key < std::max(1, MAXKEY - RQSIZE));
             assert(MAXKEY > RQSIZE || _key == 0);
             key = (int) _key;
             
@@ -426,13 +425,13 @@ void *thread_rq(void *_id) {
     papi_create_eventset(tid);
     running.fetch_add(1);
     __sync_synchronize();
-    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<endl); } // wait to start
+    while (!start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     papi_start_counters(tid);
     int cnt = 0;
     while (!done) {
         if (((++cnt) % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            chrono::time_point<chrono::high_resolution_clock> __endTime = chrono::high_resolution_clock::now();
-            if (chrono::duration_cast<chrono::milliseconds>(__endTime-startTime).count() >= MILLIS_TO_RUN) {
+            std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = std::chrono::high_resolution_clock::now();
+            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-startTime).count() >= MILLIS_TO_RUN) {
                 __sync_synchronize();
                 done = true;
                 __sync_synchronize();
@@ -440,11 +439,11 @@ void *thread_rq(void *_id) {
             }
         }
         
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<endl);
-        unsigned _key = rng->nextNatural() % max(1, MAXKEY - RQSIZE);
+        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
+        unsigned _key = rng->nextNatural() % std::max(1, MAXKEY - RQSIZE);
         assert(_key >= 0);
         assert(_key < MAXKEY);
-        assert(_key < max(1, MAXKEY - RQSIZE));
+        assert(_key < std::max(1, MAXKEY - RQSIZE));
         assert(MAXKEY > RQSIZE || _key == 0);
         
         int key = (int) _key;
@@ -475,7 +474,7 @@ void trial() {
     papi_init_program(TOTAL_THREADS);
     
     ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >(
-            KEY_MIN, KEY_MAX, NO_VALUE, TOTAL_THREADS, rngs);
+            TOTAL_THREADS, KEY_MIN, KEY_MAX, NO_VALUE, rngs);
     
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
@@ -511,24 +510,24 @@ void trial() {
                     (i < WORK_THREADS
                        ? thread_timed
                        : thread_rq), &ids[i])) {
-            cerr<<"ERROR: could not create thread"<<endl;
+            std::cerr<<"ERROR: could not create thread"<<std::endl;
             exit(-1);
         }
     }
 
     while (running.load() < TOTAL_THREADS) {
-        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running.load()<<endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<running.load()<<std::endl);
     } // wait for all threads to be ready
-    COUTATOMIC("main thread: starting timer..."<<endl);
+    COUTATOMIC("main thread: starting timer..."<<std::endl);
     
-    COUTATOMIC(endl);
-    COUTATOMIC("###############################################################################"<<endl);
-    COUTATOMIC("################################ BEGIN RUNNING ################################"<<endl);
-    COUTATOMIC("###############################################################################"<<endl);
-    COUTATOMIC(endl);
+    COUTATOMIC(std::endl);
+    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC("################################ BEGIN RUNNING ################################"<<std::endl);
+    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC(std::endl);
     
     SOFTWARE_BARRIER;
-    startTime = chrono::high_resolution_clock::now();
+    startTime = std::chrono::high_resolution_clock::now();
     __sync_synchronize();
     start = true;
     SOFTWARE_BARRIER;
@@ -547,26 +546,26 @@ void trial() {
     }
 
     const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 5000 : 30000);
-    elapsedMillis = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - startTime).count();
+    elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count();
     elapsedMillisNapping = 0;
     while (running.load() > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
         nanosleep(&tsNap, NULL);
-        elapsedMillisNapping = chrono::duration_cast<chrono::milliseconds>(chrono::high_resolution_clock::now() - startTime).count() - elapsedMillis;
+        elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - startTime).count() - elapsedMillis;
     }
     if (running.load() > 0) {
-        COUTATOMIC(endl);
-        COUTATOMIC("Validation FAILURE: "<<running.load()<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<endl);
-        COUTATOMIC(endl);
-        COUTATOMIC("elapsedMillis="<<elapsedMillis<<" elapsedMillisNapping="<<elapsedMillisNapping<<endl);
+        COUTATOMIC(std::endl);
+        COUTATOMIC("Validation FAILURE: "<<running.load()<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<std::endl);
+        COUTATOMIC(std::endl);
+        COUTATOMIC("elapsedMillis="<<elapsedMillis<<" elapsedMillisNapping="<<elapsedMillisNapping<<std::endl);
         
 //        for (int i=0;i<TOTAL_THREADS;++i) {
 //            pthread_cancel(*(threads[i]));
 //        }
         
         if (ds->validateStructure()) {
-            cout<<"Structural validation OK"<<endl;
+            std::cout<<"Structural validation OK"<<std::endl;
         } else {
-            cout<<"Structural validation FAILURE."<<endl;
+            std::cout<<"Structural validation FAILURE."<<std::endl;
         }
         ds->printSummary();
 #ifdef RQ_DEBUGGING_H
@@ -577,20 +576,20 @@ void trial() {
 
     // join all threads
     for (int i=0;i<TOTAL_THREADS;++i) {
-        COUTATOMIC("joining thread "<<i<<endl);
+        COUTATOMIC("joining thread "<<i<<std::endl);
         if (pthread_join(*(threads[i]), NULL)) {
-            cerr<<"ERROR: could not join thread"<<endl;
+            std::cerr<<"ERROR: could not join thread"<<std::endl;
             exit(-1);
         }
     }
     
-    COUTATOMIC(endl);
-    COUTATOMIC("###############################################################################"<<endl);
-    COUTATOMIC("################################# END RUNNING #################################"<<endl);
-    COUTATOMIC("###############################################################################"<<endl);
-    COUTATOMIC(endl);
+    COUTATOMIC(std::endl);
+    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC("################################# END RUNNING #################################"<<std::endl);
+    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC(std::endl);
     
-    COUTATOMIC(((elapsedMillis+elapsedMillisNapping)/1000.)<<"s"<<endl);
+    COUTATOMIC(((elapsedMillis+elapsedMillisNapping)/1000.)<<"s"<<std::endl);
 
     papi_deinit_program();
     DEINIT_ALL;
@@ -601,11 +600,11 @@ void trial() {
 }
 
 void printOutput() {
-    cout<<"PRODUCING OUTPUT"<<endl;
+    std::cout<<"PRODUCING OUTPUT"<<std::endl;
 
 #ifdef USE_GSTATS
     GSTATS_PRINT;
-    cout<<endl;
+    std::cout<<std::endl;
 #endif
     
     long long threadsKeySum = 0;
@@ -615,18 +614,18 @@ void printOutput() {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + prefillKeySum;
         long long dsKeySum = ds->getKeyChecksum();
         if (threadsKeySum == dsKeySum) {
-            cout<<"Validation OK: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<endl;
+            std::cout<<"Validation OK: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<std::endl;
         } else {
-            cout<<"Validation FAILURE: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<endl;
+            std::cout<<"Validation FAILURE: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<std::endl;
             exit(-1);
         }
     }
 #endif
     
     if (ds->validateStructure()) {
-        cout<<"Structural validation OK"<<endl;
+        std::cout<<"Structural validation OK"<<std::endl;
     } else {
-        cout<<"Structural validation FAILURE."<<endl;
+        std::cout<<"Structural validation FAILURE."<<std::endl;
         exit(-1);
     }
     
@@ -646,31 +645,31 @@ void printOutput() {
         const long long throughputQueries = (long long) (totalQueries / SECONDS_TO_RUN);
         const long long throughputUpdates = (long long) (totalUpdates / SECONDS_TO_RUN);
         const long long throughputAll = (long long) (totalAll / SECONDS_TO_RUN);
-        COUTATOMIC(endl);
-        COUTATOMIC("total find                    : "<<totalSearches<<endl);
-        COUTATOMIC("total rq                      : "<<totalRQs<<endl);
-        COUTATOMIC("total updates                 : "<<totalUpdates<<endl);
-        COUTATOMIC("total queries                 : "<<totalQueries<<endl);
-        COUTATOMIC("total ops                     : "<<totalAll<<endl);
-        COUTATOMIC("find throughput               : "<<throughputSearches<<endl);
-        COUTATOMIC("rq throughput                 : "<<throughputRQs<<endl);
-        COUTATOMIC("update throughput             : "<<throughputUpdates<<endl);
-        COUTATOMIC("query throughput              : "<<throughputQueries<<endl);
-        COUTATOMIC("total throughput              : "<<throughputAll<<endl);
-        COUTATOMIC(endl);
+        COUTATOMIC(std::endl);
+        COUTATOMIC("total find                    : "<<totalSearches<<std::endl);
+        COUTATOMIC("total rq                      : "<<totalRQs<<std::endl);
+        COUTATOMIC("total updates                 : "<<totalUpdates<<std::endl);
+        COUTATOMIC("total queries                 : "<<totalQueries<<std::endl);
+        COUTATOMIC("total ops                     : "<<totalAll<<std::endl);
+        COUTATOMIC("find throughput               : "<<throughputSearches<<std::endl);
+        COUTATOMIC("rq throughput                 : "<<throughputRQs<<std::endl);
+        COUTATOMIC("update throughput             : "<<throughputUpdates<<std::endl);
+        COUTATOMIC("query throughput              : "<<throughputQueries<<std::endl);
+        COUTATOMIC("total throughput              : "<<throughputAll<<std::endl);
+        COUTATOMIC(std::endl);
     }
 #endif
     
-    COUTATOMIC("elapsed milliseconds          : "<<elapsedMillis<<endl);
-    COUTATOMIC("napping milliseconds overtime : "<<elapsedMillisNapping<<endl);
-    COUTATOMIC(endl);
+    COUTATOMIC("elapsed milliseconds          : "<<elapsedMillis<<std::endl);
+    COUTATOMIC("napping milliseconds overtime : "<<elapsedMillisNapping<<std::endl);
+    COUTATOMIC(std::endl);
 
     ds->printSummary();
     
     // free ds
-    cout<<"begin delete ds..."<<endl;
+    std::cout<<"begin delete ds..."<<std::endl;
     delete ds;
-    cout<<"end delete ds."<<endl;
+    std::cout<<"end delete ds."<<std::endl;
 }
 
 int main(int argc, char** argv) {
@@ -709,9 +708,9 @@ int main(int argc, char** argv) {
             PREFILL = true;
         } else if (strcmp(argv[i], "-bind") == 0) { // e.g., "-bind 1,2,3,8-11,4-7,0"
             binding_parseCustom(argv[++i]); // e.g., "1,2,3,8-11,4-7,0"
-            cout<<"parsed custom binding: "<<argv[i]<<endl;
+            std::cout<<"parsed custom binding: "<<argv[i]<<std::endl;
         } else {
-            cout<<"bad argument "<<argv[i]<<endl;
+            std::cout<<"bad argument "<<argv[i]<<std::endl;
             exit(1);
         }
     }
@@ -745,13 +744,13 @@ int main(int argc, char** argv) {
     binding_configurePolicy(TOTAL_THREADS, LOGICAL_PROCESSORS);
     
     // print actual thread pinning/binding layout
-    cout<<"ACTUAL_THREAD_BINDINGS=";
+    std::cout<<"ACTUAL_THREAD_BINDINGS=";
     for (int i=0;i<TOTAL_THREADS;++i) {
-        cout<<(i?",":"")<<binding_getActualBinding(i, LOGICAL_PROCESSORS);
+        std::cout<<(i?",":"")<<binding_getActualBinding(i, LOGICAL_PROCESSORS);
     }
-    cout<<endl;
+    std::cout<<std::endl;
     if (!binding_isInjectiveMapping(TOTAL_THREADS, LOGICAL_PROCESSORS)) {
-        cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
+        std::cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<std::endl;
         exit(-1);
     }
 
@@ -762,7 +761,7 @@ int main(int argc, char** argv) {
     printOutput();
     
     binding_deinit(LOGICAL_PROCESSORS);
-    cout<<"garbage="<<__garbage<<endl; // to prevent certain steps from being optimized out
+    std::cout<<"garbage="<<__garbage<<std::endl; // to prevent certain steps from being optimized out
     GSTATS_DESTROY;
     return 0;
 }

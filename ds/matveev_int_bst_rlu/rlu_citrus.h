@@ -38,8 +38,8 @@ public:
     bool contains(const int tid, const K& key);
     V insert(const int tid, const K& key, const V& value);
     V insertIfAbsent(const int tid, const K& key, const V& value);
-    const pair<V,bool> find(const int tid, const K& key);
-    const pair<V,bool> erase(const int tid, const K& key);
+    const std::pair<V,bool> find(const int tid, const K& key);
+    const std::pair<V,bool> erase(const int tid, const K& key);
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues);
     
     node_t<K,V> * debug_getEntryPoint() { return root; }
@@ -67,8 +67,8 @@ public:
     long long getSizeInNodes() {
         return getSizeInNodes(root);
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }

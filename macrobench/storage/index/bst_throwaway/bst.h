@@ -25,16 +25,14 @@
 #include "scxrecord.h"
 #include "node.h"
 
-using namespace std;
-
 class bst_retired_info {
 public:
     void * obj;
-    atomic_uintptr_t * ptrToObj;
+    std::atomic_uintptr_t * ptrToObj;
     atomic_bool * nodeContainingPtrToObjIsMarked;
     bst_retired_info(
             void *_obj,
-            atomic_uintptr_t *_ptrToObj,
+            std::atomic_uintptr_t *_ptrToObj,
             atomic_bool * _nodeContainingPtrToObjIsMarked)
             : obj(_obj),
               ptrToObj(_ptrToObj),
@@ -89,7 +87,7 @@ private:
     //     for i = 0..MAX_NODES-2
     Node<K,V> **allocatedNodes;
     #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
-    #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, memory_order_relaxed);*/ }
+    #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, std::memory_order_relaxed);*/ }
     
     // debug info
 //    debugCounters * const counters;
@@ -130,7 +128,7 @@ private:
                 const int,
                 SCXRecord<K,V> * const,
                 ReclamationInfo<K,V> * const,
-                atomic_uintptr_t * const,
+                std::atomic_uintptr_t * const,
                 Node<K,V> * const);
     inline Node<K,V>* initializeNode(
                 const int,
@@ -157,7 +155,7 @@ private:
     inline bool scx(
                 const int tid,
                 ReclamationInfo<K,V> * const,
-                atomic_uintptr_t *field,         // pointer to a "field pointer" that will be changed
+                std::atomic_uintptr_t *field,         // pointer to a "field pointer" that will be changed
                 Node<K,V> *newNode);
     inline int computeSize(Node<K,V>* node);
 
@@ -179,8 +177,8 @@ public:
 //            , counters(new debugCounters(numProcesses))
             , NO_KEY(_NO_KEY)
             , NO_VALUE(_NO_VALUE) {
-        cout<<"USING INDEX TYPE unbalanced BST"<<endl;
-        VERBOSE DEBUG COUTATOMIC("constructor bst"<<endl);
+        cout<<"USING INDEX TYPE unbalanced BST"<<std::endl;
+        VERBOSE DEBUG COUTATOMIC("constructor bst"<<std::endl);
         allocatedSCXRecord = new SCXRecord<K,V>*[numProcesses*PREFETCH_SIZE_WORDS];
         allocatedNodes = new Node<K,V>*[numProcesses*(PREFETCH_SIZE_WORDS+MAX_NODES)];
         for (int tid=0;tid<numProcesses;++tid) {
@@ -191,7 +189,7 @@ public:
         initThread(tid);
         recmgr->enterQuiescentState(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
         dummy = allocateSCXRecord(tid);
-        dummy->state.store(SCXRecord<K,V>::STATE_ABORTED, memory_order_relaxed); // this is a NO-OP, so it shouldn't start as InProgress; aborted is just more efficient than committed, since we won't try to help marked leaves, which always have the dummy scx record...
+        dummy->state.store(SCXRecord<K,V>::STATE_ABORTED, std::memory_order_relaxed); // this is a NO-OP, so it shouldn't start as InProgress; aborted is just more efficient than committed, since we won't try to help marked leaves, which always have the dummy scx record...
         Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
         root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
         cmp = Compare();
@@ -220,23 +218,23 @@ public:
     
     long long getSizeInNodes(Node<K,V> * const u) {
         if (u == NULL) return 0;
-        return 1 + getSizeInNodes((Node<K,V>*) u->left.load(memory_order_relaxed))
-                 + getSizeInNodes((Node<K,V>*) u->right.load(memory_order_relaxed));
+        return 1 + getSizeInNodes((Node<K,V>*) u->left.load(std::memory_order_relaxed))
+                 + getSizeInNodes((Node<K,V>*) u->right.load(std::memory_order_relaxed));
     }
     long long getSizeInNodes() {
         return getSizeInNodes((Node<K,V>*) root);
     }
     string getSizeString() {
-        stringstream ss;
+        std::stringstream ss;
         int preallocated = MAX_NODES * recmgr->NUM_PROCESSES;
         ss<<getSizeInNodes()<<" nodes in tree and "<<preallocated<<" preallocated but unused";
         return ss.str();
     }
     long long getSize(Node<K,V> * const u) {
         if (u == NULL) return 0;
-        if ((Node<K,V>*) u->left.load(memory_order_relaxed) == NULL) return 1; // is leaf
-        return getSize((Node<K,V>*) u->left.load(memory_order_relaxed))
-             + getSize((Node<K,V>*) u->right.load(memory_order_relaxed));
+        if ((Node<K,V>*) u->left.load(std::memory_order_relaxed) == NULL) return 1; // is leaf
+        return getSize((Node<K,V>*) u->left.load(std::memory_order_relaxed))
+             + getSize((Node<K,V>*) u->right.load(std::memory_order_relaxed));
     }
     long long getSize() {
         return getSize((Node<K,V>*) root);
@@ -244,13 +242,13 @@ public:
     
     void dfsDeallocateBottomUp(Node<K,V> * const u, set<void*>& seen, int *numNodes) {
         if (u == NULL) return;
-        if ((Node<K,V>*) u->left.load(memory_order_relaxed) != NULL) {
-            dfsDeallocateBottomUp((Node<K,V>*) u->left.load(memory_order_relaxed), seen, numNodes);
-            dfsDeallocateBottomUp((Node<K,V>*) u->right.load(memory_order_relaxed), seen, numNodes);
+        if ((Node<K,V>*) u->left.load(std::memory_order_relaxed) != NULL) {
+            dfsDeallocateBottomUp((Node<K,V>*) u->left.load(std::memory_order_relaxed), seen, numNodes);
+            dfsDeallocateBottomUp((Node<K,V>*) u->right.load(std::memory_order_relaxed), seen, numNodes);
         }
-        SCXRecord<K,V>* rec = (SCXRecord<K,V>*) u->scxRecord.load(memory_order_relaxed);
+        SCXRecord<K,V>* rec = (SCXRecord<K,V>*) u->scxRecord.load(std::memory_order_relaxed);
         if (rec != NULL && !IS_VERSION_NUMBER(rec)) {
-            seen.insert((Node<K,V>*) u->scxRecord.load(memory_order_relaxed));
+            seen.insert((Node<K,V>*) u->scxRecord.load(std::memory_order_relaxed));
         }
         DEBUG ++(*numNodes);
         recmgr->deallocate(0 /* tid */, u);
@@ -270,7 +268,7 @@ public:
         for (set<void*>::iterator it = seen.begin(); it != seen.end(); it++) {
             recmgr->deallocate(0 /* tid */, (SCXRecord<K,V>*) *it);
         }
-        VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<" scx records "<<seen.size()<<endl);
+        VERBOSE DEBUG COUTATOMIC(" deallocated nodes "<<numNodes<<" scx records "<<seen.size()<<std::endl);
         for (int tid=0;tid<recmgr->NUM_PROCESSES;++tid) {
             for (int i=0;i<MAX_NODES;++i) {
                 recmgr->deallocate(tid, GET_ALLOCATED_NODE_PTR(tid, i));
@@ -299,18 +297,18 @@ public:
     void debugPrintAllocatorStatus() {
         recmgr->printStatus();
     }
-    void debugPrintToFile(string prefix, long id1, string infix, long id2, string suffix) {
-        stringstream ss;
+    void debugPrintToFile(std::string prefix, long id1, string infix, long id2, string suffix) {
+        std::stringstream ss;
         ss<<prefix<<id1<<infix<<id2<<suffix;
-        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<endl);
+        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<std::endl);
         fstream fs (ss.str().c_str(), fstream::out);
         root->printTreeFile(fs);
         fs.close();
     }
-    void debugPrintToFileWeight(string prefix, long id1, string infix, long id2, string suffix) {
-        stringstream ss;
+    void debugPrintToFileWeight(std::string prefix, long id1, string infix, long id2, string suffix) {
+        std::stringstream ss;
         ss<<prefix<<id1<<infix<<id2<<suffix;
-        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<endl);
+        COUTATOMIC("print to filename \""<<ss.str()<<"\""<<std::endl);
         fstream fs (ss.str().c_str(), fstream::out);
         root->printTreeFileWeight(fs);
         fs.close();
@@ -328,8 +326,8 @@ public:
     
     bool validate(const long long keysum, const bool checkkeysum);
     long long debugKeySum() {
-        return debugKeySum((Node<K,V> *) ((Node<K,V> *) root->left.load(memory_order_relaxed))->left.load(memory_order_relaxed));
-        //return debugKeySum((Node<K,V> *) root->left.load(memory_order_relaxed));
+        return debugKeySum((Node<K,V> *) ((Node<K,V> *) root->left.load(std::memory_order_relaxed))->left.load(std::memory_order_relaxed));
+        //return debugKeySum((Node<K,V> *) root->left.load(std::memory_order_relaxed));
     }
 };
 

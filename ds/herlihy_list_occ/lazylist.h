@@ -82,8 +82,8 @@ public:
         }
         return size;
     }
-    string getSizeString() {
-        stringstream ss;
+    std::string getSizeString() {
+        std::stringstream ss;
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }
