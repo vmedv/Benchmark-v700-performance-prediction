@@ -31,7 +31,7 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
 typedef record_manager<RECLAIMER_TYPE, ALLOCATOR_TYPE, POOL_TYPE, NODE_TYPE, DESCRIPTOR_TYPE> RECORD_MANAGER_TYPE;
 
 typedef bst<KEY_TYPE, VALUE_TYPE, less<KEY_TYPE>, RECORD_MANAGER_TYPE> INDEX_TYPE;
-#define INDEX_CONSTRUCTOR_ARGS __NO_KEY, __NO_VALUE, MAX_TID_POW2, SIGQUIT
+#define INDEX_CONSTRUCTOR_ARGS __NO_KEY, __NO_VALUE, MAX_THREADS_POW2, SIGQUIT
 
 
 
@@ -72,7 +72,7 @@ private:
     }
 public:
     RC init(uint64_t part_cnt, table_t * table) {
-        if (part_cnt != 1) error("part_cnt != 1 unsupported");
+        if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
         index = new INDEX_TYPE(INDEX_CONSTRUCTOR_ARGS);
         this->table = table;
         return RCOK;

@@ -11,7 +11,7 @@
 
 using namespace std;
 
-int event_sets[MAX_TID_POW2] = {0,};
+int event_sets[MAX_THREADS_POW2] = {0,};
 long long counter_values[nall_cpu_counters];
 
 char *cpu_counter(int c) {

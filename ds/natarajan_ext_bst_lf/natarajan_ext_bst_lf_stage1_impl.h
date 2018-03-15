@@ -479,14 +479,14 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
 //    newLeaf = &allocedNodeArr[1];
     newInt = recmgr->template allocate<node_t<skey_t, sval_t>>(data->id);
     if (newInt == NULL) {
-        error("out of memory");
+        setbench_error("out of memory");
     }
 #ifdef __HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newInt);
 #endif
     newLeaf = recmgr->template allocate<node_t<skey_t, sval_t>>(data->id);
     if (newLeaf == NULL) {
-        error("out of memory");
+        setbench_error("out of memory");
     }
 #ifdef __HANDLE_STATS
     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newLeaf);

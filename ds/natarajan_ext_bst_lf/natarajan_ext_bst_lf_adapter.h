@@ -55,7 +55,7 @@ public:
         return tree->find(tid, key) != getNoValue();
     }
     V insert(const int tid, const K& key, const V& val) {
-        error("insert-replace not implemented for this data structure");
+        setbench_error("insert-replace not implemented for this data structure");
     }
     V insertIfAbsent(const int tid, const K& key, const V& val) {
         return tree->insertIfAbsent(tid, key, val);
@@ -73,7 +73,7 @@ public:
         return tree->find(tid, key);
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
-        error("rangeQuery not implemented for this data structure");
+        setbench_error("rangeQuery not implemented for this data structure");
     }
     /**
      * Sequential operation to get the number of keys in the set

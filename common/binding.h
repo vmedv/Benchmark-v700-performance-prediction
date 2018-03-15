@@ -62,9 +62,9 @@ using namespace std;
 //const int SOSCIP_SCATTER = 102;
 
 // cpu sets for binding threads to cores
-static cpu_set_t *cpusets[PHYSICAL_PROCESSORS];
+static cpu_set_t *cpusets[LOGICAL_PROCESSORS];
 
-static int customBinding[PHYSICAL_PROCESSORS];
+static int customBinding[LOGICAL_PROCESSORS];
 static int numCustomBindings = 0;
 //static vector<int> customBinding;
 

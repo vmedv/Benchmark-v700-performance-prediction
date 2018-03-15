@@ -35,7 +35,7 @@ template <typename skey_t, typename sval_t, class RecMgr>
 node_t<skey_t, sval_t> * ccavl<skey_t, sval_t, RecMgr>::rb_alloc(const int tid) {
     node_t<skey_t, sval_t> * result = recmgr->template allocate<node_t<skey_t, sval_t> >(tid);
     if (result == NULL) {
-        error("out of memory");
+        setbench_error("out of memory");
     }
     return result;
 }

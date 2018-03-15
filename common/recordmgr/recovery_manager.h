@@ -44,16 +44,16 @@ extern pthread_key_t pthreadkey;
 extern struct sigaction ___act;
 extern void *___singleton;
 
-static pthread_t registeredThreads[MAX_TID_POW2];
-static void *errnoThreads[MAX_TID_POW2];
+static pthread_t registeredThreads[MAX_THREADS_POW2];
+static void *errnoThreads[MAX_THREADS_POW2];
 static sigjmp_buf *setjmpbuffers;
-extern pthread_t registeredThreads[MAX_TID_POW2];
-extern void *errnoThreads[MAX_TID_POW2];
+extern pthread_t registeredThreads[MAX_THREADS_POW2];
+extern void *errnoThreads[MAX_THREADS_POW2];
 extern sigjmp_buf *setjmpbuffers;
 
 #ifdef USE_DEBUGCOUNTERS
-static debugCounter countInterrupted(MAX_TID_POW2);
-static debugCounter countLongjmp(MAX_TID_POW2);
+static debugCounter countInterrupted(MAX_THREADS_POW2);
+static debugCounter countLongjmp(MAX_THREADS_POW2);
 extern debugCounter countInterrupted;
 extern debugCounter countLongjmp;
 #endif

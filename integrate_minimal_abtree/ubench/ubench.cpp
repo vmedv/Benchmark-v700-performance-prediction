@@ -11,6 +11,8 @@ typedef long long test_type;
 
 // TODO: use system clock (chrono::) to precisely calibrate CPU_FREQ_GHZ in a setup program (rather than having the user enter a specific GHZ number); then, get rid of chrono:: usage.
 
+#define USE_GSTATS
+
 #include <limits>
 #include <cstring>
 #include <ctime>
@@ -304,9 +306,7 @@ void prefill() {
         start = false;
         done = false;
 
-#if defined USE_GSTATS
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-#endif
         if (sz > expectedSize*(1-PREFILL_THRESHOLD)) {
             break;
         } else {
@@ -325,13 +325,11 @@ void prefill() {
     chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
     auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
-#ifdef USE_GSTATS
     GSTATS_PRINT;
     const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
     prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< prefillKeySum <<" dskeysum="<<ds->getKeyChecksum()<<" dssize="<<ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<endl);
     GSTATS_CLEAR_ALL;
-#endif
 }
 
 void *thread_timed(void *_id) {

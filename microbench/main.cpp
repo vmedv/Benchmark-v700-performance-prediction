@@ -7,13 +7,11 @@
 
 #define MICROBENCH
 
-#ifdef __CYGWIN__
-    typedef long long __syscall_slong_t;
-#endif
-
 typedef long long test_type;
 
 // TODO: use system clock (chrono::) to precisely calibrate CPU_FREQ_GHZ in a setup program (rather than having the user enter a specific GHZ number); then, get rid of chrono:: usage.
+
+#define USE_GSTATS
 
 #include <limits>
 #include <cstring>
@@ -28,9 +26,6 @@ typedef long long test_type;
 #include "plaf.h"
 #include "binding.h"
 #include "papi_util_impl.h"
-#ifdef USE_DEBUGCOUNTERS
-    #include "debugcounters.h"
-#endif
 using namespace std;
 
 #ifndef STR
@@ -41,7 +36,7 @@ using namespace std;
 #ifdef ADAPTER_H_FILE
     #include STR(ADAPTER_H_FILE)
 #else
-    #warning ADAPTER_H_FILE should be defined!
+    #error ADAPTER_H_FILE should be defined!
 #endif
 
 #ifndef INSERT_FUNC
@@ -93,7 +88,7 @@ static const test_type KEY_MAX = numeric_limits<test_type>::max()-1; // must be 
     rlu_thread_data_t * rlu_tdata = NULL;
     #define __RLU_INIT_THREAD rlu_self = &rlu_tdata[tid]; RLU_THREAD_INIT(rlu_self);
     #define __RLU_DEINIT_THREAD RLU_THREAD_FINISH(rlu_self);
-    #define __RLU_INIT_ALL rlu_tdata = new rlu_thread_data_t[MAX_TID_POW2]; RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+    #define __RLU_INIT_ALL rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2]; RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
     #define __RLU_DEINIT_ALL RLU_FINISH(); delete[] rlu_tdata;
 #else
     #define __RLU_INIT_THREAD 
@@ -117,12 +112,12 @@ static const test_type KEY_MAX = numeric_limits<test_type>::max()-1; // must be 
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
 
-#if !defined USE_DEBUGCOUNTERS && !defined USE_GSTATS
-    #error "Must define either USE_GSTATS or USE_DEBUGCOUNTERS."
+#if !defined USE_GSTATS
+    #error "Must define USE_GSTATS."
 #endif
 
 volatile char padding0[PREFETCH_SIZE_BYTES];
-Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread random number generators (padded to avoid false sharing)
+Random rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS]; // create per-thread random number generators (padded to avoid false sharing)
 volatile char padding1[PREFETCH_SIZE_BYTES];
 
 // variables used in the concurrent test
@@ -139,13 +134,9 @@ bool done = false;
 volatile char padding5[PREFETCH_SIZE_BYTES];
 atomic_int running; // number of threads that are running
 volatile char padding6[PREFETCH_SIZE_BYTES];
-#ifdef USE_DEBUGCOUNTERS
-debugCounter * keysum; // key sum hashes for all threads (including for prefilling)
-debugCounter * prefillSize;
-#endif
 volatile char padding7[PREFETCH_SIZE_BYTES];
 
-ds_adapter<test_type, VALUE_TYPE, RECLAIM<test_type>, ALLOC<test_type>, POOL<test_type> > *ds; // the data structure
+ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> > *ds; // the data structure
 
 volatile char padding8[PREFETCH_SIZE_BYTES];
 test_type __garbage = 0; // used to prevent optimizing out some code
@@ -167,17 +158,12 @@ volatile char padding11[PREFETCH_SIZE_BYTES];
 #define RQS_BETWEEN_TIME_CHECKS 10
 #endif
 
-#ifdef USE_DEBUGCOUNTERS
-    #define GET_COUNTERS ds->debugGetCounters()
-    #define CLEAR_COUNTERS ds->clearCounters();
-#else
-    #define GET_COUNTERS 
-    #define CLEAR_COUNTERS 
-#endif
+#define GET_COUNTERS 
+#define CLEAR_COUNTERS 
     
 void *thread_prefill(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, PHYSICAL_PROCESSORS);
+    binding_bindThread(tid, LOGICAL_PROCESSORS);
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
     test_type garbage = 0;
 
@@ -207,26 +193,12 @@ void *thread_prefill(void *_id) {
             if (ds->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == ds->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, prefill_size, 1);
-#ifdef USE_DEBUGCOUNTERS
-                keysum->add(tid, key);
-                prefillSize->add(tid, 1);
-                GET_COUNTERS->insertSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->insertFail->inc(tid);
-#endif
             }
             GSTATS_ADD(tid, num_updates, 1);
         } else {
             if (ds->erase(tid, key) != ds->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, prefill_size, -1);
-#ifdef USE_DEBUGCOUNTERS
-                keysum->add(tid, -key);
-                prefillSize->add(tid, -1);
-                GET_COUNTERS->eraseSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->eraseFail->inc(tid);
-#endif
             }
             GSTATS_ADD(tid, num_updates, 1);
         }
@@ -334,11 +306,7 @@ void prefill() {
         start = false;
         done = false;
 
-#ifdef USE_DEBUGCOUNTERS
-        sz = prefillSize->getTotal();
-#elif defined USE_GSTATS
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-#endif
         if (sz > expectedSize*(1-PREFILL_THRESHOLD)) {
             break;
         } else {
@@ -357,24 +325,16 @@ void prefill() {
     chrono::time_point<chrono::high_resolution_clock> prefillEndTime = chrono::high_resolution_clock::now();
     auto elapsed = chrono::duration_cast<chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
-#ifdef USE_DEBUGCOUNTERS
-    debugCounters * const counters = GET_COUNTERS;
-    const long totalSuccUpdates = counters->insertSuccess->getTotal()+counters->eraseSuccess->getTotal();
-    COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<<keysum->getTotal()<<" dskeysum="<<ds->getKeyChecksum()<<" dssize="<<ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<endl);
-    CLEAR_COUNTERS;
-#endif
-#ifdef USE_GSTATS
     GSTATS_PRINT;
     const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
     prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< prefillKeySum <<" dskeysum="<<ds->getKeyChecksum()<<" dssize="<<ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<endl);
     GSTATS_CLEAR_ALL;
-#endif
 }
 
 void *thread_timed(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, PHYSICAL_PROCESSORS);
+    binding_bindThread(tid, LOGICAL_PROCESSORS);
     test_type garbage = 0;
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
 
@@ -407,12 +367,6 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (ds->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == ds->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
-#ifdef USE_DEBUGCOUNTERS
-                keysum->add(tid, key);
-                GET_COUNTERS->insertSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->insertFail->inc(tid);
-#endif
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_updates, 1);
@@ -420,12 +374,6 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (ds->erase(tid, key) != ds->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
-#ifdef USE_DEBUGCOUNTERS
-                keysum->add(tid, -key);
-                GET_COUNTERS->eraseSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->eraseFail->inc(tid);
-#endif
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_updates, 1);
@@ -442,22 +390,12 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (rqcnt = ds->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
                 garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
-#ifdef USE_DEBUGCOUNTERS
-                GET_COUNTERS->rqSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->rqFail->inc(tid);
-#endif
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
             GSTATS_ADD(tid, num_rq, 1);
         } else {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (ds->contains(tid, key)) {
-#ifdef USE_DEBUGCOUNTERS
-                GET_COUNTERS->findSuccess->inc(tid);
-            } else {
-                GET_COUNTERS->findFail->inc(tid);
-#endif
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_searches);
             GSTATS_ADD(tid, num_searches, 1);
@@ -477,7 +415,7 @@ void *thread_timed(void *_id) {
 
 void *thread_rq(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, PHYSICAL_PROCESSORS);
+    binding_bindThread(tid, LOGICAL_PROCESSORS);
     test_type garbage = 0;
     Random *rng = &rngs[tid*PREFETCH_SIZE_WORDS];
 
@@ -514,11 +452,6 @@ void *thread_rq(void *_id) {
         GSTATS_TIMER_RESET(tid, timer_latency);
         if (rqcnt = ds->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
             garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
-#ifdef USE_DEBUGCOUNTERS
-            GET_COUNTERS->rqSuccess->inc(tid);
-        } else {
-            GET_COUNTERS->rqFail->inc(tid);
-#endif
         }
         GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
         GSTATS_ADD(tid, num_rq, 1);
@@ -541,7 +474,7 @@ void trial() {
     INIT_ALL;
     papi_init_program(TOTAL_THREADS);
     
-    ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<test_type>, ALLOC<test_type>, POOL<test_type> >(
+    ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >(
             KEY_MIN, KEY_MAX, NO_VALUE, TOTAL_THREADS, rngs);
     
     // get random number generator seeded with time
@@ -676,18 +609,6 @@ void printOutput() {
 #endif
     
     long long threadsKeySum = 0;
-#ifdef USE_DEBUGCOUNTERS
-    {
-        threadsKeySum = keysum->getTotal();
-        long long dsKeySum = ds->getKeyChecksum();
-        if (threadsKeySum == dsKeySum) {
-            cout<<"Validation OK: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<endl;
-        } else {
-            cout<<"Validation FAILURE: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<endl;
-            exit(-1);
-        }
-    }
-#endif
     
 #ifdef USE_GSTATS
     {
@@ -710,37 +631,6 @@ void printOutput() {
     }
     
     long long totalAll = 0;
-
-#ifdef USE_DEBUGCOUNTERS
-    debugCounters * const counters = GET_COUNTERS;
-    {
-        const long long totalSearches = counters->findSuccess->getTotal() + counters->findFail->getTotal();
-        const long long totalRQs = counters->rqSuccess->getTotal() + counters->rqFail->getTotal();
-        const long long totalQueries = totalSearches + totalRQs;
-        const long long totalUpdates = counters->insertSuccess->getTotal() + counters->insertFail->getTotal()
-                + counters->eraseSuccess->getTotal() + counters->eraseFail->getTotal();
-
-        const double SECONDS_TO_RUN = (MILLIS_TO_RUN)/1000.;
-        totalAll = totalUpdates + totalQueries;
-        const long long throughputSearches = (long long) (totalSearches / SECONDS_TO_RUN);
-        const long long throughputRQs = (long long) (totalRQs / SECONDS_TO_RUN);
-        const long long throughputQueries = (long long) (totalQueries / SECONDS_TO_RUN);
-        const long long throughputUpdates = (long long) (totalUpdates / SECONDS_TO_RUN);
-        const long long throughputAll = (long long) (totalAll / SECONDS_TO_RUN);
-        COUTATOMIC(endl);
-        COUTATOMIC("total find                    : "<<totalSearches<<endl);
-        COUTATOMIC("total rq                      : "<<totalRQs<<endl);
-        COUTATOMIC("total updates                 : "<<totalUpdates<<endl);
-        COUTATOMIC("total queries                 : "<<totalQueries<<endl);
-        COUTATOMIC("total ops                     : "<<totalAll<<endl);
-        COUTATOMIC("find throughput               : "<<throughputSearches<<endl);
-        COUTATOMIC("rq throughput                 : "<<throughputRQs<<endl);
-        COUTATOMIC("update throughput             : "<<throughputUpdates<<endl);
-        COUTATOMIC("query throughput              : "<<throughputQueries<<endl);
-        COUTATOMIC("total throughput              : "<<throughputAll<<endl);
-        COUTATOMIC(endl);
-    }
-#endif
 
 #ifdef USE_GSTATS
     {
@@ -777,21 +667,10 @@ void printOutput() {
 
     ds->printSummary();
     
-#ifdef USE_DEBUGCOUNTERS
-    cout<<"begin papi_print_counters..."<<endl;
-    papi_print_counters(totalAll);
-    cout<<"end papi_print_counters."<<endl;
-#endif
-    
     // free ds
     cout<<"begin delete ds..."<<endl;
     delete ds;
     cout<<"end delete ds."<<endl;
-    
-#ifdef USE_DEBUGCOUNTERS
-    VERBOSE COUTATOMIC("main thread: garbage#=");
-    VERBOSE COUTATOMIC(counters->garbage->getTotal()<<endl);
-#endif
 }
 
 int main(int argc, char** argv) {
@@ -863,15 +742,15 @@ int main(int argc, char** argv) {
     ds->printObjectSizes();
     
     // setup thread pinning/binding
-    binding_configurePolicy(TOTAL_THREADS, PHYSICAL_PROCESSORS);
+    binding_configurePolicy(TOTAL_THREADS, LOGICAL_PROCESSORS);
     
     // print actual thread pinning/binding layout
     cout<<"ACTUAL_THREAD_BINDINGS=";
     for (int i=0;i<TOTAL_THREADS;++i) {
-        cout<<(i?",":"")<<binding_getActualBinding(i, PHYSICAL_PROCESSORS);
+        cout<<(i?",":"")<<binding_getActualBinding(i, LOGICAL_PROCESSORS);
     }
     cout<<endl;
-    if (!binding_isInjectiveMapping(TOTAL_THREADS, PHYSICAL_PROCESSORS)) {
+    if (!binding_isInjectiveMapping(TOTAL_THREADS, LOGICAL_PROCESSORS)) {
         cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<endl;
         exit(-1);
     }
@@ -879,21 +758,11 @@ int main(int argc, char** argv) {
     // setup per-thread statistics
     GSTATS_CREATE_ALL;
     
-#ifdef USE_DEBUGCOUNTERS
-    // per-thread stats for prefilling and key-checksum validation of the data structure
-    keysum = new debugCounter(MAX_TID_POW2);
-    prefillSize = new debugCounter(MAX_TID_POW2);
-#endif
-    
     trial();
     printOutput();
     
-    binding_deinit(PHYSICAL_PROCESSORS);
+    binding_deinit(LOGICAL_PROCESSORS);
     cout<<"garbage="<<__garbage<<endl; // to prevent certain steps from being optimized out
-#ifdef USE_DEBUGCOUNTERS
-    delete keysum;
-    delete prefillSize;
-#endif
     GSTATS_DESTROY;
     return 0;
 }

@@ -13,17 +13,11 @@
 #include <unistd.h>
 
 #ifndef error
-#define error(s) { \
+#define setbench_error(s) { \
     std::cout<<"ERROR: "<<s<<" (at "<<__FILE__<<"::"<<__FUNCTION__<<":"<<__LINE__<<")"<<std::endl; \
     exit(-1); \
 }
 #endif
-
-//__attribute__((always_inline))
-//void error(std::string s) {
-//    std::cout<<"ERROR: "<<s<<" (at "<<__FILE__<<"::"<<__FUNCTION__<<":"<<__LINE__<<")"<<std::endl;
-//    exit(-1);
-//}
 
 #endif	/* ERRORS_H */
 

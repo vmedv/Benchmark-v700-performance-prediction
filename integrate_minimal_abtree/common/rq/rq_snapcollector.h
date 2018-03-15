@@ -57,7 +57,7 @@ private:
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {
         assert(logicalDeletion); // Timnat's iterator algorithm REQUIRES logical deletion!
-        if (pthread_rwlock_init(&rwlock, NULL)) error("could not init rwlock");
+        if (pthread_rwlock_init(&rwlock, NULL)) setbench_error("could not init rwlock");
         threadData = new __rq_thread_data[numProcesses];
         
         const int dummyTid = 0;
@@ -79,7 +79,7 @@ public:
     }
 
     ~RQProvider() {
-        if (pthread_rwlock_destroy(&rwlock)) error("could not destroy rwlock");
+        if (pthread_rwlock_destroy(&rwlock)) setbench_error("could not destroy rwlock");
         delete[] threadData;
         snapPointer->retire(0 /* dummy tid */, recmgr);
         DEBUG_DEINIT_RQPROVIDER(NUM_PROCESSES);
@@ -207,7 +207,7 @@ public:
                 || (!insertedNodes[0] && deletedNodes[0]));
 
 #ifdef RQ_USE_TIMESTAMPS
-        if (pthread_rwlock_rdlock(&rwlock)) error("could not read-lock rwlock");
+        if (pthread_rwlock_rdlock(&rwlock)) setbench_error("could not read-lock rwlock");
         long long ts = timestamp;
 #else
         long long ts = 1;
@@ -215,7 +215,7 @@ public:
 
         *lin_addr = lin_newval; // original linearization point
 #ifdef RQ_USE_TIMESTAMPS
-        if (pthread_rwlock_unlock(&rwlock)) error("could not read-unlock rwlock");
+        if (pthread_rwlock_unlock(&rwlock)) setbench_error("could not read-unlock rwlock");
 #endif
         
         if (insertedNodes[0]) insert_readonly_report_target_key(tid, insertedNodes[0]);
@@ -242,7 +242,7 @@ public:
                 || (!insertedNodes[0] && deletedNodes[0]));
 
 #ifdef RQ_USE_TIMESTAMPS
-        if (pthread_rwlock_rdlock(&rwlock)) error("could not read-lock rwlock");
+        if (pthread_rwlock_rdlock(&rwlock)) setbench_error("could not read-lock rwlock");
         long long ts = timestamp;
 #else
         long long ts = 1;
@@ -250,7 +250,7 @@ public:
         
         T res = __sync_val_compare_and_swap(lin_addr, lin_oldval, lin_newval);
 #ifdef RQ_USE_TIMESTAMPS
-        if (pthread_rwlock_unlock(&rwlock)) error("could not read-unlock rwlock");
+        if (pthread_rwlock_unlock(&rwlock)) setbench_error("could not read-unlock rwlock");
 #endif
         
         if (res == lin_oldval){

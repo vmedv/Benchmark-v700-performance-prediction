@@ -9,6 +9,15 @@
 #define RWLOCK_H
 
 #ifdef RWLOCK_PTHREADS
+#elif defined RWLOCK_FAVOR_WRITERS
+#elif defined RWLOCK_FAVOR_READERS
+#else
+//    #warning "No RWLOCK implementation specified... using default: favour READERS. See rwlock.h for options. Note that this setting only affects algorithms that use the lock-based range query provider in common/rq/rq_rwlock.h."
+    #define RWLOCK_FAVOR_READERS
+//    #error Must specify RWLOCK implementation; see rwlock.h
+#endif
+
+#ifdef RWLOCK_PTHREADS
 
 class RWLock {
 private:
@@ -16,22 +25,22 @@ private:
     
 public:
     RWLock() {
-        if (pthread_rwlock_init(&lock, NULL)) error("could not init rwlock");
+        if (pthread_rwlock_init(&lock, NULL)) setbench_error("could not init rwlock");
     }
     ~RWLock() {
-        if (pthread_rwlock_destroy(&lock)) error("could not destroy rwlock");
+        if (pthread_rwlock_destroy(&lock)) setbench_error("could not destroy rwlock");
     }
     inline void readLock() {
-        if (pthread_rwlock_rdlock(&lock)) error("could not read-lock rwlock");
+        if (pthread_rwlock_rdlock(&lock)) setbench_error("could not read-lock rwlock");
     }
     inline void readUnlock() {
-        if (pthread_rwlock_unlock(&lock)) error("could not read-unlock rwlock");
+        if (pthread_rwlock_unlock(&lock)) setbench_error("could not read-unlock rwlock");
     }
     inline void writeLock() {
-        if (pthread_rwlock_wrlock(&lock)) error("could not write-lock rwlock");
+        if (pthread_rwlock_wrlock(&lock)) setbench_error("could not write-lock rwlock");
     }
     inline void writeUnlock() {
-        if (pthread_rwlock_unlock(&lock)) error("could not write-unlock rwlock");
+        if (pthread_rwlock_unlock(&lock)) setbench_error("could not write-unlock rwlock");
     }
     inline bool isWriteLocked() {
         cout<<"ERROR: isWriteLocked() is not implemented"<<endl;
@@ -134,43 +143,6 @@ public:
     }
 };
 
-#elif defined RWLOCK_COHORT_FAVOR_WRITERS
-
-#include "cohort_locks.h"
-
-class RWLock {
-private:
-    C_RW_WP_Lock lock;
-    
-public:
-    RWLock() {}
-    inline bool isWriteLocked() {
-        return lock.isWriteLocked();
-    }
-    inline bool isReadLocked() {
-        assert(false); // NOT IMPLEMENTED
-        exit(-1);
-    }
-    inline bool isLocked() {
-        assert(false); // NOT IMPLEMENTED
-        exit(-1);
-    }
-    inline void readLock() {
-        lock.acquireReader();
-    }
-    inline void readUnlock() {
-        lock.releaseReader();
-    }
-    inline void writeLock() {
-        lock.acquireWriter();
-    }
-    inline void writeUnlock() {
-        lock.releaseWriter();
-    }
-};
-
-#else
-#error Must specify RWLOCK implementation; see rwlock.h
 #endif
 
 #endif /* RWLOCK_H */

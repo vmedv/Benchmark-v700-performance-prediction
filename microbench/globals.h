@@ -115,7 +115,7 @@ int TOTAL_THREADS;
     handle_stat(LONG_LONG, timer_latency, 1, {})
 
 #include "stats_global.h"
-GSTATS_DECLARE_STATS_OBJECT(MAX_TID_POW2);
+GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 GSTATS_DECLARE_ALL_STAT_IDS;
 
 #endif	/* GLOBALS_H */

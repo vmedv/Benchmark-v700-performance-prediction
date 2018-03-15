@@ -203,7 +203,7 @@ retry_insert:
                 recordmgr->enterQuiescentState(tid);
                 return result;
             } else {
-                error("Insert-replace functionality is NOT implemented for this data structure!");
+                setbench_error("Insert-replace functionality is NOT implemented for this data structure!");
 #if 0
                 succ = getUnmarked(rqProvider->read_addr(tid, &curr->next));
                 node = new_node(tid, key, val, succ);

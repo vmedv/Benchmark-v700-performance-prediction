@@ -35,7 +35,7 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
 typedef record_manager<RECLAIMER_TYPE, ALLOCATOR_TYPE, POOL_TYPE, NODE_TYPE, DESCRIPTOR_TYPE> RECORD_MANAGER_TYPE;
 
 typedef bslack<DEGREE, KEY_TYPE, less<KEY_TYPE>, RECORD_MANAGER_TYPE> INDEX_TYPE;   // define this
-#define INDEX_CONSTRUCTOR_ARGS MAX_TID_POW2, DEGREE, __NO_KEY, SIGQUIT              // define this
+#define INDEX_CONSTRUCTOR_ARGS MAX_THREADS_POW2, DEGREE, __NO_KEY, SIGQUIT              // define this
 
 /**
  * Create an adapter class for the DBx1000 index interface
@@ -76,7 +76,7 @@ private:
 public:
     // WARNING: DO NOT OVERLOAD init() WITH NO ARGUMENTS!!!
     RC init(uint64_t part_cnt, table_t * table) {
-        if (part_cnt != 1) error("part_cnt != 1 unsupported");
+        if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
         index = new INDEX_TYPE(INDEX_CONSTRUCTOR_ARGS);
         this->table = table;
         return RCOK;

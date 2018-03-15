@@ -9,7 +9,7 @@
 #define	RQ_DCSSP_H
 
 #ifdef ADD_DELAY_BEFORE_DTIME
-extern Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS];
+extern Random rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
 #define GET_RAND(tid,n) (rngs[(tid)*PREFETCH_SIZE_WORDS].nextNatural((n)))
 #define DELAY_UP_TO(n) { \
     unsigned __r = GET_RAND(tid,(n)); \
@@ -97,7 +97,7 @@ private:
     DataStructure * ds;
     RecordManager * const recmgr;
 
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

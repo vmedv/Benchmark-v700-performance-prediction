@@ -33,7 +33,7 @@ public:
     : ds(new DATA_STRUCTURE_T(numThreads, MIN_KEY))
     {
         if (numThreads > MAX_THREADS_POW2) {
-            error("numThreads exceeds MAX_THREADS_POW2");
+            setbench_error("numThreads exceeds MAX_THREADS_POW2");
         }
     }
     ~ds_adapter() {

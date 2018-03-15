@@ -22,7 +22,7 @@ class table_t;
 #define TRY_INIT_THREAD(tid) \
     if (!IS_THREAD_INITIALIZED((tid))) { \
         IS_THREAD_INITIALIZED((tid)) = true; \
-        if ((tid) >= MAX_TID_POW2) error("tid >= MAX_TID_POW2. too many threads created. increase MAX_TID_POW2."); \
+        if ((tid) >= MAX_THREADS_POW2) setbench_error("tid >= MAX_THREADS_POW2. too many threads created. increase MAX_THREADS_POW2."); \
         index->initThread(tid); \
     }
 
@@ -49,9 +49,9 @@ static inline int32_t hash_murmur3(KEY_TYPE v) {
 
 class index_base {
 protected:
-    char initializedThreads[MAX_TID_POW2*PREFETCH_SIZE_BYTES];
-    unsigned long long numInserts[MAX_TID_POW2*PREFETCH_SIZE_WORDS];
-    unsigned long long numReads[MAX_TID_POW2*PREFETCH_SIZE_WORDS];
+    char initializedThreads[MAX_THREADS_POW2*PREFETCH_SIZE_BYTES];
+    unsigned long long numInserts[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
+    unsigned long long numReads[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
 //    #define INCREMENT_NUM_INSERTS(tid) { if ((++numInserts[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numInserts="<<numInserts[(tid)*PREFETCH_SIZE_WORDS]<<endl; }
 //    #define INCREMENT_NUM_READS(tid) { if ((++numReads[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numReads="<<numReads[(tid)*PREFETCH_SIZE_WORDS]<<endl; }
     #define INCREMENT_NUM_INSERTS(tid) 
@@ -69,9 +69,9 @@ public:
 
     virtual RC init() {
         memset((void *) LockTab, 0, _TABSZ*sizeof(vwlock));
-        memset(numInserts, 0, MAX_TID_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
-        memset(numReads, 0, MAX_TID_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
-        for (int tid=0;tid<MAX_TID_POW2;++tid) IS_THREAD_INITIALIZED(tid) = false;
+        memset(numInserts, 0, MAX_THREADS_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
+        memset(numReads, 0, MAX_THREADS_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
+        for (int tid=0;tid<MAX_THREADS_POW2;++tid) IS_THREAD_INITIALIZED(tid) = false;
         return RCOK;
     };
 

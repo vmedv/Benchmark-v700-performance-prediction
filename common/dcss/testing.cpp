@@ -14,7 +14,7 @@ using namespace std;
 #define COUNTER(tid) (counters[(tid)*FALSE_SHARING_ULL_FACTOR])
 
 int numProcesses = 0;
-volatile unsigned long long counters[MAX_TID_POW2*FALSE_SHARING_ULL_FACTOR];
+volatile unsigned long long counters[MAX_THREADS_POW2*FALSE_SHARING_ULL_FACTOR];
 volatile char padding[FALSE_SHARING_PAD_BYTES];
 volatile unsigned long long faa;
 

@@ -65,7 +65,7 @@ private:
     int find_impl(const int tid, K key, nodeptr* p_preds, nodeptr* p_succs, nodeptr* p_found);
     V doInsert(const int tid, const K& key, const V& value, bool onlyIfAbsent);
     
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 
 public:
     const K KEY_MIN;

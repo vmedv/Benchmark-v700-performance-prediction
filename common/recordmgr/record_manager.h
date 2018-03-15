@@ -133,7 +133,7 @@ protected:
     typedef record_manager<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> SelfType;
     RecordManagerSet<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
     
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 
 public:
     const int NUM_PROCESSES;

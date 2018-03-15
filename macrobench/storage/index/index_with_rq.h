@@ -18,7 +18,7 @@
 #include <ctime>
 #include "random.h"
 #include "plaf.h"
-static Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // create per-thread random number generators (padded to avoid false sharing)
+static Random rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS]; // create per-thread random number generators (padded to avoid false sharing)
 
 /**
  * Define index data structure and record manager types
@@ -184,10 +184,10 @@ private:
 public:
     // WARNING: DO NOT OVERLOAD init() WITH NO ARGUMENTS!!!
     RC init(uint64_t part_cnt, table_t * table) {
-        if (part_cnt != 1) error("part_cnt != 1 unsupported");
+        if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
 
         srand(time(NULL));
-        for (int i=0;i<MAX_TID_POW2;++i) {
+        for (int i=0;i<MAX_THREADS_POW2;++i) {
             rngs[i*PREFETCH_SIZE_WORDS].setSeed(rand());
         }        
         

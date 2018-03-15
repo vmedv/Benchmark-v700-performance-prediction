@@ -25,7 +25,7 @@ struct _memrecl_counters {
 class debugInfo {
 private:
     const int NUM_PROCESSES;
-    _memrecl_counters c[MAX_TID_POW2];
+    _memrecl_counters c[MAX_THREADS_POW2];
 public:
     void clear() {
         for (int tid=0;tid<NUM_PROCESSES;++tid) {

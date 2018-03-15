@@ -133,7 +133,7 @@ private:
 
     void retireDeletedNodes(thread_data_t<skey_t, sval_t>* data, node_t<skey_t, sval_t> * node, node_t<skey_t, sval_t> * targetNode, bool pointerFlagged);
     
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 public:
     const skey_t MAX_KEY;
     const sval_t NO_VALUE;

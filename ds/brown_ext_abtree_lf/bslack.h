@@ -364,7 +364,7 @@ namespace bslack_ns {
             recordmgr->retire(tid, node);
         }
 
-        int init[MAX_TID_POW2] = {0,};
+        int init[MAX_THREADS_POW2] = {0,};
 public:
         void * const NO_VALUE;
         const int NUM_PROCESSES;

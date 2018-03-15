@@ -151,7 +151,7 @@ public:
 //            TRACE cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (#hps="<<announce[tid]->size()<<")...";
 //            // hash all announcements
 //            int totalSize = 0;
-//            int sizes[MAX_TID_POW2];
+//            int sizes[MAX_THREADS_POW2];
 //            for (int otherTid=0; otherTid < this->NUM_PROCESSES; ++otherTid) {
 //                sizes[otherTid] = announce[tid]->size();
 //                totalSize += sizes[otherTid];

@@ -42,7 +42,7 @@ private:
     DataStructure * ds;
     RecordManager * const recmgr;
 
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

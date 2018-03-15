@@ -1,81 +1,41 @@
 GPP = g++
-#GPP = g++-6
 FLAGS = -std=c++11 -mcx16 -O3
 FLAGS += -g
-#FLAGS += -fsanitize=address -fno-omit-frame-pointer -g3
 
-#FLAGS += -Winline
-#FLAGS += -DNDEBUG
-FLAGS += -DUSE_GSTATS
-#FLAGS += -DNO_FREE
-#FLAGS += -DUSE_STL_HASHLIST
-FLAGS += -DUSE_SIMPLIFIED_HASHLIST
-#FLAGS += -DRAPID_RECLAMATION
-#FLAGS += -DRWLOCK_PTHREADS
-#FLAGS += -DRWLOCK_FAVOR_WRITERS
-FLAGS += -DRWLOCK_FAVOR_READERS
-#FLAGS += -DRWLOCK_COHORT_FAVOR_WRITERS
-#FLAGS += -DSNAPCOLLECTOR_PRINT_RQS
-#FLAGS += -DUSE_RQ_DEBUGGING
-#FLAGS += -DRQ_VALIDATION
-#FLAGS += -DRQ_VISITED_IN_BAGS_HISTOGRAM
-#FLAGS += -DRQ_HISTOGRAM
-#FLAGS += -DADD_DELAY_BEFORE_DTIME
-#FLAGS += -DRQ_LOCKFREE_WAITS_FOR_DTIME
-#FLAGS += -DUSE_DEBUGCOUNTERS
-#FLAGS += -DBLOCKBAG_ITERATOR_COUNT_BLOCKS_TRAVERSED
-#FLAGS += -DMIN_NODE_SIZE=48
-FLAGS += -DUSE_SIMPLIFIED_ABTREE_REBALANCING
-#FLAGS += -DBROWN_EXT_BST_LF_COLOCATE_MARKED_BIT
-FLAGS += -DABTREE_DEGREE=16
-FLAGS += -DPHYSICAL_PROCESSORS=64 -DMAX_TID_POW2=64
+FLAGS += -DMAX_THREADS_POW2=64
 FLAGS += -DCPU_FREQ_GHZ=2.1
-#FLAGS += -DDEBUG=if\(1\) -DDEBUG1=if\(1\) -DDEBUG2=if\(1\)
-#FLAGS += -DDEBUG=if\(1\) -DDEBUG1=if\(0\) -DDEBUG2=if\(0\)
 FLAGS += -DDEBUG=if\(0\) -DDEBUG1=if\(0\) -DDEBUG2=if\(0\)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(1\)
-#FLAGS += -DMEMORY_STATS=if\(0\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -DINSERT_FUNC=insertIfAbsent
-#FLAGS += -DUSE_PAPI
 FLAGS += $(xargs)
 
 LDFLAGS = -L../lib
-LDFLAGS += -I../
-LDFLAGS += -I../ds
-LDFLAGS += -I../ds/arbel_int_bst_rcu
-LDFLAGS += -I../ds/bronson_pext_bst_occ
-LDFLAGS += -I../ds/brown_ext_abtree_lf
-LDFLAGS += -I../ds/brown_ext_bst_lf
-LDFLAGS += -I../ds/herlihy_list_occ
-LDFLAGS += -I../ds/herlihy_list_lf
-LDFLAGS += -I../ds/herlihy_skiplist_occ
-LDFLAGS += -I../ds/matveev_int_bst_rlu
-LDFLAGS += -I../ds/matveev_list_rlu
-LDFLAGS += -I../ds/natarajan_ext_bst_lf
-LDFLAGS += -I../common
-LDFLAGS += -I../common/atomic_ops
-LDFLAGS += -I../common/dcss
-LDFLAGS += -I../common/descriptors
-LDFLAGS += -I../common/rlu
-LDFLAGS += -I../common/rq
-LDFLAGS += -I../common/rq/snapcollector
-LDFLAGS += -I../common/recordmgr
-LDFLAGS += -I../include
-LDFLAGS += -I../microbench
+LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
+#LDFLAGS += -I../common
+#LDFLAGS += -I../common/atomic_ops
+#LDFLAGS += -I../common/dcss
+#LDFLAGS += -I../common/descriptors
+#LDFLAGS += -I../common/papi
+#LDFLAGS += -I../common/rlu
+#LDFLAGS += -I../common/rq
+#LDFLAGS += -I../common/rq/snapcollector
+#LDFLAGS += -I../common/recordmgr
+#LDFLAGS += -I../common/urcu
+#LDFLAGS += -I../microbench
 
-#LDFLAGS += -ljemalloc -Wl,-rpath,../lib
-#LDFLAGS += -ltcmalloc
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
 LDFLAGS += -lnuma
-LDFLAGS += -lpapi
+
+#FLAGS += -DUSE_PAPI
+#LDFLAGS += -lpapi
 
 machine=$(shell hostname)
 
-#all: 
+all: natarajan_ext_bst_lf
 #all: bst.rq_unsafe
 #all: natarajan_ext_bst_lf bst.rq_unsafe
-all: yahoo_talk
+#all: yahoo_talk
 #all: abtree
 #all: rlucitrus citrus.rq_unsafe
 #all: skiplistlock
@@ -171,18 +131,16 @@ rlulist:
 rlucitrus:
 	$(GPP) $(FLAGS) -o $(machine).citrus.rq_rlu.out -DRLU_CITRUS main.cpp ../common/rlu/rlu.cpp $(LDFLAGS)
 
-.PHONY: natarajan_ext_bst_lf natarajan_ext_bst_lf.baseline natarajan_ext_bst_lf.stage0 natarajan_ext_bst_lf.stage1 natarajan_ext_bst_lf.stage2 natarajan_ext_bst_lf.stage2.node48
-natarajan_ext_bst_lf: natarajan_ext_bst_lf.baseline natarajan_ext_bst_lf.stage0 natarajan_ext_bst_lf.stage1 natarajan_ext_bst_lf.stage2 natarajan_ext_bst_lf.stage2.node48
+.PHONY: natarajan_ext_bst_lf natarajan_ext_bst_lf.baseline natarajan_ext_bst_lf.stage0 natarajan_ext_bst_lf.stage1 natarajan_ext_bst_lf.stage2
+natarajan_ext_bst_lf: natarajan_ext_bst_lf.baseline natarajan_ext_bst_lf.stage0 natarajan_ext_bst_lf.stage1 natarajan_ext_bst_lf.stage2
 natarajan_ext_bst_lf.baseline:
-	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_baseline_impl.h" -DBASELINE main.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h" -DBASELINE main.cpp $(LDFLAGS)
 natarajan_ext_bst_lf.stage0:
-	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_baseline_impl.h" main.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h" main.cpp $(LDFLAGS)
 natarajan_ext_bst_lf.stage1:
-	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage1_impl.h" main.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage1_impl.h" main.cpp $(LDFLAGS)
 natarajan_ext_bst_lf.stage2:
-	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage2_impl.h" main.cpp $(LDFLAGS)
-natarajan_ext_bst_lf.stage2.node48:
-	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage2_impl.h" -DMIN_NODE_SIZE=48 main.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(machine).$@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage2_impl.h" main.cpp $(LDFLAGS)
 
 yahoo_talk: bronson_pext_bst_occ.full brown_ext_bst_lf.full natarajan_ext_bst_lf.full
 

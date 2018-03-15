@@ -15,7 +15,7 @@
 #include "rlu_citrus.h"
 
 #ifdef ADD_DELAY_BEFORE_DTIME
-extern Random rngs[MAX_TID_POW2*PREFETCH_SIZE_WORDS];
+extern Random rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
 #define GET_RAND(tid,n) (rngs[(tid)*PREFETCH_SIZE_WORDS].nextNatural((n)))
 #define DELAY_UP_TO(n) { \
     unsigned __r = GET_RAND(tid,(n)); \

@@ -12,7 +12,7 @@
 #include <unistd.h>
 using namespace std;
 
-#define error(x) { cout<<"ERROR: "<<(x)<<endl; exit(-1); }
+#define setbench_error(x) { cout<<"ERROR: "<<(x)<<endl; exit(-1); }
 
 #endif /* ERROR_H */
 

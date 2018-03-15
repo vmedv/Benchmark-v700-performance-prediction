@@ -147,7 +147,7 @@ namespace stats_ns {
                 , granularity(granularity)
                 , num_buckets_if_histogram_lin(num_buckets_if_histogram_lin) {
             if (granularity == TOTAL && (method == PRINT_HISTOGRAM_LOG || method == PRINT_HISTOGRAM_LIN)) {
-                error("cannot use granularity TOTAL with HISTOGRAM methods");
+                setbench_error("cannot use granularity TOTAL with HISTOGRAM methods");
             }
         }
     };
@@ -434,7 +434,7 @@ namespace stats_ns {
         template <typename T>
         inline T get_stat(const int tid, const stat_id id, const int index) {
             if (index >= thread_data[tid].capacity[id]) {
-                error("index="<<index<<" >= capacity="<<thread_data[tid].capacity[id]<<" for tid="<<tid<<" sid="<<id<<" stat="<<id_to_name[id]);
+                setbench_error("index="<<index<<" >= capacity="<<thread_data[tid].capacity[id]<<" for tid="<<tid<<" sid="<<id<<" stat="<<id_to_name[id]);
             }
             T * ptr = thread_data[tid].get_ptr<T>(id);
             return ptr[index];
@@ -859,21 +859,21 @@ namespace stats_ns {
             switch (granularity) {
                 case TOTAL:
                     if (already_computed_stats) return (stat_metrics<T> *) computed_stats_total[id];
-                    error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
+                    setbench_error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
 //                    else if (this->data_types[id] == LONG_LONG) return compute_stat_metrics_total<long long>(id);
 //                    return compute_stat_metrics_total<double>(id);
                 case BY_INDEX:
                     if (already_computed_stats) return (stat_metrics<T> *) computed_stats_by_index[id];
-                    error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
+                    setbench_error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
 //                    else if (this->data_types[id] == LONG_LONG) return compute_stat_metrics_by_index<long long>(id);
 //                    return compute_stat_metrics_by_index<double>(id);
                 case BY_THREAD:
                     if (already_computed_stats) return (stat_metrics<T> *) computed_stats_by_thread[id];
-                    error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
+                    setbench_error("functionality disabled because it is very heavyweight, and is easy to misuse, biasing results. run print_stat() before calling this, instead.");
 //                    else if (this->data_types[id] == LONG_LONG) return compute_stat_metrics_by_thread<long long>(id);
 //                    return compute_stat_metrics_by_thread<double>(id);
                 default:
-                    error("should not get here");
+                    setbench_error("should not get here");
                     break;
             }
         }
@@ -912,10 +912,10 @@ namespace stats_ns {
             }
             
             if (output_item.func == NONE) {
-                if (output_item.granularity != FULL_DATA) error("must use aggregation granularity FULL_DATA when using aggregation function NONE");
+                if (output_item.granularity != FULL_DATA) setbench_error("must use aggregation granularity FULL_DATA when using aggregation function NONE");
             }
             if (output_item.granularity == FULL_DATA) {
-                if (output_item.func != NONE) error("must use aggregation function NONE when using aggregation granularity FULL_DATA");
+                if (output_item.func != NONE) setbench_error("must use aggregation function NONE when using aggregation granularity FULL_DATA");
             }
             
             switch (output_item.method) {
@@ -931,12 +931,12 @@ namespace stats_ns {
                             case VARIANCE:          PRINT_AGG(granularity_str, VARIANCE, id, metrics, num_metrics); break;
                             case STDEV:             PRINT_AGG(granularity_str, STDEV, id, metrics, num_metrics); break;
                             case NONE:              PRINT_AGG(granularity_str, NONE, id, metrics, num_metrics); break;
-                            default:                error("should not reach here");
+                            default:                setbench_error("should not reach here");
                         }
                     } break;
                 case PRINT_HISTOGRAM_LOG:
                     {
-                        if (output_item.granularity == TOTAL) error("aggregation granularity TOTAL should not be used with HISTOGRAM output (since the histogram will simply plot a single point)");
+                        if (output_item.granularity == TOTAL) setbench_error("aggregation granularity TOTAL should not be used with HISTOGRAM output (since the histogram will simply plot a single point)");
                         switch (output_item.func) {
                             case FIRST:             PRINT_HISTOGRAM_LOG(id, granularity_str, FIRST, metrics, num_metrics); break;
                             case COUNT:             PRINT_HISTOGRAM_LOG(id, granularity_str, COUNT, metrics, num_metrics); break;
@@ -947,12 +947,12 @@ namespace stats_ns {
                             case VARIANCE:          PRINT_HISTOGRAM_LOG(id, granularity_str, VARIANCE, metrics, num_metrics); break;
                             case STDEV:             PRINT_HISTOGRAM_LOG(id, granularity_str, STDEV, metrics, num_metrics); break;
                             case NONE:              PRINT_HISTOGRAM_LOG(id, granularity_str, NONE, metrics, num_metrics); break;
-                            default:                error("should not reach here"); break;
+                            default:                setbench_error("should not reach here"); break;
                         }
                     } break;
                 case PRINT_HISTOGRAM_LIN:
                     {
-                        if (output_item.granularity == TOTAL) error("aggregation granularity TOTAL should not be used with HISTOGRAM output (since the histogram will simply plot a single point)");
+                        if (output_item.granularity == TOTAL) setbench_error("aggregation granularity TOTAL should not be used with HISTOGRAM output (since the histogram will simply plot a single point)");
                         switch (output_item.func) {
                             case FIRST:             PRINT_HISTOGRAM_LIN(id, granularity_str, FIRST, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
                             case COUNT:             PRINT_HISTOGRAM_LIN(id, granularity_str, COUNT, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
@@ -963,10 +963,10 @@ namespace stats_ns {
                             case VARIANCE:          PRINT_HISTOGRAM_LIN(id, granularity_str, VARIANCE, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
                             case STDEV:             PRINT_HISTOGRAM_LIN(id, granularity_str, STDEV, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
                             case NONE:              PRINT_HISTOGRAM_LIN(id, granularity_str, NONE, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
-                            default:                error("should not reach here"); break;
+                            default:                setbench_error("should not reach here"); break;
                         }
                     } break;
-                default: error("should not reach here"); break;
+                default: setbench_error("should not reach here"); break;
             }
         }
         

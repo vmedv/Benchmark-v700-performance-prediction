@@ -71,15 +71,15 @@
             cout<<"    average = "<<(sum / (double) cntNonZero)<<endl;
         }
 
-        int ** threadNumNodesVisitedInBags; //[MAX_TID_POW2][MAX_NUM_RQ_IN_EXECUTION];
+        int ** threadNumNodesVisitedInBags; //[MAX_THREADS_POW2][MAX_NUM_RQ_IN_EXECUTION];
     #endif
 
     #ifdef RQ_VALIDATION
         #include <cstring>
         #include "errors.h"
         #define NO_RQ_CHECKSUM (0)
-        long long ** threadUpdateChecksum; //[MAX_TID_POW2][MAX_NUM_RQ_IN_EXECUTION];
-        long long ** threadRQChecksum; //[MAX_TID_POW2][MAX_NUM_RQ_IN_EXECUTION];
+        long long ** threadUpdateChecksum; //[MAX_THREADS_POW2][MAX_NUM_RQ_IN_EXECUTION];
+        long long ** threadRQChecksum; //[MAX_THREADS_POW2][MAX_NUM_RQ_IN_EXECUTION];
     #endif
 
     #ifdef RQ_HISTOGRAM
@@ -111,7 +111,7 @@
             if (timestamp >= MAX_NUM_RQ_IN_EXECUTION) {
                 return;
     //            cout << "timestamp is: " << timestamp << endl;
-    //            error("timestamp > MAX_NUM_RQ_IN_EXECUTION");
+    //            setbench_error("timestamp > MAX_NUM_RQ_IN_EXECUTION");
             }
             for (int i=0;insertedNodes[i];++i) {
                 K outputKeys[RQ_DEBUGGING_MAX_KEYS_PER_NODE];
@@ -138,7 +138,7 @@
         inline void DEBUG_RECORD_RQ_CHECKSUM(const int tid, const long long timestamp, K const * const rqResult, const int len) {
     #ifdef RQ_VALIDATION
             if (timestamp >= MAX_NUM_RQ_IN_EXECUTION) return;
-            //if (timestamp >= MAX_NUM_RQ_IN_EXECUTION) error("timestamp > MAX_NUM_RQ_IN_EXECUTION");
+            //if (timestamp >= MAX_NUM_RQ_IN_EXECUTION) setbench_error("timestamp > MAX_NUM_RQ_IN_EXECUTION");
             // compute checksum
             long long checksum = 0;
             for (int i=0;i<len;++i) {

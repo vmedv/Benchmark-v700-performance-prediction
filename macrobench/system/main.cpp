@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
         thread_pinning::configurePolicy(g_thread_cnt, g_thr_pinning_policy);
 	
         urcu::init(g_thread_cnt);
-        rlu_tdata = new rlu_thread_data_t[MAX_TID_POW2];
+        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
         tree_malloc::init();
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 

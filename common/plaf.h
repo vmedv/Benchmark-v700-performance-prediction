@@ -8,11 +8,11 @@
 #ifndef MACHINECONSTANTS_H
 #define	MACHINECONSTANTS_H
 
-#ifndef MAX_TID_POW2
-    #define MAX_TID_POW2 128 // MUST BE A POWER OF TWO, since this is used for some bitwise operations
+#ifndef MAX_THREADS_POW2
+    #define MAX_THREADS_POW2 128 // MUST BE A POWER OF TWO, since this is used for some bitwise operations
 #endif
-#ifndef PHYSICAL_PROCESSORS
-    #define PHYSICAL_PROCESSORS 128
+#ifndef LOGICAL_PROCESSORS
+    #define LOGICAL_PROCESSORS MAX_THREADS_POW2
 #endif
 
 // the following definition is only used to pad data to avoid false sharing.

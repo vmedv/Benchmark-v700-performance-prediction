@@ -25,22 +25,22 @@ private:
     
 public:
     RWLock() {
-        if (pthread_rwlock_init(&lock, NULL)) error("could not init rwlock");
+        if (pthread_rwlock_init(&lock, NULL)) setbench_error("could not init rwlock");
     }
     ~RWLock() {
-        if (pthread_rwlock_destroy(&lock)) error("could not destroy rwlock");
+        if (pthread_rwlock_destroy(&lock)) setbench_error("could not destroy rwlock");
     }
     inline void readLock() {
-        if (pthread_rwlock_rdlock(&lock)) error("could not read-lock rwlock");
+        if (pthread_rwlock_rdlock(&lock)) setbench_error("could not read-lock rwlock");
     }
     inline void readUnlock() {
-        if (pthread_rwlock_unlock(&lock)) error("could not read-unlock rwlock");
+        if (pthread_rwlock_unlock(&lock)) setbench_error("could not read-unlock rwlock");
     }
     inline void writeLock() {
-        if (pthread_rwlock_wrlock(&lock)) error("could not write-lock rwlock");
+        if (pthread_rwlock_wrlock(&lock)) setbench_error("could not write-lock rwlock");
     }
     inline void writeUnlock() {
-        if (pthread_rwlock_unlock(&lock)) error("could not write-unlock rwlock");
+        if (pthread_rwlock_unlock(&lock)) setbench_error("could not write-unlock rwlock");
     }
     inline bool isWriteLocked() {
         cout<<"ERROR: isWriteLocked() is not implemented"<<endl;

@@ -250,12 +250,12 @@ public:
      */
     void Deactivate(pthread_rwlock_t * const rwlock, volatile long long * timestamp, long long * rq_lin_time) {
 #ifdef RQ_USE_TIMESTAMPS
-        if (pthread_rwlock_wrlock(rwlock)) error("could not write-lock rwlock");
+        if (pthread_rwlock_wrlock(rwlock)) setbench_error("could not write-lock rwlock");
         active = false; // range query is linearized here
         *timestamp = *timestamp + 1;
         *rq_lin_time = *timestamp; //++(*timestamp);
         //std::cout<<"timestamp="<<*timestamp<<std::endl;
-        if (pthread_rwlock_unlock(rwlock)) error("could not write-unlock rwlock");
+        if (pthread_rwlock_unlock(rwlock)) setbench_error("could not write-unlock rwlock");
 #else
         active = false; // range query is linearized here (no memory barrier needed, since we don't care about read/write re-ordering--just when this hits main memory)
         //__sync_synchronize();

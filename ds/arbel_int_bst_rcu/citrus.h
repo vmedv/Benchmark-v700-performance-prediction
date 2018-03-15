@@ -87,7 +87,7 @@ private:
     }
     
     const V doInsert(const int tid, const K& key, const V& value, bool onlyIfAbsent);
-    int init[MAX_TID_POW2] = {0,};
+    int init[MAX_THREADS_POW2] = {0,};
 
 public:
     const K NO_KEY;

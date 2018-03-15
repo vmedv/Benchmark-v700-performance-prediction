@@ -112,9 +112,9 @@ private:
 
     #define VERSION_NUMBER(tid) (version[(tid)*PREFETCH_SIZE_WORDS])
     #define INIT_VERSION_NUMBER(tid) (VERSION_NUMBER(tid) = ((tid << 1) | 1))
-    #define NEXT_VERSION_NUMBER(tid) (VERSION_NUMBER(tid) += (MAX_TID_POW2 << 1))
+    #define NEXT_VERSION_NUMBER(tid) (VERSION_NUMBER(tid) += (MAX_THREADS_POW2 << 1))
     #define IS_VERSION_NUMBER(infoPtr) (((long) (infoPtr)) & 1)
-    long version[MAX_TID_POW2*PREFETCH_SIZE_WORDS]; // version[i*PREFETCH_SIZE_WORDS] = current version number for thread i
+    long version[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS]; // version[i*PREFETCH_SIZE_WORDS] = current version number for thread i
 
     // Originally, I tested (node->key == NO_KEY or node == root->left->left)
     // to see if node is a sentinel, but there is a nice observation:

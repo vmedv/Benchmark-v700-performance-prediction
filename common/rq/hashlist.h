@@ -10,6 +10,8 @@
 #ifndef HASHLIST_H
 #define HASHLIST_H
 
+#define USE_SIMPLIFIED_HASHLIST 
+
 #ifdef USE_STL_HASHLIST
     #include <unordered_set>
     using namespace std;

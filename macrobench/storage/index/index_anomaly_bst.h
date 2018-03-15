@@ -179,7 +179,7 @@ private:
 public:
     // WARNING: DO NOT OVERLOAD init() WITH NO ARGUMENTS!!!
     RC init(uint64_t part_cnt, table_t * table) {
-        if (part_cnt != 1) error("part_cnt != 1 unsupported");
+        if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
         index = new INDEX_TYPE();
         this->table = table;
         return RCOK;
