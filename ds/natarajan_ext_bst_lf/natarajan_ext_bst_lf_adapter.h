@@ -14,6 +14,9 @@
 #endif
 
 #include <iostream>
+#include "errors.h"
+#include "random.h"
+
 #ifdef DS_H_FILE
     #include STR(DS_H_FILE)
 #else
@@ -21,21 +24,24 @@
 //    #include "natarajan_ext_bst_lf_baseline_impl.h"
     #include "natarajan_ext_bst_lf_stage2_impl.h"
 #endif
-#include "errors.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
 #define DATA_STRUCTURE_T natarajan_ext_bst_lf<K, V, RECORD_MANAGER_T>
 
-template <class K, class V, class Reclaim, class Alloc, class Pool>
+template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
 private:
     const V NO_VALUE;
     DATA_STRUCTURE_T * const tree;
 
 public:
-    ds_adapter(const K& MIN_KEY, const K& MAX_KEY, const V& _NO_VALUE, const int numThreads, Random * const rngs)
-    : NO_VALUE(_NO_VALUE)
-    , tree(new DATA_STRUCTURE_T(MAX_KEY, NO_VALUE, numThreads))
+    ds_adapter(const int NUM_THREADS,
+               const K& unused1,
+               const K& KEY_POS_INFTY,
+               const V& VALUE_RESERVED,
+               Random * const unused2)
+    : NO_VALUE(VALUE_RESERVED)
+    , tree(new DATA_STRUCTURE_T(KEY_POS_INFTY, NO_VALUE, NUM_THREADS))
     {}
     ~ds_adapter() {
         delete tree;

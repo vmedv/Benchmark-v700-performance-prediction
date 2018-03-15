@@ -84,7 +84,7 @@ public:
         return ss.str();
     }
     
-    void * const debugGetRecMgr() {
+    void * debugGetRecMgr() {
         return NULL;
     }
     

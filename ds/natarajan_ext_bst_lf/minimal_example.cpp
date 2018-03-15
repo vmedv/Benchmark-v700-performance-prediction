@@ -17,17 +17,17 @@
 #include <limits>
 #include <cassert>
 
-#include "brown_ext_bst_lf_adapter.h"
+#include "natarajan_ext_bst_lf_adapter.h"
 
 int main(int argc, char** argv) {
 
     const int NUM_THREADS = 1;
-    const int KEY_RESERVED = std::numeric_limits<int>::min();
     const int unused1 = 0;
-    void * const VALUE_RESERVED = NULL;
+    const int KEY_POS_INFTY = std::numeric_limits<int>::max();
+    void * const VALUE_RESERVED = (void *) (uintptr_t) (-1);
     Random * const unused2 = NULL;
     
-    auto tree = new ds_adapter<int, void *>(NUM_THREADS, KEY_RESERVED, unused1, VALUE_RESERVED, unused2);
+    auto tree = new ds_adapter<int, void *>(NUM_THREADS, unused1, KEY_POS_INFTY, VALUE_RESERVED, unused2);
     
     const int threadID = 0;
 

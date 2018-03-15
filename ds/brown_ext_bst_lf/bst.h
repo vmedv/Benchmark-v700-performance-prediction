@@ -167,7 +167,7 @@ public:
         bst(const K _NO_KEY,
                     const V _NO_VALUE,
                     const int numProcesses,
-                    int suspectedCrashSignal,
+                    int suspectedCrashSignal = SIGQUIT,
                     int allowedViolationsPerPath = 6)
             : N(allowedViolationsPerPath)
                     , NO_KEY(_NO_KEY)

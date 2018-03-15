@@ -22,12 +22,12 @@
 int main(int argc, char** argv) {
 
     const int NUM_THREADS = 1;
+    const int KEY_ANY = 0;
     const int unused1 = 0;
-    const int KEY_POS_INFTY = std::numeric_limits<int>::max();
-    void * const VALUE_RESERVED = (void *) (uintptr_t) (-1);
+    void * unused2 = NULL;
     Random * const unused3 = NULL;
     
-    auto tree = new ds_adapter<int, void *>(NUM_THREADS, unused1, KEY_POS_INFTY, VALUE_RESERVED, unused3);
+    auto tree = new ds_adapter<int, void *>(NUM_THREADS, KEY_ANY, unused1, unused2, unused3);
     
     const int threadID = 0;
 

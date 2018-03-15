@@ -219,7 +219,7 @@ namespace abtree_ns {
             }
 
     private:
-        void* doInsert(const int tid, const K& key, void * const value, const bool replace);
+        void * doInsert(const int tid, const K& key, void * const value, const bool replace);
 
         // returns true if the invocation of this method
         // (and not another invocation of a method performed by this method)
@@ -498,10 +498,10 @@ public:
         }
 
     public:
-        void * const insert(const int tid, const K& key, void * const val) {
+        void * insert(const int tid, const K& key, void * const val) {
             return doInsert(tid, key, val, true);
         }
-        void * const insertIfAbsent(const int tid, const K& key, void * const val) {
+        void * insertIfAbsent(const int tid, const K& key, void * const val) {
             return doInsert(tid, key, val, false);
         }
         const std::pair<void*,bool> erase(const int tid, const K& key);

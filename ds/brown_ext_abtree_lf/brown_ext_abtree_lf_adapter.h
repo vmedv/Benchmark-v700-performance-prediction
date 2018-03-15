@@ -9,17 +9,17 @@
 #define DS_ADAPTER_H
 
 #include <iostream>
-#include "brown_ext_abtree_lf_impl.h"
 #include "errors.h"
 #include "random.h"
+#include "brown_ext_abtree_lf_impl.h"
 
-#if !defined ABTREE_DEGREE
-    #warning "ABTREE_DEGREE was not defined... using default: 16."
-    #define ABTREE_DEGREE 16
+#if !defined FAT_NODE_DEGREE
+//    #warning "FAT_NODE_DEGREE was not defined... using default: 16."
+    #define FAT_NODE_DEGREE 16
 #endif
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, abtree_ns::Node<ABTREE_DEGREE, K>>
-#define DATA_STRUCTURE_T abtree_ns::abtree<ABTREE_DEGREE, K, std::less<K>, RECORD_MANAGER_T>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, abtree_ns::Node<FAT_NODE_DEGREE, K>>
+#define DATA_STRUCTURE_T abtree_ns::abtree<FAT_NODE_DEGREE, K, std::less<K>, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -57,13 +57,13 @@ public:
     bool contains(const int tid, const K& key) {
         return ds->contains(tid, key);
     }
-    void * const insert(const int tid, const K& key, void * const val) {
+    void * insert(const int tid, const K& key, void * const val) {
         return ds->insert(tid, key, val);
     }
-    void * const insertIfAbsent(const int tid, const K& key, void * const val) {
+    void * insertIfAbsent(const int tid, const K& key, void * const val) {
         return ds->insertIfAbsent(tid, key, val);
     }
-    void * const erase(const int tid, const K& key) {
+    void * erase(const int tid, const K& key) {
         return ds->erase(tid, key).first;
     }
     void * find(const int tid, const K& key) {
@@ -94,14 +94,14 @@ public:
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(abtree_ns::Node<ABTREE_DEGREE, K>))
-                 <<" descriptor="<<(sizeof(abtree_ns::SCXRecord<ABTREE_DEGREE, K>))<<" (statically allocated)"
+                 <<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))
+                 <<" descriptor="<<(sizeof(abtree_ns::SCXRecord<FAT_NODE_DEGREE, K>))<<" (statically allocated)"
                  <<std::endl;
     }
 };
 
 #undef RECORD_MANAGER_T
 #undef DATA_STRUCTURE_T
-#undef ABTREE_DEGREE
+#undef FAT_NODE_DEGREE
 
 #endif

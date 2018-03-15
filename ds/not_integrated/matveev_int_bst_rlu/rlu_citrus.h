@@ -72,7 +72,7 @@ public:
         ss<<getSizeInNodes()<<" nodes in data structure";
         return ss.str();
     }
-    void * const debugGetRecMgr() {
+    void * debugGetRecMgr() {
         return NULL;
     }
 };

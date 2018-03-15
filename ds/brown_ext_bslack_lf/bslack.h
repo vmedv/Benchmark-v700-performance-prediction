@@ -184,10 +184,10 @@ namespace bslack_ns {
     //        return nkeys;
         }
         // somewhat slow version that detects cycles in the tree
-        void printTreeFile(ostream& os, set<Node<DEGREE,K> *> *seen) {
+        void printTreeFile(std::ostream& os, std::set<bslack_ns::Node<DEGREE,K> *> *seen) {
             int __state = scxPtr->state;
             //os<<"@"<<(long long)(void *)this;
-            os<<"("<<((__state & SCXRecord<DEGREE,K>::STATE_COMMITTED) ? "" : (__state & SCXRecord<DEGREE,K>::STATE_ABORTED) ? "A" : "I")
+            os<<"("<<((__state & bslack_ns::SCXRecord<DEGREE,K>::STATE_COMMITTED) ? "" : (__state & bslack_ns::SCXRecord<DEGREE,K>::STATE_ABORTED) ? "A" : "I")
                    <<(marked?"m":"")
     //               <<getKeyCount()
                    <<(weight ? "w1" : "w0")
@@ -219,8 +219,8 @@ namespace bslack_ns {
             }
             os<<")";
         }
-        void printTreeFile(ostream& os) {
-            set<Node<DEGREE,K> *> seen;
+        void printTreeFile(std::ostream& os) {
+            std::set<bslack_ns::Node<DEGREE,K> *> seen;
             printTreeFile(os, &seen);
         }
     } /*__attribute__((aligned (PREFETCH_SIZE_BYTES)))*/;
@@ -329,7 +329,7 @@ namespace bslack_ns {
             return ss.str();
         }
 
-        void* doInsert(const int tid, const K& key, void * const value, const bool replace);
+        void * doInsert(const int tid, const K& key, void * const value, const bool replace);
 
         // returns true if the invocation of this method
         // (and not another invocation of a method performed by this method)
@@ -391,18 +391,17 @@ public:
 
         /**
          * Creates a new B-slack tree wherein: <br>
-         *      each internal node has up to <code>nodeCapacity</code> child pointers, and <br>
-         *      each leaf has up to <code>nodeCapacity</code> key/value pairs, and <br>
+         *      each internal node has up to <code>DEGREE</code> child pointers, and <br>
+         *      each leaf has up to <code>DEGREE</code> key/value pairs, and <br>
          *      keys are ordered according to the provided comparator.
          */
         bslack(const int numProcesses, 
-                const int nodeCapacity,
                 const K anyKey,
-                int suspectedCrashSignal)
+                int suspectedCrashSignal = SIGQUIT)
         : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
-        , b(nodeCapacity)
+        , b(DEGREE)
     #ifdef USE_SIMPLIFIED_ABTREE_REBALANCING
-        , a(nodeCapacity/2 - 2)
+        , a(DEGREE/2 - 2)
     #endif
         , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
         , rqProvider(new RQProvider<K, void *, Node<DEGREE,K>, bslack<DEGREE,K,Compare,RecManager>, RecManager, false, false>(numProcesses, this, recordmgr))
@@ -761,10 +760,10 @@ public:
         }
 
     public:
-        const void * insert(const int tid, const K& key, void * const val) {
+        void * insert(const int tid, const K& key, void * const val) {
             return doInsert(tid, key, val, true);
         }
-        const void * insertIfAbsent(const int tid, const K& key, void * const val) {
+        void * insertIfAbsent(const int tid, const K& key, void * const val) {
             return doInsert(tid, key, val, false);
         }
         const std::pair<void*,bool> erase(const int tid, const K& key);
@@ -848,7 +847,7 @@ public:
             std::stringstream ss;
             ss<<prefix<<id1<<infix<<id2<<suffix;
             COUTATOMIC("print to filename \""<<ss.str()<<"\""<<std::endl);
-            fstream fs (ss.str().c_str(), fstream::out);
+            std::fstream fs (ss.str().c_str(), std::fstream::out);
             entry->printTreeFile(fs);
             fs.close();
         }

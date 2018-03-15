@@ -132,12 +132,12 @@ typedef reclaimer_debra<> RECLAIMER_TYPE;
     #define USE_SIMPLIFIED_ABTREE_REBALANCING    
     #include "bslack_impl.h"
     using namespace bslack_ns;
-    #define ABTREE_DEGREE 16
-    typedef Node<ABTREE_DEGREE, KEY_TYPE> NODE_TYPE;
-    typedef SCXRecord<ABTREE_DEGREE, KEY_TYPE> DESCRIPTOR_TYPE;
+    #define FAT_NODE_DEGREE 16
+    typedef Node<FAT_NODE_DEGREE, KEY_TYPE> NODE_TYPE;
+    typedef SCXRecord<FAT_NODE_DEGREE, KEY_TYPE> DESCRIPTOR_TYPE;
     typedef record_manager<RECLAIMER_TYPE, ALLOCATOR_TYPE, POOL_TYPE, NODE_TYPE> RECORD_MANAGER_TYPE;
-    typedef bslack<ABTREE_DEGREE, KEY_TYPE, less<KEY_TYPE>, RECORD_MANAGER_TYPE> INDEX_TYPE;
-    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, ABTREE_DEGREE, __NO_KEY, SIGQUIT
+    typedef bslack<FAT_NODE_DEGREE, KEY_TYPE, less<KEY_TYPE>, RECORD_MANAGER_TYPE> INDEX_TYPE;
+    #define INDEX_CONSTRUCTOR_ARGS g_thread_cnt, FAT_NODE_DEGREE, __NO_KEY, SIGQUIT
     #define CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(x, depth) { \
         for (int __i=0;__i<(x)->getABDegree();++__i) { \
             calculate_index_stats((NODE_TYPE *) (x)->ptrs[__i], (depth)); \

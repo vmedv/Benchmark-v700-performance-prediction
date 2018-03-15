@@ -9,21 +9,30 @@
 #define BRONSON_PEXT_BST_OCC_ADAPTER_H
 
 #include <iostream>
-#include "ccavl_impl.h"
 #include "errors.h"
+#include "random.h"
+#include "ccavl_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
 #define DATA_STRUCTURE_T ccavl<K, V, RECORD_MANAGER_T>
 
-template <class K, class V, class Reclaim, class Alloc, class Pool>
+template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
 private:
     DATA_STRUCTURE_T * const tree;
 
 public:
-    ds_adapter(const K& MIN_KEY, const K& MAX_KEY, const V& _NO_VALUE, const int numThreads, Random * const rngs)
-    : tree(new DATA_STRUCTURE_T(numThreads, MIN_KEY))
-    {}
+    ds_adapter(const int NUM_THREADS,
+               const K& KEY_NEG_INFTY,
+               const K& unused1,
+               const V& unused2,
+               Random * const unused3)
+    : tree(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
+    {
+        if (NUM_THREADS > MAX_THREADS_POW2) {
+            setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
+        }
+    }
     ~ds_adapter() {
         delete tree;
     }
@@ -79,5 +88,8 @@ public:
                  <<std::endl;
     }
 };
+
+#undef RECORD_MANAGER_T
+#undef DATA_STRUCTURE_T
 
 #endif

@@ -1,5 +1,8 @@
-/**
- * Copy this template and modify it to fit your data structure.
+/* 
+ * File:   bst_adapter.h
+ * Author: trbot
+ *
+ * Created on August 31, 2017, 6:53 PM
  */
 
 #ifndef DS_ADAPTER_H
@@ -8,15 +11,15 @@
 #include <iostream>
 #include "errors.h"
 #include "random.h"
-#include "brown_ext_abtree_lf_impl.h"
+#include "bslack_impl.h"
 
 #if !defined FAT_NODE_DEGREE
-    #warning "FAT_NODE_DEGREE was not defined... using default: 16."
+//    #warning "FAT_NODE_DEGREE was not defined... using default: 16."
     #define FAT_NODE_DEGREE 16
 #endif
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, abtree_ns::Node<FAT_NODE_DEGREE, K>>
-#define DATA_STRUCTURE_T abtree_ns::abtree<FAT_NODE_DEGREE, K, std::less<K>, RECORD_MANAGER_T>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bslack_ns::Node<FAT_NODE_DEGREE, K>>
+#define DATA_STRUCTURE_T bslack_ns::bslack<FAT_NODE_DEGREE, K, std::less<K>, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -26,11 +29,11 @@ private:
 
 public:
     ds_adapter(const int NUM_THREADS,
-               const K& KEY_NEG_INFTY,
-               const K& KEY_POS_INFTY,
-               const V& VALUE_RESERVED,
-               Random * const RNGS)
-    : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
+               const K& KEY_ANY,
+               const K& unused1,
+               const V& unused2,
+               Random * const unused3)
+    : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
     {
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
@@ -91,8 +94,8 @@ public:
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))
-                 <<" descriptor="<<(sizeof(abtree_ns::SCXRecord<FAT_NODE_DEGREE, K>))<<" (statically allocated)"
+                 <<(sizeof(bslack_ns::Node<FAT_NODE_DEGREE, K>))
+                 <<" descriptor="<<(sizeof(bslack_ns::SCXRecord<FAT_NODE_DEGREE, K>))<<" (statically allocated)"
                  <<std::endl;
     }
 };

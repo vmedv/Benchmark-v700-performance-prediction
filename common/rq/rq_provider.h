@@ -19,7 +19,7 @@
 #elif defined RQ_SNAPCOLLECTOR
     #include "rq_snapcollector.h"
 #else
-    #warning "No range query method specified... using non-linearizable range queries. See rq_provider.h for other options."
+//    #warning "No range query method specified... using non-linearizable range queries. See rq_provider.h for other options."
     #define RQ_UNSAFE
     #include "rq_unsafe.h"
     //#error NO RQ PROVIDER DEFINED

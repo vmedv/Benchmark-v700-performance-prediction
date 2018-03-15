@@ -17,17 +17,17 @@
 #include <limits>
 #include <cassert>
 
-#include "brown_ext_bst_lf_adapter.h"
+#include "bronson_pext_bst_occ_adapter.h"
 
 int main(int argc, char** argv) {
 
     const int NUM_THREADS = 1;
-    const int KEY_RESERVED = std::numeric_limits<int>::min();
+    const int KEY_NEG_INFTY = std::numeric_limits<int>::min();
     const int unused1 = 0;
-    void * const VALUE_RESERVED = NULL;
-    Random * const unused2 = NULL;
+    void * const unused2 = NULL;
+    Random * const unused3 = NULL;
     
-    auto tree = new ds_adapter<int, void *>(NUM_THREADS, KEY_RESERVED, unused1, VALUE_RESERVED, unused2);
+    auto tree = new ds_adapter<int, void *>(NUM_THREADS, KEY_NEG_INFTY, unused1, unused2, unused3);
     
     const int threadID = 0;
 

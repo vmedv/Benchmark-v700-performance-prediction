@@ -9,9 +9,9 @@
 #define BST_ADAPTER_H
 
 #include <iostream>
-#include "bst_impl.h"
 #include "errors.h"
 #include "random.h"
+#include "bst_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bst_ns::Node<K, V>>
 #define DATA_STRUCTURE_T bst_ns::bst<K, V, std::less<K>, RECORD_MANAGER_T>
@@ -24,12 +24,12 @@ private:
 
 public:
     ds_adapter(const int NUM_THREADS,
+               const K& KEY_RESERVED,
                const K& unused1,
-               const K& KEY_POS_INFTY,
                const V& VALUE_RESERVED,
                Random * const unused2)
     : NO_VALUE(VALUE_RESERVED)
-    , ds(new DATA_STRUCTURE_T(KEY_POS_INFTY, NO_VALUE, NUM_THREADS, SIGQUIT))
+    , ds(new DATA_STRUCTURE_T(KEY_RESERVED, NO_VALUE, NUM_THREADS))
     {}
     ~ds_adapter() {
         delete ds;
