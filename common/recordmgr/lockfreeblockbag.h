@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef LOCKFREESTACK_H
@@ -37,12 +37,12 @@ private:
     std::atomic<tagged_ptr> head;
 public:
     lockfreeblockbag() {
-        VERBOSE DEBUG cout<<"constructor lockfreeblockbag lockfree="<<head.is_lock_free()<<endl;
+        VERBOSE DEBUG std::cout<<"constructor lockfreeblockbag lockfree="<<head.is_lock_free()<<std::endl;
         assert(head.is_lock_free());
         head.store(tagged_ptr({NULL,0}));
     }
     ~lockfreeblockbag() {
-        VERBOSE DEBUG cout<<"destructor lockfreeblockbag; ";
+        VERBOSE DEBUG std::cout<<"destructor lockfreeblockbag; ";
         block<T> *curr = head.load(memory_order_relaxed).ptr;
         int debugFreed = 0;
         while (curr) {
@@ -51,7 +51,7 @@ public:
             //DEBUG ++debugFreed;
             delete temp;
         }
-        VERBOSE DEBUG cout<<"freed "<<debugFreed<<endl;
+        VERBOSE DEBUG std::cout<<"freed "<<debugFreed<<std::endl;
     }
     block<T>* getBlock() {
         while (true) {

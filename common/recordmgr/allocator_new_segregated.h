@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ALLOC_NEW_SEGREGATED_H
@@ -82,7 +82,7 @@ public:
     
     allocator_new_segregated(const int numProcesses, debugInfo * const _debug)
             : allocator_interface<T>(numProcesses, _debug) {
-        VERBOSE DEBUG cout<<"constructor allocator_new_segregated"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor allocator_new_segregated"<<std::endl;
         
 	char *lib = getenv("TREE_MALLOC");
 	if (!lib) {
@@ -120,7 +120,7 @@ public:
 	}
     }
     ~allocator_new_segregated() {
-        VERBOSE DEBUG cout<<"destructor allocator_new_segregated"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor allocator_new_segregated"<<std::endl;
     }
 };
 

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef POOL_PERTHREAD_AND_SHARED_H
@@ -34,7 +34,7 @@ private:
 //            if (b) {
                 sharedBag->addBlock(b);
                 MEMORY_STATS this->debug->addGiven(tid, 1);
-                //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" sharedBag("<<(sizeof(T)==sizeof(Node<long,long>)?"Node":"SCXRecord")<<") now contains "<<sharedBag->size()<<" blocks"<<endl);
+                //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" sharedBag("<<(sizeof(T)==sizeof(Node<long,long>)?"Node":"SCXRecord")<<") now contains "<<sharedBag->size()<<" blocks"<<std::endl);
 //            }
             return true;
         }
@@ -46,7 +46,7 @@ private:
 //        if (b) {
 //            freeBag[tid]->addFullBlock(b);
 //            DEBUG this->debug->addTaken(tid, 1);
-//            //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<endl);
+//            //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<std::endl);
 //        }
 //    }
 public:
@@ -120,7 +120,7 @@ public:
     
     pool_perthread_and_shared(const int numProcesses, Alloc * const _alloc, debugInfo * const _debug)
             : pool_interface<T, Alloc>(numProcesses, _alloc, _debug) {
-        VERBOSE DEBUG COUTATOMIC("constructor pool_perthread_and_shared"<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor pool_perthread_and_shared"<<std::endl);
         freeBag = new blockbag<T>*[numProcesses];
         for (int tid=0;tid<numProcesses;++tid) {
             freeBag[tid] = new blockbag<T>(tid, this->blockpools[tid]);
@@ -128,7 +128,7 @@ public:
         sharedBag = new lockfreeblockbag<T>();
     }
     ~pool_perthread_and_shared() {
-        VERBOSE DEBUG COUTATOMIC("destructor pool_perthread_and_shared"<<endl);
+        VERBOSE DEBUG COUTATOMIC("destructor pool_perthread_and_shared"<<std::endl);
         // clean up shared bag
         const int dummyTid = 0;
         block<T> *fullBlock;

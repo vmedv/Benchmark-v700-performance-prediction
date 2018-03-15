@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECLAIM_EPOCH_H
@@ -287,19 +287,19 @@ public:
 //        assert(tid >= 0);
 //        assert(tid < this->NUM_PROCESSES);
         if (tid == 0) {
-            cout<<"global epoch counter="<<epoch<<endl;
+            std::cout<<"global epoch counter="<<epoch<<std::endl;
         }
 //        long announce = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
-//        cout<<"tid="<<tid<<": announce="<<announce<<" bags(";
+//        std::cout<<"tid="<<tid<<": announce="<<announce<<" bags(";
 //        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-//            cout<<(i?",":"")<</*" bag"<<i<<"="<<*/epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]->computeSize();
+//            std::cout<<(i?",":"")<</*" bag"<<i<<"="<<*/epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]->computeSize();
 //        }
-//        cout<<")"<<endl;
+//        std::cout<<")"<<std::endl;
     }
 
     reclaimer_debra(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE cout<<"constructor reclaimer_debra helping="<<this->shouldHelp()<<endl;// scanThreshold="<<scanThreshold<<endl;
+        VERBOSE std::cout<<"constructor reclaimer_debra helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
         epoch = 0;
         epochbags = new blockbag<T>*[NUMBER_OF_EPOCH_BAGS*numProcesses];
         currentBag = new blockbag<T>*[numProcesses*PREFETCH_SIZE_WORDS];
@@ -319,11 +319,11 @@ public:
         }
     }
     ~reclaimer_debra() {
-        VERBOSE DEBUG cout<<"destructor reclaimer_debra"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_debra"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             // move contents of all bags into pool
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-//                cout<<"main thread: moving "<<epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]->computeSize()<<" objects from epoch bag of tid="<<tid<<" to pool"<<endl;
+//                std::cout<<"main thread: moving "<<epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]->computeSize()<<" objects from epoch bag of tid="<<tid<<" to pool"<<std::endl;
                 this->pool->addMoveAll(tid, epochbags[NUMBER_OF_EPOCH_BAGS*tid+i]);
                 delete epochbags[NUMBER_OF_EPOCH_BAGS*tid+i];
             }

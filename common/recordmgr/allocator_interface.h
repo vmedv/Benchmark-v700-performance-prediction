@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ALLOC_INTERFACE_H
@@ -36,10 +36,10 @@ public:
     allocator_interface(const int numProcesses, debugInfo * const _debug)
             : debug(_debug)
             , NUM_PROCESSES(numProcesses){
-        VERBOSE DEBUG cout<<"constructor allocator_interface"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor allocator_interface"<<std::endl;
     }
     ~allocator_interface() {
-        VERBOSE DEBUG cout<<"destructor allocator_interface"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor allocator_interface"<<std::endl;
     }
 };
 

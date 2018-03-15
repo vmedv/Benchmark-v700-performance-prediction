@@ -10,7 +10,9 @@
 #ifndef HASHLIST_H
 #define HASHLIST_H
 
-#define USE_SIMPLIFIED_HASHLIST 
+#if !defined USE_STL_HASHLIST && !defined USE_SIMPLIFIED_HASHLIST
+    #define USE_SIMPLIFIED_HASHLIST
+#endif
 
 #ifdef USE_STL_HASHLIST
     #include <unordered_set>

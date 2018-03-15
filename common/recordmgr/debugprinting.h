@@ -13,18 +13,18 @@
 
 #define COUTATOMIC(coutstr) /*cout<<coutstr*/ \
 { \
-    stringstream ss; \
+    std::stringstream ss; \
     ss<<coutstr; \
-    cout<<ss.str(); \
+    std::cout<<ss.str(); \
 }
 #define COUTATOMICTID(coutstr) /*cout<<"tid="<<(tid<10?" ":"")<<tid<<": "<<coutstr*/ \
 { \
-    stringstream ss; \
+    std::stringstream ss; \
     ss<<"tid="<<tid<<(tid<10?" ":"")<<": "<<coutstr; \
-    cout<<ss.str(); \
+    std::cout<<ss.str(); \
 }
 
-// define USE_TRACE if you want many paths through the code to be traced with cout<<"..." statements
+// define USE_TRACE if you want many paths through the code to be traced with std::cout<<"..." statements
 #ifdef USE_TRACE
 std::atomic_bool ___trace(1);
 std::atomic_bool ___validateops(1);

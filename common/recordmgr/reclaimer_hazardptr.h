@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECLAIM_HAZARDPTR_STACK_H
@@ -65,7 +65,7 @@ public:
     
     // for hazard pointers (and counting references from threads)
     inline bool protect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true) {
-        TRACE cout<<"reclaimer_hazardptr::protect(tid="<<tid<<", "<<debugPointerOutput(obj)<<")"<<endl;
+        TRACE std::cout<<"reclaimer_hazardptr::protect(tid="<<tid<<", "<<debugPointerOutput(obj)<<")"<<std::endl;
         int size; DEBUG2 size = announce[tid]->size();
 //        DEBUG if (sizeof(T) < 80 /* is a node */) assert(!announce[tid]->contains(obj));
         announce[tid]->add(obj);
@@ -75,14 +75,14 @@ public:
 //        SOFTWARE_BARRIER;
         if (notRetiredCallback(callbackArg)) {
 //            SOFTWARE_BARRIER;
-            TRACE cout<<"notRetiredCallback returns true"<<endl;
+            TRACE std::cout<<"notRetiredCallback returns true"<<std::endl;
             DEBUG2 assert(announce[tid]->size() <= MAX_HAZARDPTRS_PER_THREAD);
             DEBUG2 assert(isProtected(tid, obj));
 //            SOFTWARE_BARRIER;
             assert(isProtected(tid, obj));
             return true;
         } else {
-            TRACE cout<<"notRetiredCallback returns false"<<endl;
+            TRACE std::cout<<"notRetiredCallback returns false"<<std::endl;
             unprotect(tid, obj); // note: it is unnecessary to unprotect here if we promise to enter a quiescent state as soon as we fail to protect an object.
 //            DEBUG if (sizeof(T) < 80 /* is a node */) assert(!isProtected(tid, obj));
 //            SOFTWARE_BARRIER;
@@ -90,7 +90,7 @@ public:
         }
     }
     inline void unprotect(const int tid, T * const obj) {
-        TRACE cout<<"reclaimer_hazardptr::unprotect(tid="<<tid<<", "<<debugPointerOutput(obj)<<")"<<endl;
+        TRACE std::cout<<"reclaimer_hazardptr::unprotect(tid="<<tid<<", "<<debugPointerOutput(obj)<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         DEBUG2 assert(isProtected(tid, obj));
         int size; DEBUG2 size = announce[tid]->size();
@@ -100,16 +100,16 @@ public:
 //        SOFTWARE_BARRIER;
     }
     inline bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true) {
-        TRACE cout<<"reclaimer_debraplus::qProtect(tid="<<tid<</*", "<<*obj<<*/")"<<endl;
+        TRACE std::cout<<"reclaimer_debraplus::qProtect(tid="<<tid<</*", "<<*obj<<*/")"<<std::endl;
         return false;
     }
     inline void qUnprotectAll(const int tid) {
-        TRACE cout<<"reclaimer_debraplus::qUnprotectAll(tid="<<tid<<")"<<endl;
+        TRACE std::cout<<"reclaimer_debraplus::qUnprotectAll(tid="<<tid<<")"<<std::endl;
     }
     
     // for epoch based reclamation
     inline void enterQuiescentState(const int tid) {
-        TRACE cout<<"reclaimer_hazardptr::enterQuiescentState(tid="<<tid<<")"<<endl;
+        TRACE std::cout<<"reclaimer_hazardptr::enterQuiescentState(tid="<<tid<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         announce[tid]->clear();
 //        __sync_synchronize();
@@ -119,7 +119,7 @@ public:
 //        SOFTWARE_BARRIER;
     }
     inline static bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
-        TRACE cout<<"reclaimer_hazardptr::leaveQuiescentState(tid="<<tid<<")"<<endl;
+        TRACE std::cout<<"reclaimer_hazardptr::leaveQuiescentState(tid="<<tid<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         return false;
     }
@@ -140,7 +140,7 @@ public:
     }
     
     inline void retire(const int tid, T* p) {
-        TRACE cout<<"reclaimer_hazardptr::retire(tid="<<tid<<", "<<debugPointerOutput(p)<<")"<<endl;
+        TRACE std::cout<<"reclaimer_hazardptr::retire(tid="<<tid<<", "<<debugPointerOutput(p)<<")"<<std::endl;
         DEBUG2 this->debug->addRetired(tid, 1);
         retired[tid]->add(p);
         
@@ -148,7 +148,7 @@ public:
         if (retired[tid]->isFull()) {
 //            __sync_synchronize(); // not necessary, since there is a membar implied by the update cas between here and the marked bit that makes the retired predicate return true... (it follows that the retired predicate for a node u will see marked and return true if it executes when we are performing retire(u).)
             
-//            TRACE cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (#hps="<<announce[tid]->size()<<")...";
+//            TRACE std::cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (#hps="<<announce[tid]->size()<<")...";
 //            // hash all announcements
 //            int totalSize = 0;
 //            int sizes[MAX_THREADS_POW2];
@@ -164,9 +164,9 @@ public:
 //            }
 //            
 //            // iterate over all items in retired[tid]
-//            TRACE cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (#hps="<<announce[tid]->size()<<", totalSize="<<totalSize<<")...";
+//            TRACE std::cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (#hps="<<announce[tid]->size()<<", totalSize="<<totalSize<<")...";
 //            for (int ix=0;ix<retired[tid]->size();++ix) {
-//                TRACE cout<<" "<<debugPointerOutput(retired[tid]->get(ix))<<"="<<(hset.contains(retired[tid]->get(ix))?"1":"0");
+//                TRACE std::cout<<" "<<debugPointerOutput(retired[tid]->get(ix))<<"="<<(hset.contains(retired[tid]->get(ix))?"1":"0");
 //                if (!hset.contains(retired[tid]->get(ix))) {
 //                    // no hazard pointers point to the item, so we send it to the pool
 //                    this->pool->add(tid, retired[tid]->get(ix));
@@ -176,9 +176,9 @@ public:
 //                    --ix;
 //                }
 //            }
-//            TRACE cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<endl;
+//            TRACE std::cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<std::endl;
 
-//            TRACE cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (THIS thread #hps="<<announce[tid]->size()<<")...";
+//            TRACE std::cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (THIS thread #hps="<<announce[tid]->size()<<")...";
 //            for (int ix=0;ix<retired[tid]->size();) {
 //                // check if retired[tid]->data[ix] is in any set of hazard pointers
 //                bool found = false;
@@ -202,9 +202,9 @@ public:
 //                    ++ix; // we didn't erase, so we need to move on to the next element
 //                }
 //            }
-//            TRACE cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<endl;
+//            TRACE std::cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<std::endl;
 
-            TRACE cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (THIS thread #hps="<<announce[tid]->size()<<")...";
+            TRACE std::cout<<"retiring... we have "<<retired[tid]->size()<<" things waiting to be retired (THIS thread #hps="<<announce[tid]->size()<<")...";
             // hash all announcements
             comparing[tid]->clear();
             assert(comparing[tid]->size() == 0);
@@ -228,7 +228,7 @@ public:
                     ++ix; // we didn't erase, so we need to move on to the next element
                 }
             }
-            TRACE cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<endl;
+            TRACE std::cout<<"    afterwards, we have "<<retired[tid]->size()<<" things waiting to be retired..."<<std::endl;
             
             DEBUG2 assert(!retired[tid]->isFull());
         }
@@ -242,7 +242,7 @@ public:
     reclaimer_hazardptr(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : scanThreshold(5*numProcesses*MAX_HAZARDPTRS_PER_THREAD),
               reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE DEBUG cout<<"constructor reclaimer_hazardptr"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor reclaimer_hazardptr"<<std::endl;
         announce = new AtomicArrayList<T>*[numProcesses];
         retired = new ArrayList<T>*[numProcesses];
         comparing = new hashset_new<T>*[numProcesses];
@@ -253,7 +253,7 @@ public:
         }
     }
     ~reclaimer_hazardptr() {
-        VERBOSE DEBUG cout<<"destructor reclaimer_hazardptr"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_hazardptr"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             int sz = retired[tid]->size();
             for (int ix=0;ix<sz;++ix) {

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 // NOTE: this reclaimer can ONLY be used with allocator_new,
@@ -17,9 +17,6 @@
 #include <urcu.h>
 #include "blockbag.h"
 #include "plaf.h"
-#ifdef USE_DEBUGCOUNTERS
-    #include "debugcounter.h"
-#endif
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
 #ifdef BST
@@ -196,8 +193,8 @@ public:
     }
 
     void debugPrintStatus(const int tid) {
-        if (freesNode) cout<<"freesNode="<<freesNode<<endl;
-        if (freesDescriptor) cout<<"freesDescriptor="<<freesDescriptor<<endl;
+        if (freesNode) std::cout<<"freesNode="<<freesNode<<std::endl;
+        if (freesDescriptor) std::cout<<"freesDescriptor="<<freesDescriptor<<std::endl;
     }
     
     void initThread(const int tid) {

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ALLOC_BUMP_H
@@ -76,7 +76,7 @@ class allocator_bump : public allocator_interface<T> {
 //                        if ((this->debug->getAllocated(tid) % 2000) == 0) {
 //                            this->debugInterfaces->reclaim->debugPrintStatus(tid);
 //                            debugPrintStatus(tid);
-                            COUTATOMICTID("allocated "<<(memBytes[tid*PREFETCH_SIZE_WORDS] / cachelines / BYTES_IN_CACHE_LINE)/*this->debug->getAllocated(tid)*/<<" records of size "<<sizeof(T)<<endl);
+                            COUTATOMICTID("allocated "<<(memBytes[tid*PREFETCH_SIZE_WORDS] / cachelines / BYTES_IN_CACHE_LINE)/*this->debug->getAllocated(tid)*/<<" records of size "<<sizeof(T)<<std::endl);
 //                            COUTATOMIC(" ");
 //                            this->pool->debugPrintStatus(tid);
 //                            COUTATOMIC(endl);
@@ -105,7 +105,7 @@ class allocator_bump : public allocator_interface<T> {
         allocator_bump(const int numProcesses, debugInfo * const _debug)
                 : allocator_interface<T>(numProcesses, _debug)
                 , cachelines((sizeof(T)+(BYTES_IN_CACHE_LINE-1))/BYTES_IN_CACHE_LINE){
-            VERBOSE DEBUG COUTATOMIC("constructor allocator_bump"<<endl);
+            VERBOSE DEBUG COUTATOMIC("constructor allocator_bump"<<std::endl);
             mem = new T*[numProcesses*PREFETCH_SIZE_WORDS];
             memBytes = new int[numProcesses*PREFETCH_SIZE_WORDS];
             current = new T*[numProcesses*PREFETCH_SIZE_WORDS];
@@ -118,7 +118,7 @@ class allocator_bump : public allocator_interface<T> {
             }
         }
         ~allocator_bump() {
-            VERBOSE COUTATOMIC("destructor allocator_bump"<<endl);
+            VERBOSE COUTATOMIC("destructor allocator_bump"<<std::endl);
             // free all allocated blocks of memory
             for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
                 int n = toFree[tid]->size();

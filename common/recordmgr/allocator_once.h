@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ALLOC_ONCE_H
@@ -75,32 +75,32 @@ public:
 //        // touch each page of memory before our trial starts
 //        long pagesize = sysconf(_SC_PAGE_SIZE);
 //        int last = (int) (memBytes[tid*PREFETCH_SIZE_WORDS]/pagesize);
-//        VERBOSE COUTATOMICTID("touching each page... memBytes="<<memBytes[tid*PREFETCH_SIZE_WORDS]<<" pagesize="<<pagesize<<" last="<<last<<endl);
+//        VERBOSE COUTATOMICTID("touching each page... memBytes="<<memBytes[tid*PREFETCH_SIZE_WORDS]<<" pagesize="<<pagesize<<" last="<<last<<std::endl);
 //        for (int i=0;i<last;++i) {
-//            TRACE COUTATOMICTID("    "<<tid<<" touching page "<<i<<" at address "<<(long)((long*)(((char*) mem[tid])+i*pagesize))<<endl);
+//            TRACE COUTATOMICTID("    "<<tid<<" touching page "<<i<<" at address "<<(long)((long*)(((char*) mem[tid])+i*pagesize))<<std::endl);
 //            *((long*)(((char*) mem[tid])+i*pagesize)) = 0;
 //        }
-//        VERBOSE COUTATOMICTID(" finished touching each page."<<endl);
+//        VERBOSE COUTATOMICTID(" finished touching each page."<<std::endl);
     }
 
     allocator_once(const int numProcesses, debugInfo * const _debug)
             : allocator_interface<T>(numProcesses, _debug)
             , cachelines((sizeof(T)+(BYTES_IN_CACHE_LINE-1))/BYTES_IN_CACHE_LINE) {
-        VERBOSE DEBUG COUTATOMIC("constructor allocator_once"<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor allocator_once"<<std::endl);
         mem = new T*[numProcesses];
         memBytes = new size_t[numProcesses*PREFETCH_SIZE_WORDS];
         current = new T*[numProcesses*PREFETCH_SIZE_WORDS];
         for (int tid=0;tid<numProcesses;++tid) {
             long long newSizeBytes = ALLOC_ONCE_MEMORY / numProcesses; // divide several GB amongst all threads.
-            VERBOSE COUTATOMIC("newSizeBytes        = "<<newSizeBytes<<endl);
+            VERBOSE COUTATOMIC("newSizeBytes        = "<<newSizeBytes<<std::endl);
             assert((newSizeBytes % (cachelines*BYTES_IN_CACHE_LINE)) == 0);
 
             mem[tid] = (T*) malloc((size_t) newSizeBytes);
             if (mem[tid] == NULL) {
-                cerr<<"could not allocate memory"<<endl;
+                cerr<<"could not allocate memory"<<std::endl;
                 exit(-1);
             }
-            //COUTATOMIC("successfully allocated"<<endl);
+            //COUTATOMIC("successfully allocated"<<std::endl);
             memBytes[tid*PREFETCH_SIZE_WORDS] = (size_t) newSizeBytes;
             current[tid*PREFETCH_SIZE_WORDS] = mem[tid];
             // align on cacheline boundary
@@ -120,7 +120,7 @@ public:
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             allocated += (((char*) current[tid*PREFETCH_SIZE_WORDS]) - ((char*) mem[tid]));
         }
-        VERBOSE COUTATOMIC("destructor allocator_once allocated="<<allocated<<" bytes, or "<<(allocated/(cachelines*BYTES_IN_CACHE_LINE))<<" objects of size "<<sizeof(T)<<" occupying "<<cachelines<<" cache lines"<<endl);
+        VERBOSE COUTATOMIC("destructor allocator_once allocated="<<allocated<<" bytes, or "<<(allocated/(cachelines*BYTES_IN_CACHE_LINE))<<" objects of size "<<sizeof(T)<<" occupying "<<cachelines<<" cache lines"<<std::endl);
         // free all allocated blocks of memory
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             delete mem[tid];

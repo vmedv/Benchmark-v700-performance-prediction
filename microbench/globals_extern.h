@@ -89,7 +89,7 @@ extern int TOTAL_THREADS;
 #ifdef ALLOC_TYPE
     #define ALLOC PASTE(allocator_, ALLOC_TYPE)
 #else
-    #define ALLOC allocator_new_segregated
+    #define ALLOC allocator_new
 #endif
 #ifdef POOL_TYPE
     #define POOL PASTE(pool_, POOL_TYPE)

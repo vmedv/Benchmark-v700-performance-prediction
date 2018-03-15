@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECORD_MANAGER_SINGLE_TYPE_H
@@ -62,13 +62,13 @@ public:
 
     record_manager_single_type(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr)
             : NUM_PROCESSES(numProcesses), debugInfoRecord(debugInfo(numProcesses)), recoveryMgr(_recoveryMgr) {
-        VERBOSE DEBUG COUTATOMIC("constructor record_manager_single_type"<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor record_manager_single_type"<<std::endl);
         alloc = new classAlloc(numProcesses, &debugInfoRecord);
         pool = new classPool(numProcesses, alloc, &debugInfoRecord);
         reclaim = new classReclaim(numProcesses, pool, &debugInfoRecord, recoveryMgr);
     }
     ~record_manager_single_type() {
-        VERBOSE DEBUG COUTATOMIC("destructor record_manager_single_type"<<endl);
+        VERBOSE DEBUG COUTATOMIC("destructor record_manager_single_type"<<std::endl);
         delete reclaim;
         delete pool;
         delete alloc;
@@ -125,7 +125,7 @@ public:
 
     // for epoch based reclamation
     inline void enterQuiescentState(const int tid) {
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<endl);
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<std::endl);
         reclaim->enterQuiescentState(tid);
     }
     inline void leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
@@ -160,13 +160,13 @@ public:
         long long allocatedBytes = allocated * sizeof(Record);
         long long deallocated = debugInfoRecord.getTotalDeallocated();
         long long recycled = debugInfoRecord.getTotalFromPool() - allocated;
-        COUTATOMIC("recmgr status for objects of size "<<sizeof(Record)<<" and type "<<typeid(Record).name()<<endl);
-        COUTATOMIC("allocated   : "<<allocated<<" objects totaling "<<allocatedBytes<<" bytes ("<<(allocatedBytes/1000000.)<<"MB)"<<endl);
-        COUTATOMIC("recycled    : "<<recycled<<endl);
-        COUTATOMIC("deallocated : "<<deallocated<<" objects"<<endl);
-        COUTATOMIC("pool        : "<<pool->getSizeString()<<endl);
-        COUTATOMIC("reclaim     : "<<reclaim->getSizeString()<<endl);
-        COUTATOMIC("unreclaimed : "<<(allocated - deallocated - atoi(reclaim->getSizeString().c_str()))<<endl);
+        COUTATOMIC("recmgr status for objects of size "<<sizeof(Record)<<" and type "<<typeid(Record).name()<<std::endl);
+        COUTATOMIC("allocated   : "<<allocated<<" objects totaling "<<allocatedBytes<<" bytes ("<<(allocatedBytes/1000000.)<<"MB)"<<std::endl);
+        COUTATOMIC("recycled    : "<<recycled<<std::endl);
+        COUTATOMIC("deallocated : "<<deallocated<<" objects"<<std::endl);
+        COUTATOMIC("pool        : "<<pool->getSizeString()<<std::endl);
+        COUTATOMIC("reclaim     : "<<reclaim->getSizeString()<<std::endl);
+        COUTATOMIC("unreclaimed : "<<(allocated - deallocated - atoi(reclaim->getSizeString().c_str()))<<std::endl);
 //        COUTATOMIC(endl);
 
         for (int tid=0;tid<NUM_PROCESSES;++tid) {

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ARRAYLIST_H
@@ -25,7 +25,7 @@ private:
 public:
     const int capacity;
     AtomicArrayList(const int _capacity) : capacity(_capacity) {
-        VERBOSE DEBUG COUTATOMIC("constructor AtomicArrayList capacity="<<capacity<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor AtomicArrayList capacity="<<capacity<<std::endl);
         __size.store(0, memory_order_relaxed);
         data = new atomic_uintptr_t[capacity];
     }

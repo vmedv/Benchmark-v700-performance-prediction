@@ -1,29 +1,14 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECOVERY_MANAGER_H
 #define	RECOVERY_MANAGER_H
 
-#ifdef __CYGWIN__
-    struct sigaction { void * sa_sigaction; int sa_flags; int sa_mask; };
-    struct siginfo_t {};
-    struct sigjmp_buf {};
-    #define sigsetjmp(buf, flags) 0
-    #define siglongjmp(buf, flags) 0
-    #define sigemptyset(x) 0
-    #define sigfillset(x) 0
-    #define sigaddset(x, sig) 0
-    #define pthread_sigmask(sig, set, nul) 0
-    #define SIG_UNBLOCK 0
-    #define SA_RESTART 0
-    #define SA_SIGINFO 0
-#else
-    #include <setjmp.h>
-#endif
+#include <setjmp.h>
 
 #ifndef VERBOSE
     #define VERBOSE if(0)
@@ -32,9 +17,6 @@
 #include <cassert>
 #include <csignal>
 #include "globals.h"
-#ifdef USE_DEBUGCOUNTERS
-    #include "debugcounter.h"
-#endif
 
 // for crash recovery
 static pthread_key_t pthreadkey;
@@ -51,12 +33,6 @@ extern pthread_t registeredThreads[MAX_THREADS_POW2];
 extern void *errnoThreads[MAX_THREADS_POW2];
 extern sigjmp_buf *setjmpbuffers;
 
-#ifdef USE_DEBUGCOUNTERS
-static debugCounter countInterrupted(MAX_THREADS_POW2);
-static debugCounter countLongjmp(MAX_THREADS_POW2);
-extern debugCounter countInterrupted;
-extern debugCounter countLongjmp;
-#endif
 #define MAX_THREAD_ADDR 10000
 
 #ifdef CRASH_RECOVERY_USING_SETJMP
@@ -81,20 +57,14 @@ void crashhandler(int signum, siginfo_t *info, void *uctx) {
 #ifdef SIGHANDLER_IDENTIFY_USING_PTHREAD_GETSPECIFIC
     int tid = (int) ((long) pthread_getspecific(pthreadkey));
 #endif
-    TRACE COUTATOMICTID("received signal "<<signum<<endl);
+    TRACE COUTATOMICTID("received signal "<<signum<<std::endl);
 
     // if i'm active (not in a quiescent state), i must throw an exception
     // and clean up after myself, instead of continuing my operation.
-#ifdef USE_DEBUGCOUNTERS
-    DEBUG countInterrupted.inc(tid);
-#endif
     __sync_synchronize();
     if (!recordmgr->isQuiescent(tid)) {
 #ifdef PERFORM_RESTART_IN_SIGHANDLER
         recordmgr->enterQuiescentState(tid);
-    #ifdef USE_DEBUGCOUNTERS
-        DEBUG countLongjmp.inc(tid);
-    #endif
         __sync_synchronize();
     #ifdef CRASH_RECOVERY_USING_SETJMP
         siglongjmp(setjmpbuffers[tid], 1);
@@ -124,7 +94,7 @@ public:
         }
         // fail to find my tid -- should be impossible
         if (tid == -1) {
-            COUTATOMIC("THIS SHOULD NEVER HAPPEN"<<endl);
+            COUTATOMIC("THIS SHOULD NEVER HAPPEN"<<std::endl);
             assert(false);
             exit(-1);
         }
@@ -140,7 +110,7 @@ public:
         }
         // fail to find my tid -- should be impossible
         if (tid == -1) {
-            COUTATOMIC("THIS SHOULD NEVER HAPPEN"<<endl);
+            COUTATOMIC("THIS SHOULD NEVER HAPPEN"<<std::endl);
             assert(false);
             exit(-1);
         }
@@ -150,7 +120,7 @@ public:
         void * result = pthread_getspecific(pthreadkey);
         if (!result) {
             assert(false);
-            COUTATOMIC("ERROR: failed to get thread id using pthread_getspecific"<<endl);
+            COUTATOMIC("ERROR: failed to get thread id using pthread_getspecific"<<std::endl);
             exit(-1);
         }
         return (int) ((long) result);
@@ -167,10 +137,10 @@ public:
         // here, we use the fact that errno is defined to be a thread local variable
         errnoThreads[tid] = &errno;
         if (pthread_setspecific(pthreadkey, (void*) (long) tid)) {
-            COUTATOMIC("ERROR: failure of pthread_setspecific for tid="<<tid<<endl);
+            COUTATOMIC("ERROR: failure of pthread_setspecific for tid="<<tid<<std::endl);
         }
         const long __readtid = (long) ((int *) pthread_getspecific(pthreadkey));
-        VERBOSE DEBUG COUTATOMICTID("did pthread_setspecific, pthread_getspecific of "<<__readtid<<endl);
+        VERBOSE DEBUG COUTATOMICTID("did pthread_setspecific, pthread_getspecific of "<<__readtid<<std::endl);
         assert(__readtid == tid);
     }
     
@@ -180,7 +150,7 @@ public:
         sigemptyset(&oldset);
         sigaddset(&oldset, neutralizeSignal);
         if (pthread_sigmask(SIG_UNBLOCK, &oldset, NULL)) {
-            VERBOSE COUTATOMIC("ERROR UNBLOCKING SIGNAL"<<endl);
+            VERBOSE COUTATOMIC("ERROR UNBLOCKING SIGNAL"<<std::endl);
             exit(-1);
         }
     }
@@ -190,7 +160,6 @@ public:
         setjmpbuffers = new sigjmp_buf[numProcesses];
         pthread_key_create(&pthreadkey, NULL);
         
-#ifndef __CYGWIN__
         if (MasterRecordMgr::supportsCrashRecovery()) {
             // set up crash recovery signal handling for this process
             memset(&___act, 0, sizeof(___act));
@@ -198,14 +167,13 @@ public:
             ___act.sa_flags = SA_RESTART | SA_SIGINFO; // restart any interrupted sys calls instead of silently failing
             sigfillset(&___act.sa_mask);               // block signals during handler
             if (sigaction(_neutralizeSignal, &___act, NULL)) {
-                COUTATOMIC("ERROR: could not register signal handler for signal "<<_neutralizeSignal<<endl);
+                COUTATOMIC("ERROR: could not register signal handler for signal "<<_neutralizeSignal<<std::endl);
                 assert(false);
                 exit(-1);
             } else {
-                VERBOSE COUTATOMIC("registered signal "<<_neutralizeSignal<<" for crash recovery"<<endl);
+                VERBOSE COUTATOMIC("registered signal "<<_neutralizeSignal<<" for crash recovery"<<std::endl);
             }
         }
-#endif
         // set up shared pointer to this class instance for the signal handler
         ___singleton = (void *) masterRecordMgr;
     }

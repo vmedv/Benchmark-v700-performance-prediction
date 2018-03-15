@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef BLOCKLIST_H
@@ -174,7 +174,7 @@ class block;
         }
         inline T* operator*() const {
 #ifdef BLOCKBAG_ITERATOR_COUNT_STEPS
-            if (ix < 0) cout<<"bag="<<bag<<" head="<<head<<" curr="<<curr<<" ix="<<ix<<" steps="<<steps<<endl;
+            if (ix < 0) std::cout<<"bag="<<bag<<" head="<<head<<" curr="<<curr<<" ix="<<ix<<" steps="<<steps<<std::endl;
 #endif
 //            /****** start consistency check for concurrent iteration ******/
 //            assert(reclaimCountStart == bag->getReclaimCount());
@@ -194,7 +194,7 @@ class block;
 #ifdef BLOCKBAG_ITERATOR_COUNT_BLOCKS_TRAVERSED
                 ++blocksTraversed;
                 if (blocksTraversed > sizeInBlocks + 1) {
-                    cout<<"ERROR: too many blocks traversed! traversed "<<blocksTraversed<<" when we expected at most 1+"<<sizeInBlocks<<endl;
+                    std::cout<<"ERROR: too many blocks traversed! traversed "<<blocksTraversed<<" when we expected at most 1+"<<sizeInBlocks<<std::endl;
                     exit(-1);
                 }
                 assert(blocksTraversed <= sizeInBlocks + 1);
@@ -289,10 +289,10 @@ class block;
         blockpool<T> * const pool;
         
         void debugPrintBag() {
-            cout<<"("<<computeSize()<<","<<computeSizeInBlocks()<<") =";
+            std::cout<<"("<<computeSize()<<","<<computeSizeInBlocks()<<") =";
             block<T> * curr = head;
             while (curr) {
-                cout<<" "<<curr->computeSize()<<"["<<((long)curr)<<"]";
+                std::cout<<" "<<curr->computeSize()<<"["<<((long)curr)<<"]";
                 curr = curr->next;
             }
         }
@@ -308,9 +308,9 @@ class block;
         
     public:
         blockbag(const int tid, blockpool<T> * const _pool) : pool(_pool) {
-//            VERBOSE DEBUG cout<<"constructor blockbag"<<endl;
+//            VERBOSE DEBUG std::cout<<"constructor blockbag"<<std::endl;
             owner = tid;
-//            cout<<"bag owner="<<owner<<endl;
+//            std::cout<<"bag owner="<<owner<<std::endl;
             reclaimCount = 0;
             debugFreed = 0;
             sizeInBlocks = 1;
@@ -321,7 +321,7 @@ class block;
             DEBUG2 validate();
         }
         ~blockbag() {
-//            VERBOSE DEBUG cout<<"destructor blockbag;";
+//            VERBOSE DEBUG std::cout<<"destructor blockbag;";
             assert(isEmpty());
             // clear the bag AND FREE EVERY BLOCK IN IT
             while (head) {
@@ -330,7 +330,7 @@ class block;
                 //DEBUG ++debugFreed;
                 pool->deallocateBlock(temp);
             }
-//            VERBOSE DEBUG cout<<" freed "<<debugFreed<<endl;
+//            VERBOSE DEBUG std::cout<<" freed "<<debugFreed<<std::endl;
         }
         
         int getOwner() {
@@ -362,7 +362,7 @@ class block;
                 int oldNumBlocks; DEBUG2 oldNumBlocks = computeSizeInBlocks();
                 block<T> *newblock = pool->allocateBlock(head);
                 ++sizeInBlocks;
-                //DEBUG2 cout<<"((("<<((long)head)<<" full. prepending "<<((long)newblock)<<")))";
+                //DEBUG2 std::cout<<"((("<<((long)head)<<" full. prepending "<<((long)newblock)<<")))";
                 SOFTWARE_BARRIER;
                 head = newblock;
                 DEBUG2 assert(oldNumBlocks + 1 == computeSizeInBlocks());
@@ -381,7 +381,7 @@ class block;
                 int oldNumBlocks; DEBUG2 oldNumBlocks = computeSizeInBlocks();
                 block<T> *newblock = pool->allocateBlock(head);
                 ++sizeInBlocks;
-                //DEBUG2 cout<<"((("<<((long)head)<<" full. prepending "<<((long)newblock)<<")))";
+                //DEBUG2 std::cout<<"((("<<((long)head)<<" full. prepending "<<((long)newblock)<<")))";
                 head = newblock;
                 DEBUG2 assert(oldNumBlocks + 1 == computeSizeInBlocks());
                 DEBUG2 assert(sizeInBlocks == computeSizeInBlocks());
@@ -391,7 +391,7 @@ class block;
                     assert(b);
                     sharedBag->addBlock(b);
                     MEMORY_STATS alloc->debug->addGiven(tid, 1);
-                    //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" sharedBag("<<(sizeof(T)==sizeof(Node<long,long>)?"Node":"SCXRecord")<<") now contains "<<sharedBag->size()<<" blocks"<<endl);
+                    //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" sharedBag("<<(sizeof(T)==sizeof(Node<long,long>)?"Node":"SCXRecord")<<") now contains "<<sharedBag->size()<<" blocks"<<std::endl);
                     DEBUG2 assert(oldsize + 1 - BLOCK_SIZE == computeSize());
                 }
             }
@@ -488,7 +488,7 @@ class block;
 //                        if (b) {
 //                            addFullBlock(b);
 //                            //DEBUG this->debug->addTaken(tid, 1);
-//                            //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<endl);
+//                            //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<std::endl);
 //                        } else {
 //                            /** begin debug **/
 //                            for (int i=0;i<BLOCK_SIZE-1;++i) {
@@ -506,7 +506,7 @@ class block;
                     if (b) {
                         addFullBlock(b);
                         MEMORY_STATS alloc->debug->addTaken(tid, 1);
-                        //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<endl);
+                        //DEBUG2 COUTATOMIC("  thread "<<this->tid<<" took "<<b->computeSize()<<" objects from sharedBag"<<std::endl);
                         return remove(/*tid, sharedBag, alloc*/);
                     } else {
 //                        return alloc->allocate(tid);
@@ -550,7 +550,7 @@ class block;
                 }
             }
             DEBUG2 assert(oldsize == computeSize());
-            DEBUG2 if (sizeInBlocks != computeSizeInBlocks()) { cout<<"sizeInBlocks="<<sizeInBlocks<<" compute="<<computeSizeInBlocks()<<endl; }
+            DEBUG2 if (sizeInBlocks != computeSizeInBlocks()) { std::cout<<"sizeInBlocks="<<sizeInBlocks<<" compute="<<computeSizeInBlocks()<<std::endl; }
             DEBUG2 assert(sizeInBlocks == computeSizeInBlocks());
             DEBUG2 validate();
             return 0;

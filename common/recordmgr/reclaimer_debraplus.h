@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECLAIM_EPOCH_CRASHRECOV_H
@@ -87,15 +87,15 @@ private:
             // waiting for him to progress.
             pthread_t otherPthread = this->recoveryMgr->getPthread(otherTid);
             int error = 0;
-//                COUTATOMICTID("sending signal to tid "<<otherTid<<endl);
+//                COUTATOMICTID("sending signal to tid "<<otherTid<<std::endl);
 
             if (error = pthread_kill(otherPthread, this->recoveryMgr->neutralizeSignal)) {
                 // should never happen
-                for (int i=0;i<20;++i) COUTATOMICTID("######################################################"<<endl);
-                COUTATOMICTID("error "<<error<<" when trying to pthread_kill(pthread_tFor("<<otherTid<<"), "<<this->recoveryMgr->neutralizeSignal<<")"<<endl);
+                for (int i=0;i<20;++i) COUTATOMICTID("######################################################"<<std::endl);
+                COUTATOMICTID("error "<<error<<" when trying to pthread_kill(pthread_tFor("<<otherTid<<"), "<<this->recoveryMgr->neutralizeSignal<<")"<<std::endl);
                 assert(isQuiescent(tid));
                 const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
-                COUTATOMICTID("otherThread has newann="<<newann<<" with quiescent bit "<<QUIESCENT(newann)<<endl);
+                COUTATOMICTID("otherThread has newann="<<newann<<" with quiescent bit "<<QUIESCENT(newann)<<std::endl);
                 // this can happen because otherTid has terminated.
                 // if otherTid is now quiescent, then we can return true...
                 if (QUIESCENT(newann)) return true;
@@ -105,7 +105,7 @@ private:
                 // debug technique: wait until otherTid is
                 // either quiescent or has updated its announced epoch.
                 for (;;) {
-                    TRACE COUTATOMICTID("thread "<<tid<<" waiting for quiescence of thread "<<otherTid<<endl);
+                    TRACE COUTATOMICTID("thread "<<tid<<" waiting for quiescence of thread "<<otherTid<<std::endl);
                     __sync_synchronize();
                     const long newann = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
                     if (QUIESCENT(newann) || BITS_EPOCH(newann) != BITS_EPOCH(announceOther)) {
@@ -138,7 +138,7 @@ public:
     inline static bool quiescenceIsPerRecordType() { return false; }
     inline static bool supportsCrashRecovery() { return true; }
     inline bool isQuiescent(const int tid) {
-        //COUTATOMICTID("IS QUIESCENT EXECUTED"<<endl);
+        //COUTATOMICTID("IS QUIESCENT EXECUTED"<<std::endl);
         return QUIESCENT(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed));
     }
     
@@ -155,7 +155,7 @@ public:
         return announce[tid]->contains(obj); // this is inefficient, but should only happen when recovering from being neutralized...
     }
     inline bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true) {
-        TRACE COUTATOMICTID("reclaimer_debraplus::protectObjectEvenIfQuiescent(tid="<<tid<</*", "<<*obj<<*/")"<<endl);
+        TRACE COUTATOMICTID("reclaimer_debraplus::protectObjectEvenIfQuiescent(tid="<<tid<</*", "<<*obj<<*/")"<<std::endl);
         int __size; DEBUG __size = announce[tid]->size();
         DEBUG assert(__size < MAX_PROTECT_EVEN_IF_QUIESCENT);
         announce[tid]->add(obj);
@@ -164,11 +164,11 @@ public:
         // if callbackArg = NULL, we assume notRetiredCallback is a noop.
         if (memoryBarrier) __sync_synchronize(); // prevent retired from being read before we set a hazard pointer to obj, and prevent any future reads of fields of obj from being moved before we announce obj.
         if (notRetiredCallback(callbackArg)) {
-            TRACE COUTATOMICTID("notRetiredCallback returns true"<<endl);
+            TRACE COUTATOMICTID("notRetiredCallback returns true"<<std::endl);
             return true;
         } else {
             // obj MAY be retired
-            TRACE COUTATOMICTID("notRetiredCallback returns false"<<endl);
+            TRACE COUTATOMICTID("notRetiredCallback returns false"<<std::endl);
             // although we don't care about other threads being able to free
             // this object for efficiency, we still need to null this out
             // because we need to be able to tell whether we successfully
@@ -180,7 +180,7 @@ public:
         }
     }
     inline void qUnprotectAll(const int tid) {
-        TRACE COUTATOMICTID("reclaimer_debraplus::unprotectAllObjectsEvenIfQuiescent(tid="<<tid<<")"<<endl);
+        TRACE COUTATOMICTID("reclaimer_debraplus::unprotectAllObjectsEvenIfQuiescent(tid="<<tid<<")"<<std::endl);
         assert(isQuiescent(tid));
         announce[tid]->clear();
         assert(announce[tid]->size() == 0);
@@ -257,7 +257,7 @@ public:
         // if our announced epoch is different from the current epoch
         const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed);
         DEBUG2 if (!QUIESCENT(ann)) {
-            COUTATOMICTID("NOT QUIESCENT"<<endl);
+            COUTATOMICTID("NOT QUIESCENT"<<std::endl);
             exit(-1);
         }
         if (readEpoch != BITS_EPOCH(ann)) {
@@ -320,25 +320,25 @@ public:
 //        assert(tid >= 0);
 //        assert(tid < this->NUM_PROCESSES);
 //        long announce = BITS_EPOCH(announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(memory_order_relaxed))/EPOCH_INCREMENT;
-//        cout<<"announce="<<announce;
-//        cout<<" bags:";
+//        std::cout<<"announce="<<announce;
+//        std::cout<<" bags:";
 //        for (int i=0;i<NUMBER_OF_EPOCH_BAGS_CR;++i) {
-//            cout<<" bag"<<i<<"="<<epochbags[NUMBER_OF_EPOCH_BAGS_CR*tid+i]->computeSize();
+//            std::cout<<" bag"<<i<<"="<<epochbags[NUMBER_OF_EPOCH_BAGS_CR*tid+i]->computeSize();
 //        }
     }
 
     reclaimer_debraplus(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE DEBUG COUTATOMIC("constructor reclaimer_debraplus helping="<<this->shouldHelp()<<endl);// scanThreshold="<<scanThreshold<<endl;
-        if (_recoveryMgr) COUTATOMIC("SIGRTMIN="<<SIGRTMIN<<" neutralizeSignal="<<this->recoveryMgr->neutralizeSignal<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor reclaimer_debraplus helping="<<this->shouldHelp()<<std::endl);// scanThreshold="<<scanThreshold<<std::endl;
+        if (_recoveryMgr) COUTATOMIC("SIGRTMIN="<<SIGRTMIN<<" neutralizeSignal="<<this->recoveryMgr->neutralizeSignal<<std::endl);
         // set up signal set for neutralize signal
         if (sigemptyset(&neutralizeSignalSet)) {
-            COUTATOMIC("error creating empty signal set"<<endl);
+            COUTATOMIC("error creating empty signal set"<<std::endl);
             exit(-1);
         }
         if (_recoveryMgr) {
             if (sigaddset(&neutralizeSignalSet, this->recoveryMgr->neutralizeSignal)) {
-                COUTATOMIC("error adding signal to signal set"<<endl);
+                COUTATOMIC("error adding signal to signal set"<<std::endl);
                 exit(-1);
             }
         }
@@ -365,7 +365,7 @@ public:
         }
     }
     ~reclaimer_debraplus() {
-        VERBOSE DEBUG COUTATOMIC("destructor reclaimer_debraplus"<<endl);
+        VERBOSE DEBUG COUTATOMIC("destructor reclaimer_debraplus"<<std::endl);
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             // move contents of all bags into pool
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS_CR;++i) {

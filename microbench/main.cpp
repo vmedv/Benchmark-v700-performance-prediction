@@ -40,7 +40,7 @@ using namespace std;
 #endif
 
 #ifndef INSERT_FUNC
-    #error Must define INSERT_FUNC (insert or insertIfAbsent)
+    #define INSERT_FUNC insertIfAbsent
 #endif
 
 static void * const NO_VALUE = NULL;

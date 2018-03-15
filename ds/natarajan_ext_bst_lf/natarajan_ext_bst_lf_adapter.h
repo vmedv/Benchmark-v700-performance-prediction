@@ -17,8 +17,9 @@
 #ifdef DS_H_FILE
     #include STR(DS_H_FILE)
 #else
-    #warning Using default data structure implementation (see define DS_H_FILE)
-    #include "natarajan_ext_bst_lf_baseline_impl.h"
+//    #warning Using default data structure implementation (see define DS_H_FILE)
+//    #include "natarajan_ext_bst_lf_baseline_impl.h"
+    #include "natarajan_ext_bst_lf_stage2_impl.h"
 #endif
 #include "errors.h"
 

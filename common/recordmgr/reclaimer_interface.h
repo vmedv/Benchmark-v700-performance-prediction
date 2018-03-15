@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECLAIM_INTERFACE_H
@@ -24,9 +24,7 @@ struct set_of_bags {
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_interface {
 public:
-#ifndef __CYGWIN__
     RecoveryMgr<void *> * recoveryMgr;
-#endif
     debugInfo * const debug;
     
     const int NUM_PROCESSES;
@@ -50,7 +48,7 @@ public:
     inline bool isProtected(const int tid, T * const obj);
     inline bool isQProtected(const int tid, T * const obj);
     inline static bool isQuiescent(const int tid) {
-        COUTATOMICTID("reclaimer_interface::isQuiescent(tid) is not implemented!"<<endl);
+        COUTATOMICTID("reclaimer_interface::isQuiescent(tid) is not implemented!"<<std::endl);
         exit(-1);
     }
     
@@ -82,16 +80,14 @@ public:
     void debugPrintStatus(const int tid);
     
     reclaimer_interface(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
-#ifndef __CYGWIN__
             : recoveryMgr(_recoveryMgr)
-#endif
             , debug(_debug)
             , NUM_PROCESSES(numProcesses)
             , pool(_pool) {
-        VERBOSE DEBUG COUTATOMIC("constructor reclaimer_interface"<<endl);
+        VERBOSE DEBUG COUTATOMIC("constructor reclaimer_interface"<<std::endl);
     }
     ~reclaimer_interface() {
-        VERBOSE DEBUG COUTATOMIC("destructor reclaimer_interface"<<endl);
+        VERBOSE DEBUG COUTATOMIC("destructor reclaimer_interface"<<std::endl);
     }
 };
 

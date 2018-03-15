@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECLAIM_NOOP_H
@@ -92,10 +92,10 @@ public:
     
     reclaimer_none(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE DEBUG cout<<"constructor reclaimer_none"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor reclaimer_none"<<std::endl;
     }
     ~reclaimer_none() {
-        VERBOSE DEBUG cout<<"destructor reclaimer_none"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_none"<<std::endl;
     }
 
 }; // end class

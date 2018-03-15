@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef ALLOC_NEW_H
@@ -68,20 +68,20 @@ public:
     }
     
     void debugPrintStatus(const int tid) {
-//        cout<</*"thread "<<tid<<" "<<*/"allocated "<<this->debug->getAllocated(tid)<<" objects of size "<<(sizeof(T));
-//        cout<<" ";
+//        std::cout<</*"thread "<<tid<<" "<<*/"allocated "<<this->debug->getAllocated(tid)<<" objects of size "<<(sizeof(T));
+//        std::cout<<" ";
 ////        this->pool->debugPrintStatus(tid);
-//        cout<<endl;
+//        std::cout<<std::endl;
     }
     
     void initThread(const int tid) {}
     
     allocator_new(const int numProcesses, debugInfo * const _debug)
             : allocator_interface<T>(numProcesses, _debug) {
-        VERBOSE DEBUG cout<<"constructor allocator_new"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor allocator_new"<<std::endl;
     }
     ~allocator_new() {
-        VERBOSE DEBUG cout<<"destructor allocator_new"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor allocator_new"<<std::endl;
     }
 };
 

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef POOL_INTERFACE_H
@@ -51,14 +51,14 @@ public:
             : debug(_debug) 
             , NUM_PROCESSES(numProcesses)
             , alloc(_alloc){
-        VERBOSE DEBUG cout<<"constructor pool_interface"<<endl;
+        VERBOSE DEBUG std::cout<<"constructor pool_interface"<<std::endl;
         this->blockpools = new blockpool<T>*[numProcesses];
         for (int tid=0;tid<numProcesses;++tid) {
             this->blockpools[tid] = new blockpool<T>();
         }
     }
     ~pool_interface() {
-        VERBOSE DEBUG cout<<"destructor pool_interface"<<endl;
+        VERBOSE DEBUG std::cout<<"destructor pool_interface"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             delete this->blockpools[tid];
         }

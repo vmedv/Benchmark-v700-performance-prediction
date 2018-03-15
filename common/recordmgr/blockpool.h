@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef BLOCKPOOL_H
@@ -41,13 +41,13 @@ public:
         debugFreed = 0;
     }
     ~blockpool() {
-        VERBOSE DEBUG cout<<"destructor blockpool;";
+        VERBOSE DEBUG std::cout<<"destructor blockpool;";
         for (int i=0;i<poolSize;++i) {
             //DEBUG ++debugFreed;
             assert(pool[i]->isEmpty());
             delete pool[i];                           // warning: uses locks (for some allocators)
         }
-        VERBOSE DEBUG cout<<" blocks allocated "<<debugAllocated<<" pool-allocated "<<debugPoolAllocated<<" freed "<<debugFreed<<" pool-deallocated "<<debugPoolDeallocated<<endl;
+        VERBOSE DEBUG std::cout<<" blocks allocated "<<debugAllocated<<" pool-allocated "<<debugPoolAllocated<<" freed "<<debugFreed<<" pool-deallocated "<<debugPoolDeallocated<<std::endl;
     }
     block<T>* allocateBlock(block<T> * const next) {
         if (poolSize) {

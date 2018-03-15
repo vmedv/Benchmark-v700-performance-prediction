@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef HASHTABLE_H
@@ -49,12 +49,12 @@ namespace hashset_namespace {
             }
         public:
             hashset() {
-                VERBOSE DEBUG cout<<"constructor hashset"<<endl;
+                VERBOSE DEBUG std::cout<<"constructor hashset"<<std::endl;
                 cleared = false;
                 clear();
             }
             ~hashset() {
-                VERBOSE DEBUG cout<<"destructor hashset"<<endl;
+                VERBOSE DEBUG std::cout<<"destructor hashset"<<std::endl;
             }
             void clear() {
                 if (!cleared) {
@@ -114,12 +114,12 @@ namespace hashset_namespace {
 //            }
 //        public:
 //            AtomicHashSet() {
-//                VERBOSE DEBUG cout<<"constructor AtomicHashSet"<<endl;
+//                VERBOSE DEBUG std::cout<<"constructor AtomicHashSet"<<std::endl;
 //                cleared = false;
 //                clear();
 //            }
 //            ~AtomicHashSet() {
-//                VERBOSE DEBUG cout<<"destructor AtomicHashSet"<<endl;
+//                VERBOSE DEBUG std::cout<<"destructor AtomicHashSet"<<std::endl;
 //            }
 //            void clear() {
 //                if (!cleared) {
@@ -189,13 +189,13 @@ namespace hashset_namespace {
             while (tableSize < numberOfElements*2) {
                 tableSize *= 2;
             }
-            VERBOSE DEBUG cout<<"constructor hashset_new capacity="<<tableSize<<endl;
+            VERBOSE DEBUG std::cout<<"constructor hashset_new capacity="<<tableSize<<std::endl;
             keys = new K*[tableSize];
             __size = -1;
             clear();
         }
         ~hashset_new() {
-//            VERBOSE DEBUG cout<<"destructor hashset_new"<<endl;
+//            VERBOSE DEBUG std::cout<<"destructor hashset_new"<<std::endl;
             delete[] keys;
         }
         void clear() {

@@ -1,8 +1,8 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX and DEBRA(+).
+ * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ *
  */
 
 #ifndef RECORD_MANAGER_H
@@ -64,7 +64,7 @@ public:
         : RecordManagerSet<Reclaim, Alloc, Pool, Rest...>(numProcesses, _recoveryMgr)
         , mgr(new record_manager_single_type<First, Reclaim, Alloc, Pool>(numProcesses, _recoveryMgr))
         {
-        //cout<<"RecordManagerSet with First="<<typeid(First).name()<<" and sizeof...(Rest)="<<sizeof...(Rest)<<endl;
+        //cout<<"RecordManagerSet with First="<<typeid(First).name()<<" and sizeof...(Rest)="<<sizeof...(Rest)<<std::endl;
         check_duplicates<First, Rest...>(); // check if first is in {rest...}
     }
     ~RecordManagerSet() {
@@ -75,10 +75,10 @@ public:
     template<typename T>
     inline record_manager_single_type<T, Reclaim, Alloc, Pool> * get(T * const recordType) {
         if (typeid(First) == typeid(T)) {
-            //cout<<"MATCH: typeid(First)="<<typeid(First).name()<<" typeid(T)="<<typeid(T).name()<<endl;
+            //cout<<"MATCH: typeid(First)="<<typeid(First).name()<<" typeid(T)="<<typeid(T).name()<<std::endl;
             return (record_manager_single_type<T, Reclaim, Alloc, Pool> *) mgr;
         } else {
-            //cout<<"NO MATCH: typeid(First)="<<typeid(First).name()<<" typeid(T)="<<typeid(T).name()<<endl;
+            //cout<<"NO MATCH: typeid(First)="<<typeid(First).name()<<" typeid(T)="<<typeid(T).name()<<std::endl;
             return ((RecordManagerSet<Reclaim, Alloc, Pool, Rest...> *) this)->get(recordType);
         }
     }
@@ -216,25 +216,25 @@ public:
         return rmset->get((RecordTypesFirst *) NULL)->isQuiescent(tid); // warning: if quiescence information is logically shared between all types, with the actual data being associated only with the first type (as it is here), then isQuiescent will return inconsistent results if called in functions that recurse on the template argument list in this class.
     }
     inline void enterQuiescentState(const int tid) {
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<endl);
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<std::endl);
         if (Reclaim::quiescenceIsPerRecordType()) {
-//            cout<<"setting quiescent state for all record types\n";
+//            std::cout<<"setting quiescent state for all record types\n";
             rmset->enterQuiescentState(tid);
         } else {
             // only call enterQuiescentState for one object type
-//            cout<<"setting quiescent state for just one record type: "<<typeid(RecordTypesFirst).name()<<"\n";
+//            std::cout<<"setting quiescent state for just one record type: "<<typeid(RecordTypesFirst).name()<<"\n";
             rmset->get((RecordTypesFirst *) NULL)->enterQuiescentState(tid);
         }
     }
     inline void leaveQuiescentState(const int tid) {
 //        assert(isQuiescent(tid));
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::leaveQuiescentState(tid="<<tid<<")"<<endl);
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::leaveQuiescentState(tid="<<tid<<")"<<std::endl);
         // for some types of reclaimers, different types of records retired in the same
         // epoch can be reclaimed together (by aggregating their epochs), so we don't actually need
         // separate calls to leaveQuiescentState for each object type.
         // if appropriate, we make a single call to leaveQuiescentState,
         // and it takes care of all record types managed by this record manager.
-        //cout<<"quiescenceIsPerRecordType = "<<Reclaim::quiescenceIsPerRecordType()<<endl;
+        //cout<<"quiescenceIsPerRecordType = "<<Reclaim::quiescenceIsPerRecordType()<<std::endl;
         rmset->leaveQuiescentState(tid, Reclaim::quiescenceIsPerRecordType());
     }
 
