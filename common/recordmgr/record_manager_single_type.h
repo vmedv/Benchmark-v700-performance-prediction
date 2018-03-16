@@ -51,6 +51,7 @@ protected:
     typedef typename Reclaim::template  rebind2<Record, classPool>::other  classReclaim;
     
 public:
+    PAD;
     classAlloc      *alloc;
     classPool       *pool;
     classReclaim    *reclaim;
@@ -58,6 +59,7 @@ public:
     const int NUM_PROCESSES;
     debugInfo debugInfoRecord;
     RecoveryMgr<void *> * const recoveryMgr;
+    PAD;
 
     record_manager_single_type(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr)
             : NUM_PROCESSES(numProcesses), debugInfoRecord(debugInfo(numProcesses)), recoveryMgr(_recoveryMgr) {

@@ -22,5 +22,10 @@
 #define PREFETCH_SIZE_BYTES 192
 #define BYTES_IN_CACHE_LINE 64
 
-#endif	/* MACHINECONSTANTS_H */
+#define CAT2(x, y) x##y
+#define CAT(x, y) CAT2(x, y)
 
+#define PAD64 volatile char CAT(___padding, __COUNTER__)[64]
+#define PAD volatile char CAT(___padding, __COUNTER__)[128]
+
+#endif	/* MACHINECONSTANTS_H */

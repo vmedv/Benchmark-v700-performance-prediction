@@ -8,6 +8,8 @@
 #ifndef RQ_UNSAFE_H
 #define	RQ_UNSAFE_H
 
+#define MAX_KEYS_PER_NODE 32
+
 #include "rq_debugging.h"
 #include <rwlock.h>
 #include <pthread.h>
@@ -31,18 +33,21 @@ private:
 
     #define TIMESTAMP_NOT_SET 0
     
+    PAD;
     const int NUM_PROCESSES;
-    volatile char padding0[PREFETCH_SIZE_BYTES];
+    PAD;
     volatile long long timestamp = 1;
-    volatile char padding1[PREFETCH_SIZE_BYTES];
+    PAD;
     RWLock rwlock;
-    volatile char padding2[PREFETCH_SIZE_BYTES];
+    PAD;
     __rq_thread_data * threadData;
+    PAD;
     
     DataStructure * ds;
     RecordManager * const recmgr;
 
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

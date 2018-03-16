@@ -24,6 +24,7 @@ class block;
 template <typename T>
 class blockpool {
 private:
+    PAD;
     block<T> *pool[MAX_BLOCK_POOL_SIZE];
     int poolSize;
 
@@ -31,6 +32,7 @@ private:
     long debugPoolDeallocated;
     long debugPoolAllocated;
     long debugFreed;
+    PAD;
 public:
     blockpool() {
         poolSize = 0;

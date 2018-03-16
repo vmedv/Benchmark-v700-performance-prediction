@@ -14,8 +14,10 @@
 
 class debugCounter {
 private:
+    PAD;
     const int NUM_PROCESSES;
     volatile long long * data; // data[tid*PREFETCH_SIZE_WORDS] = count for thread tid (padded to avoid false sharing)
+    PAD;
 public:
     void add(const int tid, const long long val) {
         data[tid*PREFETCH_SIZE_WORDS] += val;
@@ -39,11 +41,11 @@ public:
         }
     }
     debugCounter(const int numProcesses) : NUM_PROCESSES(numProcesses) {
-        data = new long long[numProcesses*PREFETCH_SIZE_WORDS];
+        data = (new long long[numProcesses*PREFETCH_SIZE_WORDS + PREFETCH_SIZE_WORDS]) + PREFETCH_SIZE_WORDS; /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING AT THE BEGINNING WITH MINIMAL ARITHEMTIC OPS */
         clear();
     }
     ~debugCounter() {
-        delete[] data;
+        delete[] (data - PREFETCH_SIZE_WORDS); /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING AT THE BEGINNING WITH MINIMAL ARITHEMTIC OPS */
     }
 };
 

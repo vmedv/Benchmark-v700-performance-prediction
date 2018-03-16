@@ -19,9 +19,11 @@
 #include "globals.h"
 
 // for crash recovery
+PAD;
 static pthread_key_t pthreadkey;
 static struct sigaction ___act;
 static void *___singleton = NULL;
+PAD;
 extern pthread_key_t pthreadkey;
 extern struct sigaction ___act;
 extern void *___singleton;
@@ -29,6 +31,7 @@ extern void *___singleton;
 static pthread_t registeredThreads[MAX_THREADS_POW2];
 static void *errnoThreads[MAX_THREADS_POW2];
 static sigjmp_buf *setjmpbuffers;
+PAD;
 extern pthread_t registeredThreads[MAX_THREADS_POW2];
 extern void *errnoThreads[MAX_THREADS_POW2];
 extern sigjmp_buf *setjmpbuffers;
@@ -82,8 +85,10 @@ void crashhandler(int signum, siginfo_t *info, void *uctx) {
 template <class MasterRecordMgr>
 class RecoveryMgr {
 public:
+    PAD;
     const int NUM_PROCESSES;
     const int neutralizeSignal;
+    PAD;
     
     inline int getTidInefficient(const pthread_t me) {
         int tid = -1;

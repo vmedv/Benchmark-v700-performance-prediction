@@ -11,7 +11,7 @@
 #include "plaf.h"
 
 struct _memrecl_counters {
-    volatile char padding1[PREFETCH_SIZE_BYTES];
+    PAD;
     long allocated;
     long deallocated;
     long fromPool;
@@ -19,13 +19,15 @@ struct _memrecl_counters {
     long given; // how many blocks have been moved from this pool to a shared pool
     long taken; // how many blocks have been moved from a shared pool to this pool
     long retired; // how many objects have been retired
-    volatile char padding2[PREFETCH_SIZE_BYTES];
+    PAD;
 };
 
 class debugInfo {
 private:
+    PAD;
     const int NUM_PROCESSES;
     _memrecl_counters c[MAX_THREADS_POW2];
+    PAD;
 public:
     void clear() {
         for (int tid=0;tid<NUM_PROCESSES;++tid) {

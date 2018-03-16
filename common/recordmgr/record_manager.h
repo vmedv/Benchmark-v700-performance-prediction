@@ -36,6 +36,7 @@ void check_duplicates(void) {
 // this is a compile time check for invalid arguments
 template <class Reclaim, class Alloc, class Pool, typename... Rest>
 class RecordManagerSet {
+    PAD;
 public:
     RecordManagerSet(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr) {}
     template <typename T>
@@ -126,23 +127,36 @@ public:
     }
 };
 
+template <class Reclaim, class Alloc, class Pool, typename First, typename... Rest>
+class RecordManagerSetPostPadded : public RecordManagerSet<Reclaim, Alloc, Pool, First, Rest...> {
+    PAD;
+public:
+    RecordManagerSetPostPadded(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr)
+        : RecordManagerSet<Reclaim, Alloc, Pool, First, Rest...>(numProcesses, _recoveryMgr)
+    {}
+};
+
 template <class Reclaim, class Alloc, class Pool, typename RecordTypesFirst, typename... RecordTypesRest>
 class record_manager {
 protected:
     typedef record_manager<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> SelfType;
-    RecordManagerSet<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
+    PAD;
+    RecordManagerSetPostPadded<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
     
+    PAD;
     int init[MAX_THREADS_POW2] = {0,};
 
 public:
+    PAD;
     const int NUM_PROCESSES;
     RecoveryMgr<SelfType> * const recoveryMgr;
+    PAD;
     
     record_manager(const int numProcesses, const int _neutralizeSignal)
             : NUM_PROCESSES(numProcesses)
             , recoveryMgr(new RecoveryMgr<SelfType>(numProcesses, _neutralizeSignal, this))
     {
-        rmset = new RecordManagerSet<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...>(numProcesses, (RecoveryMgr<void *> *) recoveryMgr);
+        rmset = new RecordManagerSetPostPadded<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...>(numProcesses, (RecoveryMgr<void *> *) recoveryMgr);
     }
     ~record_manager() {
         delete recoveryMgr;

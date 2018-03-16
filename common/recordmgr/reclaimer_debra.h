@@ -39,14 +39,18 @@ protected:
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
     
     // for epoch based reclamation
+    PAD;
     volatile long epoch;
-    std::atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] // todo: figure out if volatile here would help processes notice changes more quickly.
+    PAD;
+    std::atomic_long *announcedEpoch;   // announcedEpoch[tid*PREFETCH_SIZE_WORDS]
+//    PAD; // taken care of by padding at end of announcedEpoch
     long *checked;                      // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
     blockbag<T> **epochbags;            // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> **currentBag;           // pointer to current epoch bag for each process
     long *index;                        // index of currentBag in epochbags for each process
     // note: oldest bag is number (index+1)%NUMBER_OF_EPOCH_BAGS
     long *opsSinceRead;
+    PAD;
     
 public:
     template<typename _Tp1>

@@ -1,5 +1,6 @@
 /**
  * Copy this template and modify it to fit your data structure.
+ * Be sure to implement correct memory reclamation for the default record_manager configuration.
  */
 
 #ifndef DS_ADAPTER_H

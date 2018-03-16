@@ -15,9 +15,11 @@
 template <typename T = void>
 class allocator_interface {
 public:
+    PAD;
     debugInfo * const debug;
     
     const int NUM_PROCESSES;
+    PAD;
     
     template<typename _Tp1>
     struct rebind {

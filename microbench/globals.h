@@ -18,6 +18,7 @@
 
 #include "debugprinting.h"
 
+PAD;
 double INS;
 double DEL;
 double RQ;
@@ -28,6 +29,7 @@ bool PREFILL;
 int WORK_THREADS;
 int RQ_THREADS;
 int TOTAL_THREADS;
+PAD;
 
 /**
  * Configure global statistics using gstats_global.h and gstats.h

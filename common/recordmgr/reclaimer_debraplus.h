@@ -37,8 +37,10 @@ private:
 #define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH_CR 100
 #define NUMBER_OF_EPOCH_BAGS_CR 3
     // for epoch based reclamation
+    PAD;
     volatile long epoch;
-    std::atomic_long *announcedEpoch;        // announcedEpoch[tid*PREFETCH_SIZE_WORDS] = bits 1..end contain the last epoch seen by thread tid, and bit 0 indicates quiescence
+    PAD;
+    std::atomic_long *announcedEpoch;   // announcedEpoch[tid*PREFETCH_SIZE_WORDS] = bits 1..end contain the last epoch seen by thread tid, and bit 0 indicates quiescence
     long *checked;                      // checked[tid*PREFETCH_SIZE_WORDS] = how far we've come in checking the announced epochs of other threads
     blockbag<T> **epochbags;            // epochbags[NUMBER_OF_EPOCH_BAGS*tid+0..NUMBER_OF_EPOCH_BAGS*tid+(NUMBER_OF_EPOCH_BAGS-1)] are epoch bags for thread tid.
     blockbag<T> **currentBag;           // pointer to current epoch bag for each process
@@ -69,6 +71,7 @@ private:
     static const int scanThreshold = 4;
 
     sigset_t neutralizeSignalSet;
+    PAD;
     
     inline bool neutralizeOther(const int tid, const int otherTid, const long currentEpoch, const long announceOther) {
 #ifdef SEND_CRASH_RECOVERY_SIGNALS

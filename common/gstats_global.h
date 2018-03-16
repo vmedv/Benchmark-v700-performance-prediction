@@ -49,10 +49,10 @@
 #define GSTATS_OBJECT_PTR_NAME _stats_ptr
 #define GSTATS_OBJECT_NAME _stats
 #define GSTATS_DECLARE_STATS_OBJECT(max_num_processes) \
-    volatile char _stats_padding0[256]; \
+    PAD; \
     gstats_t * const GSTATS_OBJECT_PTR_NAME = new gstats_t(max_num_processes); \
     gstats_t& GSTATS_OBJECT_NAME = *GSTATS_OBJECT_PTR_NAME; \
-    volatile char _stats_padding1[256];
+    PAD;
 extern gstats_t& GSTATS_OBJECT_NAME;
 #define GSTATS_DESTROY delete GSTATS_OBJECT_PTR_NAME
 
@@ -66,9 +66,9 @@ extern gstats_t& GSTATS_OBJECT_NAME;
     stat_name_token = GSTATS_OBJECT_NAME.create_stat(data_type, #stat_name_token, stat_capacity, stats_output_items);
 
 #define GSTATS_DECLARE_ALL_STAT_IDS \
-    volatile char _stats_padding2[256]; \
+    PAD; \
     GSTATS_HANDLE_STATS(__DECLARE_STAT_ID); \
-    volatile char _stats_padding3[256];
+    PAD;
 #define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS GSTATS_HANDLE_STATS(__DECLARE_EXTERN_STAT_ID)
 #define GSTATS_CREATE_ALL GSTATS_HANDLE_STATS(__CREATE_STAT)
 #define GSTATS_ADD_IX(tid, stat, val, index) GSTATS_OBJECT_NAME.add_stat<long long>(tid, stat, val, index)

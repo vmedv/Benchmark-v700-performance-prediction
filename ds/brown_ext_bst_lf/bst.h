@@ -46,17 +46,21 @@ namespace bst_ns {
     template <class K, class V, class Compare, class RecManager>
     class bst {
     private:
+        PAD;
         RecManager * const recmgr;
+//        PAD;
         RQProvider<K, V, Node<K,V>, bst<K,V,Compare,RecManager>, RecManager, false, false> * const rqProvider;
-        volatile int lock; // used for TLE
+//        PAD;
 
         const int N; // number of violations to allow on a search path before we fix everything on it
+//        PAD;
         Node<K,V> *root;        // actually const
+//        PAD;
         Compare cmp;
+        PAD;
 
-        // allocatedNodes[tid*PREFETCH_SIZE_WORDS+i] = an allocated node
-        //     for i = 0..MAX_NODES-2
         Node<K,V> **allocatedNodes;
+        PAD;
         #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
         #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, std::memory_order_relaxed);*/ }
 
@@ -65,6 +69,7 @@ namespace bst_ns {
     #ifdef USE_DEBUGCOUNTERS
         // debug info
         debugCounters * const counters;
+        PAD;
     #endif
 
         // descriptor reduction algorithm
@@ -79,8 +84,9 @@ namespace bst_ns {
             | (SCXRecord<K comma1 V>::STATE_INPROGRESS<<MUTABLES_OFFSET_STATE))
         #define MUTABLES_INIT_DUMMY SCXRecord<K comma1 V>::STATE_COMMITTED<<MUTABLES_OFFSET_STATE | MUTABLES_MASK_ALLFROZEN<<MUTABLES_OFFSET_ALLFROZEN
         #include "descriptors_impl.h"
-        char __padding_desc[PREFETCH_SIZE_BYTES];
+        PAD;
         DESC1_T DESC1_ARRAY[LAST_TID1+1] __attribute__ ((aligned(64)));
+        PAD;
 
         /**
          * this is what LLX returns when it is performed on a leaf.
@@ -136,10 +142,12 @@ namespace bst_ns {
         const V doInsert(const int tid, const K& key, const V& val, bool onlyIfAbsent);
         
         int init[MAX_THREADS_POW2] = {0,};
+//        PAD;
 
 public:
         const K NO_KEY;
         const V NO_VALUE;
+        PAD;
 
         /**
          * This function must be called once by each thread that will

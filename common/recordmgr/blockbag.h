@@ -258,15 +258,21 @@ class block;
     template <typename T>
     class blockbag {
     private:
+        PAD;
         int owner;
         volatile long long reclaimCount; // number of times this bag has been the oldest epoch bag and had its nodes reclaimed
+        PAD;
         long debugFreed;
+        PAD;
     public:
         int sizeInBlocks;
     private:
         
         block<T> *head;
         block<T> *tail;
+        PAD;
+        blockpool<T> * const pool;
+        PAD;
         
         void validate() {
             // invariant: head and tail are never NULL
@@ -284,8 +290,6 @@ class block;
             // invariant: sizeInBlocks is correct
             assert(sizeInBlocks == computeSizeInBlocks());
         }
-        
-        blockpool<T> * const pool;
         
         void debugPrintBag() {
             std::cout<<"("<<computeSize()<<","<<computeSizeInBlocks()<<") =";

@@ -23,11 +23,13 @@ struct set_of_bags {
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_interface {
 public:
+    PAD;
     RecoveryMgr<void *> * recoveryMgr;
     debugInfo * const debug;
     
     const int NUM_PROCESSES;
     Pool *pool;
+    PAD;
 
     template<typename _Tp1>
     struct rebind {

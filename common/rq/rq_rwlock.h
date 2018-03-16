@@ -29,7 +29,7 @@ private:
             struct { // anonymous struct inside anonymous union means we don't need to type anything special to access these variables
                 long long rq_lin_time;
                 HashList<K> * hashlist;
-                volatile char padding0[PREFETCH_SIZE_BYTES];
+                PAD;
                 void * announcements[MAX_NODES_DELETED_ATOMICALLY+1];
                 int numAnnouncements;
             };
@@ -40,18 +40,21 @@ private:
     #define TIMESTAMP_NOT_SET 0
     #define HASHLIST_INIT_CAPACITY_POW2 (1<<8)
 
+    PAD;
     const int NUM_PROCESSES;
-    volatile char padding0[PREFETCH_SIZE_BYTES];
+    PAD;
     volatile long long timestamp = 1;
-    volatile char padding1[PREFETCH_SIZE_BYTES];
+    PAD;
     RWLock rwlock;
-    volatile char padding2[PREFETCH_SIZE_BYTES];
+    PAD;
     __rq_thread_data * threadData;
+    PAD;
     
     DataStructure * ds;
     RecordManager * const recmgr;
 
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

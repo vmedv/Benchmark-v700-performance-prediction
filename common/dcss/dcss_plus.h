@@ -11,6 +11,7 @@
 #include <cstdarg>
 #include <csignal>
 #include <string.h>
+#include "plaf.h"
 #include "descriptors.h"
 
 #define dcssptagptr_t uintptr_t
@@ -63,15 +64,17 @@ private:
         ((((mutables)&MASK_SEQ)+(1<<OFFSET_SEQ)) \
         | (DCSSP_STATE_UNDECIDED<<DCSSP_MUTABLES_OFFSET_STATE))
     #include "descriptors_impl2.h"
-    char __padding_desc[PREFETCH_SIZE_BYTES];
+    PAD;
     dcsspdesc_t<PAYLOAD_T> dcsspDescriptors[LAST_TID+1] __attribute__ ((aligned(64)));
-    char __padding_desc3[PREFETCH_SIZE_BYTES];
+    PAD;
 
 public:
 #ifdef USE_DEBUGCOUNTERS
     debugCounter * dcsspHelpCounter;
+    PAD;
 #endif
     const int NUM_PROCESSES;
+    PAD;
     
     /**
      * Function declarations

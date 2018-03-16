@@ -233,6 +233,7 @@ namespace bslack_ns {
         // by at most one) is used.
         // if it is false, then an amortized logarithmic number of rebalancing steps
         // may be performed per operation, but average degree increases slightly.
+        PAD;
         const bool ALLOW_ONE_EXTRA_SLACK_PER_NODE;
 
         const int b;
@@ -240,9 +241,11 @@ namespace bslack_ns {
         const int a;
     #endif
 
+//        PAD;
         RecManager * const recordmgr;
+//        PAD;
         RQProvider<K, void *, Node<DEGREE,K>, bslack<DEGREE,K,Compare,RecManager>, RecManager, false, false> * const rqProvider;
-        char padding0[PREFETCH_SIZE_BYTES];
+//        PAD;
         Compare cmp;
 
         // descriptor reduction algorithm
@@ -260,12 +263,11 @@ namespace bslack_ns {
             | (SCXRecord<DEGREE comma K>::STATE_INPROGRESS<<MUTABLES1_OFFSET_STATE))
         #define MUTABLES1_INIT_DUMMY SCXRecord<DEGREE comma K>::STATE_COMMITTED<<MUTABLES1_OFFSET_STATE | MUTABLES1_MASK_ALLFROZEN<<MUTABLES1_OFFSET_ALLFROZEN
         #include "../descriptors/descriptors_impl.h"
-        char __padding_desc[PREFETCH_SIZE_BYTES];
+        PAD;
         DESC1_T DESC1_ARRAY[LAST_TID1+1] __attribute__ ((aligned(64)));
-
-        char padding1[PREFETCH_SIZE_BYTES];
+        PAD;
         Node<DEGREE,K> * entry;
-        char padding2[PREFETCH_SIZE_BYTES];
+        PAD;
 
         #define DUMMY       ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_STATIC_DESC(0))
         #define FINALIZED   ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_DUMMY_DESC(1))
@@ -273,6 +275,7 @@ namespace bslack_ns {
 
         // the following variable is only useful for single threaded execution
         const bool SEQUENTIAL_STAT_TRACKING;
+//        PAD;
 
         // these variables are only used by single threaded executions,
         // and only if SEQUENTIAL_STAT_TRACKING == true.
@@ -364,10 +367,13 @@ namespace bslack_ns {
 
         int init[MAX_THREADS_POW2] = {0,};
 public:
+//        PAD;
         void * const NO_VALUE;
         const int NUM_PROCESSES;
+        PAD;
     #ifdef USE_DEBUGCOUNTERS
         debugCounters * const counters; // debug info
+        PAD;
     #endif
 
         /**

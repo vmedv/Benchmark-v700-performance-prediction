@@ -24,6 +24,7 @@
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_hazardptr : public reclaimer_interface<T, Pool> {
 private:
+    PAD;
     AtomicArrayList<T> **announce;  // announce[tid] = set of announced hazard pointers for thread tid
     ArrayList<T> **retired;         // retired[tid] = set of retired objects for thread tid
     hashset_new<T> **comparing;     // comparing[tid] = set of announced hazard pointers for ALL threads, as collected by thread tid during it's last retire(tid, ...) call
@@ -36,6 +37,7 @@ private:
     //      n = number of threads and
     //      k = max number of hazard pointers a thread can hold at once
     const int scanThreshold;
+    PAD;
     
 public:
     template<typename _Tp1>

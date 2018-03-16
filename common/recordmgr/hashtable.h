@@ -22,8 +22,10 @@
 template<typename K>
 class hashset {
     private:
+        PAD;
         bool cleared;
         K* keys[HASHSET_TABLE_SIZE];
+        PAD;
         inline int hash(K * const key) {
             // MurmurHash3's integer finalizer
             long long k = (long long) key;
@@ -150,9 +152,11 @@ class hashset {
 template<typename K>
 class hashset_new {
     private:
+        PAD;
         int tableSize;
         K** keys;
         int __size;
+        PAD;
         inline long hash(K * const key) {
             // MurmurHash3's integer finalizer
             long long k = (long long) key;
@@ -189,13 +193,13 @@ class hashset_new {
                 tableSize *= 2;
             }
             VERBOSE DEBUG std::cout<<"constructor hashset_new capacity="<<tableSize<<std::endl;
-            keys = new K*[tableSize];
+            keys = (new K*[tableSize+2*PREFETCH_SIZE_WORDS]) + PREFETCH_SIZE_WORDS; /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
             __size = -1;
             clear();
         }
         ~hashset_new() {
 //            VERBOSE DEBUG std::cout<<"destructor hashset_new"<<std::endl;
-            delete[] keys;
+            delete[] (keys - PREFETCH_SIZE_WORDS); /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
         }
         void clear() {
             if (__size) {

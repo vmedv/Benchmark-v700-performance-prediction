@@ -61,6 +61,10 @@ typedef pthread_spinlock_t ptlock_t;
 
 typedef unsigned long long version_t;
 
+#ifndef PAD_SIZE
+#define PAD_SIZE 128
+#endif
+
 template <typename skey_t, typename sval_t>
 struct node_t {
 #ifndef BASELINE
@@ -73,7 +77,7 @@ struct node_t {
     ptlock_t lock; //note: used to be a pointer to a lock!
     volatile int height;
 
-#ifdef PAD
+#ifdef PAD_NODES
     char pad[PAD_SIZE];
 #endif
 
@@ -140,9 +144,13 @@ static void * SpecialRetry = (void *) &t_SpecialRetry; // this hack implies sval
 template <typename skey_t, typename sval_t, class RecMgr>
 class ccavl {
 private:
+    PAD;
     RecMgr * const recmgr;
+    PAD;
     node_t<skey_t, sval_t> * root;
+    PAD;
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
 
     node_t<skey_t, sval_t> * rb_alloc(const int tid);
     node_t<skey_t, sval_t>* rbnode_create(const int tid, skey_t key, sval_t value, node_t<skey_t, sval_t>* parent);
@@ -196,8 +204,10 @@ private:
     node_t<skey_t, sval_t>* rotateRightOverLeft_nl(node_t<skey_t, sval_t>* nParent, node_t<skey_t, sval_t>* n, node_t<skey_t, sval_t>* nL, node_t<skey_t, sval_t>* nLR, int hR, int hLL, int hLRL);
     
 public:
+//    PAD;
     const int NUM_PROCESSES;
     skey_t KEY_NEG_INFTY;
+    PAD;
     
     ccavl(const int numProcesses, const skey_t& _KEY_NEG_INFTY)
     : recmgr(new RecMgr(numProcesses, SIGQUIT))

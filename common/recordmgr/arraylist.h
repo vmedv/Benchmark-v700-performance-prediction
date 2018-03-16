@@ -19,17 +19,20 @@
 template <typename T>
 class AtomicArrayList {
 private:
+    PAD;
     std::atomic_int __size;
     std::atomic_uintptr_t *data;
+    PAD;
 public:
     const int capacity;
+    PAD;
     AtomicArrayList(const int _capacity) : capacity(_capacity) {
         VERBOSE DEBUG COUTATOMIC("constructor AtomicArrayList capacity="<<capacity<<std::endl);
         __size.store(0, std::memory_order_relaxed);
-        data = new std::atomic_uintptr_t[capacity];
+        data = (new std::atomic_uintptr_t[capacity+2*PREFETCH_SIZE_WORDS]) + PREFETCH_SIZE_WORDS; /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
     }
     ~AtomicArrayList() {
-        delete[] data;
+        delete[] (data - PREFETCH_SIZE_WORDS); /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
     }
     inline T* get(const int ix) {
         return (T*) data[ix].load(std::memory_order_relaxed);
@@ -81,16 +84,19 @@ public:
 template <typename T>
 class ArrayList {
 private:
+    PAD;
     int __size;
     T **data;
+    PAD;
 public:
     const int capacity;
+    PAD;
     ArrayList(const int _capacity) : capacity(_capacity) {
         __size = 0;
-        data = new T*[capacity];
+        data = (new T*[capacity+2*PREFETCH_SIZE_WORDS]) + PREFETCH_SIZE_WORDS; /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
     }
     ~ArrayList() {
-        delete[] data;
+        delete[] (data - PREFETCH_SIZE_WORDS); /* HACKY OVER-ALLOCATION AND POINTER SHIFT TO ADD PADDING ON EITHER END WITH MINIMAL ARITHEMTIC OPS */
     }
     inline T* get(const int ix) {
         return data[ix];

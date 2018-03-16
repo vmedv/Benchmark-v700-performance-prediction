@@ -22,8 +22,10 @@
 template<typename T = void>
 class allocator_new_segregated : public allocator_interface<T> {
 private:
+    PAD;
     void* (*allocfn)(size_t size);
     void (*freefn)(void *ptr);
+    PAD;
     
 public:
     template<typename _Tp1>

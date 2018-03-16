@@ -22,8 +22,10 @@
 template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_perthread_and_shared : public pool_interface<T, Alloc> {
 private:
+    PAD;
     lockfreeblockbag<T> *sharedBag;       // shared bag that we offload blocks on when we have too many in our freeBag
     blockbag<T> **freeBag;                // freeBag[tid] = bag of objects of type T that are ready to be reused by the thread with id tid
+    PAD;
 
     // note: only does something if freeBag contains at least two full blocks
     inline bool tryGiveFreeObjects(const int tid) {

@@ -42,17 +42,24 @@ private:
         };
     } __attribute__((aligned(__RQ_THREAD_DATA_SIZE)));
 
+    PAD;
     const int NUM_PROCESSES;
+    PAD;
     volatile long long timestamp = 1;
+    PAD;
     pthread_rwlock_t rwlock;
+    PAD;
     __rq_thread_data * threadData;
+    PAD;
     
     DataStructure * const ds;
     RecordManager * const recmgr;
-    volatile char padding[PREFETCH_SIZE_BYTES];
+    PAD;
     SnapCollector<NodeType,K> * volatile snapPointer;
+    PAD;
     
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

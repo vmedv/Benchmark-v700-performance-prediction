@@ -12,11 +12,12 @@
 #include <vector>
 #include <algorithm>
 #include "reportitem.h"
-#include <plaf.h>
+#include "plaf.h"
 
 template <typename NodeType, typename K>
 class SnapCollector {
 public:
+    PAD;
     int NUM_THREADS;
     
     class NodeWrapper {
@@ -39,21 +40,32 @@ public:
     };
     
 private:
+    PAD;
     ReportItem * volatile * reportHeads;
+    PAD;
     ReportItem * volatile * reportTails;
     
+    PAD;
     NodeWrapper * volatile head;
+    PAD;
     NodeWrapper * volatile tail;
+    PAD;
     ReportItem * blocker;
+    PAD;
     volatile bool active;
     
     // variables used for aggregating reports after they are collected
+    PAD;
     void ** currLocations;
+    PAD;
     int * currRepLocations;
+    PAD;
     std::vector<CompactReportItem *> * volatile gAllReports;
     
+    PAD;
     K KEY_MAX;
     K KEY_MIN;
+    PAD;
 
 private:
     

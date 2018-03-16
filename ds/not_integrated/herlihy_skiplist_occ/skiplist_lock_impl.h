@@ -42,7 +42,7 @@ static void sl_node_unlock(nodeptr p_node) {
 
 static int sl_randomLevel(const int tid, Random * const threadRNGs) {
 //    int level = 1;
-//    while (((threadRNGs[tid*PREFETCH_SIZE_WORDS].nextNatural() % 100) < 50) == 0 && level < SKIPLIST_MAX_LEVEL) {
+//    while (((threadRNGs[tid].nextNatural() % 100) < 50) == 0 && level < SKIPLIST_MAX_LEVEL) {
 //        level++;
 //    }
 //    return level - 1;
@@ -50,7 +50,7 @@ static int sl_randomLevel(const int tid, Random * const threadRNGs) {
     // Trevor: let's optimize with a bit hack from:
     // https://graphics.stanford.edu/~seander/bithacks.html#ZerosOnRightLinear
     // idea: new node level is the number of trailing zero bits in a random #.
-    unsigned int v = threadRNGs[tid*PREFETCH_SIZE_WORDS].nextNatural();         // 32-bit word input to count zero bits on right
+    unsigned int v = threadRNGs[tid].nextNatural();                             // 32-bit word input to count zero bits on right
     unsigned int c = 32;                                                        // c will be the number of zero bits on the right
     v &= -signed(v);
     if (v) c--;

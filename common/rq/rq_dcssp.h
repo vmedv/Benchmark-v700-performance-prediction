@@ -65,7 +65,7 @@ private:
 #ifdef COUNT_CODE_PATH_EXECUTIONS
                 long long codePathExecutions[CODE_COVERAGE_MAX_PATHS];
 #endif
-                volatile char padding0[PREFETCH_SIZE_BYTES];
+                PAD;
                 void * announcements[MAX_NODES_DELETED_ATOMICALLY];
                 int numAnnouncements;
             };
@@ -83,21 +83,25 @@ private:
     #define TIMESTAMP_NOT_SET 0
     #define HASHLIST_INIT_CAPACITY_POW2 (1<<8)
 
+    PAD;
     const int NUM_PROCESSES;
-    volatile char padding0[PREFETCH_SIZE_BYTES];
+    PAD;
     volatile long long timestamp = 1;
-    volatile char padding1[PREFETCH_SIZE_BYTES];
+    PAD;
     __rq_thread_data * threadData;
+    PAD;
 
     #define NODE_DELETED_BEFORE_RQ 0
     #define NODE_DELETED_AFTER_RQ 1
     #define NODE_NOT_DELETED_BY_THREAD -1
     dcsspProvider<void *> * prov;
+    PAD;
     
     DataStructure * ds;
     RecordManager * const recmgr;
 
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
 
 public:
     RQProvider(const int numProcesses, DataStructure * ds, RecordManager * recmgr) : NUM_PROCESSES(numProcesses), ds(ds), recmgr(recmgr) {

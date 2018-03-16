@@ -374,7 +374,7 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::search(thread_data
 //-------------------------------------------------------------------------------------------------------------------------------------------------------
 
 template <typename skey_t, typename sval_t, class RecMgr, class Compare>
-void natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::retireDeletedNodes(thread_data_t<skey_t, sval_t>* data, node_t<skey_t, sval_t> * node, node_t<skey_t, sval_t> * targetNode, bool pointerFlagged = false) {
+void natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::retireDeletedNodes(thread_data_t<skey_t, sval_t>* data, node_t<skey_t, sval_t> * node, node_t<skey_t, sval_t> * targetNode, bool pointerFlagged) {
     // traverse from node, retiring everything we deleted
     // (that is: every leaf pointed to by a flagged pointer,
     //  and every internal node with a flagged pointer.)
@@ -455,7 +455,7 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::help_conflicting_oper
     }
 
     if (result) {
-        retireDeletedNodes(data, (node_t<skey_t, sval_t> *) get_addr(R->lumC), target);
+        retireDeletedNodes(data, (node_t<skey_t, sval_t> *) get_addr(R->lumC), target, false);
     }
     
     return result;    
@@ -687,7 +687,7 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_delete_wi
     }
     
     if (result) {
-        retireDeletedNodes(data, (node_t<skey_t, sval_t> *) get_addr(R->lumC), (node_t<skey_t, sval_t> *) get_addr(pS));
+        retireDeletedNodes(data, (node_t<skey_t, sval_t> *) get_addr(R->lumC), (node_t<skey_t, sval_t> *) get_addr(pS), false);
     }
     
     return result;

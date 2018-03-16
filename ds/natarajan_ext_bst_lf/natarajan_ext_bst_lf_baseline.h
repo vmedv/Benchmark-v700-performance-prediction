@@ -177,8 +177,11 @@ struct thread_data_t {
 template <typename skey_t, typename sval_t, class RecMgr, class Compare = std::less<skey_t> >
 class natarajan_ext_bst_lf {
 private:
+    PAD;
     Compare cmp;
+    PAD;
     node_t<skey_t, sval_t> * root;
+    PAD;
 
     seekRecord_t<skey_t, sval_t>* insseek(thread_data_t<skey_t, sval_t>* data, skey_t key, int op);
     seekRecord_t<skey_t, sval_t>* delseek(thread_data_t<skey_t, sval_t>* data, skey_t key, int op);
@@ -195,6 +198,7 @@ public:
     const skey_t MAX_KEY;
     const sval_t NO_VALUE;
     const int NUM_PROCESSES;
+    PAD;
     
     natarajan_ext_bst_lf(const skey_t& _MAX_KEY, const sval_t& _NO_VALUE, const int numProcesses)
     : MAX_KEY(_MAX_KEY)

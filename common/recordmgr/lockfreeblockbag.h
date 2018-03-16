@@ -33,7 +33,9 @@ private:
         block<T> *ptr;
         long tag;
     };
+    PAD;
     std::atomic<tagged_ptr> head;
+    PAD;
 public:
     lockfreeblockbag() {
         VERBOSE DEBUG std::cout<<"constructor lockfreeblockbag lockfree="<<head.is_lock_free()<<std::endl;

@@ -47,7 +47,7 @@ void binding_configurePolicy(const int nprocessors) {}
 #include <stdlib.h>
 #include <vector>
 
-#include <plaf.h>
+#include "plaf.h"
 
 //const int NONE = 0;
 //const int IDENTITY = 1;

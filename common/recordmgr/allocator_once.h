@@ -27,11 +27,16 @@
 template<typename T = void>
 class allocator_once : public allocator_interface<T> {
 private:
+    PAD;
     const int cachelines;    // # cachelines needed to store an object of type T
     // for bump allocation from a contiguous chunk of memory
+    PAD;
     T ** mem;             // mem[tid] = pointer to current array to perform bump allocation from
+    PAD;
     size_t * memBytes;       // memBytes[tid*PREFETCH_SIZE_WORDS] = size of mem in bytes
+    PAD;
     T ** current;         // current[tid*PREFETCH_SIZE_WORDS] = pointer to current position in array mem
+    PAD;
 
     T* bump_memory_next(const int tid) {
         T* result = current[tid*PREFETCH_SIZE_WORDS];

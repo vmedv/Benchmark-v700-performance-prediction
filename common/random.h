@@ -8,9 +8,14 @@
 #ifndef RANDOM_H
 #define	RANDOM_H
 
+#include "plaf.h"
+
 class Random {
 private:
-    unsigned int seed;
+    union {
+        unsigned int seed;
+        PAD;
+    };
 public:
     Random(void) {
         this->seed = 0;
