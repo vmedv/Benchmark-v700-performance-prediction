@@ -19,7 +19,7 @@ public:
     debugInfo * const debug;
     
     const int NUM_PROCESSES;
-    PAD;
+//    PAD;
     
     template<typename _Tp1>
     struct rebind {

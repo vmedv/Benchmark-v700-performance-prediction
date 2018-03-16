@@ -29,7 +29,7 @@ public:
     
     const int NUM_PROCESSES;
     Pool *pool;
-    PAD;
+//    PAD;
 
     template<typename _Tp1>
     struct rebind {

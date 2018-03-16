@@ -57,10 +57,10 @@ namespace bst_ns {
         Node<K,V> *root;        // actually const
 //        PAD;
         Compare cmp;
-        PAD;
+//        PAD;
 
         Node<K,V> **allocatedNodes;
-        PAD;
+//        PAD;
         #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
         #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, std::memory_order_relaxed);*/ }
 
@@ -69,7 +69,7 @@ namespace bst_ns {
     #ifdef USE_DEBUGCOUNTERS
         // debug info
         debugCounters * const counters;
-        PAD;
+//        PAD;
     #endif
 
         // descriptor reduction algorithm
@@ -86,7 +86,7 @@ namespace bst_ns {
         #include "descriptors_impl.h"
         PAD;
         DESC1_T DESC1_ARRAY[LAST_TID1+1] __attribute__ ((aligned(64)));
-        PAD;
+//        PAD;
 
         /**
          * this is what LLX returns when it is performed on a leaf.

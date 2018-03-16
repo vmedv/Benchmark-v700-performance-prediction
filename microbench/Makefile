@@ -4,6 +4,7 @@ GPP = g++
 
 FLAGS += -DMAX_THREADS_POW2=256 -DCPU_FREQ_GHZ=2.1
 FLAGS += -std=c++11 -mcx16 -O3 -g
+FLAGS += -DNDEBUG
 FLAGS += $(xargs)
 
 LDFLAGS += -L../lib

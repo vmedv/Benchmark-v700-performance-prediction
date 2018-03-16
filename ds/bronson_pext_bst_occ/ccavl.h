@@ -146,11 +146,11 @@ class ccavl {
 private:
     PAD;
     RecMgr * const recmgr;
-    PAD;
+//    PAD;
     node_t<skey_t, sval_t> * root;
-    PAD;
+//    PAD;
     int init[MAX_THREADS_POW2] = {0,};
-    PAD;
+//    PAD;
 
     node_t<skey_t, sval_t> * rb_alloc(const int tid);
     node_t<skey_t, sval_t>* rbnode_create(const int tid, skey_t key, sval_t value, node_t<skey_t, sval_t>* parent);

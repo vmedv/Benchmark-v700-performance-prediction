@@ -22,7 +22,7 @@
 template<typename T = void>
 class allocator_new_segregated : public allocator_interface<T> {
 private:
-    PAD;
+//    PAD; // not needed after superclass layout
     void* (*allocfn)(size_t size);
     void (*freefn)(void *ptr);
     PAD;

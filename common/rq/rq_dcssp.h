@@ -89,13 +89,13 @@ private:
     volatile long long timestamp = 1;
     PAD;
     __rq_thread_data * threadData;
-    PAD;
+//    PAD;
 
     #define NODE_DELETED_BEFORE_RQ 0
     #define NODE_DELETED_AFTER_RQ 1
     #define NODE_NOT_DELETED_BY_THREAD -1
     dcsspProvider<void *> * prov;
-    PAD;
+//    PAD;
     
     DataStructure * ds;
     RecordManager * const recmgr;

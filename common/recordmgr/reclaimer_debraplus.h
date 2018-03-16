@@ -37,7 +37,7 @@ private:
 #define MINIMUM_OPERATIONS_BEFORE_NEW_EPOCH_CR 100
 #define NUMBER_OF_EPOCH_BAGS_CR 3
     // for epoch based reclamation
-    PAD;
+//    PAD; // not needed after superclass layout
     volatile long epoch;
     PAD;
     std::atomic_long *announcedEpoch;   // announcedEpoch[tid*PREFETCH_SIZE_WORDS] = bits 1..end contain the last epoch seen by thread tid, and bit 0 indicates quiescence

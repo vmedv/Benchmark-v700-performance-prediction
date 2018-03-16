@@ -17,6 +17,8 @@ template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_none : public reclaimer_interface<T, Pool> {
 private:
 public:
+    PAD; // post padding for superclass layout
+    
     template<typename _Tp1>
     struct rebind {
         typedef reclaimer_none<_Tp1, Pool> other;

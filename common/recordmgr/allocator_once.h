@@ -27,14 +27,14 @@
 template<typename T = void>
 class allocator_once : public allocator_interface<T> {
 private:
-    PAD;
+//    PAD; // not needed after superclass layout
     const int cachelines;    // # cachelines needed to store an object of type T
     // for bump allocation from a contiguous chunk of memory
-    PAD;
+//    PAD;
     T ** mem;             // mem[tid] = pointer to current array to perform bump allocation from
-    PAD;
+//    PAD;
     size_t * memBytes;       // memBytes[tid*PREFETCH_SIZE_WORDS] = size of mem in bytes
-    PAD;
+//    PAD;
     T ** current;         // current[tid*PREFETCH_SIZE_WORDS] = pointer to current position in array mem
     PAD;
 

@@ -22,7 +22,7 @@ private:
     PAD;
     std::atomic_int __size;
     std::atomic_uintptr_t *data;
-    PAD;
+//    PAD;
 public:
     const int capacity;
     PAD;
@@ -87,7 +87,7 @@ private:
     PAD;
     int __size;
     T **data;
-    PAD;
+//    PAD;
 public:
     const int capacity;
     PAD;

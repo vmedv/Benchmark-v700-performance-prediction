@@ -19,16 +19,16 @@
 template<typename T = void>
 class allocator_bump : public allocator_interface<T> {
     private:
-        PAD;
+//        PAD; // not needed after superclass layout
         const int cachelines;    // # cachelines needed to store an object of type T
         // for bump allocation from a contiguous chunk of memory
-        PAD;
+//        PAD;
         T ** mem;             // mem[tid*PREFETCH_SIZE_WORDS] = pointer to current array to perform bump allocation from
-        PAD;
+//        PAD;
         int * memBytes;       // memBytes[2*tid*PREFETCH_SIZE_WORDS] = size of mem in bytes
-        PAD;
+//        PAD; // not needed because of padding on end of previous array
         T ** current;         // current[tid*PREFETCH_SIZE_WORDS] = pointer to current position in array mem
-        PAD;
+//        PAD; // not needed because of padding on end of previous array
         std::vector<T*> ** toFree; // toFree[tid] = pointer to vector of bump allocation arrays to free when this allocator is destroyed
         PAD;
 

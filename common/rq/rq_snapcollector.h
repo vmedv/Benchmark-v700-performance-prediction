@@ -50,7 +50,7 @@ private:
     pthread_rwlock_t rwlock;
     PAD;
     __rq_thread_data * threadData;
-    PAD;
+//    PAD;
     
     DataStructure * const ds;
     RecordManager * const recmgr;

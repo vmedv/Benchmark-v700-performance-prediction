@@ -267,7 +267,7 @@ namespace bslack_ns {
         DESC1_T DESC1_ARRAY[LAST_TID1+1] __attribute__ ((aligned(64)));
         PAD;
         Node<DEGREE,K> * entry;
-        PAD;
+//        PAD;
 
         #define DUMMY       ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_STATIC_DESC(0))
         #define FINALIZED   ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_DUMMY_DESC(1))

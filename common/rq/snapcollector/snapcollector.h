@@ -42,10 +42,10 @@ public:
 private:
     PAD;
     ReportItem * volatile * reportHeads;
-    PAD;
+//    PAD;
     ReportItem * volatile * reportTails;
     
-    PAD;
+//    PAD;
     NodeWrapper * volatile head;
     PAD;
     NodeWrapper * volatile tail;
@@ -57,12 +57,12 @@ private:
     // variables used for aggregating reports after they are collected
     PAD;
     void ** currLocations;
-    PAD;
+//    PAD;
     int * currRepLocations;
-    PAD;
+//    PAD;
     std::vector<CompactReportItem *> * volatile gAllReports;
     
-    PAD;
+//    PAD;
     K KEY_MAX;
     K KEY_MIN;
     PAD;

@@ -1,4 +1,4 @@
-/**
+                                                                                                                                            /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
  * 
  * Copyright (C) 2015 Trevor Brown
@@ -22,7 +22,7 @@
 template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_perthread_and_shared : public pool_interface<T, Alloc> {
 private:
-    PAD;
+//    PAD; // not needed after superclass layout          
     lockfreeblockbag<T> *sharedBag;       // shared bag that we offload blocks on when we have too many in our freeBag
     blockbag<T> **freeBag;                // freeBag[tid] = bag of objects of type T that are ready to be reused by the thread with id tid
     PAD;

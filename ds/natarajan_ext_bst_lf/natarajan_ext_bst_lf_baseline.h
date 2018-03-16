@@ -179,9 +179,9 @@ class natarajan_ext_bst_lf {
 private:
     PAD;
     Compare cmp;
-    PAD;
+//    PAD;
     node_t<skey_t, sval_t> * root;
-    PAD;
+//    PAD;
 
     seekRecord_t<skey_t, sval_t>* insseek(thread_data_t<skey_t, sval_t>* data, skey_t key, int op);
     seekRecord_t<skey_t, sval_t>* delseek(thread_data_t<skey_t, sval_t>* data, skey_t key, int op);

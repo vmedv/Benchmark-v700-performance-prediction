@@ -261,16 +261,15 @@ class block;
         PAD;
         int owner;
         volatile long long reclaimCount; // number of times this bag has been the oldest epoch bag and had its nodes reclaimed
-        PAD;
         long debugFreed;
-        PAD;
+//        PAD;
     public:
         int sizeInBlocks;
     private:
         
         block<T> *head;
         block<T> *tail;
-        PAD;
+//        PAD;
         blockpool<T> * const pool;
         PAD;
         

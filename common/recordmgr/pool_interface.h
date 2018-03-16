@@ -23,7 +23,7 @@ public:
     const int NUM_PROCESSES;
     blockpool<T> **blockpools; // allocated (or not) and freed by descendants
     Alloc *alloc;
-    PAD;
+//    PAD;
 
     template<typename _Tp1>
     struct rebind {

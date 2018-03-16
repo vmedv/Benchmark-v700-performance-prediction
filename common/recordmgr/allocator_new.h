@@ -19,6 +19,7 @@
 
 template<typename T = void>
 class allocator_new : public allocator_interface<T> {
+    PAD; // post padding for allocator_interface
 public:
     template<typename _Tp1>
     struct rebind {

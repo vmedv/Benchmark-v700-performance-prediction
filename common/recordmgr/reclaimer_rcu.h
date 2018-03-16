@@ -111,8 +111,7 @@ __thread bool rcuInitialized = false;
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_rcu : public reclaimer_interface<T, Pool> {
-protected:
-    
+    PAD; // post padding for superclass layout
 public:
     template<typename _Tp1>
     struct rebind {

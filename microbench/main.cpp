@@ -115,28 +115,21 @@ struct globals_t {
     void * const NO_VALUE;
     const test_type KEY_MIN;
     const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this!
-    PAD;
-    Random rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
-    PAD;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
     std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
-    PAD;
     long elapsedMillis;
     long elapsedMillisNapping;
-    PAD;
-    volatile bool start;
-    volatile bool done;
-    PAD;
-    volatile int running; // number of threads that are running
-    PAD;
-    ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> > *ds; // the data structure
-    PAD;
-    test_type garbage; // used to prevent optimizing out some code
-    PAD;
     const long long PREFILL_INTERVAL_MILLIS;
     volatile long long prefillIntervalElapsedMillis;
-    PAD;
+    test_type garbage; // used to prevent optimizing out some code
+    ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> > *ds; // the data structure
     long long prefillKeySum;
+    PAD;
+    Random rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
+//    PAD; // not needed because of padding at the end of rngs
+    volatile bool start;
+    volatile bool done;
+    volatile int running; // number of threads that are running
     PAD;
     
     globals_t()

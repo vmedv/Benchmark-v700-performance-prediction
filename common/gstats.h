@@ -256,27 +256,26 @@ private:
     const int NUM_PROCESSES;
     std::map<gstats_stat_id, std::string> id_to_name;
     std::map<std::string, gstats_stat_id> name_to_id;
-    PAD;
     gstats_thread_data * thread_data;
     gstats_stat_id num_stats;
 
     std::multimap<gstats_stat_id, gstats_output_item> output_config;
-    PAD;
+//    PAD;
 
     std::vector<stat_metrics<double> *> arrays_to_delete;                        // to simplify deletion of heap allocated arrays
-    PAD;
+//    PAD;
     volatile int arrays_to_delete_lock = 0;
-    PAD;
+//    PAD;
 
     gstats_enum_data_type data_types[GSTATS_MAX_NUM_STATS];
 
-    PAD;
+//    PAD;
     stat_metrics<double> * computed_gstats_total[GSTATS_MAX_NUM_STATS];             // computed_gstats_total[gstats_stat_id][0] = stat_metrics
     stat_metrics<double> * computed_gstats_by_index[GSTATS_MAX_NUM_STATS];          // computed_gstats_by_index[gstats_stat_id][index] = stat_metrics
     stat_metrics<double> * computed_gstats_by_thread[GSTATS_MAX_NUM_STATS];         // computed_gstats_by_thread[gstats_stat_id][thread_id] = stat_metrics
-    PAD;
+//    PAD;
     int num_indices[GSTATS_MAX_NUM_STATS];                                         // num_indices[gstats_stat_id] = number of indices that have stat_metrics structs in computed_gstats_by_index[gstats_stat_id]
-    PAD;
+//    PAD;
     bool already_computed_stats;
     PAD;
 

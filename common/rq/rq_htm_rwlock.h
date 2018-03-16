@@ -64,7 +64,7 @@ private:
     RWLock rwlock;
     PAD;
     __rq_thread_data * threadData;
-    PAD;
+//    PAD;
     
     DataStructure * ds;
     RecordManager * const recmgr;

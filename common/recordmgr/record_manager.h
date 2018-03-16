@@ -143,11 +143,11 @@ protected:
     PAD;
     RecordManagerSetPostPadded<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
     
-    PAD;
+//    PAD;
     int init[MAX_THREADS_POW2] = {0,};
 
 public:
-    PAD;
+//    PAD;
     const int NUM_PROCESSES;
     RecoveryMgr<SelfType> * const recoveryMgr;
     PAD;

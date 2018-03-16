@@ -39,7 +39,7 @@ protected:
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
     
     // for epoch based reclamation
-    PAD;
+//    PAD; // not needed after superclass layout
     volatile long epoch;
     PAD;
     std::atomic_long *announcedEpoch;   // announcedEpoch[tid*PREFETCH_SIZE_WORDS]
