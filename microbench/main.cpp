@@ -28,15 +28,11 @@ typedef long long test_type;
 #include "papi_util_impl.h"
 #include "rq_provider.h"
 
+#include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
+
 #ifndef STR
     #define STR(x) XSTR(x)
     #define XSTR(x) #x
-#endif
-
-#ifdef ADAPTER_H_FILE
-    #include STR(ADAPTER_H_FILE)
-#else
-    #error ADAPTER_H_FILE should be defined!
 #endif
 
 #ifndef INSERT_FUNC

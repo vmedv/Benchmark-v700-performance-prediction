@@ -17,7 +17,7 @@
 #include <limits>
 #include <cassert>
 
-#include "natarajan_ext_bst_lf_adapter.h"
+#include "adapter.h"
 
 int main(int argc, char** argv) {
 

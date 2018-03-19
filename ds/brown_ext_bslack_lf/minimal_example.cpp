@@ -17,7 +17,7 @@
 #include <limits>
 #include <cassert>
 
-#include "brown_ext_bslack_lf_adapter.h"
+#include "adapter.h"
 
 int main(int argc, char** argv) {
 

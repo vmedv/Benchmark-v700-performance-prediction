@@ -16,65 +16,18 @@ LDFLAGS += -ldl
 #FLAGS += -DUSE_PAPI
 #LDFLAGS += -lpapi
 
-ds =
-ds += natarajan_ext_bst_lf
-ds += brown_ext_bst_lf
-ds += brown_ext_abtree_lf
-ds += bronson_pext_bst_occ
-ds += brown_ext_bslack_lf
+MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
+MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
+
+DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
+UBENCH_BINS=$(patsubst ../ds/%/adapter.h,%.ubench,$(DATA_STRUCTURE_ADAPTERS_H))
 
 all: ubench minimal
-ubench: $(ds:%=%.ubench)	
-minimal: $(ds:%=%.minimal)
+ubench: $(UBENCH_BINS)
+minimal: $(MINIMAL_BINS)
 
 %.minimal:
 	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $@.out $(LDFLAGS)
 
 %.ubench:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE=ds/$(@:%.ubench=%)/$(@:%.ubench=%)_adapter.h main.cpp $(LDFLAGS)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-natarajan_ext_bst_lf.baseline:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_baseline_impl.h" -DBASELINE main.cpp $(LDFLAGS)
-natarajan_ext_bst_lf.stage0:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_baseline_impl.h" main.cpp $(LDFLAGS)
-natarajan_ext_bst_lf.stage1:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" -DDS_H_FILE="natarajan_ext_bst_lf_stage1_impl.h" main.cpp $(LDFLAGS)
-natarajan_ext_bst_lf.stage2:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_adapter.h" main.cpp $(LDFLAGS)
-
-brown_ext_bst_lf.reclaim_debra.nopool:
-	$(GPP) $(FLAGS) -o $@.out -DADAPTER_H_FILE="ds/brown_ext_bst_lf/brown_ext_bst_lf_adapter.h" -DRQ_UNSAFE -DRECLAIM_TYPE=debra -DALLOC_TYPE=new -DPOOL_TYPE=none main.cpp $(LDFLAGS)
-
-rlulist:
-	$(GPP) $(FLAGS) -o lazylist.rq_rlu.out -DRLU_LIST main.cpp ../common/rlu/rlu.cpp $(LDFLAGS)
-rlucitrus:
-	$(GPP) $(FLAGS) -o citrus.rq_rlu.out -DRLU_CITRUS main.cpp ../common/rlu/rlu.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $@.out -I../ds/$(@:%.ubench=%) main.cpp $(LDFLAGS)

@@ -17,7 +17,7 @@
 #include <limits>
 #include <cassert>
 
-#include "bronson_pext_bst_occ_adapter.h"
+#include "adapter.h"
 
 int main(int argc, char** argv) {
 
