@@ -27,6 +27,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
+#include "plaf.h"
 
 namespace thread_pinning {
     
@@ -38,10 +39,10 @@ namespace thread_pinning {
      * Public functions
      */
     
-    void configurePolicy(const int numProcessors, string policy);
-    void bindThread(const int tid, const int nprocessors);
-    int getActualBinding(const int tid, const int nprocessors);
-    bool isInjectiveMapping(const int nthreads, const int nprocessors);
+    void configurePolicy(const int numThreads, string policy);
+    void bindThread(const int tid);
+    int getActualBinding(const int tid);
+    bool isInjectiveMapping(const int numThreads);
 
     /**
      * Private helper functions

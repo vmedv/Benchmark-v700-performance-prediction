@@ -89,18 +89,19 @@ static unsigned parseToken(std::string argv, int ix) {
     
     // read first INT
     int ix2 = ix;
-    while (ix2 < argv.size() && argv[ix2] != ',') ++ix2;
+    while (ix2 < argv.size() && argv[ix2] != '.') ++ix2;
     std::string token = argv.substr(ix, ix2-ix+1);
     int a = atoi(token.c_str());
     
     // check if the token is of the first form: INT
     ix = ix+digits(a);              // first character AFTER first INT
-    if (ix >= argv.size() || argv[ix] == ',') {
+    if (ix >= argv.size() || argv[ix] == '.') {
         
         // add single binding
         //cout<<"a="<<a<<std::endl;
         //customBinding.push_back(a);
         customBinding[numCustomBindings++] = a;
+        assert(numCustomBindings <= MAX_THREADS_POW2);
     
     // token is of the second form: INT-INT
     } else {
@@ -116,13 +117,14 @@ static unsigned parseToken(std::string argv, int ix) {
         for (int i=a;i<=b;++i) {
             //customBinding.push_back(i);
             customBinding[numCustomBindings++] = i;
+            assert(numCustomBindings <= MAX_THREADS_POW2);
         }
         
         ix = ix+digits(b);          // first character AFTER second INT
     }
     // note: ix is the first character AFTER the last INT in the token
-    // this is either a comma (',') or the end of the std::string argv.
-    return (ix >= argv.size() ? argv.size() : ix+1 /* skip ',' */);
+    // this is either a comma ('.') or the end of the std::string argv.
+    return (ix >= argv.size() ? argv.size() : ix+1 /* skip '.' */);
 }
 
 // argv contains a custom thread binding pattern, e.g., "1,2,3,8-11,4-7,0"

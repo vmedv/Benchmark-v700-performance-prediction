@@ -57,7 +57,7 @@ Query_queue::threadInitQuery(void * This) {
 	urcu::registerThread(tid);
         rlu_self = &rlu_tdata[tid];
         RLU_THREAD_INIT(rlu_self);
-        thread_pinning::bindThread(tid, g_thread_cnt);
+        thread_pinning::bindThread(tid);
 //	// set cpu affinity
 //	set_affinity(tid);
 

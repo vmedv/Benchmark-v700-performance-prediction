@@ -458,7 +458,7 @@ tpcc_wl::init_permutation(uint64_t * perm_c_id, uint64_t size, uint64_t wid) {
 void * tpcc_wl::threadInitWarehouse(void * This) {
     tpcc_wl * wl = (tpcc_wl *) This;
     int __tid = ATOM_FETCH_ADD(wl->next_tid, 1);
-    thread_pinning::bindThread(__tid, g_thread_cnt);
+    thread_pinning::bindThread(__tid);
     urcu::registerThread(__tid);
     rlu_self = &rlu_tdata[__tid];
     RLU_THREAD_INIT(rlu_self);

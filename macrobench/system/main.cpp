@@ -196,7 +196,7 @@ int main(int argc, char* argv[])
 void * f_warmup(void * id) {
 	uint64_t __tid = (uint64_t)id;
         urcu::registerThread(__tid);
-        thread_pinning::bindThread(__tid, g_thread_cnt);
+        thread_pinning::bindThread(__tid);
         tid = __tid;
 #ifdef VERBOSE_1
         cout<<"WARMUP: Assigned thread ID="<<tid<<std::endl;
@@ -215,7 +215,7 @@ void * f_real(void * id) {
 	uint64_t __tid = (uint64_t)id;
         tid = __tid;
         urcu::registerThread(__tid);
-        thread_pinning::bindThread(__tid, g_thread_cnt);
+        thread_pinning::bindThread(__tid);
 #ifdef VERBOSE_1
         cout<<"REAL: Assigned thread ID="<<tid<<std::endl;
 #endif

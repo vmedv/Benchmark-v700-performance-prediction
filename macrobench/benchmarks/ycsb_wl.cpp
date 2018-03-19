@@ -144,7 +144,7 @@ void * ycsb_wl::init_table_slice() {
     urcu::registerThread(__tid);
     rlu_self = &rlu_tdata[__tid];
     RLU_THREAD_INIT(rlu_self);
-    thread_pinning::bindThread(__tid, g_thread_cnt);
+    thread_pinning::bindThread(__tid);
     //	// set cpu affinity
     //	set_affinity(__tid);
 
