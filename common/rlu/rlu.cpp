@@ -174,7 +174,7 @@ static volatile int g_rlu_type = 0;
 static volatile int g_rlu_max_write_sets = 0;
 
 static volatile long g_rlu_cur_threads = 0;
-static volatile rlu_thread_data_t *g_rlu_threads[RLU_MAX_THREADS] = {0,};
+static volatile rlu_thread_data_t *g_rlu_threads[RLU_MAX_THREADS*4] = {0,};
 
 static volatile long g_rlu_writer_locks[RLU_MAX_WRITER_LOCKS] = {0,};
 

@@ -89,7 +89,10 @@ public:
         KEY_TYPE maxKey = std::numeric_limits<KEY_TYPE>::max();
         VALUE_TYPE reservedValue = __NO_VALUE;
         
-        index = new ds_adapter<KEY_TYPE, void *>(g_thread_cnt, minKey, maxKey, reservedValue, rngs);
+        if (g_thread_cnt > MAX_THREADS_POW2) {
+            setbench_error("g_thread_cnt > MAX_THREADS_POW2");
+        }
+        index = new ds_adapter<KEY_TYPE, void *>(MAX_THREADS_POW2, minKey, maxKey, reservedValue, rngs);
         this->table = table;
         
         return RCOK;
