@@ -318,7 +318,7 @@ void tpcc_wl::init_tab_cust(uint64_t did, uint64_t wid) {
         row->set_value(C_YTD_PAYMENT, 10.0);
         row->set_value(C_PAYMENT_CNT, 1);
         uint64_t key;
-#ifdef INDEX_HAS_RQ
+#ifdef USE_RANGE_QUERIES
         key = custNPKey_ordered_by_cid(c_last, cid, did, wid);
 #else
         key = custNPKey(c_last, did, wid);

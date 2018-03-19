@@ -57,13 +57,10 @@
 #define ABORT_PENALTY 				0
 #define ABORT_BUFFER_SIZE			10
 #define ABORT_BUFFER_ENABLE			true
-// [ INDEX ]
+// [ Index ]
 #define ENABLE_LATCH				true
 #define CENTRAL_INDEX				false
 #define CENTRAL_MANAGER 			false
-//#define INDEX_STRUCT				IDX_ABTREE
-//#define INDEX_STRUCT				IDX_BST
-//#define INDEX_STRUCT				IDX_HASH
 #define BTREE_ORDER 				16
 
 // [DL_DETECT] 
@@ -193,64 +190,6 @@ extern TestCases					g_test_case;
 /***********************************************/
 // Constant
 /***********************************************/
-// INDEX_STRUCT
-#define IDX_HASH 					1
-#define IDX_BTREE					2
-#define IDX_BST                                         3
-#define IDX_ABTREE					4
-#define IDX_HOWLEY                                      5
-#define IDX_HOWLEY_PAD                                  6
-#define IDX_HOWLEY_PAD_LARGE_DES                        7
-#define IDX_HOWLEY_BASELINE                             8
-#define IDX_ELLEN                                       9
-#define IDX_ELLEN_PAD                                   10 
-#define IDX_ELLEN_BASELINE                              11
-#define IDX_WFRBT                                       12
-#define IDX_WFRBT_BASELINE                              13
-#define IDX_WFRBT_ASCY                                  14
-#define IDX_WFRBT_ASCY_BASELINE                         15
-#define IDX_BRONSON_SPIN                                16
-#define IDX_BRONSON_SPIN_NO_REREAD                      17
-#define IDX_BRONSON_SPIN_NO_OVL                         18
-#define IDX_BRONSON_BASELINE                            19
-#define IDX_CCAVL_SPIN                                  20
-#define IDX_CCAVL_SPIN_NO_REREAD                        21
-#define IDX_CCAVL_SPIN_NO_OVL                           22
-#define IDX_CCAVL_BASELINE                              23
-#define IDX_DANA_SPIN_FIELDS                            24
-#define IDX_DANA_SPIN_PAD_FIELDS                        25
-#define IDX_DANA_SPIN_FIELDS_3_LINES                    26
-#define IDX_DANA_BASELINE                               27
-#define IDX_CITRUS_SPIN                                 28
-#define IDX_CITRUS_SPIN_PAD                             29
-#define IDX_CITRUS_BASELINE                             30
-#define IDX_BONSAI                                      31
-#define IDX_BONSAI_PAD                                  32
-#define IDX_BONSAI_BASELINE                             33
-#define IDX_INTLF                                       34
-#define IDX_INTLF_PAD                                   35
-#define IDX_INTLF_BASELINE                              36
-#define IDX_TICKET                                      37
-#define IDX_TICKET_PAD                                  38
-#define IDX_TICKET_BASELINE                             39
-#define IDX_BST_RQ_LOCKFREE                             100
-#define IDX_BST_RQ_RWLOCK                               101
-#define IDX_BST_RQ_HTM_RWLOCK                           102
-#define IDX_BST_RQ_UNSAFE                               103
-#define IDX_CITRUS_RQ_LOCKFREE                          110
-#define IDX_CITRUS_RQ_RWLOCK                            111
-#define IDX_CITRUS_RQ_HTM_RWLOCK                        112
-#define IDX_CITRUS_RQ_UNSAFE                            113
-#define IDX_RLUCITRUS                                   120
-#define IDX_ABTREE_RQ_LOCKFREE                          130
-#define IDX_ABTREE_RQ_RWLOCK                            131
-#define IDX_ABTREE_RQ_HTM_RWLOCK                        132
-#define IDX_ABTREE_RQ_UNSAFE                            133
-#define IDX_SKIPLISTLOCK_RQ_LOCKFREE                    140
-#define IDX_SKIPLISTLOCK_RQ_RWLOCK                      141
-#define IDX_SKIPLISTLOCK_RQ_HTM_RWLOCK                  142
-#define IDX_SKIPLISTLOCK_RQ_UNSAFE                      143
-#define IDX_SKIPLISTLOCK_RQ_SNAPCOLLECTOR                      144
 // WORKLOAD
 #define YCSB						1
 #define TPCC						2

@@ -8,7 +8,7 @@ class thread_t;
 class row_t;
 class table_t;
 class base_query;
-class INDEX;
+class Index;
 
 // each thread has a txn_man. 
 // a txn_man corresponds to a single transaction.
@@ -88,10 +88,10 @@ public:
 
 	// For VLL
 	TxnType 		vll_txn_type;
-        int                     index_range_query(INDEX * index, idx_key_t low, idx_key_t high, idx_key_t * resultKeys, itemid_t ** resultValues, int part_id);
-        itemid_t *		index_read(INDEX * index, idx_key_t key, int part_id);
-	void 			index_read(INDEX * index, idx_key_t key, int part_id, itemid_t ** item);
-        void                    index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id);
+        int                     index_range_query(Index * index, idx_key_t low, idx_key_t high, idx_key_t * resultKeys, itemid_t ** resultValues, int part_id);
+        itemid_t *		index_read(Index * index, idx_key_t key, int part_id);
+	void 			index_read(Index * index, idx_key_t key, int part_id, itemid_t ** item);
+        void                    index_insert(Index * index, uint64_t key, row_t * row, int64_t part_id);
 	row_t * 		get_row(row_t * row, access_t type);
 protected:	
 	void 			insert_row(row_t * row, table_t * table);

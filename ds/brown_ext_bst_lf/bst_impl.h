@@ -5,6 +5,9 @@
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
 
+#ifndef BST_IMPL_H
+#define	BST_IMPL_H
+
 #include "bst.h"
 #include <cassert>
 #include <cstdlib>
@@ -650,3 +653,5 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
     TRACE COUTATOMICTID("llx return5 (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<")\n");
     return NULL;            // fail
 }
+
+#endif

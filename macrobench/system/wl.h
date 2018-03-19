@@ -24,7 +24,7 @@ public:
         
 	// tables indexed by table name
 	map<string, table_t *> tables;
-	map<string, INDEX *> indexes;
+	map<string, Index *> indexes;
 
 	
 	// initialize the tables and indexes.
@@ -39,6 +39,6 @@ public:
 	bool sim_done;
 protected:
 	void index_insert(std::string index_name, uint64_t key, row_t * row);
-	void index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id = -1);
+	void index_insert(Index * index, uint64_t key, row_t * row, int64_t part_id = -1);
 };
 

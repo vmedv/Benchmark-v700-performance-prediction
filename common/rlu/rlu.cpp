@@ -635,7 +635,9 @@ void rlu_init(int type, int max_write_sets) {
 	char *lib = getenv("TREE_MALLOC");
 	if (!lib) {
 		printf("no TREE_MALLOC defined: using default!\n");
-		exit(1);
+                allocfn = malloc;
+                freefn = free;
+		return;
 	}
 	void *h = dlopen(lib, RTLD_NOW | RTLD_LOCAL);
 	if (!h) {

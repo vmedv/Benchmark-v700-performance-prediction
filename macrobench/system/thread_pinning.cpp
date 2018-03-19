@@ -1,3 +1,4 @@
+using namespace std;
 #include "thread_pinning.h"
 
 namespace thread_pinning {

@@ -22,7 +22,6 @@
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
 private:
-    const void * NO_VALUE;
     DATA_STRUCTURE_T * const ds;
 
 public:
@@ -33,6 +32,9 @@ public:
                Random * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
     {
+        if (!std::is_same<V, void *>::value) {
+            setbench_error("Value type V used with brown_ext_bslack_lf is not void *. This data structure has hard writes value type void *.");
+        }
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
         }

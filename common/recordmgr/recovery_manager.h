@@ -19,11 +19,11 @@
 #include "globals.h"
 
 // for crash recovery
-PAD;
+/*PAD;*/
 static pthread_key_t pthreadkey;
 static struct sigaction ___act;
 static void *___singleton = NULL;
-PAD;
+/*PAD;*/
 extern pthread_key_t pthreadkey;
 extern struct sigaction ___act;
 extern void *___singleton;
@@ -31,7 +31,7 @@ extern void *___singleton;
 static pthread_t registeredThreads[MAX_THREADS_POW2];
 static void *errnoThreads[MAX_THREADS_POW2];
 static sigjmp_buf *setjmpbuffers;
-PAD;
+/*PAD;*/
 extern pthread_t registeredThreads[MAX_THREADS_POW2];
 extern void *errnoThreads[MAX_THREADS_POW2];
 extern sigjmp_buf *setjmpbuffers;

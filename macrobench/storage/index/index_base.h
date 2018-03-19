@@ -49,9 +49,11 @@ static inline int32_t hash_murmur3(KEY_TYPE v) {
 
 class index_base {
 protected:
+    PAD;
     char initializedThreads[MAX_THREADS_POW2*PREFETCH_SIZE_BYTES];
     unsigned long long numInserts[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
     unsigned long long numReads[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
+//    PAD; // not needed because of post padding on numReads
 //    #define INCREMENT_NUM_INSERTS(tid) { if ((++numInserts[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numInserts="<<numInserts[(tid)*PREFETCH_SIZE_WORDS]<<std::endl; }
 //    #define INCREMENT_NUM_READS(tid) { if ((++numReads[(tid)*PREFETCH_SIZE_WORDS] % 100000) == 0) cout<<"tid="<<tid<<": numReads="<<numReads[(tid)*PREFETCH_SIZE_WORDS]<<std::endl; }
     #define INCREMENT_NUM_INSERTS(tid) 
@@ -62,7 +64,7 @@ protected:
     
     #define PRINT_BUCKETS 30
     long long lockHistogram[PRINT_BUCKETS];
-
+    PAD; // needed because locktab might falsely share with some following fields (including index_id, which is read on every stat tracking increment
 public:
     string index_name;
     int index_id;

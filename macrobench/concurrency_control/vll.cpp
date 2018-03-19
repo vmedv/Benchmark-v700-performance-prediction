@@ -26,7 +26,7 @@ VLLMan::vllMainLoop(txn_man * txn, base_query * query) {
 		ycsb_request * req = &m_query->requests[rid];
 		ycsb_wl * wl = (ycsb_wl *) txn->get_wl();
 		int part_id = wl->key_to_part( req->key );
-		INDEX * index = wl->the_index;
+		Index * index = wl->the_index;
 		itemid_t * item;
 		item = txn->index_read(index, req->key, part_id);
 		row_t * row = ((row_t *)item->location);

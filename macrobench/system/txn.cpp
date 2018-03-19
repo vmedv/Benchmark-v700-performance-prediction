@@ -183,12 +183,12 @@ void txn_man::insert_row(row_t * row, table_t * table) {
 	insert_rows[insert_cnt ++] = row;
 }
 
-#ifdef INDEX_HAS_RQ
+#ifdef USE_RANGE_QUERIES
 // perform range query over [low, high]
 // return number N of keys found
 // set results[0...N-1] to the values associated with these keys
 int
-txn_man::index_range_query(INDEX * index, idx_key_t low, idx_key_t high, idx_key_t * resultKeys, itemid_t ** resultValues, int part_id) {
+txn_man::index_range_query(Index * index, idx_key_t low, idx_key_t high, idx_key_t * resultKeys, itemid_t ** resultValues, int part_id) {
 	uint64_t starttime = get_sys_clock();
         int numResults = 0;
 	index->index_range_query(low, high, resultKeys, resultValues, &numResults, part_id);
@@ -199,7 +199,7 @@ txn_man::index_range_query(INDEX * index, idx_key_t low, idx_key_t high, idx_key
 #endif
 
 itemid_t *
-txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
+txn_man::index_read(Index * index, idx_key_t key, int part_id) {
 	uint64_t starttime = get_sys_clock();
 	itemid_t * item = NULL;
 	index->index_read(key, &item, part_id, get_thd_id());
@@ -209,7 +209,7 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id) {
 }
 
 void 
-txn_man::index_read(INDEX * index, idx_key_t key, int part_id, itemid_t ** item) {
+txn_man::index_read(Index * index, idx_key_t key, int part_id, itemid_t ** item) {
 	uint64_t starttime = get_sys_clock();
 	index->index_read(key, item, part_id, get_thd_id());
 	INC_TMP_STATS(get_thd_id(), stats_indexes[index->index_id].numContains, 1);
@@ -217,7 +217,7 @@ txn_man::index_read(INDEX * index, idx_key_t key, int part_id, itemid_t ** item)
 }
 
 void
-txn_man::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id) {
+txn_man::index_insert(Index * index, uint64_t key, row_t * row, int64_t part_id) {
     uint64_t starttime = get_sys_clock();
     get_wl()->index_insert(index, key, row, part_id);
     INC_TMP_STATS(get_thd_id(), stats_indexes[index->index_id].numInsert, 1);

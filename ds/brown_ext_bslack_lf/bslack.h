@@ -49,9 +49,8 @@
 #include <set>
 #include <unistd.h>
 #include <sys/types.h>
-#include "record_manager.h"
-#include "random.h"
 #include "descriptors.h"
+#include "record_manager.h"
 #include "rq_provider.h"
 
 namespace bslack_ns {

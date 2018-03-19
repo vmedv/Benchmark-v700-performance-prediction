@@ -33,12 +33,11 @@ public:
 };
 
 // TODO Hash index does not support partition yet.
-class IndexHash  : public index_base
+class Index : public index_base
 {
 public:
-    string index_name;
-    int index_id;
-
+    PAD; // padding after superclass layout
+    
         RC 			init(uint64_t bucket_cnt, int part_cnt);
 	RC 			init(int part_cnt, 
 					table_t * table, 

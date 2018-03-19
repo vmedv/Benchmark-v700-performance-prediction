@@ -19,8 +19,8 @@
 #include <pthread.h>
 #include <stdexcept>
 #include <bitset>
+#include "descriptors.h"
 #include "record_manager.h"
-#include "random.h"
 #include "scxrecord.h"
 #include "node.h"
 #include "rq_provider.h"

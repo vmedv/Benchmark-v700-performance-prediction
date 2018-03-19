@@ -49,10 +49,10 @@ constexpr std::size_t offset_of()
 
 __thread long long rcuthrFreesNode = 0;       // for RCU THREADS ONLY
 __thread long long rcuthrFreesDescriptor = 0; // for RCU THREADS ONLY
-PAD;
+/*PAD;*/
 long long freesNode = 0;
 long long freesDescriptor = 0;
-PAD;
+/*PAD;*/
 
 #if defined BST || defined BST_THROWAWAY
     void rcuCallback_Node(struct rcu_head *rcu) {

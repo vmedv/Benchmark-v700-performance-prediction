@@ -70,7 +70,7 @@ RC workload::init_schema(std::string schema_file) {
             table_t * cur_tab = (table_t *) _mm_malloc(sizeof (table_t), CL_SIZE);
             cur_tab->init(schema);
             tables[tname] = cur_tab;
-        } else if (!line.compare(0, 6, "INDEX=")) {
+        } else if (!line.compare(0, 6, "Index=")) {
             string iname;
             iname = &line[6];
             getline(fin, line);
@@ -89,18 +89,18 @@ RC workload::init_schema(std::string schema_file) {
             
 
             string tname(items[0]);
-            INDEX * index = (INDEX *) _mm_malloc(sizeof (INDEX), ALIGNMENT);
-            new(index) INDEX();
+            Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT);
+            new(index) Index();
             int part_cnt = (CENTRAL_INDEX) ? 1 : g_part_cnt;
             if (tname=="ITEM")
                 part_cnt = 1;
-#if INDEX_STRUCT == IDX_HASH
-#if WORKLOAD == YCSB
+#ifdef IDX_HASH
+#   if WORKLOAD == YCSB
             index->init(part_cnt, tables[tname], g_synth_table_size*2);
-#elif WORKLOAD == TPCC
+#   elif WORKLOAD == TPCC
             assert(tables[tname]!=NULL);
             index->init(part_cnt, tables[tname], stoi(items[1])*part_cnt);
-#endif
+#   endif
 #else
             index->init(part_cnt, tables[tname]);
 #endif
@@ -123,11 +123,11 @@ RC workload::init_schema(std::string schema_file) {
 
 void workload::index_insert(std::string index_name, uint64_t key, row_t * row) {
 	assert(false);
-	INDEX * index = (INDEX *) indexes[index_name];
+	Index * index = (Index *) indexes[index_name];
 	index_insert(index, key, row);
 }
 
-void workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t part_id) {
+void workload::index_insert(Index * index, uint64_t key, row_t * row, int64_t part_id) {
 	uint64_t pid = part_id;
 	if (part_id == -1)
 		pid = get_part_id(row);
@@ -143,13 +143,13 @@ void workload::index_insert(INDEX * index, uint64_t key, row_t * row, int64_t pa
 }
 
 void workload::initThread(const int __tid) {
-    for (map<string,INDEX*>::iterator it = indexes.begin(); it!=indexes.end(); it++) {
+    for (map<string,Index*>::iterator it = indexes.begin(); it!=indexes.end(); it++) {
         it->second->initThread(__tid);
     }
 }
 
 void workload::deinitThread(const int __tid) {
-    for (map<string,INDEX*>::iterator it = indexes.begin(); it!=indexes.end(); it++) {
+    for (map<string,Index*>::iterator it = indexes.begin(); it!=indexes.end(); it++) {
         it->second->deinitThread(__tid);
     }
 }

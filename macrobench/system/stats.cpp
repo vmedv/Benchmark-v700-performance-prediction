@@ -1,6 +1,6 @@
 #include "global.h"
 #include "helper.h"
-#include "gstats.h"
+#include "stats.h"
 #include "mem_alloc.h"
 #include "wl.h"
 
@@ -211,7 +211,7 @@ void Stats::print(workload * wl) {
          * Compute per-thread per-index stats
          */
         for (auto it = wl->indexes.begin(); it != wl->indexes.end(); it++) {
-            INDEX * index = it->second;
+            Index * index = it->second;
             for (int tid=0;tid<g_thread_cnt;++tid) {
                 LOAD_STAT(index, tid, numContains);
                 LOAD_STAT(index, tid, timeContains);
@@ -249,7 +249,7 @@ void Stats::print(workload * wl) {
          * Compute per-index stats
          */
         for (auto it = wl->indexes.begin(); it != wl->indexes.end(); it++) {
-            INDEX * index = it->second;
+            Index * index = it->second;
             
             uint64_t numContains = 0;
             double timeContains = 0;
@@ -300,7 +300,7 @@ void Stats::print(workload * wl) {
         uint64_t numRangeQuery = 0;
         double timeRangeQuery = 0;
         for (auto it = wl->indexes.begin(); it != wl->indexes.end(); it++) {
-            INDEX * index = it->second;
+            Index * index = it->second;
             for (int tid=0;tid<g_thread_cnt;++tid) {
                 ACCUM_STAT(index, tid, numContains);
                 ACCUM_STAT(index, tid, timeContains);

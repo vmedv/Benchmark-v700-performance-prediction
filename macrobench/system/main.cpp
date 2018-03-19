@@ -10,8 +10,9 @@
 #include "occ.h"
 #include "vll.h"
 
-#include "eer_prcu_impl.h"
-//#include "urcu_impl.h"
+using namespace std;
+
+#include "urcu_impl.h"
 
 void * f_warmup(void *);
 void * f_real(void *);
@@ -30,7 +31,7 @@ int main(int argc, char* argv[])
         urcu::init(g_thread_cnt);
         rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
-        tree_malloc::init();
+//        tree_malloc::init();
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
 	glob_manager = (Manager *) _mm_malloc(sizeof(Manager), ALIGNMENT);
@@ -169,12 +170,12 @@ int main(int argc, char* argv[])
         RLU_FINISH();
 	
 #ifdef  VERBOSE_1
-        for (map<string,INDEX*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
+        for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
             printf("Index: %s\n", it->first.c_str());
             it->second->printLockCounts();
         }
 #endif  
-        for (map<string,INDEX*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
+        for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
             printf("Index: %s\n", it->first.c_str());
             it->second->print_stats();
         }

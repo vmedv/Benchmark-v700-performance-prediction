@@ -21,14 +21,16 @@
 #include <sys/time.h>
 #include <math.h>
 
+using namespace std;
+
 #include "pthread.h"
 #include "config.h"
-#include "gstats.h"
+#include "stats.h"
 #include "dl_detect.h"
 #ifndef NOGRAPHITE
 #include "carbon_user.h"
 #endif
-#include "tree_malloc.h"
+//#include "tree_malloc.h"
 #include "thread_pinning.h"
 
 #include "rlu.h"
@@ -134,7 +136,7 @@ typedef uint64_t pgid_t; // page id
 
 
 
-/* INDEX */
+/* Index */
 enum latch_t {LATCH_EX, LATCH_SH, LATCH_NONE};
 // accessing type determines the latch type on nodes
 enum idx_acc_t {INDEX_INSERT, INDEX_READ, INDEX_NONE};
@@ -152,73 +154,6 @@ enum TsType {R_REQ, W_REQ, P_REQ, XP_REQ};
 #define MSG(str, args...) { \
 	printf("[%s : %d] " str, __FILE__, __LINE__, args); } \
 //	printf(args); }
-
-// principal index structure. The workload may decide to use a different 
-// index structure for specific purposes. (e.g. non-primary key access should use hash)
-#if (INDEX_STRUCT == IDX_BTREE)
-#define INDEX		index_btree
-#elif   (INDEX_STRUCT == IDX_BST_RQ_LOCKFREE) || \
-        (INDEX_STRUCT == IDX_BST_RQ_RWLOCK) || \
-        (INDEX_STRUCT == IDX_BST_RQ_HTM_RWLOCK) || \
-        (INDEX_STRUCT == IDX_BST_RQ_UNSAFE) || \
-        (INDEX_STRUCT == IDX_CITRUS_RQ_LOCKFREE) || \
-        (INDEX_STRUCT == IDX_CITRUS_RQ_RWLOCK) || \
-        (INDEX_STRUCT == IDX_CITRUS_RQ_HTM_RWLOCK) || \
-        (INDEX_STRUCT == IDX_CITRUS_RQ_UNSAFE) || \
-        (INDEX_STRUCT == IDX_RLUCITRUS) || \
-        (INDEX_STRUCT == IDX_ABTREE_RQ_LOCKFREE) || \
-        (INDEX_STRUCT == IDX_ABTREE_RQ_RWLOCK) || \
-        (INDEX_STRUCT == IDX_ABTREE_RQ_HTM_RWLOCK) || \
-        (INDEX_STRUCT == IDX_ABTREE_RQ_UNSAFE) || \
-        (INDEX_STRUCT == IDX_SKIPLISTLOCK_RQ_LOCKFREE) || \
-        (INDEX_STRUCT == IDX_SKIPLISTLOCK_RQ_RWLOCK) || \
-        (INDEX_STRUCT == IDX_SKIPLISTLOCK_RQ_HTM_RWLOCK) || \
-        (INDEX_STRUCT == IDX_SKIPLISTLOCK_RQ_UNSAFE) || \
-        (INDEX_STRUCT == IDX_SKIPLISTLOCK_RQ_SNAPCOLLECTOR)
-#define INDEX           index_with_rq
-#elif (INDEX_STRUCT == IDX_BST)
-#define INDEX           index_bst
-#elif (INDEX_STRUCT == IDX_ABTREE)
-#define INDEX           index_abtree
-#elif   (INDEX_STRUCT == IDX_HOWLEY) || \
-        (INDEX_STRUCT == IDX_HOWLEY_PAD) || \
-        (INDEX_STRUCT == IDX_HOWLEY_PAD_LARGE_DES) || \
-        (INDEX_STRUCT == IDX_HOWLEY_BASELINE) || \
-        (INDEX_STRUCT == IDX_ELLEN) || \
-        (INDEX_STRUCT == IDX_ELLEN_PAD) || \
-        (INDEX_STRUCT == IDX_ELLEN_BASELINE) || \
-        (INDEX_STRUCT == IDX_WFRBT) || \
-        (INDEX_STRUCT == IDX_WFRBT_BASELINE) || \
-        (INDEX_STRUCT == IDX_WFRBT_ASCY) || \
-        (INDEX_STRUCT == IDX_WFRBT_ASCY_BASELINE) || \
-        (INDEX_STRUCT == IDX_BRONSON_SPIN) || \
-        (INDEX_STRUCT == IDX_BRONSON_SPIN_NO_REREAD) || \
-        (INDEX_STRUCT == IDX_BRONSON_SPIN_NO_OVL) || \
-        (INDEX_STRUCT == IDX_BRONSON_BASELINE) || \
-        (INDEX_STRUCT == IDX_CCAVL_SPIN) || \
-        (INDEX_STRUCT == IDX_CCAVL_SPIN_NO_REREAD) || \
-        (INDEX_STRUCT == IDX_CCAVL_SPIN_NO_OVL) || \
-        (INDEX_STRUCT == IDX_CCAVL_BASELINE) || \
-        (INDEX_STRUCT == IDX_DANA_SPIN_FIELDS) || \
-        (INDEX_STRUCT == IDX_DANA_SPIN_PAD_FIELDS) || \
-        (INDEX_STRUCT == IDX_DANA_SPIN_FIELDS_3_LINES) || \
-        (INDEX_STRUCT == IDX_DANA_BASELINE) || \
-        (INDEX_STRUCT == IDX_CITRUS_SPIN) || \
-        (INDEX_STRUCT == IDX_CITRUS_SPIN_PAD) || \
-        (INDEX_STRUCT == IDX_CITRUS_BASELINE) || \
-        (INDEX_STRUCT == IDX_BONSAI) || \
-        (INDEX_STRUCT == IDX_BONSAI_PAD) || \
-        (INDEX_STRUCT == IDX_BONSAI_BASELINE) || \
-        (INDEX_STRUCT == IDX_INTLF) || \
-        (INDEX_STRUCT == IDX_INTLF_PAD) || \
-        (INDEX_STRUCT == IDX_INTLF_BASELINE) || \
-        (INDEX_STRUCT == IDX_TICKET) || \
-        (INDEX_STRUCT == IDX_TICKET_PAD) || \
-        (INDEX_STRUCT == IDX_TICKET_BASELINE) 
-#define INDEX           index_anomaly_bst
-#else // IDX_HASH
-#define INDEX		IndexHash
-#endif
 
 /************************************************/
 // constants

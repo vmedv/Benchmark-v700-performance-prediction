@@ -48,8 +48,8 @@
 #include <set>
 #include <unistd.h>
 #include <sys/types.h>
-#include "record_manager.h"
 #include "descriptors.h"
+#include "record_manager.h"
 #include "rq_provider.h"
 
 namespace abtree_ns {
@@ -165,7 +165,7 @@ namespace abtree_ns {
 
     template <int DEGREE, typename K, class Compare, class RecManager>
     class abtree {
-
+    private:
         // the following bool determines whether the optimization to guarantee
         // amortized constant rebalancing (at the cost of decreasing average degree
         // by at most one) is used.

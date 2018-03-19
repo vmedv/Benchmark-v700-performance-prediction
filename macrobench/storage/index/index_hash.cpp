@@ -3,10 +3,10 @@
 #include "mem_alloc.h"
 #include "table.h"
 
-void IndexHash::initThread(const int tid) {}
-void IndexHash::deinitThread(const int tid) {}
+void Index::initThread(const int tid) {}
+void Index::deinitThread(const int tid) {}
 
-RC IndexHash::init(uint64_t bucket_cnt, int part_cnt) {
+RC Index::init(uint64_t bucket_cnt, int part_cnt) {
 	_bucket_cnt = bucket_cnt;
 	_bucket_cnt_per_part = bucket_cnt / part_cnt;
 	_buckets = new BucketHeader * [part_cnt];
@@ -19,29 +19,29 @@ RC IndexHash::init(uint64_t bucket_cnt, int part_cnt) {
 }
 
 RC 
-IndexHash::init(int part_cnt, table_t * table, uint64_t bucket_cnt) {
+Index::init(int part_cnt, table_t * table, uint64_t bucket_cnt) {
 	init(bucket_cnt, part_cnt);
 	this->table = table;
 	return RCOK;
 }
 
-bool IndexHash::index_exist(KEY_TYPE key) {
+bool Index::index_exist(KEY_TYPE key) {
 	assert(false);
 }
 
 void 
-IndexHash::get_latch(BucketHeader * bucket) {
+Index::get_latch(BucketHeader * bucket) {
 	while (!ATOM_CAS(bucket->locked, false, true)) {}
 }
 
 void 
-IndexHash::release_latch(BucketHeader * bucket) {
+Index::release_latch(BucketHeader * bucket) {
 	bool ok = ATOM_CAS(bucket->locked, true, false);
 	assert(ok);
 }
 
 	
-RC IndexHash::index_insert(KEY_TYPE key, VALUE_TYPE item, int part_id) {
+RC Index::index_insert(KEY_TYPE key, VALUE_TYPE item, int part_id) {
 	RC rc = RCOK;
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
@@ -57,7 +57,7 @@ RC IndexHash::index_insert(KEY_TYPE key, VALUE_TYPE item, int part_id) {
 	return rc;
 }
 
-RC IndexHash::index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id) {
+RC Index::index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);
 	BucketHeader * cur_bkt = &_buckets[part_id][bkt_idx];
@@ -71,7 +71,7 @@ RC IndexHash::index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id) {
 
 }
 
-RC IndexHash::index_read(KEY_TYPE key, VALUE_TYPE * item, 
+RC Index::index_read(KEY_TYPE key, VALUE_TYPE * item, 
 						int part_id, int thd_id) {
 	uint64_t bkt_idx = hash(key);
 	assert(bkt_idx < _bucket_cnt_per_part);

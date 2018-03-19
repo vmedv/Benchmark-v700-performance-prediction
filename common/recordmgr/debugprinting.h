@@ -26,10 +26,10 @@
 
 // define USE_TRACE if you want many paths through the code to be traced with std::cout<<"..." statements
 #ifdef USE_TRACE
-PAD;
+/*PAD;*/
 std::atomic_bool ___trace(1);
 std::atomic_bool ___validateops(1);
-PAD;
+/*PAD;*/
 #define TRACE_TOGGLE {bool ___t = ___trace; ___trace = !___t;}
 #define TRACE_ON {___trace = true;}
 #define TRACE if(___trace)

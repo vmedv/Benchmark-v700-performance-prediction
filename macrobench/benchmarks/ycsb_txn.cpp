@@ -41,13 +41,13 @@ RC ycsb_txn_man::run_txn(base_query * query) {
                 }
                 assert(m_item!=NULL);
             }
-#if INDEX_STRUCT == IDX_BTREE
-            else {
-                _wl->the_index->index_next(get_thd_id(), m_item);
-                if (m_item==NULL)
-                    break;
-            }
-#endif
+//#ifdef IDX_BTREE
+//            else {
+//                _wl->the_index->index_next(get_thd_id(), m_item);
+//                if (m_item==NULL)
+//                    break;
+//            }
+//#endif
             row_t * row = ((row_t *) m_item->location);
             row_t * row_local;
             access_t type = req->rtype;
