@@ -4,8 +4,10 @@
 #include "plaf.h"
 #include <iostream>
 
-int event_sets[MAX_THREADS_POW2] = {0,};
+#ifdef USE_PAPI
+int event_sets[MAX_THREADS_POW2];
 long long counter_values[nall_cpu_counters];
+#endif
 
 char *cpu_counter(int c) {
 #ifdef USE_PAPI
@@ -28,7 +30,7 @@ void papi_init_program(const int numProcesses){
        fprintf(stderr, "PAPI_ERROR: failed papi_thread_init()\n");
        exit(2);
     }
-    for (int i=0;i<numProcesses;++i) event_sets[i]= PAPI_NULL;
+    for (int i=0;i<numProcesses;++i) event_sets[i]=PAPI_NULL;
     for (int i=0;i<nall_cpu_counters;++i) counter_values[i]= 0;
 #endif
 }
