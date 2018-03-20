@@ -2,29 +2,27 @@ CFLAGS =
 LDFLAGS =
 CC=g++
 
-CFLAGS += -DMAX_THREADS_POW2=256 -DCPU_FREQ_GHZ=2.1
+include ../plaf.inc
+CFLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
+CFLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 CFLAGS += -g -std=c++0x -O3
-#CFLAGS += -DNDEBUG
 FLAGS += $(xargs)
 
 workload=TPCC
 data_structure_name=brown_ext_abtree_lf
-data_structure_opts=-DUSE_RANGE_QUERIES
+data_structure_opts=
 data_structure_path=../ds/$(data_structure_name)
-
-#data_structure_name=hash
-#data_structure_opts=-DIDX_HASH
 
 .SUFFIXES: .o .cpp .h
 bindir=bin
-odir=$(bindir)/OBJS_$(workload)_$(data_structure_name)
+odir=$(bindir)/OBJS_$(workload)_$(data_structure_name)/macrobench
 SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./storage/index/ ./system/ ../common/rlu/
 CFLAGS += -I../ $(patsubst %,-I%,$(SRC_DIRS)) `find ../common -type d | sed s/^/-I/`
 
 #CFLAGS += -DSKIP_PERMUTATIONS
 CFLAGS += -DNOGRAPHITE=1 -DWORKLOAD=$(workload)
 CFLAGS += -DHASH_PRIMARY_KEYS
-CFLAGS += -DALIGNED_ALLOCATIONS
+#CFLAGS += -DALIGNED_ALLOCATIONS
 CFLAGS += -I$(data_structure_path) $(data_structure_opts)
 LDFLAGS += $(CFLAGS)
 LDFLAGS += -L. -L../lib -pthread -g -lrt -ldl

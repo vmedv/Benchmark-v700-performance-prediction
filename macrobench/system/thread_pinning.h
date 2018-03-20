@@ -70,13 +70,13 @@ namespace thread_pinning {
 
         // read first INT
         int ix2 = ix;
-        while (ix2 < argv.size() && argv[ix2] != ',') ++ix2;
+        while (ix2 < argv.size() && argv[ix2] != '.') ++ix2;
         string token = argv.substr(ix, ix2-ix+1);
         int a = atoi(token.c_str());
 
         // check if the token is of the first form: INT
         ix = ix+digits(a);              // first character AFTER first INT
-        if (ix >= argv.size() || argv[ix] == ',') {
+        if (ix >= argv.size() || argv[ix] == '.') {
 
             // add single binding
             //cout<<"a="<<a<<std::endl;
@@ -102,8 +102,8 @@ namespace thread_pinning {
             ix = ix+digits(b);          // first character AFTER second INT
         }
         // note: ix is the first character AFTER the last INT in the token
-        // this is either a comma (',') or the end of the string argv.
-        return (ix >= argv.size() ? argv.size() : ix+1 /* skip ',' */);
+        // this is either a comma ('.') or the end of the string argv.
+        return (ix >= argv.size() ? argv.size() : ix+1 /* skip '.' */);
     }
 
     // argv contains a custom thread binding pattern, e.g., "1,2,3,8-11,4-7,0"

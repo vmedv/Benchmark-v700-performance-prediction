@@ -11,15 +11,14 @@ DB_FILENAME = "results.db"
 NUM_PROCESSORS = 4
 PARALLEL_CHUNK_SIZE = 100
 
-#table column as tuples of column name, type, field num (starting at 0)
-file_name_columns = [    ("step"    ,"text", 0)
-                        ,("machine" ,"text", 1)
-                        ,("ds"      ,"text", 2)
-                        ,("alg"     ,"text", 3)
-                        ,("trial"   ,"text", 10)
-                    ]
 #table column as tuples of column name, type, string in the output and delimiter 
-columns = [ ("find_func"                ,"text"     ,"FIND_FUNC"                        ,"=")
+columns = [
+            ("step"                     ,"text"     ,"step"                             ,"=")
+           ,("machine"                  ,"text"     ,"machine"                          ,"=")
+           ,("trial"                    ,"integer"  ,"trial"                            ,"=")
+           ,("binary"                   ,"text"     ,"binary"                           ,"=")
+           ,("ds"                       ,"text"     ,"data_structure"                   ,"=")
+           ,("find_func"                ,"text"     ,"FIND_FUNC"                        ,"=")
            ,("insert_func"              ,"text"     ,"INSERT_FUNC"                      ,"=")
            ,("erase_func"               ,"text"     ,"ERASE_FUNC"                       ,"=")
            ,("rq_func"                  ,"text"     ,"RQ_FUNC"                          ,"=")
@@ -66,7 +65,6 @@ ignore_warnings_on = set([""])
 def process_chunk(start_ix):
     global files
     global ignore_warnings_on
-    global file_name_columns
     global columns
     global PARALLEL_CHUNK_SIZE
     
@@ -95,15 +93,8 @@ def process_chunk(start_ix):
             #print datetime.datetime.now()
         insert_string = "INSERT INTO results VALUES ("
 
-        #add values to insert_string that are defined by the file name
-        file_name_parts = file_name.split(".")
-        for (col,col_type,index) in file_name_columns:
-            if (col,col_type,index) == file_name_columns[0]:
-                insert_string +="'"+file_name_parts[index]+"'"
-            else:
-                insert_string+=",'"+file_name_parts[index]+"'"
-
         #get all needed values from the file
+        first = True
         for (col,col_type,col_string,delim) in columns:
             if delim == "=":
                 cmd = 'file_name="'+file_name+'"; key="'+col_string+delim+'" ; cat $file_name | grep "$key" | cut -d"'+delim+'" -f2 | tail -1'
@@ -123,11 +114,15 @@ def process_chunk(start_ix):
                 else:
                     res = "0"
 
-            assert len(file_name_columns) > 0
-            if col_type == "text":
-                insert_string += ",'"+res.strip()+"'"
+            if first:
+                first = False
+                prefix=''
             else:
-                insert_string += ","+res.strip()
+                prefix=','
+            if col_type == "text":
+                insert_string += prefix+"'"+res.strip()+"'"
+            else:
+                insert_string += prefix+res.strip()
 
         insert_string += ")"
         insertion_strings.append(insert_string)
@@ -160,13 +155,14 @@ cursor = conn.cursor()
 #add the results table to the database 
 print "Creating results table..."
 create_table_string = "CREATE TABLE results ("
-for (col,col_type,index) in file_name_columns:
-    if (col,col_type,index) == file_name_columns[0]:
-        create_table_string += col+" "+col_type
-    else:
-        create_table_string += ", "+col+" "+col_type
+first = True
 for (col,col_type,string,delim) in columns:
-    create_table_string += ", "+col+" "+col_type
+    if first:
+        first = False
+        prefix=''
+    else:
+        prefix=','
+    create_table_string += prefix+" "+col+" "+col_type
 create_table_string+= ")"
 
 # Create table

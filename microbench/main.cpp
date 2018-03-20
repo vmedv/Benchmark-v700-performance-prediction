@@ -1,18 +1,14 @@
 /**
- * Preliminary C++ implementation of binary search tree using LLX/SCX.
+ * Setbench test harness for performing rigorous data structure microbenchmarks.
  * 
- * Copyright (C) 2014 Trevor Brown
- * This preliminary implementation is CONFIDENTIAL and may not be distributed.
+ * Copyright (C) 2018 Trevor Brown
  */
 
 #define MICROBENCH
 
 typedef long long test_type;
 
-// TODO: use system clock (std::chrono::) to precisely calibrate CPU_FREQ_GHZ in a setup program (rather than having the user enter a specific GHZ number); then, get rid of std::chrono:: usage.
-
 #define USE_GSTATS
-
 #include <limits>
 #include <cstring>
 #include <ctime>
@@ -47,15 +43,8 @@ typedef long long test_type;
     #define RQ_SNAPCOLLECTOR_OBJ_SIZES 
 #endif
 
-#if defined(ABTREE)
-    #define KEY_TO_VALUE(key) &key /*((void*) (size_t) (key))*/ /* note: unsafe hack to get a pointer, but no one ever follows these pointers */
-    #define KEY keys[0]
-    #define VALUE_TYPE void *
-#else
-    #define KEY_TO_VALUE(key) &key /*((void*) (size_t) (key))*/ /* note: unsafe hack to get a pointer, but no one ever follows these pointers */
-    #define KEY key
-    #define VALUE_TYPE void *
-#endif
+#define KEY_TO_VALUE(key) &key /*((void*) (size_t) (key))*/ /* note: unsafe hack to get a pointer, but no one ever follows these pointers */
+#define VALUE_TYPE void *
 
 #ifdef USE_RCU
     #include "eer_prcu_impl.h"
@@ -72,9 +61,9 @@ typedef long long test_type;
 
 #ifdef USE_RLU
     #include "rlu.h"
-    volatile char padding12[PREFETCH_SIZE_BYTES];
+    PAD;
     __thread rlu_thread_data_t * rlu_self;
-    volatile char padding13[PREFETCH_SIZE_BYTES];
+    PAD;
     rlu_thread_data_t * rlu_tdata = NULL;
     #define __RLU_INIT_THREAD rlu_self = &rlu_tdata[tid]; RLU_THREAD_INIT(rlu_self);
     #define __RLU_DEINIT_THREAD RLU_THREAD_FINISH(rlu_self);
@@ -703,8 +692,8 @@ int main(int argc, char** argv) {
             MILLIS_TO_RUN = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-p") == 0) {
             PREFILL = true;
-        } else if (strcmp(argv[i], "-bind") == 0) { // e.g., "-bind 1,2,3,8-11,4-7,0"
-            binding_parseCustom(argv[++i]); // e.g., "1,2,3,8-11,4-7,0"
+        } else if (strcmp(argv[i], "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
+            binding_parseCustom(argv[++i]); // e.g., "1.2.3.8-11.4-7.0"
             std::cout<<"parsed custom binding: "<<argv[i]<<std::endl;
         } else {
             std::cout<<"bad argument "<<argv[i]<<std::endl;

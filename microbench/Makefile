@@ -2,9 +2,11 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-FLAGS += -DMAX_THREADS_POW2=256 -DCPU_FREQ_GHZ=2.1
+include ../plaf.inc
+FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
+FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 FLAGS += -std=c++11 -mcx16 -O3 -g
-FLAGS += -DNDEBUG
+#FLAGS += -DNDEBUG
 FLAGS += $(xargs)
 
 LDFLAGS += -L../lib
@@ -22,12 +24,17 @@ MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
 DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
 UBENCH_BINS=$(patsubst ../ds/%/adapter.h,%.ubench,$(DATA_STRUCTURE_ADAPTERS_H))
 
+bin_dir=bin
+
 all: ubench minimal
 ubench: $(UBENCH_BINS)
 minimal: $(MINIMAL_BINS)
 
 %.minimal:
-	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $@.out $(LDFLAGS)
+	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
 %.ubench:
-	$(GPP) $(FLAGS) -o $@.out -I../ds/$(@:%.ubench=%) main.cpp $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench=%) main.cpp $(LDFLAGS)
+
+clean:
+	rm $(bin_dir)/*
