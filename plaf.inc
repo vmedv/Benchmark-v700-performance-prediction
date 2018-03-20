@@ -5,6 +5,9 @@
 ## Thread counts to run in the experiments.
 thread_counts="1 18 36 72 108 144"
 
+## Thread count to use for valgrind (which only uses a single CPU, and gives round robin time slices to virtual threads)
+valgrind_thread_count=16
+
 ## An upper bound on the number of threads that will be run. Must be a power of 2.
 thread_count_upper_bound_pow2=256
 

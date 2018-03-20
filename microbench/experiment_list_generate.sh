@@ -3,7 +3,6 @@
 source ../plaf.inc
 
 ## get list of data structure microbenchmark binaries
-
 binaries=`ls bin/[^_]*.ubench`
 
 ## generate list of experiments

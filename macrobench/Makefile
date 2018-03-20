@@ -22,7 +22,7 @@ CFLAGS += -I../ $(patsubst %,-I%,$(SRC_DIRS)) `find ../common -type d | sed s/^/
 #CFLAGS += -DSKIP_PERMUTATIONS
 CFLAGS += -DNOGRAPHITE=1 -DWORKLOAD=$(workload)
 CFLAGS += -DHASH_PRIMARY_KEYS
-#CFLAGS += -DALIGNED_ALLOCATIONS
+CFLAGS += -DALIGNED_ALLOCATIONS
 CFLAGS += -I$(data_structure_path) $(data_structure_opts)
 LDFLAGS += $(CFLAGS)
 LDFLAGS += -L. -L../lib -pthread -g -lrt -ldl

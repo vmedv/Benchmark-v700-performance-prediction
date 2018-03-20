@@ -90,7 +90,9 @@
 #define GSTATS_COMMA ,
 #define GSTATS_THREAD_PADDING_BYTES 256
 #define GSTATS_MAX_NUM_STATS 128
-#define GSTATS_MAX_THREAD_BUF_SIZE (1<<18)
+#ifndef GSTATS_MAX_THREAD_BUF_SIZE
+#   define GSTATS_MAX_THREAD_BUF_SIZE (1<<16)
+#endif
 #define GSTATS_DATA_SIZE_BYTES 8
 #define GSTATS_BITS_IN_BYTE 8
 #define GSTATS_DEFAULT_HISTOGRAM_LIN_NUM_BUCKETS 32
@@ -321,7 +323,7 @@ public:
         std::thread threads[num_processes];
         for (int tid=0;tid<num_processes;++tid) {
             threads[tid] = std::thread([tid,&start,num_processes,this]() {
-                while (!start) { __sync_synchronize(); }
+//                while (!start) { __sync_synchronize(); }
                 //cout<<"thread "<<tid<<" initializing thread_data entry of size "<<sizeof(gstats_thread_data)<<std::endl;
                 memset(&this->thread_data[tid], 0, sizeof(gstats_thread_data));
             });
@@ -612,7 +614,7 @@ private:
         for (int thread_id=0;thread_id<std::thread::hardware_concurrency();++thread_id) {
             //cout<<"    parallel compute histogram: spawning thread "<<thread_id<<std::endl;
             threads[thread_id] = std::thread([thread_id, histogram, id, &start, num_buckets, metrics, this]() {
-                while (!start) { __sync_synchronize(); }
+//                while (!start) { __sync_synchronize(); }
 
                 // compute our slice of the indices
                 int slice_size = this->num_indices[id] / std::thread::hardware_concurrency();

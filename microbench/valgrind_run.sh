@@ -6,43 +6,41 @@
 # Created on Aug 17, 2017, 6:26:03 PM
 #
 
-datastructures="abtree bst lflist lazylist citrus rlucitrus rlulist skiplistlock"
-rqtechniques="snapcollector lockfree rwlock htm_rwlock unsafe"
-args="-i 10 -d 10 -k 1000 -rq 2 -rqsize 100 -t 1000 -nrq 1 -nwork 47 -bind 0,24,12,36,1,25,13,37,2,26,14,38,3,27,15,39,4,28,16,40,5,29,17,41,6,30,18,42,7,31,19,43,8,32,20,44,9,33,21,45,10,34,22,46,11,35,23,47"
+source ../plaf.inc
 
-highest=0
-curr=0
+nwork=$valgrind_thread_count
+args="-i 10 -d 10 -k 1000 -rq 0 -rqsize 100 -t 1000 -nrq 0 -nwork $nwork"
+valgrind_args="--fair-sched=yes --tool=memcheck --leak-check=yes --read-inline-info=yes --read-var-info=yes"
+outdir=data_valgrind
 
-if [ "$#" -eq "1" ]; then
-#    echo "arg=$1"
-    valgrind --fair-sched=yes --tool=memcheck --leak-check=yes --read-inline-info=yes --read-var-info=yes ./tapuz40.$1.out $args > leakcheck.$1.txt 2>&1
-    ./valgrind_showerrors.sh $1
-    ./valgrind_showleaks.sh $1
+if [ "$#" -eq "0" ]; then
+    echo "USAGE: $0 binary_to_test [binary_to_test ...]"
+    echo "Suggestion:"
+    echo "$0 bin/[^_]*ubench*"
     exit
 fi
 
-for counting in 1 0 ; do
-for ds in $datastructures ; do
-for alg in $rqtechniques ; do
-    if [ "$alg" == "snapcollector" ] && [ "$ds" != "lflist" ] && [ "$ds" != "skiplistlock" ] ; then continue ; fi
-    if [ "$ds" == "rlucitrus" ] && [ "$alg" != "unsafe" ] ; then continue ; fi
-    if [ "$ds" == "rlulist" ] && [ "$alg" != "unsafe" ] ; then continue ; fi
-    if [ "$ds" == "rlucitrus" ] || [ "$ds" == "rlulist" ]; then
-        dsalg=${ds}
-    else
-        dsalg=${ds}.rq_${alg}
-    fi
+valgrind_showerrors() {
+    skiplines="HEAP SUMMARY|LEAK SUMMARY|definitely lost|still reachable|possibly lost|Reachable blocks|To see them|For counts of detected|to see where uninitialised values come|Memcheck|Copyright|Using Valgrind|Command:|ERROR SUMMARY|noted but unhandled ioctl|set address range perms|Thread"
+    grep -E "== [^ ]" $1 | grep -vE "$skiplines"
+    return 0
+}
 
-    if ((counting==1)) ; then
-        ((highest = highest+1))
-        continue
-    else
-        ((curr = curr+1))
-    fi
-    
-    fname="leakcheck.$dsalg.txt"
-    echo "step $curr / $highest : $fname"
-    valgrind --fair-sched=yes --tool=memcheck --leak-check=yes --read-inline-info=yes --read-var-info=yes ./tapuz40.$dsalg.out $args > $fname 2>&1
-done
-done
+valgrind_showleaks() {
+    skiplines="0 bytes"
+    grep -E "definitely|possibly" $1 | grep -v "$skiplines"
+    return 0
+}
+
+mkdir -p $outdir 2> /dev/null
+curr=0
+for bin in "$@" ; do
+    ((curr = curr+1))
+
+    fname=`echo "$bin.txt" | tr "/" "_"`
+    fname=$outdir/$fname
+    echo "step $curr / $# : $fname"
+    valgrind $valgrind_args $bin $args > $fname 2>&1
+    valgrind_showerrors $fname
+    valgrind_showleaks $fname
 done
