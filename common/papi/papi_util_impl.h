@@ -51,7 +51,8 @@ void papi_create_eventset(int id){
     }
     for (int i = 0; i < nall_cpu_counters; i++) {
         int c = all_cpu_counters[i];
-        if (PAPI_query_event(c) != PAPI_OK) {
+        if ((result = PAPI_query_event(c)) != PAPI_OK) {
+            std::cout<<"warning: PAPI event "<<cpu_counter(c)<<" could not be successfully queried: "<<PAPI_strerror(result)<<std::endl;
             continue;
         }
         if ((result = PAPI_add_event(*event_set, c)) != PAPI_OK) {
@@ -60,6 +61,7 @@ void papi_create_eventset(int id){
                 exit(2);
             }
             /* Not enough hardware resources, disable this counter and move on. */
+            std::cout<<"warning: could not add PAPI event "<<cpu_counter(c)<<"... disabled it."<<std::endl;
             all_cpu_counters[i] = PAPI_END + 1;
         }
     }
@@ -72,6 +74,7 @@ void papi_start_counters(int id){
     int result; 
     if ((result = PAPI_start(*event_set)) != PAPI_OK) {
        fprintf(stderr, "PAPI ERROR: thread %d unable to start counters: %s\n", id, PAPI_strerror(result));
+       std::cout<<"relevant event_set is for tid="<<id<<" and has value "<<(*event_set)<<std::endl;
        exit(2);
     }
 #endif

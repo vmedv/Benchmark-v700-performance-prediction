@@ -739,6 +739,8 @@ void printOutput() {
     std::cout<<"begin delete ds..."<<std::endl;
     delete g.ds;
     std::cout<<"end delete ds."<<std::endl;
+    
+    papi_print_counters(totalAll);
 }
 
 int main(int argc, char** argv) {
