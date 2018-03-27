@@ -379,6 +379,7 @@ void prefill() {
             break;
         } else {
             std::cout << " finished prefilling round with ds size: " << sz << std::endl; 
+            std::cout<<"pref_round_size="<<sz<<std::endl;
         }
         
         totalThreadsPrefillElapsedMillis += g.prefillIntervalElapsedMillis;
@@ -397,6 +398,8 @@ void prefill() {
     const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
     g.prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< g.prefillKeySum <<" dskeysum="<<g.ds->getKeyChecksum()<<" dssize="<<g.ds->getSize()<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<std::endl);
+    std::cout<<"pref_size="<<sz<<std::endl;
+    std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
 }
 
@@ -688,6 +691,7 @@ void printOutput() {
             std::cout<<"Validation FAILURE: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<std::endl;
             exit(-1);
         }
+        std::cout<<"final_keysum="<<threadsKeySum<<std::endl;
     }
 #endif
     
@@ -714,6 +718,20 @@ void printOutput() {
         const long long throughputQueries = (long long) (totalQueries / SECONDS_TO_RUN);
         const long long throughputUpdates = (long long) (totalUpdates / SECONDS_TO_RUN);
         const long long throughputAll = (long long) (totalAll / SECONDS_TO_RUN);
+
+        COUTATOMIC(std::endl);
+        COUTATOMIC("total_find="<<totalSearches<<std::endl);
+        COUTATOMIC("total_rq="<<totalRQs<<std::endl);
+        COUTATOMIC("total_updates="<<totalUpdates<<std::endl);
+        COUTATOMIC("total_queries="<<totalQueries<<std::endl);
+        COUTATOMIC("total_ops="<<totalAll<<std::endl);
+        COUTATOMIC("find_throughput="<<throughputSearches<<std::endl);
+        COUTATOMIC("rq_throughput="<<throughputRQs<<std::endl);
+        COUTATOMIC("update_throughput="<<throughputUpdates<<std::endl);
+        COUTATOMIC("query_throughput="<<throughputQueries<<std::endl);
+        COUTATOMIC("total_throughput="<<throughputAll<<std::endl);
+        COUTATOMIC(std::endl);
+
         COUTATOMIC(std::endl);
         COUTATOMIC("total find                    : "<<totalSearches<<std::endl);
         COUTATOMIC("total rq                      : "<<totalRQs<<std::endl);

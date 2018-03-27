@@ -263,7 +263,7 @@ public:
             }
             delete[] allocatedNodes;
             delete rqProvider;
-            recmgr->printStatus();
+//            recmgr->printStatus();
             delete recmgr;
     #ifdef USE_DEBUGCOUNTERS
             delete counters;

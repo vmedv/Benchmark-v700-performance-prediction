@@ -486,7 +486,7 @@ public:
             freeSubtree(entry, &nodes);
             COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
             delete rqProvider;
-            recordmgr->printStatus();
+//            recordmgr->printStatus();
             delete recordmgr;
     #ifdef USE_DEBUGCOUNTERS
             delete counters;

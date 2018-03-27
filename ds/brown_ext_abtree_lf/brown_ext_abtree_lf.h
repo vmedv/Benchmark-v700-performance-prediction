@@ -98,24 +98,22 @@ namespace abtree_ns {
         const static int STATE_INPROGRESS = 0;
         const static int STATE_COMMITTED = 1;
         const static int STATE_ABORTED = 2;
-        union {
-            struct {
-                volatile mutables_t mutables;
+        struct {
+            volatile mutables_t mutables;
 
-                int numberOfNodes;
-                int numberOfNodesToFreeze;
+            int numberOfNodes;
+            int numberOfNodesToFreeze;
 
-                Node<DEGREE,K> * newNode;
-                Node<DEGREE,K> * volatile * field;
-                Node<DEGREE,K> * nodes[wrapper_info<DEGREE,K>::MAX_NODES];            // array of pointers to nodes
-                SCXRecord<DEGREE,K> * scxPtrsSeen[wrapper_info<DEGREE,K>::MAX_NODES]; // array of pointers to scx records
+            Node<DEGREE,K> * newNode;
+            Node<DEGREE,K> * volatile * field;
+            Node<DEGREE,K> * nodes[wrapper_info<DEGREE,K>::MAX_NODES];            // array of pointers to nodes
+            SCXRecord<DEGREE,K> * scxPtrsSeen[wrapper_info<DEGREE,K>::MAX_NODES]; // array of pointers to scx records
 
-                // for rqProvider
-                Node<DEGREE,K> * insertedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
-                Node<DEGREE,K> * deletedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
-            } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
-            char bytes[2*PREFETCH_SIZE_BYTES];
-        };
+            // for rqProvider
+            Node<DEGREE,K> * insertedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
+            Node<DEGREE,K> * deletedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
+        } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
+        PAD;
         const static int size = sizeof(c);
     };
         

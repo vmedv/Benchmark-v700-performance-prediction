@@ -139,22 +139,20 @@ namespace bst_ns {
         // 1 bit allFrozen
         // 2 bits state
         // remaining bits sequence #
-        union {
-            struct {
-                volatile mutables_t mutables;                                       // reserved by weak descriptor transformation
-                Node<K,V> * newNode;
-                Node<K,V> * volatile * field;
-                int numberOfNodes;
-                int numberOfNodesToFreeze;
-                Node<K,V> * nodes[MAX_NODES];                // array of pointers to nodes ; these are CASd to NULL as pointers nodes[i]->scxPtr are changed so that they no longer point to this scx record.
-                SCXRecord<K,V> * scxRecordsSeen[MAX_NODES];  // array of pointers to scx records
+        struct {
+            volatile mutables_t mutables;                                       // reserved by weak descriptor transformation
+            Node<K,V> * newNode;
+            Node<K,V> * volatile * field;
+            int numberOfNodes;
+            int numberOfNodesToFreeze;
+            Node<K,V> * nodes[MAX_NODES];                // array of pointers to nodes ; these are CASd to NULL as pointers nodes[i]->scxPtr are changed so that they no longer point to this scx record.
+            SCXRecord<K,V> * scxRecordsSeen[MAX_NODES];  // array of pointers to scx records
 
-                // for rqProvider
-                Node<K,V> * insertedNodes[MAX_NODES+1];
-                Node<K,V> * deletedNodes[MAX_NODES+1];
-            } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
-            char bytes[PREFETCH_SIZE_BYTES]; // set size to prevent false sharing
-        };
+            // for rqProvider
+            Node<K,V> * insertedNodes[MAX_NODES+1];
+            Node<K,V> * deletedNodes[MAX_NODES+1];
+        } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
+        PAD; // prevent false sharing
 
         const static int size = sizeof(c); //sizeof(mutables)+sizeof(newNode)+sizeof(field)+sizeof(numberOfNodes)+sizeof(numberOfNodesToFreeze)+sizeof(nodes)+sizeof(scxRecordsSeen)+sizeof(insertedNodes)+sizeof(deletedNodes);
 
