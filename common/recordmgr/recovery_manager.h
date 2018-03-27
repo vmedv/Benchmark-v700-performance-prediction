@@ -41,13 +41,13 @@ extern sigjmp_buf *setjmpbuffers;
 #ifdef CRASH_RECOVERY_USING_SETJMP
 #define CHECKPOINT_AND_RUN_UPDATE(tid, finishedbool) \
     if (MasterRecordMgr::supportsCrashRecovery() && sigsetjmp(setjmpbuffers[(tid)], 0)) { \
-        recordmgr->enterQuiescentState((tid)); \
+        recordmgr->endOp((tid)); \
         (finishedbool) = recoverAnyAttemptedSCX((tid), -1); \
         recordmgr->recoveryMgr->unblockCrashRecoverySignal(); \
     } else
 #define CHECKPOINT_AND_RUN_QUERY(tid) \
     if (MasterRecordMgr::supportsCrashRecovery() && sigsetjmp(setjmpbuffers[(tid)], 0)) { \
-        recordmgr->enterQuiescentState((tid)); \
+        recordmgr->endOp((tid)); \
         recordmgr->recoveryMgr->unblockCrashRecoverySignal(); \
     } else
 #endif
@@ -67,7 +67,7 @@ void crashhandler(int signum, siginfo_t *info, void *uctx) {
     __sync_synchronize();
     if (!recordmgr->isQuiescent(tid)) {
 #ifdef PERFORM_RESTART_IN_SIGHANDLER
-        recordmgr->enterQuiescentState(tid);
+        recordmgr->endOp(tid);
         __sync_synchronize();
     #ifdef CRASH_RECOVERY_USING_SETJMP
         siglongjmp(setjmpbuffers[tid], 1);

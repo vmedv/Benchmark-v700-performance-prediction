@@ -353,7 +353,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
 
 template <typename skey_t, typename sval_t, class RecMgr, class Compare>
 sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::search(thread_data_t<skey_t, sval_t>* data, skey_t key) {
-    recmgr->leaveQuiescentState(data->id);
+    recmgr->startOp(data->id);
     node_t<skey_t, sval_t> * cur = (node_t<skey_t, sval_t> *)get_addr(data->rootOfTree->child.AO_val1);
     skey_t lastKey = 0; 
     node_t<skey_t, sval_t> * lastNode = NULL;
@@ -363,10 +363,10 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::search(thread_data
         cur = (cmp(key, lastKey) ? (node_t<skey_t, sval_t> *)get_addr(cur->child.AO_val1) : (node_t<skey_t, sval_t> *)get_addr(cur->child.AO_val2));
     }
     if (key == lastKey) {
-        recmgr->enterQuiescentState(data->id);
+        recmgr->endOp(data->id);
         return lastNode->value;
     }
-    recmgr->enterQuiescentState(data->id);
+    recmgr->endOp(data->id);
     return NO_VALUE;
 }
 
@@ -485,32 +485,27 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::insertIfAbsent(thr
     int injectResult;
 //    int fasttry = 0;
     while (true) {
-        recmgr->leaveQuiescentState(data->id);
+        auto guard = recmgr->getGuard(data->id);
         seekRecord_t<skey_t, sval_t>* R = insseek(data, key, INSERT);
 //        fasttry++;
         if (R->leafKey == key) {
 //            if (fasttry == 1) {
-                recmgr->enterQuiescentState(data->id);
                 return R->leafValue;
 //            } else {
-//                recmgr->enterQuiescentState(data->id);
 //                return NO_VALUE;
 //            }
         }
         if (!is_free(R->pL)) {
             help_conflicting_operation(data, R);
 
-            recmgr->enterQuiescentState(data->id);
             continue;
         }
         // key not present in the tree. Insert		
         injectResult = perform_one_insert_window_operation(data, R, key, value);
         if (injectResult == 1) {
             // Operation injected and executed			
-            recmgr->enterQuiescentState(data->id);
             return NO_VALUE;
         }
-        recmgr->enterQuiescentState(data->id);
     }
     // execute insert window operation.		
 }
@@ -521,18 +516,15 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::delete_node(thread
     int injectResult;
     sval_t retval = NO_VALUE;
     while (true) {
-        recmgr->leaveQuiescentState(data->id);
+        auto guard = recmgr->getGuard(data->id);
         seekRecord_t<skey_t, sval_t>* R = delseek(data, key, DELETE);
         if (R == NULL) {
-            recmgr->enterQuiescentState(data->id);
             return retval;
         }
         // key is present in the tree. Inject operation into the tree		
         if (!is_free(R->pL)) {
 
             help_conflicting_operation(data, R);
-
-            recmgr->enterQuiescentState(data->id);
             continue;
         }
         injectResult = inject(data, R, DELETE);
@@ -544,7 +536,6 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::delete_node(thread
             int res = perform_one_delete_window_operation(data, R, key);
             if (res == 1) {
                 // operation successfully executed.
-                recmgr->enterQuiescentState(data->id);
                 return retval;
             } else {
                 // window transaction could not be executed.
@@ -553,18 +544,15 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::delete_node(thread
                     R = secondary_seek(data, key, R);
                     if (R == NULL) {
                         // flagged leaf not found. Operation has been executed by some other process.
-                        recmgr->enterQuiescentState(data->id);
                         return retval;
                     }
                     res = perform_one_delete_window_operation(data, R, key);
                     if (res == 1) {
-                        recmgr->enterQuiescentState(data->id);
                         return retval;
                     }
                 }
             }
         }
-        recmgr->enterQuiescentState(data->id);
         // otherwise, operation was not injected. Restart.
     }
 }
@@ -573,10 +561,6 @@ template <typename skey_t, typename sval_t, class RecMgr, class Compare>
 int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_window_operation(thread_data_t<skey_t, sval_t>* data, seekRecord_t<skey_t, sval_t>* R, skey_t newKey, sval_t value) {
     node_t<skey_t, sval_t> * newInt;
     node_t<skey_t, sval_t> * newLeaf;
-    //		if(data->recycledNodes.empty()){		
-//    node_t<skey_t, sval_t> * allocedNodeArr = (node_t<skey_t, sval_t> *)malloc(2 * sizeof (struct node_t<skey_t, sval_t>)); // new pointerNode_t[2];
-//    newInt = &allocedNodeArr[0];
-//    newLeaf = &allocedNodeArr[1];
     newInt = recmgr->template allocate<node_t<skey_t, sval_t>>(data->id);
     if (newInt == NULL) {
         setbench_error("out of memory");

@@ -309,7 +309,7 @@ public:
         
         // discard the payloads (insertedNodes and deletedNodes) in this thread's descriptor
         // so other threads can't access them far in the future if we become QUIESCENT and sleep for a long time
-        // (must be performed after setting itimes and dtimes, but before enterQuiescentState)
+        // (must be performed after setting itimes and dtimes, but before endOp)
         prov->discardPayloads(tid);
 
         if (!logicalDeletion) {
@@ -356,7 +356,7 @@ public:
 
                 // discard the payloads (insertedNodes and deletedNodes) in this thread's descriptor
                 // so other threads can't access them far in the future if we become QUIESCENT and sleep for a long time
-                // (must be performed after setting itimes and dtimes, but before enterQuiescentState)
+                // (must be performed after setting itimes and dtimes, but before endOp)
                 prov->discardPayloads(tid);
                 
                 if (!logicalDeletion) {

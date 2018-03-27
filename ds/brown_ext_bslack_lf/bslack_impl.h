@@ -103,7 +103,7 @@ bslack_ns::Node<DEGREE,K> * bslack_ns::bslack<DEGREE,K,Compare,RecManager>::allo
 template <int DEGREE, typename K, class Compare, class RecManager>
 const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
     std::pair<void*,bool> result;
-    this->recordmgr->leaveQuiescentState(tid);
+    auto guard = recordmgr->getGuard(tid);
     Node<DEGREE,K> * l = rqProvider->read_addr(tid, &entry->ptrs[0]);
     while (!l->isLeaf()) {
         int ix = l->getChildIndex(key, cmp);
@@ -117,7 +117,6 @@ const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::find
         result.first = NO_VALUE;
         result.second = false;
     }
-    this->recordmgr->enterQuiescentState(tid);
     return result;
 }
 
@@ -129,7 +128,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::contains(const int tid, con
 template<int DEGREE, typename K, class Compare, class RecManager>
 int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
     block<Node<DEGREE,K>> stack (NULL);
-    recordmgr->leaveQuiescentState(tid);
+    auto guard = recordmgr->getGuard(tid);
     rqProvider->traversal_start(tid);
 
     // depth first traversal (of interesting subtrees)
@@ -168,7 +167,6 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
     
     // success
     rqProvider->traversal_end(tid, resultKeys, resultValues, &size, lo, hi);
-    recordmgr->enterQuiescentState(tid);
     return size;
 }
 
@@ -181,7 +179,7 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
         /**
          * search
          */
-        this->recordmgr->leaveQuiescentState(tid);
+        auto guard = recordmgr->getGuard(tid);
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
@@ -205,14 +203,12 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
              */
             void* const oldValue = l->ptrs[keyIndex]; // this is a value, not a pointer, so it cannot be modified by rqProvider->linearize_update_at_..., so we do not use read_addr
             if (!replace) {
-                this->recordmgr->enterQuiescentState(tid);
                 return oldValue;
             }
             
             // perform LLXs
             if (!llx(tid, p, NULL, 0, info->scxPtrs, info->nodes)
                      || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) {
-                this->recordmgr->enterQuiescentState(tid);
                 continue;    // retry the search
             }
             info->nodes[1] = l;
@@ -247,11 +243,9 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 fixDegreeOrSlackViolation(tid, n);
     #endif
 #endif
-                this->recordmgr->enterQuiescentState(tid);
                 return oldValue;
             }
             TRACE COUTATOMICTID("replace std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
-            this->recordmgr->enterQuiescentState(tid);
             this->recordmgr->deallocate(tid, n);
 
         } else {
@@ -261,7 +255,6 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
 
             // perform LLXs
             if (!llx(tid, p, NULL, 0, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) {
-                this->recordmgr->enterQuiescentState(tid);
                 continue;    // retry the search
             }
             info->nodes[1] = l;
@@ -304,11 +297,9 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixDegreeOrSlackViolation(tid, n);
     #endif
 #endif
-                    this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
                 TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
-                this->recordmgr->enterQuiescentState(tid);
                 this->recordmgr->deallocate(tid, n);
                 
             } else { // assert: l->getKeyCount() == DEGREE == b)
@@ -398,11 +389,9 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixDegreeOrSlackViolation(tid, p);
     #endif
 #endif
-                    this->recordmgr->enterQuiescentState(tid);
                     return NO_VALUE;
                 }
                 TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
-                this->recordmgr->enterQuiescentState(tid);
                 this->recordmgr->deallocate(tid, n);
                 this->recordmgr->deallocate(tid, left);
                 this->recordmgr->deallocate(tid, right);
@@ -419,7 +408,7 @@ const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::eras
         /**
          * search
          */
-        this->recordmgr->leaveQuiescentState(tid);
+        auto guard = recordmgr->getGuard(tid);
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
@@ -441,7 +430,6 @@ const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::eras
             /**
              * if l does not contain key, we are done.
              */
-            this->recordmgr->enterQuiescentState(tid);
             return std::pair<void*,bool>(NO_VALUE,false);
         } else {
             /**
@@ -450,7 +438,6 @@ const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::eras
 
             // perform LLXs
             if (!llx(tid, p, NULL, 0, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) {
-                this->recordmgr->enterQuiescentState(tid);
                 continue;    // retry the search
             }
             info->nodes[1] = l;
@@ -493,11 +480,9 @@ const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::eras
                 fixDegreeOrSlackViolation(tid, p);
     #endif
 #endif
-                this->recordmgr->enterQuiescentState(tid);
                 return std::pair<void*,bool>(oldValue, true);
             }
             TRACE COUTATOMICTID("delete std::pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<std::endl);
-            this->recordmgr->enterQuiescentState(tid);
             this->recordmgr->deallocate(tid, n);
         }
     }

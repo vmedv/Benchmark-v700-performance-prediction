@@ -198,7 +198,7 @@ public:
             SCXRecord<K,V> *dummy = TAGPTR1_UNPACK_PTR(DUMMY_SCXRECORD);
             dummy->c.mutables = MUTABLES_INIT_DUMMY;
 
-            recmgr->enterQuiescentState(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
+            recmgr->endOp(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
             Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
             Node<K,V> *_root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
             

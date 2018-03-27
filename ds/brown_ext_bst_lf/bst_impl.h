@@ -76,7 +76,7 @@ bool bst_ns::bst<K,V,Compare,RecManager>::contains(const int tid, const K& key) 
 template<class K, class V, class Compare, class RecManager>
 int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
     block<Node<K,V> > stack (NULL);
-    recmgr->leaveQuiescentState(tid);
+    auto guard = recmgr->getGuard(tid);
     rqProvider->traversal_start(tid);
     
     // depth first traversal (of interesting subtrees)
@@ -105,7 +105,6 @@ int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, 
         }
     }
     rqProvider->traversal_end(tid, resultKeys, resultValues, &size, lo, hi);
-    recmgr->enterQuiescentState(tid);
     return size;
 }
 
@@ -116,12 +115,11 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid,
     Node<K,V> *l;
     for (;;) {
         TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<std::endl);
-        recmgr->leaveQuiescentState(tid);
+        auto guard = recmgr->getGuard(tid);
         p = rqProvider->read_addr(tid, &root->left);
         l = rqProvider->read_addr(tid, &p->left);
         if (l == NULL) {
             result = std::pair<V,bool>(NO_VALUE, false); // no keys in data structure
-            recmgr->enterQuiescentState(tid);
             return result; // success
         }
 
@@ -140,7 +138,6 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid,
         } else {
             result = std::pair<V,bool>(NO_VALUE, false);
         }
-        recmgr->enterQuiescentState(tid);
         return result; // success
     }
     assert(0);
@@ -157,9 +154,8 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid,
 //    ReclamationInfo<K,V> info;
 //    bool finished = 0;
 //    for (;;) {
-//        recmgr->leaveQuiescentState(tid);
+//        auto guard = recmgr->getGuard(tid);
 //        finished = updateInsert_search_llx_scx(&info, tid, input, output);
-//        recmgr->enterQuiescentState(tid);
 //        if (finished) {
 //            break;
 //        }
@@ -176,9 +172,8 @@ const V bst_ns::bst<K,V,Compare,RecManager>::doInsert(const int tid, const K& ke
     ReclamationInfo<K,V> info;
     bool finished = 0;
     for (;;) {
-        recmgr->leaveQuiescentState(tid);
+        auto guard = recmgr->getGuard(tid);
         finished = updateInsert_search_llx_scx(&info, tid, input, output);
-        recmgr->enterQuiescentState(tid);
         if (finished) {
             break;
         }
@@ -205,9 +200,8 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::erase(const int tid
     ReclamationInfo<K,V> info;
     bool finished = 0;
     for (;;) {
-        recmgr->leaveQuiescentState(tid);
+        auto guard = recmgr->getGuard(tid);
         finished = updateErase_search_llx_scx(&info, tid, input, output);
-        recmgr->enterQuiescentState(tid);
         if (finished) {
             break;
         }

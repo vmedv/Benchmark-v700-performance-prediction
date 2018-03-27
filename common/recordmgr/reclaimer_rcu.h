@@ -157,7 +157,7 @@ public:
     
     inline void rotateEpochBags(const int tid) {}
     
-    inline bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
         if (!calledRCULock) {
             rcu_read_lock();
             calledRCULock = true;
@@ -165,7 +165,7 @@ public:
         return true;
     }
     
-    inline void enterQuiescentState(const int tid) {
+    inline void endOp(const int tid) {
         if (calledRCULock) {
             rcu_read_unlock();
             calledRCULock = false;

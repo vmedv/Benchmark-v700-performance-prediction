@@ -299,7 +299,7 @@ public:
             const int tid = 0;
             initThread(tid);
 
-            recordmgr->enterQuiescentState(tid);
+            recordmgr->endOp(tid);
             
             DESC1_INIT_ALL(numProcesses);
 

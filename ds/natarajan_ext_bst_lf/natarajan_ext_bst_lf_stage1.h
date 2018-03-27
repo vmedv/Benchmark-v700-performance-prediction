@@ -198,7 +198,7 @@ public:
         
         cmp = Compare();
 
-        recmgr->enterQuiescentState(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
+        recmgr->endOp(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
 
         root = recmgr->template allocate<node_t<skey_t, sval_t>>(tid);
         node_t<skey_t, sval_t> * newLC = recmgr->template allocate<node_t<skey_t, sval_t>>(tid);

@@ -108,8 +108,8 @@ public:
     }
     
     // for epoch based reclamation
-    inline void enterQuiescentState(const int tid) {
-        TRACE std::cout<<"reclaimer_hazardptr::enterQuiescentState(tid="<<tid<<")"<<std::endl;
+    inline void endOp(const int tid) {
+        TRACE std::cout<<"reclaimer_hazardptr::endOp(tid="<<tid<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         announce[tid]->clear();
 //        __sync_synchronize();
@@ -118,8 +118,8 @@ public:
         DEBUG2 assert(announce[tid]->isEmpty());
 //        SOFTWARE_BARRIER;
     }
-    inline static bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
-        TRACE std::cout<<"reclaimer_hazardptr::leaveQuiescentState(tid="<<tid<<")"<<std::endl;
+    inline static bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
+        TRACE std::cout<<"reclaimer_hazardptr::startOp(tid="<<tid<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         return false;
     }

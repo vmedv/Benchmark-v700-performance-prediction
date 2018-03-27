@@ -63,13 +63,13 @@ public:
 //    inline long readEpoch();
 //    inline long readAnnouncedEpoch(const int tid);
     /**
-     * enterQuiescentState<T> must be idempotent,
+     * endOp<T> must be idempotent,
      * and must unprotect all objects protected by calls to protectObject<T>.
      * it must NOT unprotect any object protected by a call to
      * protectObjectEvenAfterRestart.
      */
-    inline void enterQuiescentState(const int tid);
-    inline bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers);
+    inline void endOp(const int tid);
+    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers);
     inline void rotateEpochBags(const int tid);
 
     // for all schemes except reference counting

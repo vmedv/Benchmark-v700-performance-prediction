@@ -78,7 +78,7 @@ public:
     void initThread(const int tid) {
         alloc->initThread(tid);
         reclaim->initThread(tid);
-//        enterQuiescentState(tid);
+//        endOp(tid);
     }
     
     void deinitThread(const int tid) {
@@ -125,13 +125,13 @@ public:
     }
 
     // for epoch based reclamation
-    inline void enterQuiescentState(const int tid) {
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<std::endl);
-        reclaim->enterQuiescentState(tid);
+    inline void endOp(const int tid) {
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::endOp(tid="<<tid<<")"<<std::endl);
+        reclaim->endOp(tid);
     }
-    inline void leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    inline void startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
 //        assert(isQuiescent(tid));
-        reclaim->leaveQuiescentState(tid, reclaimers, numReclaimers);
+        reclaim->startOp(tid, reclaimers, numReclaimers);
     }
 
     // for all schemes except reference counting

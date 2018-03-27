@@ -216,7 +216,7 @@ public:
         const int tid = 0;
         initThread(tid);
         
-        recmgr->enterQuiescentState(tid);
+        recmgr->endOp(tid);
 
         root = rbnode_create(tid, KEY_NEG_INFTY, NULL, NULL);
     }

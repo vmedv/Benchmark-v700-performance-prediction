@@ -61,10 +61,10 @@ public:
     // returns true if the call rotated the epoch bags for thread tid
     // (and reclaimed any objects retired two epochs ago).
     // otherwise, the call returns false.
-    inline static bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    inline static bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
         return false;
     }
-    inline static void enterQuiescentState(const int tid) {
+    inline static void endOp(const int tid) {
     }
     
     // for all schemes except reference counting

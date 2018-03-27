@@ -210,9 +210,8 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::getImpl(node_t<skey_t, sval_t>* tree, skey
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::get(const int tid, node_t<skey_t, sval_t>* tree, skey_t key) {
-    recmgr->leaveQuiescentState(tid);
+    auto guard = recmgr->getGuard(tid);
     auto retval = decodeNull(getImpl(tree, key));
-    recmgr->enterQuiescentState(tid);
     return retval;
 }
 
@@ -296,25 +295,22 @@ int ccavl<skey_t, sval_t, RecMgr>::shouldUpdate(int func, sval_t prev, sval_t ex
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::putIfAbsent(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, sval_t value) {
-    recmgr->leaveQuiescentState(tid);
+    auto guard = recmgr->getGuard(tid);
     auto retval = decodeNull(update(tid, tree, key, UpdateIfAbsent, NULL, encodeNull(value)));
-    recmgr->enterQuiescentState(tid);
     return retval;
 }
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::put(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, sval_t value) {
-    recmgr->leaveQuiescentState(tid);
+    auto guard = recmgr->getGuard(tid);
     auto retval = decodeNull(update(tid, tree, key, UpdateAlways, NULL, encodeNull(value)));
-    recmgr->enterQuiescentState(tid);
     return retval;
 }
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::remove_node(const int tid, node_t<skey_t, sval_t>* tree, skey_t key) {
-    recmgr->leaveQuiescentState(tid);
+    auto guard = recmgr->getGuard(tid);
     auto retval = decodeNull(update(tid, tree, key, UpdateAlways, NULL, NULL));
-    recmgr->enterQuiescentState(tid);
     return retval;
 }
 

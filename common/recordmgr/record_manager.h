@@ -50,9 +50,9 @@ public:
     void printStatus() {}
     inline void qUnprotectAll(const int tid) {}
     inline void getReclaimers(const int tid, void ** const reclaimers, int index) {}
-    inline void enterQuiescentState(const int tid) {}
+    inline void endOp(const int tid) {}
     inline void leaveQuiescentStateForEach(const int tid) {}
-    inline void leaveQuiescentState(const int tid, const bool callForEach) {}
+    inline void startOp(const int tid, const bool callForEach) {}
 };
 
 // "recursive" case
@@ -107,21 +107,21 @@ public:
         reclaimers[index] = mgr->reclaim;
         ((RecordManagerSet <Reclaim, Alloc, Pool, Rest...> *) this)->getReclaimers(tid, reclaimers, 1+index);
     }
-    inline void enterQuiescentState(const int tid) {
-        mgr->enterQuiescentState(tid);
-        ((RecordManagerSet<Reclaim, Alloc, Pool, Rest...> *) this)->enterQuiescentState(tid);
+    inline void endOp(const int tid) {
+        mgr->endOp(tid);
+        ((RecordManagerSet<Reclaim, Alloc, Pool, Rest...> *) this)->endOp(tid);
     }
     inline void leaveQuiescentStateForEach(const int tid) {
-        mgr->leaveQuiescentState(tid, NULL, 0);
+        mgr->startOp(tid, NULL, 0);
         ((RecordManagerSet <Reclaim, Alloc, Pool, Rest...> *) this)->leaveQuiescentStateForEach(tid);
     }
-    inline void leaveQuiescentState(const int tid, const bool callForEach) {
+    inline void startOp(const int tid, const bool callForEach) {
         if (callForEach) {
             leaveQuiescentStateForEach(tid);
         } else {
             void * reclaimers[1+sizeof...(Rest)];
             getReclaimers(tid, reclaimers, 0);
-            get((First *) NULL)->leaveQuiescentState(tid, reclaimers, 1+sizeof...(Rest));
+            get((First *) NULL)->startOp(tid, reclaimers, 1+sizeof...(Rest));
             __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
         }
     }
@@ -151,7 +151,7 @@ public:
     const int NUM_PROCESSES;
     RecoveryMgr<SelfType> * const recoveryMgr;
     PAD;
-    
+
     record_manager(const int numProcesses, const int _neutralizeSignal)
             : NUM_PROCESSES(numProcesses)
             , recoveryMgr(new RecoveryMgr<SelfType>(numProcesses, _neutralizeSignal, this))
@@ -167,7 +167,7 @@ public:
 
         rmset->registerThread(tid);
         recoveryMgr->initThread(tid);
-        enterQuiescentState(tid);
+        endOp(tid);
     }
     void deinitThread(const int tid) {
         if (!init[tid]) return; else init[tid] = !init[tid];
@@ -228,27 +228,27 @@ public:
     inline bool isQuiescent(const int tid) {
         return rmset->get((RecordTypesFirst *) NULL)->isQuiescent(tid); // warning: if quiescence information is logically shared between all types, with the actual data being associated only with the first type (as it is here), then isQuiescent will return inconsistent results if called in functions that recurse on the template argument list in this class.
     }
-    inline void enterQuiescentState(const int tid) {
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::enterQuiescentState(tid="<<tid<<")"<<std::endl);
+    inline void endOp(const int tid) {
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::endOp(tid="<<tid<<")"<<std::endl);
         if (Reclaim::quiescenceIsPerRecordType()) {
 //            std::cout<<"setting quiescent state for all record types\n";
-            rmset->enterQuiescentState(tid);
+            rmset->endOp(tid);
         } else {
-            // only call enterQuiescentState for one object type
+            // only call endOp for one object type
 //            std::cout<<"setting quiescent state for just one record type: "<<typeid(RecordTypesFirst).name()<<"\n";
-            rmset->get((RecordTypesFirst *) NULL)->enterQuiescentState(tid);
+            rmset->get((RecordTypesFirst *) NULL)->endOp(tid);
         }
     }
-    inline void leaveQuiescentState(const int tid) {
+    inline void startOp(const int tid) {
 //        assert(isQuiescent(tid));
-//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::leaveQuiescentState(tid="<<tid<<")"<<std::endl);
+//        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::startOp(tid="<<tid<<")"<<std::endl);
         // for some types of reclaimers, different types of records retired in the same
         // epoch can be reclaimed together (by aggregating their epochs), so we don't actually need
-        // separate calls to leaveQuiescentState for each object type.
-        // if appropriate, we make a single call to leaveQuiescentState,
+        // separate calls to startOp for each object type.
+        // if appropriate, we make a single call to startOp,
         // and it takes care of all record types managed by this record manager.
         //cout<<"quiescenceIsPerRecordType = "<<Reclaim::quiescenceIsPerRecordType()<<std::endl;
-        rmset->leaveQuiescentState(tid, Reclaim::quiescenceIsPerRecordType());
+        rmset->startOp(tid, Reclaim::quiescenceIsPerRecordType());
     }
 
     // for algorithms that retire nodes before a deletion is linearized
@@ -283,6 +283,23 @@ public:
     }
     inline static bool supportsCrashRecovery() {
         return Reclaim::supportsCrashRecovery();
+    }
+    
+    class MemoryReclamationGuard {
+        const int tid;
+        record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * recmgr;
+    public:
+        MemoryReclamationGuard(const int _tid, record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * _recmgr)
+        : tid(_tid), recmgr(_recmgr) {
+            recmgr->startOp(tid);
+        }
+        ~MemoryReclamationGuard() {
+            recmgr->endOp(tid);
+        }
+    };
+    
+    inline MemoryReclamationGuard getGuard(const int tid) {
+        return MemoryReclamationGuard(tid, this);
     }
 };
 

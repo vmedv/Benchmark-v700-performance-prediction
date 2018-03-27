@@ -225,7 +225,7 @@ public:
     // returns true if the call rotated the epoch bags for thread tid
     // (and reclaimed any objects retired two epochs ago).
     // otherwise, the call returns false.
-    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    inline bool leaveQuiescentState(const int tid, void * const * const reclaimers, const int numReclaimers) {
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
         bool result = false;
 
@@ -270,7 +270,7 @@ public:
         return result;
     }
     
-    inline void endOp(const int tid) {
+    inline void enterQuiescentState(const int tid) {
         const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
         announcedEpoch[tid*PREFETCH_SIZE_WORDS].store(GET_WITH_QUIESCENT(ann), std::memory_order_relaxed);
     }
