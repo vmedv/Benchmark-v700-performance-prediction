@@ -490,8 +490,10 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::insertIfAbsent(thr
 //        fasttry++;
         if (R->leafKey == key) {
 //            if (fasttry == 1) {
+                recmgr->enterQuiescentState(data->id);
                 return R->leafValue;
 //            } else {
+//                recmgr->enterQuiescentState(data->id);
 //                return NO_VALUE;
 //            }
         }

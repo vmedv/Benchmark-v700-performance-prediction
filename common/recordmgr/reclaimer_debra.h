@@ -184,7 +184,7 @@ public:
     }
     std::string getSizeString() {
         std::stringstream ss;
-        ss<<getSizeInNodes()<<" in epoch bags";
+        ss<<getSizeInNodes(); //<<" in epoch bags";
         return ss.str();
     }
     
@@ -290,7 +290,7 @@ public:
 //        assert(tid >= 0);
 //        assert(tid < this->NUM_PROCESSES);
         if (tid == 0) {
-            std::cout<<"global epoch counter="<<epoch<<std::endl;
+            std::cout<<"global_epoch_counter="<<epoch<<std::endl;
         }
 //        long announce = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //        std::cout<<"tid="<<tid<<": announce="<<announce<<" bags(";
