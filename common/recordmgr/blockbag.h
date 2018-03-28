@@ -30,10 +30,14 @@ class block;
     template <typename T>
     class block { // stack implemented as an array
         private:
+//            PAD;
             T * data[BLOCK_SIZE];
             int size;
         public:
             block<T> *next;
+//        private:
+//            PAD;
+//        public:
             
             block(block<T> * const _next) : next(_next) {
                 size = 0;
@@ -262,14 +266,12 @@ class block;
         int owner;
         volatile long long reclaimCount; // number of times this bag has been the oldest epoch bag and had its nodes reclaimed
         long debugFreed;
-//        PAD;
     public:
         int sizeInBlocks;
     private:
         
         block<T> *head;
         block<T> *tail;
-//        PAD;
         blockpool<T> * const pool;
         PAD;
         
