@@ -32,6 +32,7 @@
 
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"
+#include "reclaimer_numa_ebr.h"
 #include "reclaimer_debra.h"
 #include "reclaimer_debraplus.h"
 #include "reclaimer_hazardptr.h"
