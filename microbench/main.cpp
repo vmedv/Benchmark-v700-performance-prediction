@@ -180,23 +180,32 @@ typedef long long test_type;
 
 struct globals_t {    
     PAD;
+    // const
     void * const NO_VALUE;
     const test_type KEY_MIN;
     const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this!
-    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-    std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
-    long elapsedMillis;
-    long elapsedMillisNapping;
     const long long PREFILL_INTERVAL_MILLIS;
-    volatile long long prefillIntervalElapsedMillis;
-    test_type garbage; // used to prevent optimizing out some code
-    ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> > *ds; // the data structure
+    PAD;
+    // write once
+    long elapsedMillis;
     long long prefillKeySum;
+    std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
+    PAD;
+    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+    PAD;
+    long elapsedMillisNapping;
+    volatile long long prefillIntervalElapsedMillis;
+    PAD;
+    volatile test_type garbage; // used to prevent optimizing out some code
+    PAD;
+    ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> > *ds; // the data structure
     PAD;
     Random rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 //    PAD; // not needed because of padding at the end of rngs
     volatile bool start;
+    PAD;
     volatile bool done;
+    PAD;
     volatile int running; // number of threads that are running
     PAD;
     
