@@ -51,6 +51,7 @@
 #include "descriptors.h"
 #include "record_manager.h"
 #include "rq_provider.h"
+#include "prefetching.h"
 
 namespace abtree_ns {
 
@@ -288,7 +289,7 @@ public:
                 int suspectedCrashSignal = SIGQUIT)
         : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
         , b(DEGREE)
-        , a(DEGREE/2 - 2)
+        , a(std::max(DEGREE/4, 2))
         , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
         , rqProvider(new RQProvider<K, void *, Node<DEGREE,K>, abtree<DEGREE,K,Compare,RecManager>, RecManager, false, false>(numProcesses, this, recordmgr))
         , NO_VALUE((void *) -1LL)

@@ -104,9 +104,11 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::find
     std::pair<void*,bool> result;
     auto guard = recordmgr->getGuard(tid);
     Node<DEGREE,K> * l = rqProvider->read_addr(tid, &entry->ptrs[0]);
+    prefetch_range(l, sizeof(*l));
     while (!l->isLeaf()) {
         int ix = l->getChildIndex(key, cmp);
         l = rqProvider->read_addr(tid, &l->ptrs[ix]);
+        prefetch_range(l, sizeof(*l));
     }
     int index = l->getKeyIndex(key, cmp);
     if (index < l->getKeyCount() && l->keys[index] == key) {
@@ -137,6 +139,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
     stack.push(entry);
     while (!stack.isEmpty()) {
         Node<DEGREE,K> * node = stack.pop();
+        prefetch_range(node, sizeof(*node));
         assert(node);
         
         // if leaf node, check if we should add its keys to the traversal
@@ -184,12 +187,14 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
         int ixToP = -1;
         int ixToL = 0;
+        prefetch_range(l, sizeof(*l));
         while (!l->isLeaf()) {
             ixToP = ixToL;
             ixToL = l->getChildIndex(key, cmp);
             gp = p;
             p = l;
             l = rqProvider->read_addr(tid, &l->ptrs[ixToL]);
+            prefetch_range(l, sizeof(*l));
         }
 
         /**
@@ -396,6 +401,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
+        prefetch_range(l, sizeof(*l));
         int ixToP = -1;
         int ixToL = 0;
         while (!l->isLeaf()) {
@@ -404,6 +410,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
             gp = p;
             p = l;
             l = rqProvider->read_addr(tid, &l->ptrs[ixToL]);
+            prefetch_range(l, sizeof(*l));
         }
 
         /**
@@ -500,6 +507,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
+        prefetch_range(l, sizeof(*l));
         int ixToP = -1;
         int ixToL = 0;
         while (!l->isLeaf() && l != viol) {
@@ -508,6 +516,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             gp = p;
             p = l;
             l = rqProvider->read_addr(tid, &l->ptrs[ixToL]);
+            prefetch_range(l, sizeof(*l));
         }
 
         if (l != viol) {
@@ -709,6 +718,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
+        prefetch_range(l, sizeof(*l));
         int ixToP = -1;
         int ixToL = 0;
         while (!l->isLeaf() && l != viol) {
@@ -717,6 +727,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             gp = p;
             p = l;
             l = rqProvider->read_addr(tid, &l->ptrs[ixToL]);
+            prefetch_range(l, sizeof(*l));
         }
 
         if (l != viol) {

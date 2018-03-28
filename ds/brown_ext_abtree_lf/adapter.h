@@ -13,7 +13,7 @@
 
 #if !defined FAT_NODE_DEGREE
 //    #warning "FAT_NODE_DEGREE was not defined... using default: 16."
-    #define FAT_NODE_DEGREE 16
+    #define FAT_NODE_DEGREE 11
 #endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, abtree_ns::Node<FAT_NODE_DEGREE, K>>
