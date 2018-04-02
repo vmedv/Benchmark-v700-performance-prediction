@@ -8,7 +8,11 @@ FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -std=c++11 -mcx16 -O3 -g
 FLAGS += -fno-omit-frame-pointer
-FLAGS += -DRECLAIM_TYPE=numa_ebr
+FLAGS += -DRAPID_RECLAMATION
+FLAGS += -DNO_DELETE_DS
+FLAGS += -DRECLAIM_TYPE=tree_ebr
+#FLAGS += -DRECLAIM_TYPE=numa_ebr
+#FLAGS += -DRECLAIM_TYPE=debra
 #FLAGS += -fprefetch-loop-arrays
 #FLAGS += -DNDEBUG
 FLAGS += $(xargs)

@@ -88,6 +88,7 @@ extern gstats_t& GSTATS_OBJECT_NAME;
 #define GSTATS_GET_STAT_METRICS(stat, aggregation_granularity) GSTATS_OBJECT_NAME.compute_stat_metrics<long long>(stat, aggregation_granularity)
 #define GSTATS_GET_STAT_METRICS_D(stat, aggregation_granularity) GSTATS_OBJECT_NAME.compute_stat_metrics<long long>(stat, aggregation_granularity)
 #define GSTATS_CLEAR_ALL GSTATS_OBJECT_NAME.clear_all()
+#define GSTATS_CLEAR_VAL(stat, val) GSTATS_OBJECT_NAME.clear_to_value(stat, val)
 #define GSTATS_PRINT GSTATS_OBJECT_NAME.print_all()
 
 #define GSTATS_TIMER_RESET(tid, timer_stat) GSTATS_SET(tid, timer_stat, get_server_clock())
@@ -142,6 +143,7 @@ GSTATS_DECLARE_EXTERN_ALL_STAT_IDS;
 #define GSTATS_APPEND(tid, stat, val) 
 #define GSTATS_APPEND_D(tid, stat, val) 
 #define GSTATS_CLEAR_ALL 
+#define GSTATS_CLEAR_VAL(stat, val) 
 #define GSTATS_PRINT 
 
 #define GSTATS_TIMER_RESET(tid, timer_stat) 

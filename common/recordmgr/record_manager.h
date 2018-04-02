@@ -167,7 +167,7 @@ public:
 
         rmset->registerThread(tid);
         recoveryMgr->initThread(tid);
-        endOp(tid);
+//        endOp(tid);
     }
     void deinitThread(const int tid) {
         if (!init[tid]) return; else init[tid] = !init[tid];
@@ -251,13 +251,6 @@ public:
         rmset->startOp(tid, Reclaim::quiescenceIsPerRecordType());
     }
 
-    // for algorithms that retire nodes before a deletion is linearized
-    template <typename T>
-    inline void unretireLast(const int tid) {
-        assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
-        rmset->get((T *) NULL)->unretireLast(tid);
-    }
-
     // for all schemes
     template <typename T>
     inline void retire(const int tid, T * const p) {
@@ -268,6 +261,7 @@ public:
     template <typename T>
     inline T * allocate(const int tid) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
+//        GSTATS_ADD_IX(tid, num_prop_epoch_allocations, 1, GSTATS_GET(tid, thread_announced_epoch));
         return rmset->get((T *) NULL)->allocate(tid);
     }
     
@@ -299,6 +293,7 @@ public:
     };
     
     inline MemoryReclamationGuard getGuard(const int tid) {
+        SOFTWARE_BARRIER;
         return MemoryReclamationGuard(tid, this);
     }
 };

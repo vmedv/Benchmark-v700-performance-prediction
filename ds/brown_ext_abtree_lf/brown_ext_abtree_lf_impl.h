@@ -182,6 +182,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
          * search
          */
         auto guard = recordmgr->getGuard(tid);
+//        GSTATS_ADD_IX(tid, num_prop_guard_insdel_attempts, 1, GSTATS_GET(tid, num_getguard));
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
@@ -398,6 +399,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
          * search
          */
         auto guard = recordmgr->getGuard(tid);
+//        GSTATS_ADD_IX(tid, num_prop_guard_insdel_attempts, 1, GSTATS_GET(tid, num_getguard));
         Node<DEGREE,K>* gp = NULL;
         Node<DEGREE,K>* p = entry;
         Node<DEGREE,K>* l = rqProvider->read_addr(tid, &p->ptrs[0]);
@@ -502,6 +504,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
 
     // try to locate viol, and fix any weight violation at viol
     while (true) {
+//        GSTATS_ADD_IX(tid, num_prop_guard_rebalance_attempts, 1, GSTATS_GET(tid, num_getguard));
 
         const K k = viol->searchKey;
         Node<DEGREE,K>* gp = NULL;
@@ -711,6 +714,8 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
     // we search for viol and try to fix any violation we find there
     // this entails performing AbsorbSibling or Distribute.
     while (true) {
+//        GSTATS_ADD_IX(tid, num_prop_guard_rebalance_attempts, 1, GSTATS_GET(tid, num_getguard));
+
         /**
          * search for viol
          */

@@ -53,51 +53,111 @@ typedef long long test_type;
     gstats_handle_stat(LONG_LONG, num_operations, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
-    }) \
-    gstats_handle_stat(LONG_LONG, visited_in_bags, 100, { \
-            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
-      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
-    }) \
-    gstats_handle_stat(LONG_LONG, skipped_in_bags, 100, { \
-            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
-      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
-      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, latency_rqs, 100, { \
-            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+/*    gstats_handle_stat(LONG_LONG, num_getguard, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_tryadvance, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_root, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_parentlarge, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_nodes_visited, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_hist_readepoch, 1, { \
+            gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_root_update_time, 1, { \
+            gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_root_read_time, 1, { \
+            gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, timer_guard_latency, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_epoch_latency, 1, {}) \
+    gstats_handle_stat(LONG_LONG, num_prop_epoch_latency, 100000, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, latency_updates, 100, { \
+    gstats_handle_stat(LONG_LONG, num_prop_guard_latency, 100000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, latency_searches, 100, { \
+    gstats_handle_stat(LONG_LONG, num_prop_guard_insdel_attempts, 100000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
-      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, skiplist_inserted_on_level, 30, { \
-         /* gstats_output_item(PRINT_RAW, NONE, FULL_DATA) */ \
-   /* __AND gstats_output_item(PRINT_RAW, SUM, BY_INDEX) */ \
+    gstats_handle_stat(LONG_LONG, num_prop_guard_rebalance_attempts, 100000, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_epoch_allocations, 500000, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_prop_thread_exit_time, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) \
+    gstats_handle_stat(LONG_LONG, thread_announced_epoch, 1, {})*/ \
+    gstats_handle_stat(LONG_LONG, visited_in_bags, 1, { \
+            /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, skipped_in_bags, 1, { \
+            /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, latency_rqs, 1, { \
+            /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, latency_updates, 1, { \
+            /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, latency_searches, 1, { \
+            /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
     }) \
     gstats_handle_stat(LONG_LONG, key_checksum, 1, {}) \
     gstats_handle_stat(LONG_LONG, prefill_size, 1, {}) \
     gstats_handle_stat(LONG_LONG, timer_latency, 1, {})
+
 
 #include "globals.h"
 #include "globals_extern.h"
@@ -192,6 +252,7 @@ struct globals_t {
     std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
     PAD;
     std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
+    long long startClockTicks;
     PAD;
     long elapsedMillisNapping;
     volatile long long prefillIntervalElapsedMillis;
@@ -410,6 +471,8 @@ void prefill() {
     std::cout<<"pref_size="<<sz<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
+    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
 }
 
 void *thread_timed(void *_id) {
@@ -483,6 +546,7 @@ void *thread_timed(void *_id) {
         GSTATS_ADD(tid, num_operations, 1);
     }
     __sync_fetch_and_add(&g.running, -1);
+    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) { /* wait */ }
     
     papi_stop_counters(tid);
@@ -538,6 +602,7 @@ void *thread_rq(void *_id) {
         GSTATS_ADD(tid, num_operations, 1);
     }
     __sync_fetch_and_add(&g.running, -1);
+    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) {
         // wait
     }
@@ -609,6 +674,7 @@ void trial() {
     
     SOFTWARE_BARRIER;
     g.startTime = std::chrono::high_resolution_clock::now();
+    g.startClockTicks = get_server_clock();
     __sync_synchronize();
     g.start = true;
     SOFTWARE_BARRIER;
@@ -763,9 +829,11 @@ void printOutput() {
     g.ds->printSummary();
     
     // free ds
+#ifndef NO_DELETE_DS
     std::cout<<"begin delete ds..."<<std::endl;
     delete g.ds;
     std::cout<<"end delete ds."<<std::endl;
+#endif
     
     papi_print_counters(totalAll);
 }
@@ -855,6 +923,10 @@ int main(int argc, char** argv) {
     // setup per-thread statistics
     GSTATS_CREATE_ALL;
     
+    // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
+    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
+
     trial();
     printOutput();
     

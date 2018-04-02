@@ -300,7 +300,7 @@ public:
             const int tid = 0;
             initThread(tid);
 
-            recordmgr->endOp(tid);
+//            recordmgr->endOp(tid);
             
             DESC1_INIT_ALL(numProcesses);
 

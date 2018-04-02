@@ -91,7 +91,7 @@
 #define GSTATS_THREAD_PADDING_BYTES 256
 #define GSTATS_MAX_NUM_STATS 128
 #ifndef GSTATS_MAX_THREAD_BUF_SIZE
-#   define GSTATS_MAX_THREAD_BUF_SIZE (1<<16)
+#   define GSTATS_MAX_THREAD_BUF_SIZE (1<<24)
 #endif
 #define GSTATS_DATA_SIZE_BYTES 8
 #define GSTATS_BITS_IN_BYTE 8
@@ -228,7 +228,7 @@ private:
         std::cout<<std::endl<<"log histogram of "; \
         GSTATS_PRINT_LOWER(#type); \
         std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
-        for (int __i=0;__i<=__last_nonzero;++__i) std::cout<<(__i?" ":"")<<(1<<__i)<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
+        for (int __i=0;__i<=__last_nonzero;++__i) std::cout<<(__i?" ":"")<<(1LL<<__i)<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
         for (int __i=0;__i<=__last_nonzero;++__i) { \
             std::cout<<"    "<<(__i?"(":"[")<<"2^"<<twoDigits(__i)<<", 2^"<<twoDigits(__i+1)<<"]: "<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type)<<std::endl; \
@@ -346,6 +346,14 @@ public:
         delete[] thread_data;
     }
 
+    template <typename T>
+    void clear_to_value(gstats_stat_id id, T value) {
+        for (int tid=0;tid<NUM_PROCESSES;++tid) {
+            for (int i=0;i<thread_data[tid].capacity[id];++i) {
+                set_stat(tid, id, value, i);
+            }
+        }
+    }
     void clear_all() {
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
             for (gstats_stat_id id=0;id<num_stats;++id) {

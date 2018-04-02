@@ -33,6 +33,7 @@
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"
 #include "reclaimer_numa_ebr.h"
+#include "reclaimer_tree_ebr.h"
 #include "reclaimer_debra.h"
 #include "reclaimer_debraplus.h"
 #include "reclaimer_hazardptr.h"
@@ -141,12 +142,6 @@ public:
         reclaim->retire(tid, p);
     }
     
-    // for algs that retire before the linearization point of a deletion
-    inline void unretireLast(const int tid) {
-        assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
-        reclaim->unretireLast(tid);
-    }
-
     // for all schemes
     inline record_pointer allocate(const int tid) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
