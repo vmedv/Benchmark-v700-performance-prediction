@@ -471,8 +471,8 @@ void prefill() {
     std::cout<<"pref_size="<<sz<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
-    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
-    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
+//    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+//    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
 }
 
 void *thread_timed(void *_id) {
@@ -546,7 +546,7 @@ void *thread_timed(void *_id) {
         GSTATS_ADD(tid, num_operations, 1);
     }
     __sync_fetch_and_add(&g.running, -1);
-    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
+//    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) { /* wait */ }
     
     papi_stop_counters(tid);
@@ -602,7 +602,7 @@ void *thread_rq(void *_id) {
         GSTATS_ADD(tid, num_operations, 1);
     }
     __sync_fetch_and_add(&g.running, -1);
-    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
+//    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) {
         // wait
     }
@@ -924,8 +924,8 @@ int main(int argc, char** argv) {
     GSTATS_CREATE_ALL;
     
     // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
-    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
-    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
+//    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+//    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
 
     trial();
     printOutput();
