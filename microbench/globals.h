@@ -12,10 +12,6 @@
 
 #include "plaf.h"
 
-#ifndef SOFTWARE_BARRIER
-#define SOFTWARE_BARRIER asm volatile("": : :"memory")
-#endif
-
 #include "debugprinting.h"
 
 PAD;

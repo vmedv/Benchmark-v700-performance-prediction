@@ -95,7 +95,7 @@ public:
     void printObjectSizes() {
         std::cout<<"sizes: node="
                  <<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))
-                 //<<" descriptor="<<(sizeof(abtree_ns::SCXRecord))<<" (statically allocated)"
+                 <<" descriptor="<<(sizeof(abtree_ns::SCXRecord<FAT_NODE_DEGREE, K>))<<" (statically allocated)"
                  <<std::endl;
     }
 };

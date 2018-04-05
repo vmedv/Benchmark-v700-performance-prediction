@@ -34,8 +34,5 @@
 typedef bool CallbackReturn;
 typedef void* CallbackArg;
 typedef CallbackReturn (*CallbackType)(CallbackArg);
-#ifndef SOFTWARE_BARRIER
-#define SOFTWARE_BARRIER asm volatile("": : :"memory")
-#endif
 
 #endif	/* GLOBALS_H */

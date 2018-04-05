@@ -21,10 +21,6 @@
 #define __rtm_force_inline __attribute__((always_inline)) inline
 #endif
 
-#ifndef SOFTWARE_BARRIER
-#define SOFTWARE_BARRIER asm volatile("": : :"memory")
-#endif
-
 #ifndef DEBUG
 #define DEBUG if(0)
 #define DEBUG1 if(0)

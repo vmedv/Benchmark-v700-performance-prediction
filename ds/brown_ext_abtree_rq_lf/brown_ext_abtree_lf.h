@@ -48,13 +48,12 @@
 #include <set>
 #include <unistd.h>
 #include <sys/types.h>
+#include "descriptors.h"
 #include "record_manager.h"
+#include "rq_provider.h"
 #include "prefetching.h"
-#include "scx_provider.h"
 
 namespace abtree_ns {
-    
-    #define MAX_NODE_DEPENDENCIES_PER_SCX 4
 
     #ifndef TRACE
     #define TRACE if(0)
@@ -72,13 +71,65 @@ namespace abtree_ns {
     #define ABTREE_ENABLE_DESTRUCTOR
 
     template <int DEGREE, typename K>
+    struct Node;
+    
+    template <int DEGREE, typename K>
+    struct SCXRecord;
+    
+    template <int DEGREE, typename K>
+    class wrapper_info {
+    public:
+        const static int MAX_NODES = DEGREE+2;
+        Node<DEGREE,K> * nodes[MAX_NODES];
+        SCXRecord<DEGREE,K> * scxPtrs[MAX_NODES];
+        Node<DEGREE,K> * newNode;
+        Node<DEGREE,K> * volatile * field;
+        int state;
+        char numberOfNodes;
+        char numberOfNodesToFreeze;
+        char numberOfNodesAllocated;
+
+        // for rqProvider
+        Node<DEGREE,K> * insertedNodes[MAX_NODES+1];
+        Node<DEGREE,K> * deletedNodes[MAX_NODES+1];
+    };
+
+    template <int DEGREE, typename K>
+    struct SCXRecord {
+        const static int STATE_INPROGRESS = 0;
+        const static int STATE_COMMITTED = 1;
+        const static int STATE_ABORTED = 2;
+        struct {
+            volatile mutables_t mutables;
+
+            int numberOfNodes;
+            int numberOfNodesToFreeze;
+
+            Node<DEGREE,K> * newNode;
+            Node<DEGREE,K> * volatile * field;
+            Node<DEGREE,K> * nodes[wrapper_info<DEGREE,K>::MAX_NODES];            // array of pointers to nodes
+            SCXRecord<DEGREE,K> * scxPtrsSeen[wrapper_info<DEGREE,K>::MAX_NODES]; // array of pointers to scx records
+
+            // for rqProvider
+            Node<DEGREE,K> * insertedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
+            Node<DEGREE,K> * deletedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
+        } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
+        PAD;
+        const static int size = sizeof(c);
+    };
+        
+    template <int DEGREE, typename K>
     struct Node {
-        scx_handle_t volatile scxPtr;
+        SCXRecord<DEGREE,K> * volatile scxPtr;
         int leaf; // 0 or 1
         volatile int marked; // 0 or 1
         int weight; // 0 or 1
         int size; // degree of node
         K searchKey;
+#if defined(RQ_LOCKFREE) || defined(RQ_RWLOCK) || defined(HTM_RQ_RWLOCK)
+        volatile long long itime; // for use by range query algorithm
+        volatile long long dtime; // for use by range query algorithm
+#endif
         K keys[DEGREE];
         Node<DEGREE,K> * volatile ptrs[DEGREE];
 
@@ -125,18 +176,47 @@ namespace abtree_ns {
         const int b;
         const int a;
 
+//        PAD;
         RecManager * const recordmgr;
-        SCXProvider<Node<DEGREE,K>, MAX_NODE_DEPENDENCIES_PER_SCX> * const prov;
+//        PAD;
+        RQProvider<K, void *, Node<DEGREE,K>, abtree<DEGREE,K,Compare,RecManager>, RecManager, false, false> * const rqProvider;
+//        PAD;
         Compare cmp;
 
+        // descriptor reduction algorithm
+        #ifndef comma
+            #define comma ,
+        #endif
+        #define DESC1_ARRAY records
+        #define DESC1_T SCXRecord<DEGREE comma K>
+        #define MUTABLES1_OFFSET_ALLFROZEN 0
+        #define MUTABLES1_OFFSET_STATE 1
+        #define MUTABLES1_MASK_ALLFROZEN 0x1
+        #define MUTABLES1_MASK_STATE 0x6
+        #define MUTABLES1_NEW(mutables) \
+            ((((mutables)&MASK1_SEQ)+(1<<OFFSET1_SEQ)) \
+            | (SCXRecord<DEGREE comma K>::STATE_INPROGRESS<<MUTABLES1_OFFSET_STATE))
+        #define MUTABLES1_INIT_DUMMY SCXRecord<DEGREE comma K>::STATE_COMMITTED<<MUTABLES1_OFFSET_STATE | MUTABLES1_MASK_ALLFROZEN<<MUTABLES1_OFFSET_ALLFROZEN
+        #include "../descriptors/descriptors_impl.h"
+        PAD;
+        DESC1_T DESC1_ARRAY[LAST_TID1+1] __attribute__ ((aligned(64)));
+        PAD;
         Node<DEGREE,K> * entry;
+//        PAD;
+
+        #define DUMMY       ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_STATIC_DESC(0))
+        #define FINALIZED   ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_DUMMY_DESC(1))
+        #define FAILED      ((SCXRecord<DEGREE,K>*) (void*) TAGPTR1_DUMMY_DESC(2))
 
         #define arraycopy(src, srcStart, dest, destStart, len) \
             for (int ___i=0;___i<(len);++___i) { \
                 (dest)[(destStart)+___i] = (src)[(srcStart)+___i]; \
             }
         #define arraycopy_ptrs(src, srcStart, dest, destStart, len) \
-            arraycopy(src, srcStart, dest, destStart, len)
+            for (int ___i=0;___i<(len);++___i) { \
+                rqProvider->write_addr(tid, &(dest)[(destStart)+___i], \
+                        rqProvider->read_addr(tid, &(src)[(srcStart)+___i])); \
+            }
 
     private:
         void * doInsert(const int tid, const K& key, void * const value, const bool replace);
@@ -151,6 +231,13 @@ namespace abtree_ns {
         // performed an scx, and false otherwise
         bool fixDegreeViolation(const int tid, Node<DEGREE,K>* viol);
 
+        bool llx(const int tid, Node<DEGREE,K>* r, Node<DEGREE,K> ** snapshot, const int i, SCXRecord<DEGREE,K> ** ops, Node<DEGREE,K> ** nodes);
+        SCXRecord<DEGREE,K>* llx(const int tid, Node<DEGREE,K>* r, Node<DEGREE,K> ** snapshot);
+        bool scx(const int tid, wrapper_info<DEGREE,K> * info);
+        void helpOther(const int tid, tagptr_t tagptr);
+        int help(const int tid, const tagptr_t tagptr, SCXRecord<DEGREE,K> const * const snap, const bool helpingOther);
+
+        SCXRecord<DEGREE,K>* createSCXRecord(const int tid, wrapper_info<DEGREE,K> * info);
         Node<DEGREE,K>* allocateNode(const int tid);
 
         void freeSubtree(Node<DEGREE,K>* node, int* nodes) {
@@ -167,6 +254,7 @@ namespace abtree_ns {
 
         int init[MAX_THREADS_POW2] = {0,};
 public:
+//        PAD;
         void * const NO_VALUE;
         const int NUM_PROCESSES;
         PAD;
@@ -181,10 +269,12 @@ public:
             if (init[tid]) return; else init[tid] = !init[tid];
             
             recordmgr->initThread(tid);
+            rqProvider->initThread(tid);
         }
         void deinitThread(const int tid) {
             if (!init[tid]) return; else init[tid] = !init[tid];
 
+            rqProvider->deinitThread(tid);
             recordmgr->deinitThread(tid);
         }
 
@@ -201,7 +291,7 @@ public:
         , b(DEGREE)
         , a(std::max(DEGREE/4, 2))
         , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
-        , prov(new SCXProvider<Node<DEGREE,K>, MAX_NODE_DEPENDENCIES_PER_SCX>(numProcesses))
+        , rqProvider(new RQProvider<K, void *, Node<DEGREE,K>, abtree<DEGREE,K,Compare,RecManager>, RecManager, false, false>(numProcesses, this, recordmgr))
         , NO_VALUE((void *) -1LL)
         , NUM_PROCESSES(numProcesses) 
         {
@@ -210,22 +300,41 @@ public:
             const int tid = 0;
             initThread(tid);
 
+//            recordmgr->endOp(tid);
+            
+            DESC1_INIT_ALL(numProcesses);
+
+            SCXRecord<DEGREE,K> *dummy = TAGPTR1_UNPACK_PTR(DUMMY);
+            dummy->c.mutables = MUTABLES1_INIT_DUMMY;
+            TRACE COUTATOMICTID("DUMMY mutables="<<dummy->c.mutables<<std::endl);
+
             // initial tree: entry is a sentinel node (with one pointer and no keys)
             //               that points to an empty node (no pointers and no keys)
             Node<DEGREE,K>* _entryLeft = allocateNode(tid);
+            _entryLeft->scxPtr = DUMMY;
             _entryLeft->leaf = true;
+            _entryLeft->marked = false;
             _entryLeft->weight = true;
             _entryLeft->size = 0;
             _entryLeft->searchKey = anyKey;
 
             Node<DEGREE,K>* _entry = allocateNode(tid);
+            _entry = allocateNode(tid);
+            _entry->scxPtr = DUMMY;
             _entry->leaf = false;
+            _entry->marked = false;
             _entry->weight = true;
             _entry->size = 1;
             _entry->searchKey = anyKey;
             _entry->ptrs[0] = _entryLeft;
             
-            entry = _entry;
+            // need to simulate real insertion of root and the root's child,
+            // since range queries will actually try to add these nodes,
+            // and we don't want blocking rq providers to spin forever
+            // waiting for their itimes to be set to a positive number.
+            Node<DEGREE,K>* insertedNodes[] = {_entry, _entryLeft, NULL};
+            Node<DEGREE,K>* deletedNodes[] = {NULL};
+            rqProvider->linearize_update_at_write(tid, &entry, _entry, insertedNodes, deletedNodes);
         }
 
     #ifdef ABTREE_ENABLE_DESTRUCTOR    
@@ -233,7 +342,7 @@ public:
             int nodes = 0;
             freeSubtree(entry, &nodes);
 //            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
-            delete prov;
+            delete rqProvider;
 //            recordmgr->printStatus();
             delete recordmgr;
         }
@@ -412,11 +521,42 @@ public:
             return true;
         }
 
+        /**
+         * BEGIN FUNCTIONS FOR RANGE QUERY SUPPORT
+         */
+
+        inline bool isLogicallyDeleted(const int tid, Node<DEGREE,K> * node) {
+            return false;
+        }
+
+        inline int getKeys(const int tid, Node<DEGREE,K> * node, K * const outputKeys, void ** const outputValues) {
+            if (node->isLeaf()) {
+                // leaf ==> its keys are in the set.
+                const int sz = node->getKeyCount();
+                for (int i=0;i<sz;++i) {
+                    outputKeys[i] = node->keys[i];
+                    outputValues[i] = (void *) node->ptrs[i];
+                }
+                return sz;
+            }
+            // note: internal ==> its keys are NOT in the set
+            return 0;
+        }
+
+        bool isInRange(const K& key, const K& lo, const K& hi) {
+            return (!cmp(key, lo) && !cmp(hi, key));
+        }
+
+        /**
+         * END FUNCTIONS FOR RANGE QUERY SUPPORT
+         */
+
         long long getSizeInNodes() {
             return getNumberOfNodes();
         }
         std::string getSizeString() {
             std::stringstream ss;
+            int preallocated = wrapper_info<DEGREE,K>::MAX_NODES * recordmgr->NUM_PROCESSES;
             ss<<getSizeInNodes()<<" nodes in tree";
             return ss.str();
         }

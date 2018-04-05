@@ -36,7 +36,7 @@
 #endif
 
 #ifndef SOFTWARE_BARRIER
-#define SOFTWARE_BARRIER asm volatile("": : :"memory")
+#   define SOFTWARE_BARRIER asm volatile("": : :"memory")
 #endif
 
 #include <iostream>

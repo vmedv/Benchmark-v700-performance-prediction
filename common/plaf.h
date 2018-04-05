@@ -15,6 +15,10 @@
     #define LOGICAL_PROCESSORS MAX_THREADS_POW2
 #endif
 
+#ifndef SOFTWARE_BARRIER
+#   define SOFTWARE_BARRIER asm volatile("": : :"memory")
+#endif
+
 // the following definition is only used to pad data to avoid false sharing.
 // although the number of words per cache line is actually 8, we inflate this
 // figure to counteract the effects of prefetching multiple adjacent cache lines.
