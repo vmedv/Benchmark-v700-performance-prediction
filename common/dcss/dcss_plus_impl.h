@@ -1,6 +1,6 @@
 /* 
  * File:   dcss_plus_impl.h
- * Author: Maya Arbel-Raviv
+ * Author: Maya Arbel-Raviv and Trevor Brown
  *
  * Created on May 1, 2017, 10:52 AM
  */

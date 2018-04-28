@@ -1,6 +1,6 @@
 /* 
  * File:   dcss_plus.h
- * Author: Maya Arbel-Raviv
+ * Author: Maya Arbel-Raviv and Trevor Brown
  *
  * Created on May 1, 2017, 10:42 AM
  */
@@ -16,7 +16,9 @@
 
 #define dcssptagptr_t uintptr_t
 #define dcsspptr_t dcsspdesc_t<PAYLOAD_T> *
-#define casword_t intptr_t
+#ifndef casword_t
+#   define casword_t intptr_t
+#endif
 
 #define DCSSP_STATE_UNDECIDED 0
 #define DCSSP_STATE_SUCCEEDED 4
