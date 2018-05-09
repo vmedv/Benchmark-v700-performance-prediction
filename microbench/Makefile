@@ -24,8 +24,8 @@ LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
 
-#FLAGS += -DUSE_PAPI
-#LDFLAGS += -lpapi
+FLAGS += -DUSE_PAPI
+LDFLAGS += -lpapi
 
 MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
 MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
@@ -40,7 +40,11 @@ UBENCH_RTREEEBR_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rtreeebr,$(DATA_STRUC
 
 bin_dir=bin
 
-all: ubench minimal
+FLAGS += -DSEQUENTIAL_PREBUILD_FROM_ARRAY
+all: brown_ext_ist_lf.ubench_rnone
+
+#all: $(UBENCH_RNONE_BINS)
+#all: ubench minimal
 ubench: $(UBENCH_RNONE_BINS) $(UBENCH_RDEBRA_BINS) $(UBENCH_RDEBRACAP_BINS) $(UBENCH_RTREEEBR_BINS) 
 minimal: $(MINIMAL_BINS)
 

@@ -11,7 +11,7 @@
 #include "random.h"
 #include "brown_ext_ist_lf_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
 
 template <typename T>
@@ -40,7 +40,7 @@ public:
     }
     double interpolate(const long long& key, const long long& rangeLeft, const long long& rangeRight) {
         if (rangeRight == rangeLeft) return 0;
-        return (key - rangeLeft) / (double) (rangeRight - rangeLeft);
+        return ((double) key - (double) rangeLeft) / ((double) rangeRight - (double) rangeLeft);
     }
 };
 
@@ -56,6 +56,25 @@ public:
                const V& NO_VALUE,
                Random * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MAX, NO_VALUE))
+    {
+        if (!isValidAllocator<Alloc>()) {
+            setbench_error("This data structure must be used with allocator_new.")
+        }
+        if (NUM_THREADS > MAX_THREADS_POW2) {
+            setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
+        }
+    }
+    ds_adapter(const int NUM_THREADS
+            , const K& unused1
+            , const K& KEY_MAX
+            , const V& NO_VALUE
+            , Random * const unused3
+            , const K * const initKeys
+            , const V * const initValues
+            , const size_t initNumKeys
+            , const size_t initConstructionSeed /* note: randomness is used to ensure good tree structure whp */
+    )
+    : ds(new DATA_STRUCTURE_T(initKeys, initValues, initNumKeys, initConstructionSeed, NUM_THREADS, KEY_MAX, NO_VALUE))
     {
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")

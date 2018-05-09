@@ -619,9 +619,6 @@ void trial() {
     INIT_ALL;
     papi_init_program(TOTAL_THREADS);
     
-    g.ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >(
-            TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
-    
     // get random number generator seeded with time
     // we use this rng to seed per-thread rng's that use a different algorithm
     srand(time(NULL));
@@ -635,10 +632,38 @@ void trial() {
         g.rngs[i].setSeed(rand());
     }
 
+#ifdef SEQUENTIAL_PREBUILD_FROM_ARRAY
+    size_t sz = MAXKEY+1;
+    bool present[sz];
+    for (int i=0;i<sz;++i) present[i]=0;
+    for (int i=0;i<sz/2;++i) {
+    retry:
+        auto key = g.rngs[0].nextNatural(sz);
+        if (present[key]) goto retry;
+        present[key] = 1;
+    }
+    const int mainThreadTid = 0;
+    test_type keysToInsert[sz/2];
+    size_t k = 0;
+    for (int i=0;i<sz;++i) {
+        if (present[i]) {
+            keysToInsert[k++] = i;
+            GSTATS_ADD(mainThreadTid, key_checksum, i);
+        }
+    }
+    g.ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >(
+            TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs,
+            (test_type const *) keysToInsert, (VALUE_TYPE const *) keysToInsert,
+            sz/2, rand());
+#else
+    g.ds = new ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >(
+            TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
+
     DEINIT_ALL;
     
     if (PREFILL) prefill();
-
+#endif
+    
     INIT_ALL;
 
     // amount of time for main thread to wait for children threads
