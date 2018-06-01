@@ -18,6 +18,8 @@
 #ifndef ISTREE_H
 #define	ISTREE_H
 
+#define PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
+
 #include <string>
 #include <cstring>
 #include <fstream>
@@ -59,14 +61,16 @@ struct Node {
     size_t changeSum;
     size_t dirty;
     Node<K,V> * parent;
+    K minKey;
+    K maxKey;
     void * data; // layout: keys first, then pointers
     
-    K& key(const int ix) {
+    inline K& key(const int ix) {
         K * const firstKey = ((K *) &data);
         return firstKey[ix];
     }
     // conceptually returns &node.ptrs[ix]
-    casword_t * ptrAddr(const int ix) {
+    inline casword_t * ptrAddr(const int ix) {
         K * const firstKey = ((K *) &data);
         K * const firstKeyAfter = &firstKey[capacity - 1];
         casword_t * const firstPtr = (casword_t *) firstKeyAfter;
@@ -74,7 +78,7 @@ struct Node {
     }
 
     // conceptually returns node.ptrs[ix]
-    casword_t ptr(const int ix) {
+    inline casword_t ptr(const int ix) {
         return *ptrAddr(ix);
     }
 };
@@ -316,7 +320,13 @@ public:
                         auto p = currNodeAtDepth[i-1];
                         curr->parent = p;
                         auto pdeg = p->degree;
-                        if (pdeg > 0) p->key(pdeg-1) = key;
+                        if (pdeg > 0) {
+                            p->key(pdeg-1) = key;
+                            if (pdeg == 1) {
+                                p->minKey = key;
+                            }
+                            p->maxKey = key;
+                        }
                         *p->ptrAddr(pdeg) = NODE_TO_CASWORD(curr);
                         ++p->degree;
                     }
@@ -330,7 +340,13 @@ public:
             auto node = currNodeAtDepth[height-1];
             assert(node->degree < node->capacity); // assert: bottom level current node is not full
             auto deg = node->degree;
-            if (deg > 0) node->key(deg-1) = key;
+            if (deg > 0) {
+                node->key(deg-1) = key;
+                if (deg == 1) {
+                    node->minKey = key;
+                }
+                node->maxKey = key;
+            }
             *node->ptrAddr(deg) = KVPAIR_TO_CASWORD(kvptr);
             assert(kvptr);
             ++node->initSize;

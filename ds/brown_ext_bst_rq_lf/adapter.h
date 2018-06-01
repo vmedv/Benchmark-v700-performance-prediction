@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
 #include "bst_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bst_ns::Node<K, V>>
@@ -25,7 +25,7 @@ public:
                const K& KEY_RESERVED,
                const K& unused1,
                const V& VALUE_RESERVED,
-               Random * const unused2)
+               RandomFNV1A * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , ds(new DATA_STRUCTURE_T(KEY_RESERVED, NO_VALUE, NUM_THREADS))
     {}

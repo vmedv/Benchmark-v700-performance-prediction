@@ -9,9 +9,7 @@
 #define	GLOBALS_H
 
 #include <string>
-
 #include "plaf.h"
-
 #include "debugprinting.h"
 
 PAD;
@@ -22,9 +20,11 @@ int RQSIZE;
 int MAXKEY;
 int MILLIS_TO_RUN;
 bool PREFILL;
+int PREFILL_THREADS;
 int WORK_THREADS;
 int RQ_THREADS;
 int TOTAL_THREADS;
+char PERF_PMU_EVENT[1<<10];
 PAD;
 
 #include "gstats_global.h"

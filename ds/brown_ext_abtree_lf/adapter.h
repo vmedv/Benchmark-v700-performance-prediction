@@ -8,11 +8,11 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
 #include "brown_ext_abtree_lf_impl.h"
+#include "tree_stats.h"
 
 #if !defined FAT_NODE_DEGREE
-//    #warning "FAT_NODE_DEGREE was not defined... using default: 16."
     #define FAT_NODE_DEGREE 11
 #endif
 
@@ -29,7 +29,7 @@ public:
                const K& KEY_ANY,
                const K& unused1,
                const V& unused2,
-               Random * const unused3)
+               RandomFNV1A * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
     {
         if (!std::is_same<V, void *>::value) {
@@ -72,36 +72,46 @@ public:
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
         return ds->rangeQuery(tid, lo, hi, resultKeys, resultValues);
     }
-    /**
-     * Sequential operation to get the number of keys in the set
-     */
-    int getSize() {
-        return ds->getSize();
-    }
     void printSummary() {
-        std::stringstream ss;
-        ss<<ds->getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
-        
-        auto recmgr = ds->debugGetRecMgr();
-        recmgr->printStatus();
-    }
-    long long getKeyChecksum() {
-        return ds->debugKeySum();
+        ds->debugGetRecMgr()->printStatus();
     }
     bool validateStructure() {
         return true;
     }
     void printObjectSizes() {
-        std::cout<<"sizes: node="
-                 <<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))
-                 //<<" descriptor="<<(sizeof(abtree_ns::SCXRecord))<<" (statically allocated)"
-                 <<std::endl;
+        std::cout<<"size_node="<<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))<<std::endl;
+    }
+    // this class is only needed for some statistics calculations in this test harness
+    class NodeHandler {
+    public:
+        typedef abtree_ns::Node<FAT_NODE_DEGREE,K> * NodePtrType;
+
+        class ChildIterator {
+        private:
+            size_t ix;
+            NodePtrType node; // node being iterated over
+        public:
+            ChildIterator(NodePtrType _node) { node = _node; ix = 0; }
+            bool hasNext() { return ix < node->size; }
+            NodePtrType next() { return node->ptrs[ix++]; }
+        };
+        
+        static bool isLeaf(NodePtrType node) { return node->leaf; }
+        static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
+        static size_t getNumChildren(NodePtrType node) { return node->size; }
+        static size_t getNumKeys(NodePtrType node) { return isLeaf(node) ? node->size : 0; }
+        static size_t getSumOfKeys(NodePtrType node) {
+            size_t sz = getNumKeys(node);
+            size_t result = 0;
+            for (size_t i=0;i<sz;++i) {
+                result += (size_t) node->keys[i];
+            }
+            return result;
+        }
+    };
+    TreeStats<NodeHandler> * createTreeStats() {
+        return new TreeStats<NodeHandler>(ds->debug_getEntryPoint());
     }
 };
-
-#undef RECORD_MANAGER_T
-#undef DATA_STRUCTURE_T
-#undef FAT_NODE_DEGREE
 
 #endif

@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     const int unused1 = 0;
     const int KEY_POS_INFTY = std::numeric_limits<int>::max();
     void * const VALUE_RESERVED = (void *) (uintptr_t) (-1);
-    Random * const unused2 = NULL;
+    RandomFNV1A * const unused2 = NULL;
     
     auto tree = new ds_adapter<int, void *>(NUM_THREADS, unused1, KEY_POS_INFTY, VALUE_RESERVED, unused2);
     

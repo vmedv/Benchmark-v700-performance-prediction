@@ -170,7 +170,7 @@ public:
         void * const NO_VALUE;
         const int NUM_PROCESSES;
         PAD;
-
+        
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
@@ -227,7 +227,7 @@ public:
             
             entry = _entry;
         }
-
+    
     #ifdef ABTREE_ENABLE_DESTRUCTOR    
         ~abtree() {
             int nodes = 0;

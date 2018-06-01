@@ -10,17 +10,17 @@
 
 #include "plaf.h"
 
-class Random {
+class RandomFNV1A {
 private:
     union {
         unsigned int seed;
         PAD;
     };
 public:
-    Random(void) {
+    RandomFNV1A(void) {
         this->seed = 0;
     }
-    Random(int seed) {
+    RandomFNV1A(int seed) {
         this->seed = seed;
     }
     
@@ -29,7 +29,7 @@ public:
     }
 
     /** returns pseudorandom x satisfying 0 <= x < n. **/
-    int nextNatural(int n) {
+    int next(int n) {
         seed ^= seed << 6;
         seed ^= seed >> 21;
         seed ^= seed << 7;
@@ -38,7 +38,7 @@ public:
     }
 
     /** returns pseudorandom x satisfying 0 <= x < n. **/
-    unsigned int nextNatural() {
+    unsigned int next() {
         seed ^= seed << 6;
         seed ^= seed >> 21;
         seed ^= seed << 7;

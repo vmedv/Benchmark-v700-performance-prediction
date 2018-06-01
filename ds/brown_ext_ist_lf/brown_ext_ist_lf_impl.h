@@ -13,11 +13,11 @@ const std::pair<V,bool> istree<K,V,Interpolate,RecManager>::find(const int tid, 
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
     assert(ptr);
     while (true) {
-        if (IS_KVPAIR(ptr)) {
+        if (unlikely(IS_KVPAIR(ptr))) {
             auto kv = CASWORD_TO_KVPAIR(ptr);
             if (kv->k == key) return std::pair<V,bool>(kv->v, true);
             return std::pair<V,bool>(NO_VALUE, false);
-        } else if (IS_REBUILDOP(ptr)) {
+        } else if (unlikely(IS_REBUILDOP(ptr))) {
             auto rebuild = CASWORD_TO_REBUILDOP(ptr);
             ptr = NODE_TO_CASWORD(rebuild->candidate);
         } else {
@@ -162,35 +162,67 @@ restart:
 
 template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const K& key, Node<K,V> * const node) {
-    assert(node->degree >= 1);
-    if (node->degree == 1) return 0;
+    __builtin_prefetch(&node->degree, 1);
+    __builtin_prefetch(&node->maxKey, 1);
+    __builtin_prefetch((&node->data), 1);
+    __builtin_prefetch((&node->data)+(16), 1);
+
+    //assert(node->degree >= 1);
+    if (unlikely(node->degree == 1)) return 0;
     
     const int numKeys = node->degree - 1;
-    const K& minKey = node->key(0);
-    const K& maxKey = node->key(numKeys-1);
-    double pos = cmp.interpolate(key, minKey, maxKey);
-    pos = (pos < 0) ? 0 : (pos > 1) ? 1 : pos;
+    const K& minKey = node->minKey;
+    const K& maxKey = node->maxKey;
     
-    int ix = (int) (pos * numKeys);
-    int c = cmp.compare(key, node->key(ix));
+    if (unlikely(key < minKey)) return 0;
+    if (unlikely(key >= maxKey)) return numKeys;
+    // assert: minKey <= key < maxKey
+    int ix = (numKeys * (key - minKey) / (maxKey - minKey));
+
+    __builtin_prefetch((&node->data)+(ix), 1); // prefetch approximate key location
+    __builtin_prefetch((&node->data)+(numKeys+ix), 1); // prefetch approximate pointer location to accelerate later isDcss check
     
-    if (c < 0) {
+    const K& ixKey = node->key(ix);
+    if (key < ixKey) {
         // search to the left for node.key[i] <= key, then return i+1
-        for (int i=ix-1;i>=0;--i) {
-            c = cmp.compare(key, node->key(i));
-            if (c >= 0) return i+1;
+        for (int i=ix-1;/*i>=0*/;--i) {
+            if (unlikely(key >= node->key(i))) return i+1;
         }
-        return 0;
-    } else if (c > 0) {
-        // search to the right for node.key[ix] > key, then return ix
-        for (int i=ix+1;i<numKeys;++i) { // recall: degree - 1 keys vs degree pointers
-            c = cmp.compare(key, node->key(i));
-            if (c < 0) return i;
+        assert(false);
+    } else if (key > ixKey) {
+        for (int i=ix+1;/*i<numKeys*/;++i) { // recall: degree - 1 keys vs degree pointers
+            if (unlikely(key < node->key(i))) return i;
         }
-        return numKeys;
-    } else { // c == 0
+        assert(false);
+    } else {
         return ix+1;
     }
+    
+//    const K& minKey = node->key(0);
+//    const K& maxKey = node->key(numKeys-1);
+//    double pos = cmp.interpolate(key, minKey, maxKey);
+//    pos = (pos < 0) ? 0 : (pos > 1) ? 1 : pos;
+//    
+//    int ix = (int) (pos * numKeys);
+//    int c = cmp.compare(key, node->key(ix));
+//    
+//    if (c < 0) {
+//        // search to the left for node.key[i] <= key, then return i+1
+//        for (int i=ix-1;i>=0;--i) {
+//            c = cmp.compare(key, node->key(i));
+//            if (c >= 0) return i+1;
+//        }
+//        return 0;
+//    } else if (c > 0) {
+//        // search to the right for node.key[ix] > key, then return ix
+//        for (int i=ix+1;i<numKeys;++i) { // recall: degree - 1 keys vs degree pointers
+//            c = cmp.compare(key, node->key(i));
+//            if (c < 0) return i;
+//        }
+//        return numKeys;
+//    } else { // c == 0
+//        return ix+1;
+//    }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>

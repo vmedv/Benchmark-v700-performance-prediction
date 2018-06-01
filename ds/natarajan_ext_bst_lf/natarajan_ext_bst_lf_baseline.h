@@ -329,9 +329,9 @@ public:
     }    
 
     void printSummary() {
-        std::stringstream ss;
-        ss<<getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
+//        std::stringstream ss;
+//        ss<<getSizeInNodes()<<" nodes in tree";
+//        std::cout<<ss.str()<<std::endl;
     }
 };
 #endif /* NATARAJAN_EXT_BST_LF_H */

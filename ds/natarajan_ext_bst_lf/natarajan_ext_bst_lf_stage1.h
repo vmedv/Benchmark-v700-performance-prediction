@@ -275,11 +275,11 @@ public:
         return root;
     }
 
-    node_t<skey_t, sval_t> * get_left(node_t<skey_t, sval_t> * curr) {
+    static node_t<skey_t, sval_t> * get_left(node_t<skey_t, sval_t> * curr) {
         return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val1); 
     }
 
-    node_t<skey_t, sval_t> * get_right(node_t<skey_t, sval_t> * curr) {
+    static node_t<skey_t, sval_t> * get_right(node_t<skey_t, sval_t> * curr) {
         return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val2); 
     }
     
@@ -322,10 +322,10 @@ public:
     }    
 
     void printSummary() {
-        std::stringstream ss;
-        ss<<getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
-
+//        std::stringstream ss;
+//        ss<<getSizeInNodes()<<" nodes in tree";
+//        std::cout<<ss.str()<<std::endl;
+//
         recmgr->printStatus();
     }
 };

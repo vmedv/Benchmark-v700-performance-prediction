@@ -14,7 +14,7 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
 #include "ccavl_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
@@ -30,7 +30,7 @@ public:
                const K& KEY_NEG_INFTY,
                const K& unused1,
                const V& unused2,
-               Random * const unused3)
+               RandomFNV1A * const unused3)
     : tree(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
     {
         if (NUM_THREADS > MAX_THREADS_POW2) {

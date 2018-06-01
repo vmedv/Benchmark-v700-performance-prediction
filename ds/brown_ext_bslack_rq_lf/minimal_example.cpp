@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     const int KEY_ANY = 0;
     const int unused1 = 0;
     void * const unused2 = NULL;
-    Random * const unused3 = NULL;
+    RandomFNV1A * const unused3 = NULL;
     
     auto tree = new ds_adapter<int, void *>(NUM_THREADS, KEY_ANY, unused1, unused2, unused3);
     

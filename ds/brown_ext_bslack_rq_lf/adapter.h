@@ -8,7 +8,7 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
 #include "bslack_impl.h"
 
 #if !defined FAT_NODE_DEGREE
@@ -29,7 +29,7 @@ public:
                const K& KEY_ANY,
                const K& unused1,
                const V& unused2,
-               Random * const unused3)
+               RandomFNV1A * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
     {
         if (!std::is_same<V, void *>::value) {

@@ -18,7 +18,7 @@
 
 #define DCSS_TAGBIT 0x1
 
-static bool isDcss(casword_t val) {
+inline static bool isDcss(casword_t val) {
     return (val & DCSS_TAGBIT);
 }
 
@@ -144,11 +144,11 @@ dcssresult_t dcssProvider::dcssPtr(const int tid, casword_t * addr1, casword_t o
     return {DCSS_FAILED_ADDR2,r};//DCSS_FAILED_ADDR2;
 }
 
-casword_t dcssProvider::dcssRead(const int tid, casword_t volatile * addr) {
+inline casword_t dcssProvider::dcssRead(const int tid, casword_t volatile * addr) {
     casword_t r;
     while (1) {
         r = *addr;
-        if (isDcss(r)) {
+        if (unlikely(isDcss(r))) {
 #ifdef USE_DEBUGCOUNTERS
             this->dcssHelpCounter->inc(tid);
 #endif
@@ -179,7 +179,7 @@ dcssProvider::~dcssProvider() {
 #endif
 }
 
-casword_t dcssProvider::readPtr(const int tid, casword_t volatile * addr) {
+inline casword_t dcssProvider::readPtr(const int tid, casword_t volatile * addr) {
     casword_t r;
     r = dcssRead(tid, addr);
     return r;
