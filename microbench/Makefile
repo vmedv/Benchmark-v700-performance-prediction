@@ -11,17 +11,12 @@ FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
 FLAGS += -DNO_DELETE_DS
 #FLAGS += -DRAPID_RECLAMATION
-#FLAGS += -DRECLAIM_TYPE=tree_ebr
-#FLAGS += -DRECLAIM_TYPE=numa_ebr
-#FLAGS += -DRECLAIM_TYPE=debra
-#FLAGS += -DRECLAIM_TYPE=none
-#FLAGS += -fprefetch-loop-arrays
+#FLAGS += -DPREFILL_INSERTION_ONLY
 FLAGS += -DNDEBUG
 FLAGS += $(xargs)
 
 LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
-
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
 
@@ -32,7 +27,6 @@ MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
 MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
 
 DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
-#UBENCH_BINS=$(patsubst ../ds/%/adapter.h,%.ubench,$(DATA_STRUCTURE_ADAPTERS_H))
 
 UBENCH_RNONE_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rnone,$(DATA_STRUCTURE_ADAPTERS_H))
 UBENCH_RDEBRA_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebra,$(DATA_STRUCTURE_ADAPTERS_H))
@@ -41,12 +35,9 @@ UBENCH_RTREEEBR_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rtreeebr,$(DATA_STRUC
 
 bin_dir=bin
 
-FLAGS += -DPREFILL_INSERTION_ONLY
-#all: brown_ext_ist_lf.ubench_rnone
 all: brown_ext_ist_lf.ubench_rnone brown_ext_abtree_lf.ubench_rnone natarajan_ext_bst_lf.ubench_rnone brown_ext_abtree_lf.ubench_rdebra natarajan_ext_bst_lf.ubench_rdebra
-
-#all: $(UBENCH_RNONE_BINS)
 #all: ubench minimal
+
 ubench: $(UBENCH_RNONE_BINS) $(UBENCH_RDEBRA_BINS) $(UBENCH_RDEBRACAP_BINS) $(UBENCH_RTREEEBR_BINS) 
 minimal: $(MINIMAL_BINS)
 
