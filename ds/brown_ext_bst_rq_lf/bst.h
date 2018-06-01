@@ -64,8 +64,6 @@ namespace bst_ns {
         #define GET_ALLOCATED_NODE_PTR(tid, i) allocatedNodes[tid*(PREFETCH_SIZE_WORDS+MAX_NODES)+i]
         #define REPLACE_ALLOCATED_NODE(tid, i) { GET_ALLOCATED_NODE_PTR(tid, i) = allocateNode(tid); /*GET_ALLOCATED_NODE_PTR(tid, i)->left.store((uintptr_t) NULL, std::memory_order_relaxed);*/ }
 
-        #define IS_SENTINEL(node, parent) ((node)->key == NO_KEY || (parent)->key == NO_KEY)
-
     #ifdef USE_DEBUGCOUNTERS
         // debug info
         debugCounters * const counters;
