@@ -25,25 +25,25 @@ private:
     size_t sumOfKeys;
     PAD;
     
-    void computeStats(nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
+    void computeStats(NodeHandlerT * handler, nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
         //std::cout<<"nodeAddr="<<(size_t)node<<" depth="<<depth<<" degree="<<node->size<<" internal?="<<NodeHandlerT::isInternal(node)<<std::endl;
         if (depth > maxDepth) return;
-        keysAtDepth[depth] += NodeHandlerT::getNumKeys(node);
-        sumOfKeys += NodeHandlerT::getSumOfKeys(node);
-        if (NodeHandlerT::isLeaf(node)) {
+        keysAtDepth[depth] += handler->getNumKeys(node);
+        sumOfKeys += handler->getSumOfKeys(node);
+        if (handler->isLeaf(node)) {
             ++leavesAtDepth[depth];
         } else {
             ++internalsAtDepth[depth];
-            auto it = NodeHandlerT::getChildIterator(node);
+            auto it = handler->getChildIterator(node);
             while (it.hasNext()) {
                 auto child = it.next();
-                computeStats(child, 1+depth, maxDepth);
+                computeStats(handler, child, 1+depth, maxDepth);
             }
         }
     }
     
 public:
-    TreeStats(nodeptr root, bool parallelConstruction = true) {
+    TreeStats(NodeHandlerT * handler, nodeptr root, bool parallelConstruction = true) {
         for (size_t d=0;d<MAX_HEIGHT;++d) {
             internalsAtDepth[d] = 0;
             leavesAtDepth[d] = 0;
@@ -51,7 +51,7 @@ public:
         }
         sumOfKeys = 0;
         if (!parallelConstruction) {
-            computeStats(root, 0);
+            computeStats(handler, root, 0);
             
         } else {
             /**
@@ -92,8 +92,8 @@ public:
                 ++nodesSeenAtDepth;
 
                 // add any children to the queue
-                if (!NodeHandlerT::isLeaf(node)) {
-                    auto it = NodeHandlerT::getChildIterator(node);
+                if (!handler->isLeaf(node)) {
+                    auto it = handler->getChildIterator(node);
                     while (it.hasNext()) {
                         auto child = it.next();
                         qn.push_back(child);
@@ -107,7 +107,7 @@ public:
             std::cout<<"partitioned into "<<(ix-ixStartOfDepth+1)<<" subtrees; running parallel for..."<<std::endl;
             #pragma omp parallel for schedule(dynamic, 1)
             for (size_t i=ixStartOfDepth;i<ix;++i) {
-                TreeStats<NodeHandlerT> * ts = new TreeStats(qn[i], false);
+                TreeStats<NodeHandlerT> * ts = new TreeStats(handler, qn[i], false);
                 for (size_t d=0;d<MAX_HEIGHT-currDepth;++d) {
                     FAA(&internalsAtDepth[d+currDepth], ts->internalsAtDepth[d]);
                     FAA(&leavesAtDepth[d+currDepth], ts->leavesAtDepth[d]);
@@ -126,7 +126,7 @@ public:
             
             // compute stats for the top of the tree, ABOVE the parallel constructed subtrees.
             std::cout<<"computing stats for the top of the tree (above the partitions)..."<<std::endl;
-            computeStats(root, 0, currDepth - 1);
+            computeStats(handler, root, 0, currDepth - 1);
         }
     }
 

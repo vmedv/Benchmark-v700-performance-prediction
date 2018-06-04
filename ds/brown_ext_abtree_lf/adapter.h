@@ -86,6 +86,14 @@ public:
     public:
         typedef abtree_ns::Node<FAT_NODE_DEGREE,K> * NodePtrType;
 
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
+        
         class ChildIterator {
         private:
             size_t ix;
@@ -109,8 +117,8 @@ public:
             return result;
         }
     };
-    TreeStats<NodeHandler> * createTreeStats() {
-        return new TreeStats<NodeHandler>(ds->debug_getEntryPoint());
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint());
     }
 };
 

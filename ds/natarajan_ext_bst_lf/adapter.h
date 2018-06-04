@@ -132,6 +132,13 @@ public:
     class NodeHandler {
     public:
         typedef node_t<K,V> * NodePtrType;
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
 
         class ChildIterator {
         private:
@@ -149,8 +156,8 @@ public:
         static size_t getNumKeys(NodePtrType node) { return isLeaf(node); }
         static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) node->key : 0; }
     };
-    TreeStats<NodeHandler> * createTreeStats() {
-        return new TreeStats<NodeHandler>(DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())));
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())));
     }
 };
 

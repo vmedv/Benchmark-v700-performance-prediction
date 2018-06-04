@@ -81,7 +81,14 @@ public:
     class NodeHandler {
     public:
         typedef bst_glock_ns::Node<K,V> * NodePtrType;
-
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
+        
         class ChildIterator {
         private:
             bool leftDone;
@@ -129,8 +136,8 @@ public:
             return ChildIterator(node);
         }
     };
-    TreeStats<NodeHandler> * createTreeStats() {
-        return new TreeStats<NodeHandler>(ds->debug_getEntryPoint()->left->left, false);
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint()->left->left);
     }
 };
 

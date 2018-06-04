@@ -854,7 +854,7 @@ void printOutput() {
     std::cout<<"PRODUCING OUTPUT"<<std::endl;
 
     auto timeBeforeTreeStats = std::chrono::high_resolution_clock::now();
-    auto treeStats = g.dsAdapter->createTreeStats();
+    auto treeStats = g.dsAdapter->createTreeStats(g.KEY_MIN, g.KEY_MAX);
     auto timeAfterTreeStats = std::chrono::high_resolution_clock::now();
     auto elapsedTreeStats = std::chrono::duration_cast<std::chrono::milliseconds>(timeAfterTreeStats-timeBeforeTreeStats).count();
     std::cout<<std::endl;

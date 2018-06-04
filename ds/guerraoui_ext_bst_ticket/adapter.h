@@ -1,6 +1,9 @@
 /**
- * Implementation of a hand-over-hand locking unbalanced external binary search tree.
- * Trevor Brown, 2018.
+ * Implementation of the ASCYLIB ticket lock of Ddavid, Guerraoui and Trigonakis.
+ * This is a heavily modified version of the ASCYLIB implementation.
+ * (See copyright notice in ticket.h)
+ * The modifications are copyrighted (consistent with the original license)
+ *   by Maya Arbel-Raviv and Trevor Brown, 2018.
  */
 
 #ifndef BST_ADAPTER_H
@@ -11,10 +14,10 @@
 #include "errors.h"
 #include "random_fnv1a.h"
 #include "tree_stats.h"
-#include "bst_hohrwlock_impl.h"
+#include "ticket_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bst_hohrwlock_ns::Node<K, V>>
-#define DATA_STRUCTURE_T bst_hohrwlock_ns::bst_hohrwlock<K, V, std::less<K>, RECORD_MANAGER_T>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
+#define DATA_STRUCTURE_T ticket<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -24,12 +27,12 @@ private:
 
 public:
     ds_adapter(const int NUM_THREADS,
-               const K& KEY_RESERVED,
-               const K& unused1,
+               const K& KEY_MIN,
+               const K& KEY_MAX,
                const V& VALUE_RESERVED,
                RandomFNV1A * const unused2)
     : NO_VALUE(VALUE_RESERVED)
-    , ds(new DATA_STRUCTURE_T(KEY_RESERVED, NO_VALUE, NUM_THREADS))
+    , ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MIN, KEY_MAX, NO_VALUE, 0 /* unused */))
     {}
     ~ds_adapter() {
         delete ds;
@@ -46,23 +49,23 @@ public:
         ds->deinitThread(tid);
     }
 
-    bool contains(const int tid, const K& key) {
-        return ds->contains(tid, key);
-    }
     V insert(const int tid, const K& key, const V& val) {
-        return ds->insert(tid, key, val);
+        setbench_error("insert-replace functionality not implemented for this data structure");
     }
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return ds->insertIfAbsent(tid, key, val);
+        return ds->bst_tk_insert(tid, key, val);
     }
     V erase(const int tid, const K& key) {
-        return ds->erase(tid, key).first;
+        return ds->bst_tk_delete(tid, key);
     }
     V find(const int tid, const K& key) {
-        return ds->find(tid, key).first;
+        return ds->bst_tk_find(tid, key);
+    }
+    bool contains(const int tid, const K& key) {
+        return find(tid, key) != getNoValue();
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
-        return ds->rangeQuery(tid, lo, hi, resultKeys, resultValues);
+        setbench_error("not implemented");
     }
     void printSummary() {
         auto recmgr = ds->debugGetRecMgr();
@@ -73,14 +76,14 @@ public:
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(bst_hohrwlock_ns::Node<K, V>))
+                 <<(sizeof(node_t<K,V>))
                  <<std::endl;
     }
 
     // this class is only needed for some statistics calculations in this test harness
     class NodeHandler {
     public:
-        typedef bst_hohrwlock_ns::Node<K,V> * NodePtrType;
+        typedef node_t<K,V> * NodePtrType;
         K minKey;
         K maxKey;
         
@@ -116,28 +119,27 @@ public:
             }
         };
         
-        static bool isLeaf(NodePtrType node) {
+        bool isLeaf(NodePtrType node) {
             return (node->left == NULL) && (node->right == NULL);
         }
-        static size_t getNumChildren(NodePtrType node) {
+        size_t getNumChildren(NodePtrType node) {
             return (node->left != NULL) + (node->right != NULL);
         }
-        static size_t getNumKeys(NodePtrType node) {
+        size_t getNumKeys(NodePtrType node) {
             if (!isLeaf(node)) return 0;
-            //if (node->key == KEY_RESERVED) return 0;
+            if (node->key == minKey || node->key == maxKey) return 0;
             return 1;
         }
-        static size_t getSumOfKeys(NodePtrType node) {
-            if (!isLeaf(node)) return 0;
-            //if (node->key == KEY_RESERVED) return 0;
+        size_t getSumOfKeys(NodePtrType node) {
+            if (getNumKeys(node) == 0) return 0;
             return (size_t) node->key;
         }
-        static ChildIterator getChildIterator(NodePtrType node) {
+        ChildIterator getChildIterator(NodePtrType node) {
             return ChildIterator(node);
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint()->left->left);
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->get_root()->left);
     }
 };
 

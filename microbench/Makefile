@@ -20,8 +20,8 @@ LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
 
-#FLAGS += -DUSE_PAPI
-#LDFLAGS += -lpapi
+FLAGS += -DUSE_PAPI
+LDFLAGS += -lpapi
 
 MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
 MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
@@ -35,9 +35,21 @@ UBENCH_RTREEEBR_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rtreeebr,$(DATA_STRUC
 
 bin_dir=bin
 
-all: brown_ext_ist_lf.ubench_rnone brown_ext_abtree_lf.ubench_rnone natarajan_ext_bst_lf.ubench_rnone brown_ext_abtree_lf.ubench_rdebra natarajan_ext_bst_lf.ubench_rdebra
-#all: ubench minimal
+all: bronson_pext_bst_occ.ubench_rnone
+all: natarajan_ext_bst_lf.ubench_rnone
+all: guerraoui_ext_bst_ticket.ubench_rnone
+all: brown_ext_bst_rq_lf.ubench_rnone
+all: brown_ext_abtree_lf.ubench_rnone
+all: brown_ext_abtree_rq_lf.ubench_rnone
+all: brown_ext_bslack_rq_lf.ubench_rnone
+all: brown_ext_bst_glock.ubench_rnone
+all: brown_ext_bst_rwlock.ubench_rnone
+all: brown_ext_bst_hohlock.ubench_rnone
+all: brown_ext_bst_hohrwlock.ubench_rnone
+all: brown_ext_ist_lf.ubench_rnone
 
+#all: ubench
+#all: minimal
 ubench: $(UBENCH_RNONE_BINS) $(UBENCH_RDEBRA_BINS) $(UBENCH_RDEBRACAP_BINS) $(UBENCH_RTREEEBR_BINS) 
 minimal: $(MINIMAL_BINS)
 
