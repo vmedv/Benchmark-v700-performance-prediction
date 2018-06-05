@@ -179,7 +179,7 @@ private:
 PAD;
     const unsigned int idx_id;
 PAD;
-    node_t<skey_t, sval_t> * head;
+    node_t<skey_t, sval_t> * root;
 PAD;
     const int NUM_THREADS;
     const skey_t KEY_MIN;
@@ -205,7 +205,7 @@ public:
 
         node_t<skey_t, sval_t>* _min = new_node(tid, KEY_MIN, NO_VALUE, NULL, NULL);
         node_t<skey_t, sval_t>* _max = new_node(tid, KEY_MAX, NO_VALUE, NULL, NULL);
-        head = new_node(tid, KEY_MAX, NO_VALUE, _min, _max);
+        root = new_node(tid, KEY_MAX, NO_VALUE, _min, _max);
         MEM_BARRIER;
     }
 
@@ -231,7 +231,7 @@ public:
     sval_t bst_tk_delete(const int tid, skey_t key);
 
     node_t<skey_t, sval_t> * get_root() {
-        return head;
+        return root;
     }
 
     RecMgr * debugGetRecMgr() {

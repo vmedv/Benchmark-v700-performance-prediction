@@ -5,6 +5,8 @@
 #ifndef TREE_STATS_H
 #define TREE_STATS_H
 
+#ifdef USE_TREE_STATS
+
 #include <cassert>
 #include <sstream>
 #include <string>
@@ -289,6 +291,8 @@ public:
         return ss.str();
     }
 };
+
+#endif
 
 #endif /* TREE_STATS_H */
 

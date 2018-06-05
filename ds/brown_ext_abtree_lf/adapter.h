@@ -10,7 +10,9 @@
 #include "errors.h"
 #include "random_fnv1a.h"
 #include "brown_ext_abtree_lf_impl.h"
-#include "tree_stats.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 
 #if !defined FAT_NODE_DEGREE
     #define FAT_NODE_DEGREE 11
@@ -81,7 +83,7 @@ public:
     void printObjectSizes() {
         std::cout<<"size_node="<<(sizeof(abtree_ns::Node<FAT_NODE_DEGREE, K>))<<std::endl;
     }
-    // this class is only needed for some statistics calculations in this test harness
+#ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef abtree_ns::Node<FAT_NODE_DEGREE,K> * NodePtrType;
@@ -120,6 +122,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint());
     }
+#endif
 };
 
 #endif

@@ -58,7 +58,7 @@ node_t<skey_t, sval_t>* ticket<skey_t, sval_t, RecMgr>::new_node_no_init(const i
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ticket<skey_t, sval_t, RecMgr>::bst_tk_find(const int tid, skey_t key) {
     auto guard = recmgr->getGuard(tid);
-    node_t<skey_t, sval_t>* curr = head;
+    node_t<skey_t, sval_t>* curr = root;
 
     while (likely(curr->left != NULL)) {
         if (key < curr->key) {
@@ -85,7 +85,7 @@ sval_t ticket<skey_t, sval_t, RecMgr>::bst_tk_insert(const int tid, skey_t key, 
 retry:
     { // reclamation guarded section
         auto guard = recmgr->getGuard(tid);
-        curr = head;
+        curr = root;
         do {
             curr_ver = curr->lock.to_uint64;
 
@@ -149,7 +149,7 @@ retry:
 
     { // reclamation guarded section
         auto guard = recmgr->getGuard(tid);
-        curr = head;
+        curr = root;
 
         do {
             curr_ver = curr->lock.to_uint64;

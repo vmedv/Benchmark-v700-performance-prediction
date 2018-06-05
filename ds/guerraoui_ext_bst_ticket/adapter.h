@@ -1,5 +1,5 @@
 /**
- * Implementation of the ASCYLIB ticket lock of Ddavid, Guerraoui and Trigonakis.
+ * Implementation of the ASCYLIB ticket lock of David, Guerraoui and Trigonakis.
  * This is a heavily modified version of the ASCYLIB implementation.
  * (See copyright notice in ticket.h)
  * The modifications are copyrighted (consistent with the original license)
@@ -13,7 +13,9 @@
 #include <csignal>
 #include "errors.h"
 #include "random_fnv1a.h"
-#include "tree_stats.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 #include "ticket_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
@@ -80,7 +82,7 @@ public:
                  <<std::endl;
     }
 
-    // this class is only needed for some statistics calculations in this test harness
+#ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef node_t<K,V> * NodePtrType;
@@ -141,6 +143,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->get_root()->left);
     }
+#endif
 };
 
 #endif

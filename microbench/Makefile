@@ -35,6 +35,8 @@ UBENCH_RTREEEBR_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rtreeebr,$(DATA_STRUC
 
 bin_dir=bin
 
+all: ellen_ext_bst_lf.ubench_rnone
+all: drachsler_pext_bst_lock.ubench_rnone
 all: bronson_pext_bst_occ.ubench_rnone
 all: natarajan_ext_bst_lf.ubench_rnone
 all: guerraoui_ext_bst_ticket.ubench_rnone
@@ -57,13 +59,13 @@ minimal: $(MINIMAL_BINS)
 	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
 %.ubench_rnone:
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rnone=%) -DDS_TYPENAME=$(@:%.ubench_rnone=%) main.cpp -DRECLAIM_TYPE=none $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rnone=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rnone=%) main.cpp -DRECLAIM_TYPE=none $(LDFLAGS)
 %.ubench_rdebra:
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
 %.ubench_rdebracap:
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=numa_ebr $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=numa_ebr $(LDFLAGS)
 %.ubench_rtreeebr:
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rtreeebr=%) -DDS_TYPENAME=$(@:%.ubench_rtreeebr=%) main.cpp -DRECLAIM_TYPE=tree_ebr $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rtreeebr=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rtreeebr=%) main.cpp -DRECLAIM_TYPE=tree_ebr $(LDFLAGS)
 
 clean:
 	rm $(bin_dir)/*

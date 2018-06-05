@@ -10,7 +10,9 @@
 #include <csignal>
 #include "errors.h"
 #include "random_fnv1a.h"
-#include "tree_stats.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 #include "bst_rwlock_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bst_rwlock_ns::Node<K, V>>
@@ -77,7 +79,7 @@ public:
                  <<std::endl;
     }
 
-    // this class is only needed for some statistics calculations in this test harness
+#ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef bst_rwlock_ns::Node<K,V> * NodePtrType;
@@ -139,6 +141,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint()->left->left);
     }
+#endif
 };
 
 #endif

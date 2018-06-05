@@ -867,6 +867,8 @@ void printOutput() {
     std::cout<<std::endl;
 #endif
     
+    g.dsAdapter->printSummary();
+    
     long long threadsKeySum = 0;
     
 #ifdef USE_GSTATS
@@ -941,7 +943,7 @@ void printOutput() {
     COUTATOMIC("napping milliseconds overtime : "<<g.elapsedMillisNapping<<std::endl);
     COUTATOMIC(std::endl);
 
-    g.dsAdapter->printSummary();
+//    g.dsAdapter->printSummary();
     
     // free ds
 #ifndef NO_DELETE_DS

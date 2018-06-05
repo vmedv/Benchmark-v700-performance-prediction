@@ -9,7 +9,9 @@
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
-#include "brown_ext_ist_lf_impl.h"
+#ifdef USE_TREE_STATS
+#   include "brown_ext_ist_lf_impl.h"
+#endif
 #include "tree_stats.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
@@ -128,7 +130,7 @@ public:
         std::cout<<"size_node="<<(sizeof(Node<K,V>))<<std::endl;
     }
     
-    // this class is only needed for some statistics calculations in this test harness
+#ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef casword_t NodePtrType;
@@ -159,6 +161,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()));
     }
+#endif
 };
 
 #endif

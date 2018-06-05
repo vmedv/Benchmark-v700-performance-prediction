@@ -59,7 +59,9 @@
 //    #include "natarajan_ext_bst_lf_baseline_impl.h"
     #include "natarajan_ext_bst_lf_stage2_impl.h"
 #endif
-#include "tree_stats.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
 #define DATA_STRUCTURE_T natarajan_ext_bst_lf<K, V, RECORD_MANAGER_T>
@@ -128,7 +130,7 @@ public:
         std::cout<<"size_node="<<(sizeof(node_t<K, V>))<<std::endl;
     }
     
-    // this class is only needed for some statistics calculations in this test harness
+#ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef node_t<K,V> * NodePtrType;
@@ -159,6 +161,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())));
     }
+#endif
 };
 
 #endif
