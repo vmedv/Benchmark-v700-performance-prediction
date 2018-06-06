@@ -1,6 +1,7 @@
 /**
- * Implementation of the lock-free external BST of Ellen, Fatourou, Ruppert and van Breugel.
- * This is a heavily modified version of the ASCYLIB implementation (see copyright in ellen.h).
+ * Implementation of the internal lock-free BST of Howley et al.
+ * This is a heavily modified version of the ASCYLIB implementation.
+ * (See copyright notice in howley.h)
  * The modifications are copyrighted (consistent with the original license)
  *   by Maya Arbel-Raviv and Trevor Brown, 2018.
  */
@@ -8,17 +9,16 @@
 #ifndef BST_ADAPTER_H
 #define BST_ADAPTER_H
 
-#include <iostream>
 #include <csignal>
 #include "errors.h"
 #include "random_fnv1a.h"
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
 #endif
-#include "ellen_impl.h"
+#include "howley_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>, info_t<K,V>>
-#define DATA_STRUCTURE_T ellen<K, V, RECORD_MANAGER_T>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>, operation_t<K,V>>
+#define DATA_STRUCTURE_T howley<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -51,25 +51,24 @@ public:
     }
 
     V insert(const int tid, const K& key, const V& val) {
-        setbench_error("insert-replace functionality not implemented for this data structure");
+        setbench_error("not implemented");
     }
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return ds->bst_insert(tid, key, val);
+        return ds->bst_add(tid, key, val);
     }
     V erase(const int tid, const K& key) {
-        return ds->bst_delete(tid, key);
+        return ds->bst_remove(tid, key);
     }
     V find(const int tid, const K& key) {
-        return ds->bst_find(tid, key);
+        return ds->bst_contains(tid, key);
     }
     bool contains(const int tid, const K& key) {
-        return find(tid, key) != getNoValue();
+        return ds->bst_contains(tid, key) != getNoValue();
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("not implemented");
     }
     void printSummary() {
-        //ds->printTree();
         auto recmgr = ds->debugGetRecMgr();
         recmgr->printStatus();
     }
@@ -102,8 +101,8 @@ public:
         public:
             ChildIterator(NodePtrType _node) {
                 node = _node;
-                leftDone = (node->left == NULL);
-                rightDone = (node->right == NULL);
+                leftDone = ISNULL(node->left);
+                rightDone = ISNULL(node->right);
             }
             bool hasNext() {
                 return !(leftDone && rightDone);
@@ -122,14 +121,12 @@ public:
         };
         
         bool isLeaf(NodePtrType node) {
-            return node->left == NULL;
+            return ISNULL(node->left) && ISNULL(node->right);
         }
         size_t getNumChildren(NodePtrType node) {
-            if (isLeaf(node)) return 0;
-            return (node->left != NULL) + (node->right != NULL);
+            return !ISNULL(node->left) + !ISNULL(node->right);
         }
         size_t getNumKeys(NodePtrType node) {
-            if (!isLeaf(node)) return 0;
             if (node->key == minKey || node->key == maxKey) return 0;
             return 1;
         }

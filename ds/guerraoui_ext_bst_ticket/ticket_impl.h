@@ -45,7 +45,7 @@ node_t<skey_t, sval_t>* ticket<skey_t, sval_t, RecMgr>::new_node(const int tid, 
 
 template <typename skey_t, typename sval_t, class RecMgr>
 node_t<skey_t, sval_t>* ticket<skey_t, sval_t, RecMgr>::new_node_no_init(const int tid) {
-    auto node = recmgr->template allocate<node_t<skey_t, sval_t >>(tid);
+    auto node = recmgr->template allocate<node_t<skey_t, sval_t>>(tid);
     if (unlikely(node == NULL)) {
         perror("malloc @ new_node");
         exit(1);

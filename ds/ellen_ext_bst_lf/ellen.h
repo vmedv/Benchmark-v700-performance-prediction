@@ -1,3 +1,26 @@
+/*   
+ *   File: bst_ellen.c
+ *   Author: Tudor David <tudor.david@epfl.ch>
+ *   Description: non-blocking binary search tree
+ *      based on "Non-blocking Binary Search Trees"
+ *      F. Ellen et al., PODC 2010
+ *   bst_ellen.c is part of ASCYLIB
+ *
+ * Copyright (c) 2014 Vasileios Trigonakis <vasileios.trigonakis@epfl.ch>,
+ * 	     	      Tudor David <tudor.david@epfl.ch>
+ *	      	      Distributed Programming Lab (LPD), EPFL
+ *
+ * ASCYLIB is free software: you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, version 2
+ * of the License.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ */
 /* 
  * File:   ellen.h
  * Author: Maya Arbel-Raviv
@@ -55,7 +78,7 @@ template <typename skey_t, typename sval_t>
 struct node_t {
     skey_t key;
     sval_t value;
-    info_t<skey_t, sval_t> * update;
+    info_t<skey_t, sval_t> * volatile update;
     node_t<skey_t, sval_t> * volatile left;
     node_t<skey_t, sval_t> * volatile right;
 #ifdef USE_PADDING

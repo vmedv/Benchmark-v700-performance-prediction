@@ -35,6 +35,7 @@ UBENCH_RTREEEBR_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rtreeebr,$(DATA_STRUC
 
 bin_dir=bin
 
+all: howley_int_bst_lf.ubench_rnone
 all: ellen_ext_bst_lf.ubench_rnone
 all: drachsler_pext_bst_lock.ubench_rnone
 all: bronson_pext_bst_occ.ubench_rnone

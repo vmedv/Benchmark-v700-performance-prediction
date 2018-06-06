@@ -34,41 +34,6 @@
 
 #include "record_manager.h"
 
-#if     (INDEX_STRUCT == IDX_TICKET)
-#elif   (INDEX_STRUCT == IDX_TICKET_PAD) 
-#define USE_PADDING 
-#define PAD_SIZE 24
-#elif   (INDEX_STRUCT == IDX_TICKET_BASELINE) 
-#define BASELINE
-#else
-#error
-#endif
-
-#ifdef BASELINE //make sure no padding is defined
-#ifdef USE_PADDING
-#undef USE_PADDING
-#endif
-#endif
-
-/*Other Definitions*/
-#define ALIGNED(N) __attribute__ ((aligned (N)))
-
-#define CACHE_LINE_SIZE 64
-
-#if !defined(UNUSED)
-#define UNUSED __attribute__ ((unused))
-#endif
-
-#define MEM_BARRIER //nop on the opteron for these benchmarks
-
-//atomic operations interface
-//Compare-and-swap
-#define CAS_PTR(a,b,c) __sync_val_compare_and_swap(a,b,c)
-#define CAS_U8(a,b,c) CAS_PTR(a,b,c)
-#define CAS_U16(a,b,c) CAS_PTR(a,b,c)
-#define CAS_U32(a,b,c) CAS_PTR(a,b,c)
-#define CAS_U64(a,b,c) CAS_PTR(a,b,c)
-
 #define likely(x)       __builtin_expect((x), 1)
 #define unlikely(x)     __builtin_expect((x), 0)
 
@@ -77,7 +42,6 @@
 #endif
 
 typedef union tl32 {
-
     struct {
         volatile uint16_t version;
         volatile uint16_t ticket;
@@ -105,12 +69,12 @@ tl_trylock_version(volatile tl_t* tl, volatile tl_t* tl_old, int right) {
     tl32_t tln = {
         {.version = version, .ticket = (uint16_t) (version + one)}
     }; //{.version = version, .ticket = (version + 1)};
-    return CAS_U32(&tl->lr[right].to_uint32, tlo.to_uint32, tln.to_uint32) == tlo.to_uint32;
+    return CASV(&tl->lr[right].to_uint32, tlo.to_uint32, tln.to_uint32) == tlo.to_uint32;
 #else
     tl32_t tlo = {version, version};
     tl32_t tln = {version, (uint16_t) (version + 1)};
 #endif
-    return CAS_U32(&tl->lr[right].to_uint32, tlo.to_uint32, tln.to_uint32) == tlo.to_uint32;
+    return CASV(&tl->lr[right].to_uint32, tlo.to_uint32, tln.to_uint32) == tlo.to_uint32;
 }
 
 #define TLN_REMOVED  0x0000FFFF0000FFFF0000LL
@@ -125,13 +89,13 @@ tl_trylock_version_both(volatile tl_t* tl, volatile tl_t* tl_old) {
 
 #if __GNUC__ >= 4 && __GNUC_MINOR__ >= 6
     tl_t tlo = {.to_uint64 = tl_old->to_uint64};
-    return CAS_U64(&tl->to_uint64, tlo.to_uint64, TLN_REMOVED) == tlo.to_uint64;
+    return CASV(&tl->to_uint64, tlo.to_uint64, TLN_REMOVED) == tlo.to_uint64;
 #else
     /* tl_t tlo; */
     /* tlo.uint64_t = tl_old->to_uint64; */
     uint64_t tlo = *(uint64_t*) tl_old;
 
-    return CAS_U64((uint64_t*) tl, tlo, TLN_REMOVED) == tlo;
+    return CASV((uint64_t*) tl, tlo, TLN_REMOVED) == tlo;
 #endif
 
 }
@@ -156,20 +120,11 @@ template <typename skey_t, typename sval_t>
 struct node_t {
     skey_t key;
     sval_t val;
-#if defined(BASELINE) || defined(NO_VOLATILE)
-    volatile struct node_t<skey_t, sval_t>* left;
-    volatile struct node_t<skey_t, sval_t>* right;
-#else
     struct node_t<skey_t, sval_t> * volatile left;
     struct node_t<skey_t, sval_t> * volatile right;
-#endif 
     volatile tl_t lock;
 #ifdef USE_PADDING
     char pad[PAD_SIZE];
-#endif
-
-#ifdef BASELINE
-    uint8_t padding[CACHE_LINE_SIZE - 40];
 #endif
 };
 
@@ -206,7 +161,6 @@ public:
         node_t<skey_t, sval_t>* _min = new_node(tid, KEY_MIN, NO_VALUE, NULL, NULL);
         node_t<skey_t, sval_t>* _max = new_node(tid, KEY_MAX, NO_VALUE, NULL, NULL);
         root = new_node(tid, KEY_MAX, NO_VALUE, _min, _max);
-        MEM_BARRIER;
     }
 
     ~ticket() {
