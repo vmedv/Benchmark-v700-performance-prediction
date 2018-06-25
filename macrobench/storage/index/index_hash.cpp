@@ -3,6 +3,8 @@
 #include "mem_alloc.h"
 #include "table.h"
 
+#if defined IDX_HASH
+
 void Index::initThread(const int tid) {}
 void Index::deinitThread(const int tid) {}
 
@@ -134,3 +136,5 @@ void BucketHeader::read_item(KEY_TYPE key, VALUE_TYPE * item, const char * tname
 	M_ASSERT(cur_node->key == key, "Key does not exist!");
 	*item = cur_node->items;
 }
+
+#endif
