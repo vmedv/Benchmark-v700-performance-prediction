@@ -13,9 +13,9 @@ workloads="TPCC YCSB"
 algs=( \
     "hash_chaining:-DIDX_HASH=1" \
     "bronson_pext_bst_occ:" \
-    "brown_ext_abtree_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_bslack_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_bst_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+    "brown_ext_abtree_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+    "brown_ext_bslack_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
     "natarajan_ext_bst_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
 )
 
@@ -45,7 +45,7 @@ if [ "$?" -eq "0" ]; then
 	parallel make_workload_dict ::: $workloads ::: "${algs[@]}"
 else
 	for workload in $workloads; do
-	for alg in ${algs[@]}; do
+	for alg in "${algs[@]}"; do
 		make_workload_dict "$workload" "$alg"
 	done
 	done

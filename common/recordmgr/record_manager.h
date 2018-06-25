@@ -10,6 +10,7 @@
 
 #include <atomic>
 #include "globals.h"
+#include "errors.h"
 #include "record_manager_single_type.h"
 
 #include <iostream>
