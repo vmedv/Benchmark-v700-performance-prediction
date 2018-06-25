@@ -32,4 +32,8 @@
 #define PAD64 volatile char CAT(___padding, __COUNTER__)[64]
 #define PAD volatile char CAT(___padding, __COUNTER__)[128]
 
+#define CASB __sync_bool_compare_and_swap
+#define CASV __sync_val_compare_and_swap
+#define FAA __sync_fetch_and_add
+
 #endif	/* MACHINECONSTANTS_H */

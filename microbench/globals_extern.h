@@ -44,19 +44,6 @@ extern std::atomic_bool ___validateops;
 #define VALIDATEOPS DEBUG if(___validateops)
 #endif
 
-extern double INS;
-extern double DEL;
-extern double RQ;
-extern int RQSIZE;
-extern int MAXKEY;
-extern int MILLIS_TO_RUN;
-extern bool PREFILL;
-extern int WORK_THREADS;
-extern int RQ_THREADS;
-extern int TOTAL_THREADS;
-
-#define NUMBER_OF_PATHS 1
-
 /**
  * Configure global statistics using gstats_global.h and gstats.h
  */

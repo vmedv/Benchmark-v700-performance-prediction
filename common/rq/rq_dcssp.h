@@ -9,8 +9,8 @@
 #define	RQ_DCSSP_H
 
 #ifdef ADD_DELAY_BEFORE_DTIME
-extern Random rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
-#define GET_RAND(tid,n) (rngs[(tid)*PREFETCH_SIZE_WORDS].nextNatural((n)))
+extern RandomFNV1A rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
+#define GET_RAND(tid,n) (rngs[(tid)*PREFETCH_SIZE_WORDS].next((n)))
 #define DELAY_UP_TO(n) { \
     unsigned __r = GET_RAND(tid,(n)); \
     for (int __i=0;__i<__r;++__i) { \

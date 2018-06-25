@@ -30,24 +30,24 @@
 #   define MIN_TIME_BEFORE_TRY_ADVANCE 50
 #endif
 
-#define NUMBER_OF_EPOCH_BAGS 9
-#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
-
-static int roundUpPow2(int x) {
-    unsigned int v = (unsigned int) x;
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v++;
-    return (int) v;
-}
+#define NUMBER_OF_EPOCH_BAGS 3
+#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_tree_ebr : public reclaimer_interface<T, Pool> {
 private:
+    static int roundUpPow2(int x) {
+        unsigned int v = (unsigned int) x;
+        v--;
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        v++;
+        return (int) v;
+    }
+
     class thread_data_t {
     public:
         union {
@@ -75,9 +75,12 @@ private:
 
     class epoch_tree {
     private:
+    PAD;
         const int numThreadsPow2;
         const int numNodes;
+    PAD;
         epoch_node_t * const nodes; // note: nodes[EBRT_ROOT] contains the real epoch number
+    PAD;
     public:
         epoch_tree(const int numThreads)
         : numThreadsPow2(roundUpPow2(numThreads))
@@ -133,7 +136,7 @@ private:
                         const long parentVal = nodes[parentIx].v;
                         if (parentVal != val) return; // cannot propagate (value already propagated. we know this because val cannot be > parentVal, since we read val from root)
 //                        GSTATS_SET(tid, num_prop_root_update_time, get_server_clock());
-                        if (__sync_bool_compare_and_swap(&nodes[parentIx].v, parentVal, parentVal + EPOCH_INCREMENT)) {
+                        if (CASB(&nodes[parentIx].v, parentVal, parentVal + EPOCH_INCREMENT)) {
 //                            GSTATS_TIMER_APPEND_SPLIT(tid, timer_epoch_latency, num_prop_epoch_latency);
 //                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), parentVal + EPOCH_INCREMENT);
                         }
@@ -153,7 +156,7 @@ private:
                                 return; // cannot propagate (value already propagated)
 //                                break; // cannot propagate (value already propagated) -- but continue trying at parent!
                             }
-                            if (__sync_bool_compare_and_swap(&nodes[parentIx].v, parentVal, val)) {
+                            if (CASB(&nodes[parentIx].v, parentVal, val)) {
                                 break; // successfully propagated to this node
                                 // start on next outer loop iteration (next propagation)
                             }

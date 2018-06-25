@@ -14,12 +14,12 @@
 #include "index_base.h"     // for table_t declaration, and parent class inheritance
 
 #include <ctime>
-#include "random.h"
+#include "random_fnv1a.h"
 #include "plaf.h"
 #include "adapter.h"
 
 //static PAD;
-static Random rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
+static RandomFNV1A rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 
 /**
  * Define index data structure and record manager types

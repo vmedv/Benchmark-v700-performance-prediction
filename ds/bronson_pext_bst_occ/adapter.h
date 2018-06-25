@@ -14,10 +14,13 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 #include "ccavl_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
 #define DATA_STRUCTURE_T ccavl<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
@@ -30,7 +33,7 @@ public:
                const K& KEY_NEG_INFTY,
                const K& unused1,
                const V& unused2,
-               Random * const unused3)
+               RandomFNV1A * const unused3)
     : tree(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
     {
         if (NUM_THREADS > MAX_THREADS_POW2) {
@@ -70,27 +73,80 @@ public:
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("rangeQuery not implemented for this data structure");
     }
-    /**
-     * Sequential operation to get the number of keys in the set
-     */
-    int getSize() {
-        return tree->getSize();
-    }
-
     void printSummary() {
         tree->printSummary();
     }
-    long long getKeyChecksum() {
-        return tree->getKeyChecksum();
-    }
     bool validateStructure() {
-        return tree->validateStructure();
+        return true;
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(node_t<K, V>))
+                 <<(sizeof(node_t<K,V>))
                  <<std::endl;
     }
+
+#ifdef USE_TREE_STATS
+    class NodeHandler {
+    public:
+        typedef node_t<K,V> * NodePtrType;
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
+        
+        class ChildIterator {
+        private:
+            bool leftDone;
+            bool rightDone;
+            NodePtrType node; // node being iterated over
+        public:
+            ChildIterator(NodePtrType _node) {
+                node = _node;
+                leftDone = (node->left == NULL);
+                rightDone = (node->right == NULL);
+            }
+            bool hasNext() {
+                return !(leftDone && rightDone);
+            }
+            NodePtrType next() {
+                if (!leftDone) {
+                    leftDone = true;
+                    return node->left;
+                }
+                if (!rightDone) {
+                    rightDone = true;
+                    return node->right;
+                }
+                setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
+            }
+        };
+        
+        bool isLeaf(NodePtrType node) {
+            return (node->left == NULL) && (node->right == NULL);
+        }
+        size_t getNumChildren(NodePtrType node) {
+            return (node->left != NULL) + (node->right != NULL);
+        }
+        size_t getNumKeys(NodePtrType node) {
+            if (node->value == NULL) return 0;
+            if (node->key == minKey || node->key == maxKey) return 0;
+            return 1;
+        }
+        size_t getSumOfKeys(NodePtrType node) {
+            if (getNumKeys(node) == 0) return 0;
+            return (size_t) node->key;
+        }
+        ChildIterator getChildIterator(NodePtrType node) {
+            return ChildIterator(node);
+        }
+    };
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), tree->get_root());
+    }
+#endif
 };
 
 #undef RECORD_MANAGER_T

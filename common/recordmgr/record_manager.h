@@ -153,7 +153,7 @@ public:
     RecoveryMgr<SelfType> * const recoveryMgr;
     PAD;
 
-    record_manager(const int numProcesses, const int _neutralizeSignal)
+    record_manager(const int numProcesses, const int _neutralizeSignal = -1 /* unused except in conjunction with special DEBRA+ memory reclamation */)
             : NUM_PROCESSES(numProcesses)
             , recoveryMgr(new RecoveryMgr<SelfType>(numProcesses, _neutralizeSignal, this))
     {

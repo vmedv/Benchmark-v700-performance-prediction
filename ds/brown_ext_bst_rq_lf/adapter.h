@@ -8,7 +8,10 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
+#endif
 #include "bst_impl.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, bst_ns::Node<K, V>>
@@ -25,7 +28,7 @@ public:
                const K& KEY_RESERVED,
                const K& unused1,
                const V& VALUE_RESERVED,
-               Random * const unused2)
+               RandomFNV1A * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , ds(new DATA_STRUCTURE_T(KEY_RESERVED, NO_VALUE, NUM_THREADS))
     {}
@@ -62,22 +65,9 @@ public:
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         return ds->rangeQuery(tid, lo, hi, resultKeys, resultValues);
     }
-    /**
-     * Sequential operation to get the number of keys in the set
-     */
-    int getSize() {
-        return ds->getSize();
-    }
     void printSummary() {
-        std::stringstream ss;
-        ss<<ds->getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
-        
         auto recmgr = ds->debugGetRecMgr();
         recmgr->printStatus();
-    }
-    long long getKeyChecksum() {
-        return ds->debugKeySum();
     }
     bool validateStructure() {
         return ds->validate(0, false);
@@ -88,6 +78,70 @@ public:
                  <<" descriptor="<<(sizeof(bst_ns::SCXRecord<K, V>))
                  <<std::endl;
     }
+    
+#ifdef USE_TREE_STATS
+    class NodeHandler {
+    public:
+        typedef bst_ns::Node<K,V> * NodePtrType;
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
+        
+        class ChildIterator {
+        private:
+            bool leftDone;
+            bool rightDone;
+            NodePtrType node; // node being iterated over
+        public:
+            ChildIterator(NodePtrType _node) {
+                node = _node;
+                leftDone = (node->left == NULL);
+                rightDone = (node->right == NULL);
+            }
+            bool hasNext() {
+                return !(leftDone && rightDone);
+            }
+            NodePtrType next() {
+                if (!leftDone) {
+                    leftDone = true;
+                    return node->left;
+                }
+                if (!rightDone) {
+                    rightDone = true;
+                    return node->right;
+                }
+                setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
+            }
+        };
+        
+        static bool isLeaf(NodePtrType node) {
+            return (node->left == NULL) && (node->right == NULL);
+        }
+        static size_t getNumChildren(NodePtrType node) {
+            return (node->left != NULL) + (node->right != NULL);
+        }
+        static size_t getNumKeys(NodePtrType node) {
+            if (!isLeaf(node)) return 0;
+            //if (node->key == KEY_RESERVED) return 0;
+            return 1;
+        }
+        static size_t getSumOfKeys(NodePtrType node) {
+            if (!isLeaf(node)) return 0;
+            //if (node->key == KEY_RESERVED) return 0;
+            return (size_t) node->key;
+        }
+        static ChildIterator getChildIterator(NodePtrType node) {
+            return ChildIterator(node);
+        }
+    };
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint()->left->left);
+    }    
+#endif
 };
 
 #endif

@@ -8,10 +8,13 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
-#include "brown_ext_ist_lf_impl.h"
+#include "random_fnv1a.h"
+#ifdef USE_TREE_STATS
+#   include "brown_ext_ist_lf_impl.h"
+#endif
+#include "tree_stats.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
 
 template <typename T>
@@ -38,10 +41,10 @@ public:
     int compare(const long long& a, const long long& b) {
         return (a < b) ? -1 : (a > b) ? 1 : 0;
     }
-    double interpolate(const long long& key, const long long& rangeLeft, const long long& rangeRight) {
-        if (rangeRight == rangeLeft) return 0;
-        return (key - rangeLeft) / (double) (rangeRight - rangeLeft);
-    }
+//    double interpolate(const long long& key, const long long& rangeLeft, const long long& rangeRight) {
+//        if (rangeRight == rangeLeft) return 0;
+//        return ((double) key - (double) rangeLeft) / ((double) rangeRight - (double) rangeLeft);
+//    }
 };
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
@@ -54,8 +57,27 @@ public:
                const K& unused1,
                const K& KEY_MAX,
                const V& NO_VALUE,
-               Random * const unused3)
+               RandomFNV1A * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MAX, NO_VALUE))
+    {
+        if (!isValidAllocator<Alloc>()) {
+            setbench_error("This data structure must be used with allocator_new.")
+        }
+        if (NUM_THREADS > MAX_THREADS_POW2) {
+            setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
+        }
+    }
+    ds_adapter(const int NUM_THREADS
+            , const K& unused1
+            , const K& KEY_MAX
+            , const V& NO_VALUE
+            , RandomFNV1A * const unused3
+            , const K * const initKeys
+            , const V * const initValues
+            , const size_t initNumKeys
+            , const size_t initConstructionSeed /* note: randomness is used to ensure good tree structure whp */
+    )
+    : ds(new DATA_STRUCTURE_T(initKeys, initValues, initNumKeys, initConstructionSeed, NUM_THREADS, KEY_MAX, NO_VALUE))
     {
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")
@@ -97,34 +119,49 @@ public:
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
         setbench_error("not implemented");
     }
-    /**
-     * Sequential operation to get the number of keys in the set
-     */
-    int getSize() {
-        return ds->getSize();
-    }
     void printSummary() {
-        std::stringstream ss;
-        ss<<ds->getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
-        
         auto recmgr = ds->debugGetRecMgr();
         recmgr->printStatus();
-    }
-    long long getKeyChecksum() {
-        return ds->debugKeySum();
     }
     bool validateStructure() {
         return true;
     }
     void printObjectSizes() {
-        std::cout<<"sizes: node="
-                 <<(sizeof(Node<K, V>))
-                 <<std::endl;
+        std::cout<<"size_node="<<(sizeof(Node<K,V>))<<std::endl;
     }
-};
+    
+#ifdef USE_TREE_STATS
+    class NodeHandler {
+    public:
+        typedef casword_t NodePtrType;
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
 
-#undef RECORD_MANAGER_T
-#undef DATA_STRUCTURE_T
+        class ChildIterator {
+        private:
+            size_t ix;
+            NodePtrType node; // node being iterated over
+        public:
+            ChildIterator(NodePtrType _node) { node = _node; ix = 0; }
+            bool hasNext() { return ix < CASWORD_TO_NODE(node)->degree; }
+            NodePtrType next() { return CASWORD_TO_NODE(node)->ptr(ix++); }
+        };
+        
+        static bool isLeaf(NodePtrType node) { return IS_KVPAIR(node); }
+        static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
+        static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : CASWORD_TO_NODE(node)->degree; }
+        static size_t getNumKeys(NodePtrType node) { return isLeaf(node); }
+        static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) CASWORD_TO_KVPAIR(node)->k : 0; }
+    };
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()));
+    }
+#endif
+};
 
 #endif

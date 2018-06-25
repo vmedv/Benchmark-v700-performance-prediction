@@ -210,27 +210,42 @@ private:
             for (int __tid=0;__tid<NUM_PROCESSES;++__tid) { \
                 std::cout<<"thread "<<__tid; \
                 for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
-                    std::cout<<(__ix?" ":"=")<<get_stat<T>(__tid, sid, __ix); \
+                    if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
+                        std::cout<<(__ix?" ":"=")<<"0"; \
+                    } else { \
+                        std::cout<<(__ix?" ":"=")<<get_stat<T>(__tid, sid, __ix); \
+                    } \
                 } \
                 std::cout<<std::endl; \
             } \
         } else { \
             for (int __i=0;__i<num_metrics;++__i) { \
-                std::cout<<(__i?" ":"=")<<metrics[__i].GSTATS_TYPE_TO_FIELD(type); \
+                if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) { \
+                    std::cout<<(__i?" ":"=")<<"0"; \
+                } else { \
+                    std::cout<<(__i?" ":"=")<<metrics[__i].GSTATS_TYPE_TO_FIELD(type); \
+                } \
             } \
             std::cout<<std::endl; \
         } \
     }
     #define GSTATS_PRINT_HISTOGRAM_LOG(sid, agg_granularity_str, type, metrics, num_metrics) { \
         stat_metrics<long long> * __histogram = get_histogram_log<T>((sid), metrics, num_metrics); \
+        int __first_nonzero = -1; \
         int __last_nonzero = 0; \
-        for (int __i=0;__i<=GSTATS_DEFAULT_HISTOGRAM_LOG_NUM_BUCKETS;++__i) if (__histogram[__i].GSTATS_TYPE_TO_FIELD(type) > 0) __last_nonzero = __i; \
+        for (int __i=0;__i<=GSTATS_DEFAULT_HISTOGRAM_LOG_NUM_BUCKETS;++__i) { \
+            if (__histogram[__i].GSTATS_TYPE_TO_FIELD(type) > 0) { \
+                __last_nonzero = __i; \
+                if (__first_nonzero == -1) __first_nonzero = __i; \
+            } \
+        } \
+        if (__first_nonzero == -1) __first_nonzero = 0; \
         std::cout<<std::endl<<"log histogram of "; \
         GSTATS_PRINT_LOWER(#type); \
         std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
         for (int __i=0;__i<=__last_nonzero;++__i) std::cout<<(__i?" ":"")<<(1LL<<__i)<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
-        for (int __i=0;__i<=__last_nonzero;++__i) { \
+        for (int __i=__first_nonzero;__i<=__last_nonzero;++__i) { \
             std::cout<<"    "<<(__i?"(":"[")<<"2^"<<twoDigits(__i)<<", 2^"<<twoDigits(__i+1)<<"]: "<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type)<<std::endl; \
         } \
     }
@@ -243,16 +258,16 @@ private:
         std::pair<stat_metrics<long long> *, histogram_lin_dims> __p = get_histogram_lin<T>((sid), (num_buckets), metrics, num_metrics); \
         stat_metrics<long long> * __histogram = __p.first; \
         histogram_lin_dims __dims = __p.second; \
+        auto __num_buckets = (__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)) < 1e-6) ? 0 : (num_buckets) - 1; \
         std::cout<<std::endl<<"linear histogram of "; \
         GSTATS_PRINT_LOWER(#type); \
         std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
-        for (int __i=0;__i<=(num_buckets);++__i) std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
+        for (int __i=0;__i<=__num_buckets;++__i) std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
-        for (int __i=0;__i<=(num_buckets);++__i) { \
+        for (int __i=0;__i<=__num_buckets;++__i) { \
             printf("    %s%12.2f, %12.2f]: %lld\n", (__i?"(":"["), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + __i*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), __histogram[__i].GSTATS_TYPE_TO_FIELD(type)); \
         } \
     }
-    //cout<<"    "<<(__i?"(":"[")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + __i*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<", "<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<"]: "<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type)<<std::endl;
 
     PAD;
     const int NUM_PROCESSES;
@@ -294,32 +309,9 @@ public:
         memset(computed_gstats_by_thread, 0, GSTATS_MAX_NUM_STATS*sizeof(stat_metrics<double> *));
 
         // parallel initialization
-        VERBOSE std::cout<<"parallel stat intialiation: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
+        VERBOSE std::cout<<"parallel stat intialization: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
         volatile bool start = false;
-
-//            const int parallelInitThreads = std::thread::hardware_concurrency();
-//            std::thread threads[parallelInitThreads];
-//            for (int tid=0;tid<parallelInitThreads;++tid) {
-//                threads[tid] = std::thread([tid,&start,parallelInitThreads,num_processes,this]() {
-//                    while (!start) { __sync_synchronize(); }
-//                    const long long sz = (char *) &this->thread_data[num_processes] - (char *) &this->thread_data[0];
-//                    long long slice_sz = sz / parallelInitThreads;
-//                    slice_sz = slice_sz - (slice_sz % 8); // slice_sz should be a multiple of word size
-//                    const long long myslice_start = tid*slice_sz;
-//                    const long long myslice_sz = (tid == parallelInitThreads) ? (sz - myslice_start) : slice_sz;
-//                    
-//                    std::cout<<"thread "<<tid<<" copying slice starting at "<<myslice_start<<" with size "<<myslice_sz<<std::endl;
-//                    
-//                    memset(((char *) &this->thread_data[tid]) + myslice_start, 0, myslice_sz);
-//                });
-//            }
-//            start = true;
-//            __sync_synchronize();
-//            VERBOSE std::cout<<"parallel stat initialization: joining "<<parallelInitThreads<<" threads"<<std::endl;
-//            for (int tid=0;tid<parallelInitThreads;++tid) {
-//                threads[tid].join();
-//            }
-
+        
         std::thread threads[num_processes];
         for (int tid=0;tid<num_processes;++tid) {
             threads[tid] = std::thread([tid,&start,num_processes,this]() {
@@ -805,22 +797,28 @@ private:
             dims.none_max = std::numeric_limits<double>::min();
             for (int tid=0;tid<NUM_PROCESSES;++tid) {
                 for (int ix=0;ix<num_indices[id];++ix) {
-                    dims.none_min = std::min(dims.none_min, (double) get_stat<T>(tid, id, ix));
-                    dims.none_max = std::max(dims.none_max, (double) get_stat<T>(tid, id, ix));
-                }                
+                    auto s = (double) get_stat<T>(tid, id, ix);
+                    if (s == 0) continue;
+                    dims.none_min = std::min(dims.none_min, s);
+                    dims.none_max = std::max(dims.none_max, s);
+                }
             }
             dims.none_bucket_size = ((dims.none_max - dims.none_min) / num_buckets);
-            if (dims.none_bucket_size) {
-                for (int tid=0;tid<NUM_PROCESSES;++tid) {
-                    for (int ix=0;ix<num_indices[id];++ix) {
-                        ++histogram[(int) (get_stat<T>(tid, id, ix) / dims.none_bucket_size)].none;
+            for (int tid=0;tid<NUM_PROCESSES;++tid) {
+                for (int ix=0;ix<num_indices[id];++ix) {
+                    auto s = (double) get_stat<T>(tid, id, ix);
+                    if (s == 0) continue;
+                    if (dims.none_bucket_size > 1e-6) {
+                        ++histogram[(int) ((s - dims.none_min) / dims.none_bucket_size)].none;
+                    } else {
+                        ++histogram[0].none;
                     }
-                }                
+                }
             }
         }
         return std::pair<stat_metrics<long long> *, histogram_lin_dims>(histogram, dims);
     }
-
+    
     void compute_before_printing() {
         if (already_computed_stats) return;
 //            std::cout<<"start compute_before_printing()..."<<std::endl;

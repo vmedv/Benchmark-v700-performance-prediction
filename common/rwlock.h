@@ -105,31 +105,63 @@ public:
 
 class RWLock {
 private:
-    volatile long long lock; // two bit fields: [ number of readers ] [ writer bit ]
+    volatile size_t lock; // two bit fields: [ number of readers ] [ writer bit ]
     
 public:
     RWLock() {
+        lock = 0;
+    }
+    inline void init() {
         lock = 0;
     }
     inline bool isWriteLocked() {
         return lock & 1;
     }
     inline bool isReadLocked() {
-        return lock & ~1;
+        return lock & ~3;
+    }
+    inline bool isUpgrading() {
+        return lock & 2;
     }
     inline bool isLocked() {
         return lock;
     }
     inline void readLock() {
-        while (1) {
-            __sync_add_and_fetch(&lock, 2);
-            while (isWriteLocked());
-            return;
-        }
+        __sync_add_and_fetch(&lock, 4);
+        while (isWriteLocked());
+        return;
     }
     inline void readUnlock() {
-        __sync_add_and_fetch(&lock, -2);
+        __sync_add_and_fetch(&lock, -4);
     }
+    // can call this only if you already read-locked.
+    // upgrade the read lock to a write lock by first taking an upgrade bit (2)
+    // and then (repeatedly) casing from an upgrader & zero readers (=2) to writer & zero readers (=1)
+    // (if someone else takes the upgrade bit, we must give up and release our reader locks to prevent deadlock)
+    inline bool upgradeLock() {
+        while (1) {
+            auto expval = lock;
+            if (expval & 2) return false;
+            auto seenval = __sync_val_compare_and_swap(&lock, expval, (expval - 4) | 2 /* subtract our reader count and covert to upgrader */);
+            if (seenval == expval) { // cas success
+                // cas to writer
+                while (1) {
+                    while (lock & ~2 /* locked by someone else */) {}
+                    if (__sync_bool_compare_and_swap(&lock, 2, 1)) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+//    inline void upgradeAbort() { // probably works, but is not needed
+//        while (1) {
+//            auto expval = lock;
+//            if (__sync_bool_compare_and_swap(&lock, expval, expval & ~2)) {
+//                return;
+//            }
+//        }
+//    }
     inline void writeLock() {
         while (1) {
             while (isLocked()) {}

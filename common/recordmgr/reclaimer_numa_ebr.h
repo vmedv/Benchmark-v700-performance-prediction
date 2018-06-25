@@ -28,8 +28,8 @@
 #   define MIN_OPS_BEFORE_READ 20
 #endif
 
-#define NUMBER_OF_EPOCH_BAGS 9
-#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
+#define NUMBER_OF_EPOCH_BAGS 3
+#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_numa_ebr : public reclaimer_interface<T, Pool> {

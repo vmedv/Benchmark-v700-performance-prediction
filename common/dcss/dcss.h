@@ -14,6 +14,9 @@
 #include "plaf.h"
 #include "descriptors.h"
 
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+
 #define dcsstagptr_t uintptr_t
 #define dcssptr_t dcssdesc_t *
 #ifndef casword_t

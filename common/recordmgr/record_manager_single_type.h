@@ -34,13 +34,14 @@
 #include "reclaimer_none.h"
 #include "reclaimer_numa_ebr.h"
 #include "reclaimer_tree_ebr.h"
+#include "reclaimer_tree_ebr_q.h"
+#include "reclaimer_numa_tree_ebr_q.h"
 #include "reclaimer_debra.h"
 #include "reclaimer_debraplus.h"
 #include "reclaimer_hazardptr.h"
 #ifdef USE_RECLAIMER_RCU
 #include "reclaimer_rcu.h"
 #endif
-
 
 // maybe Record should be a size
 template <typename Record, class Reclaim, class Alloc, class Pool>

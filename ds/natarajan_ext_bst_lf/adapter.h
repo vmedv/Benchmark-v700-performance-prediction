@@ -47,14 +47,10 @@
 #ifndef NATARAJAN_EXT_BST_LF_ADAPTER_H
 #define NATARAJAN_EXT_BST_LF_ADAPTER_H
 
-#ifndef STR
-    #define STR(x) XSTR(x)
-    #define XSTR(x) #x
-#endif
 
 #include <iostream>
 #include "errors.h"
-#include "random.h"
+#include "random_fnv1a.h"
 
 #ifdef DS_H_FILE
     #include STR(DS_H_FILE)
@@ -62,6 +58,9 @@
 //    #warning Using default data structure implementation (see define DS_H_FILE)
 //    #include "natarajan_ext_bst_lf_baseline_impl.h"
     #include "natarajan_ext_bst_lf_stage2_impl.h"
+#endif
+#ifdef USE_TREE_STATS
+#   include "tree_stats.h"
 #endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K, V>>
@@ -78,7 +77,7 @@ public:
                const K& unused1,
                const K& KEY_POS_INFTY,
                const V& VALUE_RESERVED,
-               Random * const unused2)
+               RandomFNV1A * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , tree(new DATA_STRUCTURE_T(KEY_POS_INFTY, NO_VALUE, NUM_THREADS))
     {}
@@ -121,26 +120,48 @@ public:
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("rangeQuery not implemented for this data structure");
     }
-    /**
-     * Sequential operation to get the number of keys in the set
-     */
-    int getSize() {
-        return tree->getSize();
-    }
     void printSummary() {
         tree->printSummary();
-    }
-    long long getKeyChecksum() {
-        return tree->getKeyChecksum();
     }
     bool validateStructure() {
         return tree->validateStructure();
     }
     void printObjectSizes() {
-        std::cout<<"sizes: node="
-                 <<(sizeof(node_t<K, V>))
-                 <<std::endl;
+        std::cout<<"size_node="<<(sizeof(node_t<K, V>))<<std::endl;
     }
+    
+#ifdef USE_TREE_STATS
+    class NodeHandler {
+    public:
+        typedef node_t<K,V> * NodePtrType;
+        K minKey;
+        K maxKey;
+        
+        NodeHandler(const K& _minKey, const K& _maxKey) {
+            minKey = _minKey;
+            maxKey = _maxKey;
+        }
+
+        class ChildIterator {
+        private:
+            size_t ix;
+            NodePtrType node; // node being iterated over
+        public:
+            ChildIterator(NodePtrType _node) { node = _node; ix = 0; }
+            bool hasNext() { return ix < 2; }
+            NodePtrType next() { return (ix++ == 1) ? DATA_STRUCTURE_T::get_left(node) : DATA_STRUCTURE_T::get_right(node); }
+        };
+        
+        static bool isLeaf(NodePtrType node) { return DATA_STRUCTURE_T::get_left(node) == NULL && DATA_STRUCTURE_T::get_right(node) == NULL; }
+        static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
+        static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : 2; }
+        static size_t getNumKeys(NodePtrType node) { return isLeaf(node); }
+        static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) node->key : 0; }
+    };
+    TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
+        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())));
+    }
+#endif
 };
 
 #endif

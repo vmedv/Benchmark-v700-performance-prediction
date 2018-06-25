@@ -302,10 +302,6 @@ public:
     }    
 
     void printSummary() {
-        std::stringstream ss;
-        ss<<getSizeInNodes()<<" nodes in tree";
-        std::cout<<ss.str()<<std::endl;
-
         recmgr->printStatus();
     }    
 };
