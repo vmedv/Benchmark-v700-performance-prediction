@@ -44,7 +44,10 @@ typedef long long test_type;
     gstats_handle_stat(LONG_LONG, extra_type4_allocated_addresses, 100, { \
             gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    gstats_handle_stat(LONG_LONG, num_updates, 1, { \
+    gstats_handle_stat(LONG_LONG, num_inserts, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_deletes, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_searches, 1, { \
@@ -58,6 +61,8 @@ typedef long long test_type;
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
 /*    gstats_handle_stat(LONG_LONG, num_getguard, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
@@ -157,8 +162,19 @@ typedef long long test_type;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
     }) \
+    gstats_handle_stat(LONG_LONG, size_checksum, 1, {}) \
     gstats_handle_stat(LONG_LONG, key_checksum, 1, {}) \
     gstats_handle_stat(LONG_LONG, prefill_size, 1, {}) \
+    gstats_handle_stat(LONG_LONG, time_thread_terminate, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, time_thread_start, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
     gstats_handle_stat(LONG_LONG, timer_duration, 1, {}) \
     gstats_handle_stat(LONG_LONG, timer_latency, 1, {})
 
@@ -262,6 +278,7 @@ struct globals_t {
     // write once
     long elapsedMillis;
     long long prefillKeySum;
+    long long prefillSize;
     std::chrono::time_point<std::chrono::high_resolution_clock> programExecutionStartTime;
     std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
     PAD;
@@ -297,6 +314,7 @@ struct globals_t {
         garbage = 0;
         prefillIntervalElapsedMillis = 0;
         prefillKeySum = 0;
+        prefillSize = 0;
     }
 } g;
 
@@ -343,13 +361,13 @@ void *thread_prefill(void *_id) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, prefill_size, 1);
             }
-            GSTATS_ADD(tid, num_updates, 1);
+            GSTATS_ADD(tid, num_inserts, 1);
         } else {
             if (g.dsAdapter->erase(tid, key) != g.dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, prefill_size, -1);
             }
-            GSTATS_ADD(tid, num_updates, 1);
+            GSTATS_ADD(tid, num_deletes, 1);
         }
         GSTATS_ADD(tid, num_operations, 1);
         GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
@@ -379,7 +397,7 @@ void prefillInsertionOnly() {
     for (size_t i=0;i<expectedSize;++i) {
     retry:
         int key = g.rngs[omp_get_thread_num()].next(MAXKEY);
-        GSTATS_ADD(omp_get_thread_num(), num_updates, 1);
+        GSTATS_ADD(omp_get_thread_num(), num_inserts, 1);
         if (g.dsAdapter->INSERT_FUNC(omp_get_thread_num(), key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
             GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
             GSTATS_ADD(omp_get_thread_num(), prefill_size, 1);
@@ -392,8 +410,9 @@ void prefillInsertionOnly() {
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillEndTime = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
     GSTATS_PRINT;
-    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
+    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum + GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
     g.prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
+    g.prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<expectedSize<<" keysum="<<g.prefillKeySum<<", performing "<<totalSuccUpdates<<" successful updates in "<<(elapsed/1000.)<<"s"<<std::endl);
     std::cout<<"pref_size="<<expectedSize<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
@@ -512,8 +531,9 @@ void prefill() {
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
     GSTATS_PRINT;
-    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
+    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum + GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
     g.prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
+    g.prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< g.prefillKeySum /*<<" dskeysum="<<g.ds->getKeyChecksum()<<" dssize="<<g.ds->getSize()*/<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<std::endl);
     std::cout<<"pref_size="<<sz<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
@@ -537,6 +557,7 @@ void *thread_timed(void *_id) {
     __sync_fetch_and_add(&g.running, 1);
     __sync_synchronize();
     while (!g.start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
     papi_start_counters(tid);
     int cnt = 0;
     int rq_cnt = 0;
@@ -558,16 +579,18 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (g.dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
+                GSTATS_ADD(tid, size_checksum, 1);
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
-            GSTATS_ADD(tid, num_updates, 1);
+            GSTATS_ADD(tid, num_inserts, 1);
         } else if (op < INS+DEL) {
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (g.dsAdapter->erase(tid, key) != g.dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
+                GSTATS_ADD(tid, size_checksum, -1);
             }
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
-            GSTATS_ADD(tid, num_updates, 1);
+            GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS+DEL+RQ) {
             unsigned _key = rng->next() % std::max(1, MAXKEY - RQSIZE);
             assert(_key >= 0);
@@ -595,9 +618,14 @@ void *thread_timed(void *_id) {
     }
     __sync_fetch_and_add(&g.running, -1);
 //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
-    while (g.running) { /* wait */ }
-    
+
+    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
+
+    SOFTWARE_BARRIER;
     papi_stop_counters(tid);
+    SOFTWARE_BARRIER;
+    
+    while (g.running) { /* wait */ }
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
     delete[] rqResultValues;
@@ -619,6 +647,8 @@ void *thread_rq(void *_id) {
     __sync_fetch_and_add(&g.running, 1);
     __sync_synchronize();
     while (!g.start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
+
     papi_start_counters(tid);
     int cnt = 0;
     while (!g.done) {
@@ -650,12 +680,18 @@ void *thread_rq(void *_id) {
         GSTATS_ADD(tid, num_operations, 1);
     }
     __sync_fetch_and_add(&g.running, -1);
-//    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
+
+    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
+
+    SOFTWARE_BARRIER;
+    papi_stop_counters(tid);
+    SOFTWARE_BARRIER;
+
+    //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) {
         // wait
     }
     
-    papi_stop_counters(tid);
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
     delete[] rqResultValues;
@@ -700,11 +736,12 @@ void trial() {
         for (size_t i=0;i<sz/2;++i) {
         retry:
             //auto key = g.rngs[tid].next(sz);
-            //if (present[key]) { goto retry; } else { GSTATS_ADD(tid, key_checksum, key); }
+            //if (present[key]) { goto retry; } else { GSTATS_ADD(tid, key_checksum, key); GSTATS_ADD(tid, size_checksum, 1); }
             //present[key] = 1;
             auto key = g.rngs[omp_get_thread_num()].next(sz);
             if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
                 GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
+                GSTATS_ADD(omp_get_thread_num(), size_checksum, 1);
             } else {
                 goto retry;
             }
@@ -870,24 +907,34 @@ void printOutput() {
     g.dsAdapter->printSummary();
     
     long long threadsKeySum = 0;
+    long long threadsSize = 0;
     
 #ifdef USE_GSTATS
     {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g.prefillKeySum;
-        long long dsKeySum = treeStats->getSumOfKeys(); //g.ds->getKeyChecksum();
-        if (threadsKeySum == dsKeySum) {
-            std::cout<<"Validation OK: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<std::endl;
+        threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g.prefillSize;
+        long long dsKeySum = treeStats->getSumOfKeys();
+        long long dsSize = treeStats->getKeys();
+        if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
+            std::cout<<"Validation OK."<<std::endl;
         } else {
-            std::cout<<"Validation FAILURE: threadsKeySum = "<<threadsKeySum<<" dsKeySum="<<dsKeySum<<std::endl;
+            std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
+            std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime();
+//            const long long totalInserts = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum;
+//            const long long totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
+//            COUTATOMIC("total_inserts="<<totalInserts<<std::endl);
+//            COUTATOMIC("total_deletes="<<totalDeletes<<std::endl);
+            
             exit(-1);
         }
         std::cout<<"final_keysum="<<threadsKeySum<<std::endl;
+        std::cout<<"final_size="<<threadsSize<<std::endl;
     }
 #endif
     
     if (g.dsAdapter->validateStructure()) {
-        std::cout<<"Structural validation OK"<<std::endl;
+        std::cout<<"Structural validation OK."<<std::endl;
     } else {
         std::cout<<"Structural validation FAILURE."<<std::endl;
         printExecutionTime();
@@ -901,7 +948,9 @@ void printOutput() {
         const long long totalSearches = GSTATS_GET_STAT_METRICS(num_searches, TOTAL)[0].sum;
         const long long totalRQs = GSTATS_GET_STAT_METRICS(num_rq, TOTAL)[0].sum;
         const long long totalQueries = totalSearches + totalRQs;
-        const long long totalUpdates = GSTATS_GET_STAT_METRICS(num_updates, TOTAL)[0].sum;
+        const long long totalInserts = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum;
+        const long long totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
+        const long long totalUpdates = totalInserts + totalDeletes;
 
         const double SECONDS_TO_RUN = (MILLIS_TO_RUN)/1000.;
         totalAll = totalUpdates + totalQueries;
@@ -914,6 +963,8 @@ void printOutput() {
         COUTATOMIC(std::endl);
         COUTATOMIC("total_find="<<totalSearches<<std::endl);
         COUTATOMIC("total_rq="<<totalRQs<<std::endl);
+        COUTATOMIC("total_inserts="<<totalInserts<<std::endl);
+        COUTATOMIC("total_deletes="<<totalDeletes<<std::endl);
         COUTATOMIC("total_updates="<<totalUpdates<<std::endl);
         COUTATOMIC("total_queries="<<totalQueries<<std::endl);
         COUTATOMIC("total_ops="<<totalAll<<std::endl);
@@ -927,6 +978,8 @@ void printOutput() {
         COUTATOMIC(std::endl);
         COUTATOMIC("total find                    : "<<totalSearches<<std::endl);
         COUTATOMIC("total rq                      : "<<totalRQs<<std::endl);
+        COUTATOMIC("total inserts                 : "<<totalInserts<<std::endl);
+        COUTATOMIC("total deletes                 : "<<totalDeletes<<std::endl);
         COUTATOMIC("total updates                 : "<<totalUpdates<<std::endl);
         COUTATOMIC("total queries                 : "<<totalQueries<<std::endl);
         COUTATOMIC("total ops                     : "<<totalAll<<std::endl);

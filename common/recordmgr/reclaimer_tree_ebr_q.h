@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef RECLAIM_TREE_EBR_H
-#define	RECLAIM_TREE_EBR_H
+#ifndef RECLAIM_TREE_EBR_Q_H
+#define	RECLAIM_TREE_EBR_Q_H
 
 #include <cassert>
 #include <iostream>
@@ -18,23 +18,20 @@
 #include "reclaimer_interface.h"
 #include "gstats_global.h"
 
-#define EPOCH_INCREMENT 2
-#define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
+#define EPOCH_INCREMENT ((size_t) 1 << (size_t) 32)
+#define GET_SEQUENCE(ann) ((((ann)&0x00000000fffffffeLL))>>1)
+#define GET_EPOCH(ann) (BITS_EPOCH(ann) >> 32LL)
+#define BITS_EPOCH(ann) ((ann)&0xffffffff00000000LL)
 #define QUIESCENT_MASK (0x1)
 #define QUIESCENT(ann) ((ann)&QUIESCENT_MASK)
 #define GET_WITH_QUIESCENT(ann) ((ann)|QUIESCENT_MASK)
-
-#ifdef RAPID_RECLAMATION
-#   define MIN_TIME_BEFORE_TRY_ADVANCE 1
-#else
-#   define MIN_TIME_BEFORE_TRY_ADVANCE 50
-#endif
+#define SEQUENCE_INCREMENT (1)
 
 #define NUMBER_OF_EPOCH_BAGS 3
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0
 
 template <typename T = void, class Pool = pool_interface<T> >
-class reclaimer_tree_ebr : public reclaimer_interface<T, Pool> {
+class reclaimer_tree_ebr_q : public reclaimer_interface<T, Pool> {
 private:
     static int roundUpPow2(int x) {
         unsigned int v = (unsigned int) x;
@@ -55,17 +52,18 @@ private:
             struct {
                 blockbag<T> * epochbags[NUMBER_OF_EPOCH_BAGS];
                 blockbag<T> * currentBag;
-                long index;
-                long timeSinceTryAdvance;
-                long timesBagTooLargeSinceRotation;
+                size_t index;
+                size_t timeSinceTryAdvance;
+                size_t timesBagTooLargeSinceRotation;
             };
         };
     };
     struct epoch_node_t {
-        volatile long v;
-        volatile char padding[PREFETCH_SIZE_BYTES-sizeof(v)];
+        volatile size_t v;
+        volatile char padding[PREFETCH_SIZE_BYTES - sizeof(v)];
     } __attribute__((aligned(PREFETCH_SIZE_BYTES)));
 
+#   define EBRT_SIBLING(ix) ((ix)^1)
 #   define EBRT_LEFT_CHILD(ix) (2*(ix))
 #   define EBRT_RIGHT_CHILD(ix) (2*(ix)+1)
 #   define EBRT_PARENT(ix) ((ix)/2)
@@ -75,12 +73,9 @@ private:
 
     class epoch_tree {
     private:
-    PAD;
         const int numThreadsPow2;
         const int numNodes;
-    PAD;
         epoch_node_t * const nodes; // note: nodes[EBRT_ROOT] contains the real epoch number
-    PAD;
     public:
         epoch_tree(const int numThreads)
         : numThreadsPow2(roundUpPow2(numThreads))
@@ -94,87 +89,103 @@ private:
         ~epoch_tree() {
             delete[] nodes;
         }
-        void announce(const int tid, const long val) {
+        void announce(const int tid, const size_t val) {
             // announce new value
-            const int currIx = EBRT_LEAF(tid);
-            nodes[currIx].v = val;
+            auto cix = EBRT_LEAF(tid);
+            nodes[cix].v = val;
             __sync_synchronize();
 //            GSTATS_SET(tid, thread_announced_epoch, val);
         }
-        void tryAdvance(const int tid) {
-//            GSTATS_ADD(tid, num_tryadvance, 1);
+        void tryAdvance(const int tid, const bool startingOp) {
+            auto cix = EBRT_LEAF(tid);
+            auto val = nodes[cix].v;
             
-            /**
-             * we propagate announcement values up the tree via a tournament
-             * with 2 threads competing at each step.
-             * 
-             * propagate our announcement up the tree as long as is appropriate.
-             */
-            int currIx = EBRT_LEAF(tid);
-            const long val = nodes[currIx].v;
-            while (currIx > EBRT_ROOT) {
-//                GSTATS_ADD(tid, num_prop_nodes_visited, 1);
-                // get parent
-                const int parentIx = EBRT_PARENT(currIx);
+            while (cix > EBRT_ROOT) {
+                // get parent's value
+                auto pix = EBRT_PARENT(cix);
+                auto p = &nodes[pix];
+                auto pval = p->v;
                 
-                // get sibling
-                const int leftIx = EBRT_LEFT_CHILD(parentIx);
-                const int siblingIx = (currIx == leftIx)
-                        ? leftIx + 1 /* shortcut for computing right child from left */
-                        : leftIx;
-                const long siblingVal = nodes[siblingIx].v;
+                SOFTWARE_BARRIER;
+                
+                // get sibling's value (AFTER PARENT)
+                auto sval = nodes[EBRT_SIBLING(cix)].v;
 
-                // we try to propagate if our sibling has the same value as us,
-                // or if we see that its value is quiescent
-                // (since then we can ignore it, just like we do in debra)
-                if (siblingVal == val || QUIESCENT(siblingVal)) {
-                    // if we are at the root, modifying the global epoch,
-                    // then we want to increment the global epoch,
-                    // ONLY IF we are propagating exactly the value at the root.
-                    if (parentIx == EBRT_ROOT) {
-//                        GSTATS_ADD(tid, num_prop_root, 1);
-                        const long parentVal = nodes[parentIx].v;
-                        if (parentVal != val) return; // cannot propagate (value already propagated. we know this because val cannot be > parentVal, since we read val from root)
-//                        GSTATS_SET(tid, num_prop_root_update_time, get_server_clock());
-                        if (CASB(&nodes[parentIx].v, parentVal, parentVal + EPOCH_INCREMENT)) {
-//                            GSTATS_TIMER_APPEND_SPLIT(tid, timer_epoch_latency, num_prop_epoch_latency);
-//                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), parentVal + EPOCH_INCREMENT);
-                        }
-//                        assert(nodes[parentIx].v == val+2); // note: need not hold if someone else also incremented the epoch (which can occur if we are quiescent)
-//                        assert(nodes[parentIx].v == read());
-                        // note: we use cas instead of fetch and add because more than one thread could be trying to change it.
-                        // HOWEVER, if our cas fails, then another thread has incremented the epoch, so we are done.
-                        return; // finished propagating
-
-                    // otherwise, we want to propagate upward only if our value is greater than the parent's value
-                    } else {
-                        // note: we use a cas loop to ensure that we don't fail to propagate just because a competing thread propagated a smaller value.
-                        while (true) {
-                            const long parentVal = nodes[parentIx].v;
-                            if (parentVal >= val) {
-//                                GSTATS_ADD(tid, num_prop_parentlarge, 1);
-                                return; // cannot propagate (value already propagated)
-//                                break; // cannot propagate (value already propagated) -- but continue trying at parent!
+                // get current node's value (AFTER PARENT)
+                auto cval = nodes[cix].v;
+                
+                if (startingOp) {
+                    while (true) {
+                        // note: we know for a fact that because we are non-Q, we are propagating non-Q to the root
+                        // (in the case where we are becoming Q (the !startingOp case), our propagation of Q is dependent not only on the sibling's Q-ness but the CURRENT node's continued Q-ness)
+                        
+                        // CAN ONLY PROPAGATE MY VALUE BLINDLY IF MY SIBLING IS QUIESCENT (OTHERWISE, MUST PROPAGATE MIN(MY VALUE, SIBLING VALUE))
+                        auto newval = QUIESCENT(sval) ? BITS_EPOCH(val) : std::min(BITS_EPOCH(val), BITS_EPOCH(sval));
+                        if (pix == EBRT_ROOT) newval += EPOCH_INCREMENT;                                                // TODO: detect epoch overflow
+                        
+                        if (QUIESCENT(pval)) {                                  // TODO: unlikely ?
+                            if (BITS_EPOCH(pval) < newval) {                    // TODO: unlikely
+                                auto retval = CASV(&p->v, pval, newval);
+                                if (retval == pval) break; // continue at parent
+                                pval = retval;             // retry at this node
+                                SOFTWARE_BARRIER;
+                                sval = nodes[EBRT_SIBLING(cix)].v; // reread sibling value AFTER parent
+                            } else {
+                                auto retval = CASV(&p->v, pval, pval+SEQUENCE_INCREMENT);                               // TODO: detect sequence overflow
+                                if (retval == pval) break; // continue at parent
+                                pval = retval;             // retry at this node
+                                SOFTWARE_BARRIER;
+                                sval = nodes[EBRT_SIBLING(cix)].v; // reread sibling value AFTER parent
                             }
-                            if (CASB(&nodes[parentIx].v, parentVal, val)) {
-                                break; // successfully propagated to this node
-                                // start on next outer loop iteration (next propagation)
+                        } else {
+                            if (BITS_EPOCH(pval) < newval) {                    // TODO: unlikely
+                                auto retval = CASV(&p->v, pval, newval);
+                                if (retval == pval) break; // continue at parent
+                                pval = retval;             // retry at this node
+                                SOFTWARE_BARRIER;
+                                sval = nodes[EBRT_SIBLING(cix)].v; // reread sibling value AFTER parent
+                            } else {
+                                return; //break;                     // continue at parent
                             }
                         }
                     }
                 } else {
-                    return; // cannot propagate (sibling's value is stopping us)
+                    while (true) {
+                        if (QUIESCENT(pval)) {                                  // TODO: unlikely ?
+                            break; // continue at parent
+                        } else {
+                            if (QUIESCENT(cval) && QUIESCENT(sval)) {           // TODO: unlikely ?
+                                auto newval = val;
+                                if (pix == EBRT_ROOT) newval += EPOCH_INCREMENT;                                        // TODO: detect epoch overflow
+                                
+                                if (BITS_EPOCH(pval) < BITS_EPOCH(newval)) {    // TODO: unlikely
+                                    auto retval = CASV(&p->v, pval, newval);
+                                    if (retval == pval) break; // continue at parent
+                                    pval = retval;             // retry at this node
+                                    sval = nodes[EBRT_SIBLING(cix)].v;          // reread sibling value AFTER parent
+                                    cval = nodes[cix].v;                        // reread current value AFTER parent
+                                } else {
+                                    auto retval = CASV(&p->v, pval, pval+SEQUENCE_INCREMENT);                           // TODO: detect sequence overflow
+                                    if (retval == pval) break; // continue at parent
+                                    pval = retval;             // retry at this node
+                                    sval = nodes[EBRT_SIBLING(cix)].v;          // reread sibling value AFTER parent
+                                    cval = nodes[cix].v;                        // reread current value AFTER parent
+                                }
+                            } else {
+                                return; // do NOT need to continue at the parent!
+                            }
+                        }
+                    }
                 }
-                
-                // move to the parent
-                currIx = parentIx;
+
+                cix = pix;
             }
         }
-        long read() {
+        size_t read() {
             SOFTWARE_BARRIER;
             return nodes[EBRT_ROOT].v; // root
         }
-        long readThread(const int tid) {
+        size_t readThread(const int tid) {
             return nodes[EBRT_LEAF(tid)].v;
         }
         void debugPrint() {
@@ -184,7 +195,8 @@ private:
             for (; rowsize <= numThreadsPow2; ++row, rowsize<<=1) {
                 std::cout<<"level "<<row<<":";
                 for (int i=0;i<rowsize;++i) {
-                    std::cout<<" "<<nodes[ix].v;
+                    auto v = nodes[ix].v;
+                    std::cout<<" "<<(BITS_EPOCH(v)>>32LL)<<","<<(GET_SEQUENCE(v))<<","<<((int) QUIESCENT(v));
                     ++ix;
                 }
                 std::cout<<std::endl;
@@ -203,9 +215,9 @@ protected:
     
 public:
     template<typename _Tp1>
-    struct rebind { typedef reclaimer_tree_ebr<_Tp1, Pool> other; };
+    struct rebind { typedef reclaimer_tree_ebr_q<_Tp1, Pool> other; };
     template<typename _Tp1, typename _Tp2>
-    struct rebind2 { typedef reclaimer_tree_ebr<_Tp1, _Tp2> other; };
+    struct rebind2 { typedef reclaimer_tree_ebr_q<_Tp1, _Tp2> other; };
     
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         SOFTWARE_BARRIER;
@@ -217,8 +229,8 @@ public:
         SOFTWARE_BARRIER;
     }
     
-    long long getSizeInNodes() {
-        long long sum = 0;
+    size_t getSizeInNodes() {
+        size_t sum = 0;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
                 sum += thread_data[tid].epochbags[j]->computeSize();
@@ -255,7 +267,10 @@ private:
 public:
     inline void endOp(const int tid) {
 //        GSTATS_TIMER_APPEND_ELAPSED(tid, timer_guard_latency, num_prop_guard_latency);
-        //epoch->announce(tid, GET_WITH_QUIESCENT(epoch->readThread(tid)));
+        auto ann = epoch->readThread(tid) + 1;
+        epoch->announce(tid, ann);
+        assert(QUIESCENT(ann));
+        epoch->tryAdvance(tid, false);
     }
     
     inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
@@ -265,27 +280,22 @@ public:
         bool result = false;
 
 //        GSTATS_SET(tid, num_prop_root_read_time, get_server_clock());
-        const long readEpoch = epoch->read();
+        auto readEpoch = BITS_EPOCH(epoch->read());
 //        GSTATS_SET(tid, num_prop_hist_readepoch, readEpoch);
 //        __sync_synchronize();
-        const long ann = epoch->readThread(tid);
+        auto ann = epoch->readThread(tid);
 
         // if our announced epoch is different from the current epoch
         if (readEpoch != BITS_EPOCH(ann)) {
-            // announce the new epoch, and rotate the epoch bags
-            epoch->announce(tid, readEpoch);
             thread_data[tid].timesBagTooLargeSinceRotation = 0;
             for (int i=0;i<numReclaimers;++i) {
-                ((reclaimer_tree_ebr<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
+                ((reclaimer_tree_ebr_q<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
             }
             result = true;
         }
 
-//        epoch->announce(tid, readEpoch); // must always announce because of quiescence bit
-        // periodically try advancing the epoch
-        if ((++thread_data[tid].timeSinceTryAdvance % MIN_TIME_BEFORE_TRY_ADVANCE) == 0) {
-            epoch->tryAdvance(tid);
-        }
+        epoch->announce(tid, readEpoch); // must always announce because of quiescence bit
+        epoch->tryAdvance(tid, true);
         return result;
     }
     
@@ -299,8 +309,8 @@ public:
 //            // otherwise, we will avoid scanning all threads too often.
 //            if ((++thread_data[tid].timesBagTooLargeSinceRotation) % 1000) return;
 //
-//            long readEpoch = epoch;
-//            const long ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
+//            auto readEpoch = epoch;
+//            const auto ann = announcedEpoch[tid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //
 //            // if our announced epoch is different from the current epoch, skip the following, since we're going to rotate limbo bags on our next operation, anyway
 //            if (readEpoch != BITS_EPOCH(ann)) return;
@@ -308,7 +318,7 @@ public:
 //            // scan all threads (skipping any threads we've already checked) to see if we can advance the epoch (and subsequently reclaim memory)
 //            for (; thread_data[tid].checked < this->NUM_PROCESSES; ++thread_data[tid].checked) {
 //                const int otherTid = thread_data[tid].checked;
-//                long otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
+//                auto otherAnnounce = announcedEpoch[otherTid*PREFETCH_SIZE_WORDS].load(std::memory_order_relaxed);
 //                if (!(BITS_EPOCH(otherAnnounce) == readEpoch || QUIESCENT(otherAnnounce))) return;
 //            }
 //            __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
@@ -322,9 +332,9 @@ public:
         }
     }
 
-    reclaimer_tree_ebr(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
+    reclaimer_tree_ebr_q(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE std::cout<<"constructor reclaimer_tree_ebr helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
+        VERBOSE std::cout<<"constructor reclaimer_tree_ebr_q helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
         if (numProcesses > MAX_THREADS_POW2) {
             setbench_error("number of threads is greater than MAX_THREADS_POW2 = "<<MAX_THREADS_POW2);
         }
@@ -341,8 +351,8 @@ public:
 //            GSTATS_TIMER_RESET(tid, timer_epoch_latency);
         }
     }
-    ~reclaimer_tree_ebr() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_tree_ebr"<<std::endl;
+    ~reclaimer_tree_ebr_q() {
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_tree_ebr_q"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
                 this->pool->addMoveAll(tid, thread_data[tid].epochbags[i]);

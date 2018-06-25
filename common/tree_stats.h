@@ -16,6 +16,19 @@
 
 #define MAX_HEIGHT (1<<10)
 
+/**
+ * TODO: extend tree_stats.h to start tracking memory layout issues
+ * (avg cache line crossings,
+ *  avg cache set occupancy (need to demarcate search data),
+ *  neighbouring object types,
+ *  page crossings,
+ *  avg page density,
+ *  alignment histogram,
+ *  page occupancy visualizations,
+ *  unique pages needed,
+ *  unique cache lines needed)
+ */
+
 template <typename NodeHandlerT>
 class TreeStats {
 private:
