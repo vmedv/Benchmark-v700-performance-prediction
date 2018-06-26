@@ -78,6 +78,7 @@ public:
     void printObjectSizes() {
         std::cout<<"sizes: node="
                  <<(sizeof(node_t<K,V>))
+                 <<" descriptor="<<(sizeof(operation_t<K,V>))
                  <<std::endl;
     }
 
@@ -139,7 +140,7 @@ public:
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->get_root());
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->get_root());
     }
 #endif
 };

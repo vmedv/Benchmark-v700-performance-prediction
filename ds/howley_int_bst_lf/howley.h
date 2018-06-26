@@ -49,6 +49,9 @@
 
 #include "record_manager.h"
 
+#define USE_PADDING
+#define LARGE_DES
+
 //Encoded in the operation pointer
 #define STATE_OP_NONE 0
 #define STATE_OP_MARK 1
@@ -108,7 +111,7 @@ struct node_t {
     node_t<skey_t, sval_t> * volatile left;
     node_t<skey_t, sval_t> * volatile right;
 #ifdef USE_PADDING
-    volatile char pad[PAD_SIZE];
+    volatile char pad[64 - sizeof(key) - sizeof(value) - sizeof(op) - sizeof(left) - sizeof(right)];
 #endif
 };
 

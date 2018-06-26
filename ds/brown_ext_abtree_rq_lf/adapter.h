@@ -121,7 +121,7 @@ public:
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->debug_getEntryPoint());
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->debug_getEntryPoint());
     }
 #endif
 };

@@ -88,6 +88,9 @@ public:
         K minKey;
         K maxKey;
         
+        typedef K skey_t; // for getAddress()
+        typedef V sval_t; // for getAddress()
+        
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
@@ -110,11 +113,11 @@ public:
             NodePtrType next() {
                 if (!leftDone) {
                     leftDone = true;
-                    return node->child[LEFT];
+                    return getAddress(node->child[LEFT]);
                 }
                 if (!rightDone) {
                     rightDone = true;
-                    return node->child[RIGHT];
+                    return getAddress(node->child[RIGHT]);
                 }
                 setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
             }
@@ -139,7 +142,7 @@ public:
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_maxKey, _minKey), ds->get_root(), false);
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->get_root());
     }
 #endif
 };

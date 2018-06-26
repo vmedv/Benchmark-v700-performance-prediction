@@ -271,8 +271,8 @@ struct globals_t {
     PAD;
     // const
     void * const NO_VALUE;
-    const test_type KEY_MIN;
-    const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this!
+    const test_type KEY_MIN; // must be smaller than any key that can be inserted/deleted
+    const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this! (and larger than any key that can be inserted/deleted)
     const long long PREFILL_INTERVAL_MILLIS;
     PAD;
     // write once
@@ -303,7 +303,7 @@ struct globals_t {
     
     globals_t()
     : NO_VALUE(NULL)
-    , KEY_MIN(std::numeric_limits<test_type>::min()+1) 
+    , KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
     , KEY_MAX(std::numeric_limits<test_type>::max()-1)
     , PREFILL_INTERVAL_MILLIS(200)
     {
@@ -353,7 +353,7 @@ void *thread_prefill(void *_id) {
         }
         
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        int key = rng->next(MAXKEY);
+        test_type key = rng->next(MAXKEY) + 1;
         double op = rng->next(100000000) / 1000000.;
         GSTATS_TIMER_RESET(tid, timer_latency);
         if (op < insProbability) {
@@ -396,7 +396,7 @@ void prefillInsertionOnly() {
     #pragma omp parallel for schedule(dynamic, 100000)
     for (size_t i=0;i<expectedSize;++i) {
     retry:
-        int key = g.rngs[omp_get_thread_num()].next(MAXKEY);
+        test_type key = g.rngs[omp_get_thread_num()].next(MAXKEY) + 1;
         GSTATS_ADD(omp_get_thread_num(), num_inserts, 1);
         if (g.dsAdapter->INSERT_FUNC(omp_get_thread_num(), key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
             GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
@@ -573,7 +573,7 @@ void *thread_timed(void *_id) {
         }
         
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        int key = rng->next(MAXKEY);
+        test_type key = rng->next(MAXKEY) + 1;
         double op = rng->next(100000000) / 1000000.;
         if (op < INS) {
             GSTATS_TIMER_RESET(tid, timer_latency);
@@ -592,15 +592,15 @@ void *thread_timed(void *_id) {
             GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS+DEL+RQ) {
-            unsigned _key = rng->next() % std::max(1, MAXKEY - RQSIZE);
-            assert(_key >= 0);
-            assert(_key < MAXKEY);
-            assert(_key < std::max(1, MAXKEY - RQSIZE));
+            uint64_t _key = rng->next() % std::max(1, MAXKEY - RQSIZE) + 1;
+            assert(_key >= 1);
+            assert(_key <= MAXKEY);
+            assert(_key <= std::max(1, MAXKEY - RQSIZE));
             assert(MAXKEY > RQSIZE || _key == 0);
-            key = (int) _key;
+            key = (test_type) _key;
             
             ++rq_cnt;
-            int rqcnt;
+            size_t rqcnt;
             GSTATS_TIMER_RESET(tid, timer_latency);
             if (rqcnt = g.dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
                 garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
@@ -663,14 +663,14 @@ void *thread_rq(void *_id) {
         }
         
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        unsigned _key = rng->next() % std::max(1, MAXKEY - RQSIZE);
-        assert(_key >= 0);
-        assert(_key < MAXKEY);
-        assert(_key < std::max(1, MAXKEY - RQSIZE));
+        uint64_t _key = rng->next() % std::max(1, MAXKEY - RQSIZE) + 1;
+        assert(_key >= 1);
+        assert(_key <= MAXKEY);
+        assert(_key <= std::max(1, MAXKEY - RQSIZE));
         assert(MAXKEY > RQSIZE || _key == 0);
         
-        int key = (int) _key;
-        int rqcnt;
+        test_type key = (test_type) _key;
+        size_t rqcnt;
         GSTATS_TIMER_RESET(tid, timer_latency);
         if (rqcnt = g.dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
             garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
@@ -724,7 +724,7 @@ void trial() {
     PerfTools::profile("perf.prefilling", PERF_PMU_EVENT, [&]() {
 #ifdef PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
         TIMING_START("creating key array");
-        size_t sz = MAXKEY+1;
+        size_t sz = MAXKEY+2;
         const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
         size_t present[sz];
         #pragma omp parallel for schedule(dynamic, 100000)
@@ -735,10 +735,10 @@ void trial() {
         #pragma omp parallel for schedule(dynamic, 100000)
         for (size_t i=0;i<sz/2;++i) {
         retry:
-            //auto key = g.rngs[tid].next(sz);
+            //auto key = g.rngs[tid].next(sz) + 1;
             //if (present[key]) { goto retry; } else { GSTATS_ADD(tid, key_checksum, key); GSTATS_ADD(tid, size_checksum, 1); }
             //present[key] = 1;
-            auto key = g.rngs[omp_get_thread_num()].next(sz);
+            auto key = g.rngs[omp_get_thread_num()].next(sz) + 1;
             if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
                 GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
                 GSTATS_ADD(omp_get_thread_num(), size_checksum, 1);

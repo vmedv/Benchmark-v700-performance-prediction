@@ -34,25 +34,9 @@
 #include <pthread.h>
 #include "record_manager.h"
 
-#if     (INDEX_STRUCT == IDX_DANA_SPIN_FIELDS) 
-#define FIELDS_ORDER
-#define SPIN_LOCK
-#elif   (INDEX_STRUCT == IDX_DANA_SPIN_PAD_FIELDS) 
 #define FIELDS_ORDER
 #define SPIN_LOCK
 #define USE_PADDING 
-#define PAD_SIZE 24
-#elif   (INDEX_STRUCT == IDX_DANA_SPIN_FIELDS_3_LINES)
-#define FIELDS_ORDER
-#define SPIN_LOCK
-#define USE_PADDING 
-#define PAD_SIZE 120
-#elif   (INDEX_STRUCT == IDX_DANA_BASELINE)
-#define SPIN_LOCK
-#define BASELINE
-#else
-#error
-#endif
 
 #ifndef SPIN_LOCK
 #error only spin lock is currently supported
@@ -67,12 +51,12 @@ typedef pthread_spinlock_t ptlock_t;
 #define TRYLOCK(lock)       pthread_spin_trylock(lock)
 
 #ifdef BASELINE //make sure that small key is defined and no padding
-#ifdef USE_PADDING
-#undef USE_PADDING
-#endif
-#ifdef FIELDS_ORDER
-#undef FIELDS_ORDER
-#endif 
+    #ifdef USE_PADDING
+        #undef USE_PADDING
+    #endif
+    #ifdef FIELDS_ORDER
+        #undef FIELDS_ORDER
+    #endif 
 #endif
 
 
@@ -82,40 +66,46 @@ typedef uint8_t bool_t;
 
 template <typename skey_t, typename sval_t>
 struct node_t {
-  #ifdef FIELDS_ORDER
-    skey_t key;
-    #ifndef NO_VOLATILE
-    node_t<skey_t, sval_t>* volatile left;
-    node_t<skey_t, sval_t>* volatile right;
-    node_t<skey_t, sval_t>* volatile succ;
-    node_t<skey_t, sval_t>* volatile pred;
+#ifdef USE_PADDING
+    union {
+        volatile char pad[192];
+        struct {
+#endif
+    #ifdef FIELDS_ORDER
+        skey_t key;
+        #ifndef NO_VOLATILE
+            node_t<skey_t, sval_t>* volatile left;
+            node_t<skey_t, sval_t>* volatile right;
+            node_t<skey_t, sval_t>* volatile succ;
+            node_t<skey_t, sval_t>* volatile pred;
+        #else
+            volatile node_t<skey_t, sval_t>* left;
+            volatile node_t<skey_t, sval_t>* right;
+            volatile node_t<skey_t, sval_t>* succ;
+            volatile node_t<skey_t, sval_t>* pred;
+        #endif
+        bool_t mark;
+        sval_t value;
+        node_t<skey_t, sval_t>* volatile parent;
+        ptlock_t tree_lock;
+        ptlock_t succ_lock;
     #else
-    volatile node_t<skey_t, sval_t>* left;
-    volatile node_t<skey_t, sval_t>* right;
-    volatile node_t<skey_t, sval_t>* succ;
-    volatile node_t<skey_t, sval_t>* pred;
+        volatile node_t<skey_t, sval_t>* left;
+        volatile node_t<skey_t, sval_t>* right;
+        volatile node_t<skey_t, sval_t>* parent;
+        volatile node_t<skey_t, sval_t>* succ;
+        volatile node_t<skey_t, sval_t>* pred;
+        ptlock_t tree_lock;
+        ptlock_t succ_lock;
+        skey_t key;
+        sval_t value;
+        bool_t mark;
     #endif
-    bool_t mark;
-    sval_t value;
-    node_t<skey_t, sval_t>* volatile parent;
-    ptlock_t tree_lock;
-    ptlock_t succ_lock;
-  #else
-    volatile node_t<skey_t, sval_t>* left;
-    volatile node_t<skey_t, sval_t>* right;
-    volatile node_t<skey_t, sval_t>* parent;
-    volatile node_t<skey_t, sval_t>* succ;
-    volatile node_t<skey_t, sval_t>* pred;
-    ptlock_t tree_lock;
-    ptlock_t succ_lock;
-    skey_t key;
-    sval_t value;
-    bool_t mark;
-  #endif
-  #ifdef USE_PADDING
-    char pad[PAD_SIZE];
-  #endif
-  #ifdef BASELINE
+#ifdef USE_PADDING
+        };
+    };
+#endif
+#ifdef BASELINE
     char padding[96-5*sizeof(uintptr_t)-2*sizeof(ptlock_t)-sizeof(sval_t)-sizeof(skey_t)-sizeof(bool_t)];
   #endif
 };

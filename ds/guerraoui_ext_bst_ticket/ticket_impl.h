@@ -106,6 +106,7 @@ retry:
             return curr->val;
         }
 
+//        node_t<skey_t, sval_t>* nn_leaked = new_node(tid, key, val, NULL, NULL);
         node_t<skey_t, sval_t>* nn = new_node(tid, key, val, NULL, NULL);
         node_t<skey_t, sval_t>* nr = new_node_no_init(tid);
 
