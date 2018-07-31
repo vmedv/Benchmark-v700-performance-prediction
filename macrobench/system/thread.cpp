@@ -56,6 +56,8 @@ RC thread_t::run() {
 	uint64_t thd_txn_id = 0;
 	UInt64 txn_cnt = 0;
 
+	papi_start_counters(get_thd_id());
+
 	while (true) {
 		ts_t starttime = get_sys_clock();
 		if (WORKLOAD != TEST) {
@@ -178,11 +180,14 @@ RC thread_t::run() {
 			m_txn->abort_cnt ++;
 		}
 
-		if (rc == FINISH)
+		if (rc == FINISH) {
+			papi_stop_counters(get_thd_id());
 			return rc;
+		}
 		if (!warmup_finish && txn_cnt >= WARMUP / g_thread_cnt) 
 		{
 			stats.clear( get_thd_id() );
+			papi_stop_counters(get_thd_id());
 			return FINISH;
 		}
 
@@ -192,6 +197,7 @@ RC thread_t::run() {
 				assert( _wl->sim_done);
 	    }
 	    if (_wl->sim_done) {
+		    papi_stop_counters(get_thd_id());
    		    return FINISH;
    		}
 	}

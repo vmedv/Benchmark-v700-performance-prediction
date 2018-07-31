@@ -100,6 +100,7 @@ extern UInt32 g_ts_batch_num;
 extern map<string, string> g_params;
 
 #include "urcu.h" // include after the definition of g_thread_cnt
+#include "papi_util.h"
 
 // YCSB
 extern UInt32 g_cc_alg;

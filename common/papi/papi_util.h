@@ -11,33 +11,6 @@
 #ifdef USE_PAPI
 #   include <papi.h>
 #endif
-#include <string>
-
-int all_cpu_counters[] = {
-#ifdef USE_PAPI
-//    PAPI_L1_DCM,
-    PAPI_L2_TCM,
-    PAPI_L3_TCM,
-    PAPI_TOT_CYC,
-//    PAPI_TOT_INS,
-    PAPI_RES_STL,
-//    PAPI_TLB_DM,
-#endif
-};
-std::string all_cpu_counters_strings[] = {
-#ifdef USE_PAPI
-//    "PAPI_L1_DCM",
-    "PAPI_L2_TCM",
-    "PAPI_L3_TCM",
-    "PAPI_TOT_CYC",
-//    "PAPI_TOT_INS",
-    "PAPI_RES_STL",
-//    "PAPI_TLB_DM",
-#endif
-};
-#ifdef USE_PAPI
-const int nall_cpu_counters = sizeof(all_cpu_counters) / sizeof(all_cpu_counters[0]);
-#endif
 
 void papi_init_program(const int numProcesses);
 void papi_deinit_program();

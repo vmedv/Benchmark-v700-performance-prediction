@@ -8,6 +8,7 @@
 #include "occ.h"
 #include "vll.h"
 #include <string>
+#include "papi_util_impl.h"
 
 #include "rlu.h"
 __thread rlu_thread_data_t * rlu_self;

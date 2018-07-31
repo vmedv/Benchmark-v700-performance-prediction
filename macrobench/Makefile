@@ -6,7 +6,11 @@ include ../plaf.inc
 CFLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 CFLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 CFLAGS += -g -std=c++0x -O3
-FLAGS += $(xargs)
+CFLAGS += $(xargs)
+
+### if you do not have PAPI, comment out these two lines
+CFLAGS += -DUSE_PAPI
+LDFLAGS += -lpapi
 
 workload=TPCC
 data_structure_name=brown_ext_abtree_lf

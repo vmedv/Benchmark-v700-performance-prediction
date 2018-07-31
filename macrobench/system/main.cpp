@@ -32,6 +32,7 @@ int main(int argc, char* argv[])
         rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
 //        tree_malloc::init();
+	papi_init_program(g_thread_cnt);
 	mem_allocator.init(g_part_cnt, MEM_SIZE / g_part_cnt); 
 	stats.init();
 	glob_manager = (Manager *) _mm_malloc(sizeof(Manager), ALIGNMENT);
@@ -216,6 +217,7 @@ void * f_real(void * id) {
         tid = __tid;
         urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid);
+        papi_create_eventset(__tid);
 #ifdef VERBOSE_1
         cout<<"REAL: Assigned thread ID="<<tid<<std::endl;
 #endif

@@ -3,6 +3,33 @@
 #include "papi_util.h"
 #include "plaf.h"
 #include <iostream>
+#include <string>
+
+int all_cpu_counters[] = {
+#ifdef USE_PAPI
+//    PAPI_L1_DCM,
+    PAPI_L2_TCM,
+    PAPI_L3_TCM,
+    PAPI_TOT_CYC,
+//    PAPI_TOT_INS,
+    PAPI_RES_STL,
+//    PAPI_TLB_DM,
+#endif
+};
+std::string all_cpu_counters_strings[] = {
+#ifdef USE_PAPI
+//    "PAPI_L1_DCM",
+    "PAPI_L2_TCM",
+    "PAPI_L3_TCM",
+    "PAPI_TOT_CYC",
+//    "PAPI_TOT_INS",
+    "PAPI_RES_STL",
+//    "PAPI_TLB_DM",
+#endif
+};
+#ifdef USE_PAPI
+const int nall_cpu_counters = sizeof(all_cpu_counters) / sizeof(all_cpu_counters[0]);
+#endif
 
 #ifdef USE_PAPI
 int event_sets[MAX_THREADS_POW2];

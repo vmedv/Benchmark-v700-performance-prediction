@@ -379,6 +379,9 @@ void Stats::print(workload * wl) {
                 wl->indexes.begin()->second->getNodeSize(),
                 wl->indexes.begin()->second->getDescriptorSize()
 	);
+
+	papi_print_counters( total_txn_cnt/(total_run_time / BILLION)*g_thread_cnt);
+
 	if (g_prt_lat_distr)
 		print_lat_distr();
 }
