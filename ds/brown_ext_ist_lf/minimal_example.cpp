@@ -50,6 +50,11 @@ int main(int argc, char** argv) {
     
     result = tree->contains(threadID, 7);
     assert(!result);
+
+    for (int i=0;i<50;++i) {
+        std::cout<<"i="<<i<<std::endl;
+        tree->insertIfAbsent(threadID, i, (void *) (size_t) i);
+    }
     
     tree->deinitThread(threadID);
     

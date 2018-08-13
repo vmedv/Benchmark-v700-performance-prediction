@@ -64,6 +64,19 @@ typedef long long test_type;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
+    gstats_handle_stat(LONG_LONG, num_rebuild, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    /*gstats_handle_stat(LONG_LONG, num_isearch, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    })*/ \
+    /*gstats_handle_stat(DOUBLE, visited_in_isearch, 100000, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
+      __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    })*/ \
 /*    gstats_handle_stat(LONG_LONG, num_getguard, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
@@ -330,7 +343,7 @@ struct globals_t {
     
 void *thread_prefill(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, LOGICAL_PROCESSORS);
+    binding_bindThread(tid);
     RandomFNV1A *rng = &g.rngs[tid];
     test_type garbage = 0;
 
@@ -436,7 +449,7 @@ void prefill() {
         
         // create threads
         pthread_t *threads = new pthread_t[PREFILL_THREADS];
-        int *ids = new int[PREFILL_THREADS];
+        int ids[PREFILL_THREADS];
         for (int i=0;i<PREFILL_THREADS;++i) {
             ids[i] = i;
             g.rngs[i].setSeed(rand());
@@ -444,7 +457,7 @@ void prefill() {
 
         // start all threads
         for (int i=0;i<PREFILL_THREADS;++i) {
-            if (pthread_create(&threads[i], NULL, thread_prefill, &ids[i])) {
+            if (pthread_create(&threads[i], NULL, thread_prefill, (void *) &ids[i])) {
                 std::cerr<<"ERROR: could not create thread"<<std::endl;
                 exit(-1);
             }
@@ -503,7 +516,6 @@ void prefill() {
         }
         
         delete[] threads;
-        delete[] ids;
 
         g.start = false;
         g.done = false;
@@ -544,7 +556,7 @@ void prefill() {
 
 void *thread_timed(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, LOGICAL_PROCESSORS);
+    binding_bindThread(tid);
     test_type garbage = 0;
     RandomFNV1A *rng = &g.rngs[tid];
 
@@ -635,7 +647,7 @@ void *thread_timed(void *_id) {
 
 void *thread_rq(void *_id) {
     int tid = *((int*) _id);
-    binding_bindThread(tid, LOGICAL_PROCESSORS);
+    binding_bindThread(tid);
     test_type garbage = 0;
     RandomFNV1A *rng = &g.rngs[tid];
 
@@ -1087,15 +1099,15 @@ int main(int argc, char** argv) {
     g.dsAdapter->printObjectSizes();
     
     // setup thread pinning/binding
-    binding_configurePolicy(TOTAL_THREADS, LOGICAL_PROCESSORS);
+    binding_configurePolicy(TOTAL_THREADS);
     
     // print actual thread pinning/binding layout
     std::cout<<"ACTUAL_THREAD_BINDINGS=";
     for (int i=0;i<TOTAL_THREADS;++i) {
-        std::cout<<(i?",":"")<<binding_getActualBinding(i, LOGICAL_PROCESSORS);
+        std::cout<<(i?",":"")<<binding_getActualBinding(i);
     }
     std::cout<<std::endl;
-    if (!binding_isInjectiveMapping(TOTAL_THREADS, LOGICAL_PROCESSORS)) {
+    if (!binding_isInjectiveMapping(TOTAL_THREADS)) {
         std::cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<std::endl;
         exit(-1);
     }
@@ -1112,7 +1124,7 @@ int main(int argc, char** argv) {
     trial();
     printOutput();
     
-    binding_deinit(LOGICAL_PROCESSORS);
+    binding_deinit();
     std::cout<<"garbage="<<g.garbage<<std::endl; // to prevent certain steps from being optimized out
     GSTATS_DESTROY;
 

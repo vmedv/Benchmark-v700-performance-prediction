@@ -28,6 +28,7 @@
 #include <set>
 #include <limits>
 #include <vector>
+#include <cmath>
 #include <unistd.h>
 #include <sys/types.h>
 #include "random_fnv1a.h"
@@ -51,7 +52,14 @@
 #define SUM_TO_DIRTY(x) (((x)<<1)|1)
 #define DIRTY_TO_SUM(x) ((x)>>1)
 
-#define REBUILD_AFTER_CHANGE_FRACTION (0.25)
+#define REBUILD_FRACTION (0.25)
+#define EPS REBUILD_FRACTION
+
+static __thread RandomFNV1A * myRNG = NULL;
+
+enum UpdateType {
+    InsertIfAbsent, InsertReplace, Erase
+};
 
 template <typename K, typename V>
 struct Node {
@@ -63,16 +71,18 @@ struct Node {
     Node<K,V> * parent;
     K minKey;
     K maxKey;
-    void * data; // layout: keys first, then pointers
+    // unlisted fields: capacity-1 keys of type K followed by capacity "pointers" of type casword_t
     
+    inline K * keyAddr(const int ix) {
+        K * const firstKey = ((K *) ((&maxKey)+1));
+        return &firstKey[ix];
+    }
     inline K& key(const int ix) {
-        K * const firstKey = ((K *) &data);
-        return firstKey[ix];
+        return *keyAddr(ix);
     }
     // conceptually returns &node.ptrs[ix]
     inline casword_t * ptrAddr(const int ix) {
-        K * const firstKey = ((K *) &data);
-        K * const firstKeyAfter = &firstKey[capacity - 1];
+        K * const firstKeyAfter = keyAddr(capacity - 1);
         casword_t * const firstPtr = (casword_t *) firstKeyAfter;
         return &firstPtr[ix];
     }
@@ -94,41 +104,9 @@ template <typename K, typename V>
 struct KVPair {
     K k;
     V v;
+    bool empty;
     KVPair(const K& key, const V& value)
-    : k(key), v(value) {}
-};
-
-enum InsertResultType {
-    RESTART, PROPAGATE, NO_PROPAGATE, DONE
-};
-
-template <typename K, typename V>
-struct PropagateResult {
-    Node<K,V> * candidate;
-    size_t candidateChangeSum;
-    size_t childChangeSum;
-    V oldValue;
-    
-    PropagateResult() {}
-    PropagateResult(Node<K,V> * const _candidate, size_t _candidateChangeSum, size_t _childChangeSum, V _oldValue)
-    : candidate(_candidate)
-    , candidateChangeSum(_candidateChangeSum)
-    , childChangeSum(_childChangeSum)
-    , oldValue(_oldValue)
-    {}
-};
-
-template <typename K, typename V>
-struct NoPropagateResult {
-    casword_t newObject;
-    V oldValue;
-};
-
-template <typename K, typename V>
-struct InsertResult {
-    InsertResultType type;
-    PropagateResult<K,V> prop;
-    NoPropagateResult<K,V> noprop;
+    : k(key), v(value), empty(false) {}
 };
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -147,13 +125,13 @@ private:
         }
 
 private:
-    Node<K,V> * dfsBuild(const int tid, Node<K,V> ** const currAtDepth, const int buildDepth);
-    size_t dfsMark(const int tid, const casword_t ptr);
-    int interpolationSearch(const K& key, Node<K,V> * const node);
-    void rebuildSubtree(const int tid, PropagateResult<K,V> result);
-    void helpRebuildSubtree(const int tid, RebuildOperation<K,V> * op);
-    V doInsert(const int tid, const K& key, const V& value, const bool replace);
-    InsertResult<K,V> doInsert(const int tid, Node<K,V> * const node, const K& key, const V& value, const bool replace);
+//    Node<K,V> * dfsBuild(const int tid, Node<K,V> ** const currAtDepth, const int buildDepth);
+//    size_t dfsMark(const int tid, const casword_t ptr);
+    void rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index);
+    void helpRebuild(const int tid, RebuildOperation<K,V> * op);
+//    V doInsert(const int tid, const K& key, const V& value, const bool replace);
+    int interpolationSearch(const int tid, const K& key, Node<K,V> * const node);
+    V doUpdate(const int tid, const K& key, const V& val, UpdateType t);
 
     Node<K,V> * createNode(const int tid, const int degree);
     KVPair<K,V> * createKVPair(const int tid, const K& key, const V& value);
@@ -166,12 +144,14 @@ public:
     PAD;
 
     void initThread(const int tid) {
+        if (myRNG == NULL) myRNG = new RandomFNV1A(rand());
         if (init[tid]) return; else init[tid] = !init[tid];
 
         prov->initThread(tid);
         recordmgr->initThread(tid);
     }
     void deinitThread(const int tid) {
+        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
         if (!init[tid]) return; else init[tid] = !init[tid];
 
         prov->deinitThread(tid);
@@ -188,6 +168,9 @@ public:
     , NO_VALUE(noValue)
     , NUM_PROCESSES(numProcesses) 
     {
+//        srand(187381781); // for seeding per-thread RNGs in initThread
+        srand(time(0)); // for seeding per-thread RNGs in initThread
+        
         cmp = Interpolate();
 
         const int tid = 0;
@@ -196,7 +179,9 @@ public:
         Node<K,V> * _root = createNode(tid, 1);
         KVPair<K,V> * _rootPair = createKVPair(tid, INF_KEY, NO_VALUE);
         _root->degree = 1;
-        *(_root->ptrAddr(0)) = KVPAIR_TO_CASWORD(_rootPair);
+        _root->minKey = INF_KEY;
+        _root->maxKey = INF_KEY;
+        *_root->ptrAddr(0) = KVPAIR_TO_CASWORD(_rootPair);
         
         root = _root;
     }
@@ -388,6 +373,8 @@ public:
 //                }
 //            }
 //        }
+        
+        std::cout<<"istree created with NUM_PROCESSES="<<NUM_PROCESSES<<std::endl;
     }
 
     ~istree() {
@@ -559,15 +546,19 @@ private:
     }
 
 public:
+    V find(const int tid, const K& key);
+    bool contains(const int tid, const K& key) {
+        return find(tid, key);
+    }
     V insert(const int tid, const K& key, const V& val) {
-        return doInsert(tid, key, val, true);
+        return doUpdate(tid, key, val, InsertReplace);
     }
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return doInsert(tid, key, val, false);
+        return doUpdate(tid, key, val, InsertIfAbsent);
     }
-    const std::pair<V,bool> erase(const int tid, const K& key);
-    const std::pair<V,bool> find(const int tid, const K& key);
-    bool contains(const int tid, const K& key);
+    V erase(const int tid, const K& key) {
+        return doUpdate(tid, key, NO_VALUE, Erase);
+    }
     int rangeQuery(const int tid, const K& low, const K& hi, K * const resultKeys, void ** const resultValues) {
         istree_error("not implemented");
     }

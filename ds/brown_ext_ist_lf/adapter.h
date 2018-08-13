@@ -1,5 +1,5 @@
 /**
- * Implementation of a lock-free relaxed (a,b)-tree using LLX/SCX.
+ * Implementation of a lock-free interpolation search tree.
  * Trevor Brown, 2018.
  */
 
@@ -9,10 +9,10 @@
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
+#include "brown_ext_ist_lf_impl.h"
 #ifdef USE_TREE_STATS
-#   include "brown_ext_ist_lf_impl.h"
+#   include "tree_stats.h"
 #endif
-#include "tree_stats.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
@@ -111,10 +111,10 @@ public:
         return ds->insertIfAbsent(tid, key, val);
     }
     void * erase(const int tid, const K& key) {
-        return ds->erase(tid, key).first;
+        return ds->erase(tid, key);
     }
     void * find(const int tid, const K& key) {
-        return ds->find(tid, key).first;
+        return ds->find(tid, key);
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
         setbench_error("not implemented");
@@ -155,8 +155,8 @@ public:
         static bool isLeaf(NodePtrType node) { return IS_KVPAIR(node); }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : CASWORD_TO_NODE(node)->degree; }
-        static size_t getNumKeys(NodePtrType node) { return isLeaf(node); }
-        static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) CASWORD_TO_KVPAIR(node)->k : 0; }
+        static size_t getNumKeys(NodePtrType node) { return isLeaf(node) && !CASWORD_TO_KVPAIR(node)->empty; }
+        static size_t getSumOfKeys(NodePtrType node) { return getNumKeys(node) ? (size_t) CASWORD_TO_KVPAIR(node)->k : 0; }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()));

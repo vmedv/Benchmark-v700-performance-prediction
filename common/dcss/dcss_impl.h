@@ -149,6 +149,7 @@ inline casword_t dcssProvider::dcssRead(const int tid, casword_t volatile * addr
     while (1) {
         r = *addr;
         if (unlikely(isDcss(r))) {
+//            std::cout<<"found supposed dcss descriptor @ "<<(size_t) r<<std::endl;
 #ifdef USE_DEBUGCOUNTERS
             this->dcssHelpCounter->inc(tid);
 #endif

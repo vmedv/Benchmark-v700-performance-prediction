@@ -380,13 +380,20 @@ public:
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
             thread_data[tid].offset[id] = (id == 0) ? 0 : thread_data[tid].offset[id-1] + thread_data[tid].capacity[id-1]*GSTATS_DATA_SIZE_BYTES;
             thread_data[tid].capacity[id] = capacity;
-            assert(thread_data[tid].offset[id] + thread_data[tid].capacity[id]*GSTATS_DATA_SIZE_BYTES <= GSTATS_MAX_THREAD_BUF_SIZE);
+            auto endSize = thread_data[tid].offset[id] + thread_data[tid].capacity[id]*GSTATS_DATA_SIZE_BYTES;
+            if (endSize > GSTATS_MAX_THREAD_BUF_SIZE) {
+                std::cout<<"ERROR: stat w/id "<<id<<" ends at offset "<<endSize<<" in thread_data[tid].data, which runs off the end of the array. Either shrink your stats increase GSTATS_MAX_THREAD_BUF_SIZE in common/gstats.h."<<std::endl;
+                exit(1);
+            }
             thread_data[tid].size[id] = 0;
             if (tid == 0) std::cout<<"stat id="<<id<<" name="<<name<<" tid="<<tid<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<" size="<<thread_data[tid].size[id]<<" stat_ptr_addr="<<(long long) thread_data[tid].get_ptr<void>(id)<<std::endl;
         }
 
         num_stats++;
-        assert(num_stats <= GSTATS_MAX_NUM_STATS);
+        if (num_stats > GSTATS_MAX_NUM_STATS) {
+            std::cout<<"ERROR: added too many stats. either eliminate some stats or increase GSTATS_MAX_NUM_STATS in common/gstats.h."<<std::endl;
+            exit(1);
+        }
         return id;
     }
 
