@@ -3,11 +3,6 @@
 
 #include "brown_ext_ist_lf.h"
 
-// TODO: memory reclamation
-// TODO: sequential rebuilding
-// TODO: lock-free collaborative rebuilding
-// TODO: remember to set initSize appropriately for nodes during rebuilding!
-
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
@@ -133,7 +128,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
     __builtin_prefetch((node->keyAddr(0))+(numKeys+ix), 1); // prefetch approximate pointer location to accelerate later isDcss check
     
     const K& ixKey = node->key(ix);
-//    std::cout<<"key="<<key<<" minKey="<<minKey<<" maxKey="<<maxKey<<" ix="<<ix<<" ixKey="<<ixKey<<std::endl; // TODO: delete this debug print
+//    std::cout<<"key="<<key<<" minKey="<<minKey<<" maxKey="<<maxKey<<" ix="<<ix<<" ixKey="<<ixKey<<std::endl;
     if (key < ixKey) {
         // search to the left for node.key[i] <= key, then return i+1
         int i;
@@ -242,7 +237,6 @@ retryNode:
                 case InsertReplace: case InsertIfAbsent:
                     if (pair->k == INF_KEY) {
                         newWord = KVPAIR_TO_CASWORD(createKVPair(tid, key, val));
-                        // TODO: could replacements of Empty type counteract the deletions that created them?
                         // retval = NO_VALUE;
                     } else if (pair->k == key) {
                         if (t == InsertIfAbsent) return pair->v;

@@ -240,6 +240,7 @@ private:
                     }
                     totalDegreeAtDepth[i] += nodeDegree;
 
+                    /** BEGIN DEBUGGING CODE **/
                     if (i==0 && currNodeAtDepth[0]) {
                         std::cout<<"keysAdded="<<keysAdded<<std::endl;
                         std::cout<<"initNumKeys="<<initNumKeys<<std::endl;
@@ -269,8 +270,10 @@ private:
                                 }
                             }
                         }
-                        setbench_error("non-null root is replaced unexpectedly during rebuilding!");
+                        std::cout<<"ERROR: non-null root is replaced unexpectedly during rebuilding!"<<std::endl;
+                        assert(false);
                     }
+                    /** END DEBUGGING CODE **/
                     
                     auto curr = ist->createNode(tid, nodeDegree);
                     currNodeAtDepth[i] = curr;
@@ -352,9 +355,7 @@ public:
     , NO_VALUE(noValue)
     , NUM_PROCESSES(numProcesses) 
     {
-//        srand(187381781); // for seeding per-thread RNGs in initThread
         srand(time(0)); // for seeding per-thread RNGs in initThread
-        
         cmp = Interpolate();
 
         const int tid = 0;
@@ -393,10 +394,7 @@ public:
         _root->degree = 1;
         root = _root;
         
-        /**
-         * build ideal initial tree
-         */
-        
+        // build ideal initial tree
         // note: myRNG must be created by initThread before creating IdealBuilder!!!
         IdealBuilder b (initNumKeys, this);
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
@@ -404,41 +402,7 @@ public:
         }
         *root->ptrAddr(0) = NODE_TO_CASWORD(b.getRoot());
         assert(b.getRoot());
-        
-//        // bfs debug print
-//        std::vector<Node<K,V>*> q;
-//        q.push_back(root);
-//        int k=0;
-//        while (k < q.size()) {
-//            auto node = q[k++]; // pop
-//            if (node == NULL) {
-//                std::cout<<"null"<<std::endl;
-//                continue;
-//            }
-//            std::cout<<" degree="<<node->degree;
-//            for (int i=0;i<node->degree-1;++i) {
-//                std::cout<<(i==0?":":",")<<node->key(i);
-//            }
-//            std::cout<<std::endl;
-//            std::cout<<" ptrs";
-//            for (int i=0;i<node->degree;++i) {
-//                std::cout<<(i==0?":":",")<<(size_t)node->ptr(i);
-//            }
-//            std::cout<<std::endl;
-//            
-//            for (int i=0;i<node->degree;++i) {
-//                auto ptr = node->ptr(i);
-//                if (IS_KVPAIR(ptr)) {
-//                    
-//                } else if (IS_REBUILDOP(ptr)) {
-//                    
-//                } else {
-//                    assert(IS_NODE(ptr));
-//                    q.push_back(CASWORD_TO_NODE(ptr));
-//                }
-//            }
-//        }
-        
+                
         std::cout<<"istree created with NUM_PROCESSES="<<NUM_PROCESSES<<std::endl;
     }
 
@@ -452,165 +416,6 @@ public:
 
     Node<K,V> * debug_getEntryPoint() { return root; }
 
-private:
-    /*******************************************************************
-     * Utility functions for integration with the test harness
-     *******************************************************************/
-
-    int sequentialSize(const casword_t ptr) {
-        if (IS_KVPAIR(ptr)) {
-            return 1;
-        }
-        int retval = 0;
-        auto node = CASWORD_TO_NODE(ptr);
-        for (int i=0;i<node->degree;++i) {
-            const casword_t child = node->ptr(i);
-            retval += sequentialSize(child);
-        }
-        return retval;
-    }
-    int sequentialSize() {
-        return sequentialSize(root->ptr(0));
-    }
-
-    int getNumberOfLeaves(Node<K,V>* node) {
-//        if (node == NULL) return 0;
-//        if (node->isLeaf()) return 1;
-//        int result = 0;
-//        for (int i=0;i<node->getABDegree();++i) {
-//            result += getNumberOfLeaves(node->ptrs[i]);
-//        }
-//        return result;
-        return 0;
-    }
-    const int getNumberOfLeaves() {
-//        return getNumberOfLeaves(root->ptrs[0]);
-        return 0;
-    }
-    int getNumberOfInternals(Node<K,V>* node) {
-//        if (node == NULL) return 0;
-//        if (node->isLeaf()) return 0;
-//        int result = 1;
-//        for (int i=0;i<node->getABDegree();++i) {
-//            result += getNumberOfInternals(node->ptrs[i]);
-//        }
-//        return result;
-        return 0;
-    }
-    const int getNumberOfInternals() {
-        return 0;
-//        return getNumberOfInternals(root->ptrs[0]);
-    }
-    const int getNumberOfNodes() {
-        return 0;
-//        return getNumberOfLeaves() + getNumberOfInternals();
-    }
-
-    int getSumOfKeyDepths(Node<K,V>* node, int depth) {
-        return 0;
-//        if (node == NULL) return 0;
-//        if (node->isLeaf()) return depth * node->getKeyCount();
-//        int result = 0;
-//        for (int i=0;i<node->getABDegree();i++) {
-//            result += getSumOfKeyDepths(node->ptrs[i], 1+depth);
-//        }
-//        return result;
-    }
-    const int getSumOfKeyDepths() {
-        return 0;
-//        return getSumOfKeyDepths(root->ptrs[0], 0);
-    }
-    const double getAverageKeyDepth() {
-        return 0;
-//        long sz = sequentialSize();
-//        return (sz == 0) ? 0 : getSumOfKeyDepths() / sz;
-    }
-
-    int getHeight(Node<K,V>* node, int depth) {
-//        if (node == NULL) return 0;
-//        if (node->isLeaf()) return 0;
-//        int result = 0;
-//        for (int i=0;i<node->getABDegree();i++) {
-//            int retval = getHeight(node->ptrs[i], 1+depth);
-//            if (retval > result) result = retval;
-//        }
-//        return result+1;
-        return 0;
-    }
-    const int getHeight() {
-        return 0;
-//        return getHeight(root->ptrs[0], 0);
-    }
-
-    int getKeyCount(Node<K,V>* root) {
-//        if (root == NULL) return 0;
-//        if (root->isLeaf()) return root->getKeyCount();
-//        int sum = 0;
-//        for (int i=0;i<root->getABDegree();++i) {
-//            sum += getKeyCount(root->ptrs[i]);
-//        }
-//        return sum;
-        return 0;
-    }
-    int getTotalDegree(Node<K,V>* root) {
-//        if (root == NULL) return 0;
-//        int sum = root->getKeyCount();
-//        if (root->isLeaf()) return sum;
-//        for (int i=0;i<root->getABDegree();++i) {
-//            sum += getTotalDegree(root->ptrs[i]);
-//        }
-//        return 1+sum; // one more children than keys
-        return 0;
-    }
-    int getNodeCount(Node<K,V>* root) {
-//        if (root == NULL) return 0;
-//        if (root->isLeaf()) return 1;
-//        int sum = 1;
-//        for (int i=0;i<root->getABDegree();++i) {
-//            sum += getNodeCount(root->ptrs[i]);
-//        }
-//        return sum;
-        return 0;
-    }
-    double getAverageDegree() {
-        return 0;
-//        return getTotalDegree(root) / (double) getNodeCount(root);
-    }
-    double getSpacePerKey() {
-        return 0;
-//        return getNodeCount(root)*2*b / (double) getKeyCount(root);
-    }
-
-    long long getSumOfKeys(const casword_t ptr) {
-        if (IS_KVPAIR(ptr)) {
-            long long key = (long long) CASWORD_TO_KVPAIR(ptr)->k;
-            return (key == INF_KEY) ? 0 : key;
-        }
-        auto node = CASWORD_TO_NODE(ptr);
-        long long sum = 0;
-        for (int i=0;i<node->degree;++i) {
-            sum += getSumOfKeys(node->ptr(i));
-        }
-        return sum;
-    }
-    long long getSumOfKeys() {
-        return getSumOfKeys(root->ptr(0));
-    }
-
-    void istree_error(std::string s) {
-        std::cerr<<"ERROR: "<<s<<std::endl;
-        exit(-1);
-    }
-
-    void debugPrint() {
-        std::cout<<"averageDegree="<<getAverageDegree()<<std::endl;
-        std::cout<<"averageDepth="<<getAverageKeyDepth()<<std::endl;
-        std::cout<<"height="<<getHeight()<<std::endl;
-        std::cout<<"internalNodes="<<getNumberOfInternals()<<std::endl;
-        std::cout<<"leafNodes="<<getNumberOfLeaves()<<std::endl;
-    }
-
-public:
     V find(const int tid, const K& key);
     bool contains(const int tid, const K& key) {
         return find(tid, key);
@@ -624,41 +429,9 @@ public:
     V erase(const int tid, const K& key) {
         return doUpdate(tid, key, NO_VALUE, Erase);
     }
-    int rangeQuery(const int tid, const K& low, const K& hi, K * const resultKeys, void ** const resultValues) {
-        istree_error("not implemented");
-    }
-    bool validate(const long long keysum, const bool checkkeysum) {
-        if (checkkeysum) {
-            long long treekeysum = getSumOfKeys();
-            if (treekeysum != keysum) {
-                std::cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<std::endl;
-                return false;
-            }
-        }
-        return true;
-    }
-
-    long long getSizeInNodes() {
-        return getNumberOfNodes();
-    }
-    std::string getSizeString() {
-        std::stringstream ss;
-        ss<<getSizeInNodes()<<" nodes in tree";
-        return ss.str();
-    }
-    long long getSize(Node<K,V> * node) {
-        return sequentialSize(node);
-    }
-    long long getSize() {
-        return sequentialSize();
-    }
     RecManager * const debugGetRecMgr() {
         return recordmgr;
-    }
-    long long debugKeySum() {
-        return getSumOfKeys();
     }
 };
 
 #endif	/* ISTREE_H */
-
