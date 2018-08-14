@@ -64,8 +64,8 @@ typedef long long test_type;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, num_rebuild, 1, { \
-            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    gstats_handle_stat(LONG_LONG, num_rebuild_at_depth, 100, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
     }) \
     /*gstats_handle_stat(LONG_LONG, num_isearch, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
@@ -405,6 +405,7 @@ void prefillInsertionOnly() {
     const int expectedSize = (int)(MAXKEY * expectedFullness);
     
     const int tid = 0;
+    omp_set_num_threads(PREFILL_THREADS);
     TIMING_START("inserting "<<expectedSize<<" keys with "<<omp_get_max_threads()<<" threads");
     #pragma omp parallel for schedule(dynamic, 100000)
     for (size_t i=0;i<expectedSize;++i) {
@@ -733,12 +734,13 @@ void trial() {
         ids[i] = i;
     }
 
-    PerfTools::profile("perf.prefilling", PERF_PMU_EVENT, [&]() {
+//    PerfTools::profile("perf.prefilling", PERF_PMU_EVENT, [&]() {
 #ifdef PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
         TIMING_START("creating key array");
         size_t sz = MAXKEY+2;
         const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
         size_t present[sz];
+        omp_set_num_threads(PREFILL_THREADS);
         #pragma omp parallel for schedule(dynamic, 100000)
         for (size_t i=0;i<sz;++i) present[i]=DOES_NOT_EXIST;
         TIMING_STOP;
@@ -747,10 +749,7 @@ void trial() {
         #pragma omp parallel for schedule(dynamic, 100000)
         for (size_t i=0;i<sz/2;++i) {
         retry:
-            //auto key = g.rngs[tid].next(sz) + 1;
-            //if (present[key]) { goto retry; } else { GSTATS_ADD(tid, key_checksum, key); GSTATS_ADD(tid, size_checksum, 1); }
-            //present[key] = 1;
-            auto key = g.rngs[omp_get_thread_num()].next(sz) + 1;
+            auto key = g.rngs[omp_get_thread_num()].next(MAXKEY) + 1;
             if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
                 GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
                 GSTATS_ADD(omp_get_thread_num(), size_checksum, 1);
@@ -766,22 +765,22 @@ void trial() {
 
         TIMING_START("constructing data structure");
         g.dsAdapter = new DS_ADAPTER_T(
-                MAX_THREADS_POW2, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs,
+                TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs,
                 (test_type const *) present, (VALUE_TYPE const *) present,
                 sz/2, rand());
         TIMING_STOP;
     
 #elif defined PREFILL_INSERTION_ONLY
-        g.dsAdapter = new DS_ADAPTER_T(MAX_THREADS_POW2, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
+        g.dsAdapter = new DS_ADAPTER_T(TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
         DEINIT_ALL;
         if (PREFILL_THREADS > 0) prefillInsertionOnly();
     
 #else
-        g.dsAdapter = new DS_ADAPTER_T(MAX_THREADS_POW2, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
+        g.dsAdapter = new DS_ADAPTER_T(TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
         DEINIT_ALL;
         if (PREFILL_THREADS > 0) prefill();
 #endif
-    });
+//    });
     
     INIT_ALL;
 

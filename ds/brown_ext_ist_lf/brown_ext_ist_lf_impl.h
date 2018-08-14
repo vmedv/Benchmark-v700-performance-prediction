@@ -31,104 +31,73 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     }
 }
 
-//template <typename K, typename V, class Interpolate, class RecManager>
-//size_t istree<K,V,Interpolate,RecManager>::dfsMark(const int tid, const casword_t ptr) {
-//    if (IS_KVPAIR(ptr)) {
-//        return 1;
-//    }
-//    if (IS_REBUILDOP(ptr)) {
-//        auto op = CASWORD_TO_REBUILDOP(ptr);
-//        return dfsMark(tid, NODE_TO_CASWORD(op->candidate));
-//    }
-//    auto node = CASWORD_TO_NODE(ptr);
-//    
-//    __sync_bool_compare_and_swap(&node->dirty, 0, 1);
-//    
-//    size_t sum = 0;
-//    for (int i=0;i<node->degree;++i) {
-//        sum += dfsMark(tid, prov->readPtr(tid, node->ptrAddr(i)));
-//    }
-//    
-//    if (sum) __sync_bool_compare_and_swap(&node->dirty, 1, SUM_TO_DIRTY(sum));
-//    return sum;
-//}
-//
-//template <typename K, typename V, class Interpolate, class RecManager>
-//Node<K,V> * istree<K,V,Interpolate,RecManager>::dfsBuild(const int tid, Node<K,V> ** const currAtDepth, const int buildDepth) {
-//    return NULL;
-//}
-//
+template <typename K, typename V, class Interpolate, class RecManager>
+size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
+    if (IS_KVPAIR(ptr)) {
+        auto pair = CASWORD_TO_KVPAIR(ptr);
+        return (pair->empty ? 0 : 1);
+    }
+    if (IS_REBUILDOP(ptr)) {
+        auto op = CASWORD_TO_REBUILDOP(ptr);
+        return markAndCount(tid, NODE_TO_CASWORD(op->candidate));
+    }
+    assert(IS_NODE(ptr));
+    auto node = CASWORD_TO_NODE(ptr);
+    
+    __sync_bool_compare_and_swap(&node->dirty, 0, 1);
+    
+    size_t keyCount = 0;
+    for (int i=0;i<node->degree;++i) {
+        keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)));
+    }
+    
+    if (keyCount) __sync_bool_compare_and_swap(&node->dirty, 1, SUM_TO_DIRTY(keyCount));
+    return keyCount;
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
+void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t ptr, IdealBuilder * b) {
+    if (IS_KVPAIR(ptr)) {
+        auto pair = CASWORD_TO_KVPAIR(ptr);
+        if (pair->empty) return;
+        b->addKV(tid, pair->k, pair->v);
+    } else if (IS_REBUILDOP(ptr)) {
+        auto op = CASWORD_TO_REBUILDOP(ptr);
+        createIdeal(tid, NODE_TO_CASWORD(op->candidate), b);
+    } else {
+        assert(IS_NODE(ptr));
+        auto node = CASWORD_TO_NODE(ptr);
+        for (int i=0;i<node->degree;++i) {
+            createIdeal(tid, prov->readPtr(tid, node->ptrAddr(i)), b);
+        }
+    }
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
+Node<K,V> * istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, Node<K,V> * rebuildRoot, const size_t keyCount) {
+    IdealBuilder b (keyCount, this);
+    createIdeal(tid, NODE_TO_CASWORD(rebuildRoot), &b);
+    return b.getRoot();
+}
+
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
-//    // dfs to mark nodes and compute up to date subtree sizes
-//    size_t size = dfsMark(tid, NODE_TO_CASWORD(op->candidate));
-//    
-//    /**
-//     * rebuild subtree
-//     */
-//    
-//    
-//    /**
-//     * TODO: redo with tuned probabilistic tree building
-//     */
-//    
-//    // compute lookup table
-//    const int MAX_DEPTH = 9; // repeated sqrt on 2^64 hits 1 after 7 iterations.
-//    const int MIN_NODE_DEGREE = 4;
-//    size_t nodeDegreeAtDepth[MAX_DEPTH];
-//    nodeDegreeAtDepth[0] = (size_t) std::ceil(std::pow((double) size, 0.5));
-//    int buildDepth = 1;
-//    for (int i=1;i<MAX_DEPTH;++i) {
-//        nodeDegreeAtDepth[i] = (size_t) std::ceil(std::pow((double) nodeDegreeAtDepth[i-1], 0.5));
-//        if (nodeDegreeAtDepth[i] >= MIN_NODE_DEGREE) ++buildDepth;
-//    }
-//    
-//    // fold any levels with degree <= 3 into the last level
-//    assert(buildDepth < MAX_DEPTH);
-//    if (nodeDegreeAtDepth[buildDepth] == 3) {
-//        nodeDegreeAtDepth[buildDepth - 1] *= 6;
-//    } else {
-//        nodeDegreeAtDepth[buildDepth - 1] *= 2;
-//    }
-//    
-//    // build tree left to right with array of current/"open" nodes and a dfs
-//    Node<K,V> * currAtDepth[MAX_DEPTH];
-//    for (int i=0;i<buildDepth;++i) {
-//        currAtDepth[i] = createNode(tid, nodeDegreeAtDepth[i]);
-//        if (i > 0) currAtDepth[i]->parent = currAtDepth[i-1];
-//    }
-//    auto node = dfsBuild(tid, currAtDepth, buildDepth);
-//    
-//    // replace subtree and update parent counter
-//    
+    // mark nodes and compute up to date subtree sizes
+    auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
+    auto newNode = createIdeal(tid, op->candidate, keyCount);
+    auto oldWord = REBUILDOP_TO_CASWORD(op);
+    auto newWord = NODE_TO_CASWORD(newNode);
+    prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, op->parent->ptrAddr(op->index), oldWord, newWord);
 }
-//
+
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index /* of rebuildRoot in parent */) {
-    // TODO: REMEMBER TO SET MINKEY AND MAXKEY OF NODES!!!!!
-
-    GSTATS_ADD(tid, num_rebuild, 1);
-//    RebuildOperation<K,V> * op = new RebuildOperation<K,V>();
-//    op->candidate = result.candidate;
-//    op->parent = op->candidate->parent;
-//    op->index = interpolationSearch(tid, op->candidate->key(0), op->parent);
-//    casword_t ptr = REBUILDOP_TO_CASWORD(op);
-//    casword_t old = NODE_TO_CASWORD(op->candidate);
-//    
-//    dcssresult_t dcssResult = prov->dcssPtr(tid, &op->parent->dirty, 0, op->parent->ptrAddr(op->index), old, ptr);
-//    switch (dcssResult.status) {
-//        case DCSS_FAILED_ADDR2: case DCSS_FAILED_ADDR1: {
-//            break; // we are done
-//        }
-//        case DCSS_SUCCESS: {
-//            helpRebuild(tid, op);
-//            break;
-//        }
-//        default: {
-//            setbench_error("executed default switch case");
-//            break;
-//        }
-//    }
+    auto op = new RebuildOperation<K,V>(rebuildRoot, parent, index);
+    auto ptr = REBUILDOP_TO_CASWORD(op);
+    auto old = NODE_TO_CASWORD(op->candidate);
+    if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, op->parent->ptrAddr(op->index), old, ptr).status == DCSS_SUCCESS) {
+        helpRebuild(tid, op);
+    }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -261,6 +230,7 @@ retryNode:
 //            }
 //            assert(false);
 //        } //////////// debug
+        bool affectsChangeSum = true;
         auto word = prov->readPtr(tid, node->ptrAddr(ix));
         if (IS_KVPAIR(word)) {
             auto pair = CASWORD_TO_KVPAIR(word);
@@ -272,11 +242,13 @@ retryNode:
                 case InsertReplace: case InsertIfAbsent:
                     if (pair->k == INF_KEY) {
                         newWord = KVPAIR_TO_CASWORD(createKVPair(tid, key, val));
+                        // TODO: could replacements of Empty type counteract the deletions that created them?
                         // retval = NO_VALUE;
                     } else if (pair->k == key) {
                         if (t == InsertIfAbsent) return pair->v;
                         newWord = KVPAIR_TO_CASWORD(createKVPair(tid, key, val));
                         retval = pair->v;
+                        affectsChangeSum = false; // note: insert replace should NOT count towards changeSum, because it cannot affect the complexity of operations
                     } else {
                         auto newPair = createKVPair(tid, key, val);
                         auto newNode = createNode(tid, 2);
@@ -313,7 +285,6 @@ retryNode:
             assert(newWord);
             
             // DCSS that performs the update
-//            *node->ptrAddr(ix) = newWord;
             auto result = prov->dcssPtr(tid, (casword_t *) &node->dirty, 0, node->ptrAddr(ix), word, newWord);
             switch (result.status) {
                 case DCSS_FAILED_ADDR2: // retry from same node
@@ -324,6 +295,8 @@ retryNode:
                     break;
                 case DCSS_SUCCESS:
                     
+                    if (!affectsChangeSum) break;
+                    
                     // probabilistically increment the changeSums of ancestors
                     if (myRNG->next() / (double) std::numeric_limits<uint64_t>::max() < SAMPLING_PROB) {
                         for (int i=0;i<pathLength;++i) {
@@ -331,11 +304,14 @@ retryNode:
                         }
                     }
                     
+                    // TODO: can we only try to rebuild when we've successfully propagated???
+                    // TODO: is the num_processes term in the rebuild condition even needed? if there are multiple guys making changes in a subtree, the last guy to finish will see all of those changes.
                     // now, we must determine whether we should rebuild
                     for (int i=0;i<pathLength;++i) {
-                        if ((path[i]->changeSum + NUM_PROCESSES) / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
+                        if ((path[i]->changeSum + (NUM_PROCESSES-1)) / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
                             auto parent = (i == 0) ? root : path[i-1];
                             auto index = (path[i]->degree == 1) ? 0 : interpolationSearch(tid, path[i]->key(0), parent);
+                            GSTATS_ADD_IX(tid, num_rebuild_at_depth, 1, i);
                             rebuild(tid, path[i], parent, index);
                             break;
                         }

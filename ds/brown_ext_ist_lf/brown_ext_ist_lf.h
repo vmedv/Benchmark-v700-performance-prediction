@@ -98,6 +98,8 @@ struct RebuildOperation {
     Node<K,V> * candidate;
     Node<K,V> * parent;
     size_t index;
+    RebuildOperation(Node<K,V> * _candidate, Node<K,V> * _parent, size_t _index)
+        : candidate(_candidate), parent(_parent), index(_index) {}
 };
 
 template <typename K, typename V>
@@ -124,18 +126,200 @@ private:
             (dest)[(destStart)+___i] = (src)[(srcStart)+___i]; \
         }
 
-private:
-//    Node<K,V> * dfsBuild(const int tid, Node<K,V> ** const currAtDepth, const int buildDepth);
-//    size_t dfsMark(const int tid, const casword_t ptr);
+    size_t markAndCount(const int tid, const casword_t ptr);
     void rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index);
     void helpRebuild(const int tid, RebuildOperation<K,V> * op);
-//    V doInsert(const int tid, const K& key, const V& value, const bool replace);
     int interpolationSearch(const int tid, const K& key, Node<K,V> * const node);
     V doUpdate(const int tid, const K& key, const V& val, UpdateType t);
 
     Node<K,V> * createNode(const int tid, const int degree);
     KVPair<K,V> * createKVPair(const int tid, const K& key, const V& value);
 
+    class IdealBuilder {
+    private:
+        // figure out how deep the tree should be,
+        // and how many keys should be stored in each node, at each level, on average
+        static const int UPPER_LIMIT_DEPTH = 16;
+        static const int MAX_ACCEPTABLE_LEAF_SIZE = 48;
+        int height;
+        size_t initNumKeys;
+        double init;
+        double keysPerNodeAtDepth[UPPER_LIMIT_DEPTH];
+        double totalDegreeAtDepthFractional[UPPER_LIMIT_DEPTH];
+        size_t totalDegreeAtDepth[UPPER_LIMIT_DEPTH];
+        Node<K,V> * currNodeAtDepth[UPPER_LIMIT_DEPTH];
+        istree<K,V,Interpolate,RecManager> * ist;
+        size_t keysAdded; // for debugging
+    
+    public:
+        IdealBuilder(const size_t _initNumKeys, istree<K,V,Interpolate,RecManager> * _ist) {
+            height = -1;
+            initNumKeys = _initNumKeys;
+            
+            if (initNumKeys <= MAX_ACCEPTABLE_LEAF_SIZE) {
+                keysPerNodeAtDepth[0] = initNumKeys;
+                height = 1;
+
+            } else {
+                double init = _initNumKeys;
+                for (int i=0;i<UPPER_LIMIT_DEPTH;++i) {
+                    init = std::sqrt(init);
+                    keysPerNodeAtDepth[i] = init;
+                    if ((size_t) keysPerNodeAtDepth[i] <= MAX_ACCEPTABLE_LEAF_SIZE) {
+                        height = i+2; // as we explain below, we will add one extra level for leaves
+                        break;
+                    }
+                }
+                // the product of the tail sizes is equal to the previous square
+                // so we truncate the tail by making leaves equal in size
+                // to the previous level of internal nodes.
+                assert(height >= 2);
+                //if (height >= 2) {
+                    keysPerNodeAtDepth[height-1] = keysPerNodeAtDepth[height-2];
+                //}
+            }
+
+//            std::cout<<"initNumKeys="<<initNumKeys<<std::endl;
+//            std::cout<<"height="<<height<<std::endl;
+//            for (int i=0;i<height;++i) {
+//                std::cout<<"keysPerNodeAtDepth["<<i<<"]="<<keysPerNodeAtDepth[i]<<std::endl;
+//            }
+            
+            // we will build left to right, starting from the bottom, and building all levels at once.
+            // for each level, create a "current node" that is in the process of being constructed.
+            for (int i=0;i<height;++i) {
+                currNodeAtDepth[i] = NULL;
+                totalDegreeAtDepthFractional[i] = 0;
+                totalDegreeAtDepth[i] = 0;
+            }
+
+            ist = _ist;
+            keysAdded = 0;
+        }
+        
+        void addKV(const int tid, const K& key, const V& val) {
+            ++keysAdded;
+            if (keysAdded > initNumKeys) {
+                setbench_error("added "<<keysAdded<<" keys, when there were supposed to be only "<<initNumKeys);
+            }
+            
+            // figure out if any nodes are full (or NULL)
+            //      go bottom up, until you hit a non-empty node
+            //      we will replace all nodes below that
+            int top=-1;
+            for (int i=height-1;i>=0;--i) {
+                if (currNodeAtDepth[i] == NULL || currNodeAtDepth[i]->degree == currNodeAtDepth[i]->capacity) {
+                    top=i;
+                } else {
+                    break;
+                }
+            }
+            // assert: parent of top is not full (or top is root)
+            assert(top <= 0 || currNodeAtDepth[top-1]->degree < currNodeAtDepth[top-1]->capacity);
+            
+            // replace all nodes from top to height-1
+            if (top != -1) {
+                
+                // bottom up: push all initSize values to ancestors
+                // (ending at the parent still in currNodeAtDepth...
+                //  its value will be pushed when is replaced)
+                for (int i=height-1;i>=top;--i) {
+                    if (i > 0) {
+                        auto p = currNodeAtDepth[i-1];
+                        auto curr = currNodeAtDepth[i];
+                        if (p && curr) p->initSize += curr->initSize;
+                    }
+                }
+                
+                // top down: create new nodes of appropriate (random) sizes
+                for (int i=top;i<height;++i) {
+                    totalDegreeAtDepthFractional[i] += keysPerNodeAtDepth[i];
+                    size_t nodeDegree = (size_t) keysPerNodeAtDepth[i];
+                    if (totalDegreeAtDepth[i] + nodeDegree < totalDegreeAtDepthFractional[i]) {
+                        ++nodeDegree;
+                    }
+                    totalDegreeAtDepth[i] += nodeDegree;
+
+                    if (i==0 && currNodeAtDepth[0]) {
+                        std::cout<<"keysAdded="<<keysAdded<<std::endl;
+                        std::cout<<"initNumKeys="<<initNumKeys<<std::endl;
+                        std::cout<<"height="<<height<<std::endl;
+                        for (int j=0;j<height;++j) std::cout<<"keysPerNodeAtDepth["<<j<<"]="<<keysPerNodeAtDepth[j]<<std::endl;
+                        for (int j=0;j<height;++j) std::cout<<"totalDegreeAtDepthFractional["<<j<<"]="<<totalDegreeAtDepthFractional[j]<<std::endl;
+                        for (int j=0;j<height;++j) std::cout<<"totalDegreeAtDepth["<<j<<"]="<<totalDegreeAtDepth[j]<<std::endl;
+                        std::cout<<"capacity of root="<<currNodeAtDepth[i]->capacity<<std::endl;
+
+                        // bfs to get node sizes
+                        std::vector<Node<K,V> *> q;
+                        std::vector<int> qq;
+                        q.push_back(currNodeAtDepth[i]);
+                        qq.push_back(0);
+                        int k=0;
+                        while (k < q.size()) {
+                            auto node = q[k];
+                            auto x = qq[k];
+                            ++k;
+
+                            std::cout<<"node@"<<(size_t) node<<" depth="<<x<<" capacity="<<node->capacity<<std::endl;
+                            for (int j=0;j<node->degree;++j) {
+                                auto ptr = node->ptr(j); //prov->readPtr(tid, node->ptrAddr(j));
+                                if (IS_NODE(ptr)) {
+                                    q.push_back(CASWORD_TO_NODE(ptr));
+                                    qq.push_back(x+1);
+                                }
+                            }
+                        }
+                        setbench_error("non-null root is replaced unexpectedly during rebuilding!");
+                    }
+                    
+                    auto curr = ist->createNode(tid, nodeDegree);
+                    currNodeAtDepth[i] = curr;
+                    
+                    // link the new node to the existing parent
+                    if (i > 0) {
+                        auto p = currNodeAtDepth[i-1];
+                        curr->parent = p;
+                        auto pdeg = p->degree;
+                        if (pdeg > 0) {
+                            p->key(pdeg-1) = key;
+                            if (pdeg == 1) {
+                                p->minKey = key;
+                            }
+                            p->maxKey = key;
+                        }
+                        *p->ptrAddr(pdeg) = NODE_TO_CASWORD(curr);
+                        ++p->degree;
+                    }
+                }
+            }
+            
+            // insert key and value
+            auto kvptr = ist->createKVPair(tid, key, val);
+            
+            // insert kvpair into current open bottom level node
+            auto node = currNodeAtDepth[height-1];
+            assert(node->degree < node->capacity); // assert: bottom level current node is not full
+            auto deg = node->degree;
+            if (deg > 0) {
+                node->key(deg-1) = key;
+                if (deg == 1) {
+                    node->minKey = key;
+                }
+                node->maxKey = key;
+            }
+            *node->ptrAddr(deg) = KVPAIR_TO_CASWORD(kvptr);
+            assert(kvptr);
+            ++node->initSize;
+            ++node->degree;
+        }
+        
+        Node<K,V> * getRoot() {
+            return currNodeAtDepth[0];
+        }
+    };
+    void createIdeal(const int tid, casword_t ptr, IdealBuilder * b);
+    Node<K,V> * createIdeal(const int tid, Node<K,V> * rebuildRoot, const size_t keyCount);
+    
     int init[MAX_THREADS_POW2] = {0,};
 public:
     const K INF_KEY;
@@ -213,132 +397,13 @@ public:
          * build ideal initial tree
          */
         
-        RandomFNV1A rng (initConstructionSeed);
-        
-        // figure out how deep the tree should be,
-        // and how many keys should be stored in each node, at each level, on average
-        const int UPPER_LIMIT_DEPTH = 16;
-        const int MAX_ACCEPTABLE_LEAF_SIZE = 48;
-        double init = initNumKeys;
-        double keysPerNodeAtDepth[UPPER_LIMIT_DEPTH];
-        size_t floorKeysPerNodeAtDepth[UPPER_LIMIT_DEPTH];
-        int height = -1;
-        for (int i=0;i<UPPER_LIMIT_DEPTH;++i) {
-            init = std::sqrt(init);
-            keysPerNodeAtDepth[i] = init;
-            floorKeysPerNodeAtDepth[i] = (size_t) keysPerNodeAtDepth[i];
-            if (floorKeysPerNodeAtDepth[i] < MAX_ACCEPTABLE_LEAF_SIZE) {
-                height = i+2; // as we explain below, we will add one extra level for leaves
-                break;
-            }
-        }
-        // the product of the tail sizes is equal to the previous square
-        // so we truncate the tail by making leaves equal in size
-        // to the previous level of internal nodes.
-        assert(height >= 2);
-        //if (height >= 2) {
-            keysPerNodeAtDepth[height-1] = keysPerNodeAtDepth[height-2];
-            floorKeysPerNodeAtDepth[height-1] = floorKeysPerNodeAtDepth[height-2];
-        //}
-        assert(height != -1);
-        
-        std::cout<<"initNumKeys="<<initNumKeys<<std::endl;
-        std::cout<<"height="<<height<<std::endl;
-        for (int i=0;i<height;++i) {
-            std::cout<<"keysPerNodeAtDepth["<<i<<"]="<<keysPerNodeAtDepth[i]<<std::endl;
-        }
-        
-        // build left to right, starting from the bottom, and building all levels at once.
-        // for each level, create a "current node" that is in the process of being constructed.
-        Node<K,V> * currNodeAtDepth[height];
-        for (int i=0;i<height;++i) currNodeAtDepth[i] = NULL;
-        
+        // note: myRNG must be created by initThread before creating IdealBuilder!!!
+        IdealBuilder b (initNumKeys, this);
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
-            
-            // fetch key and value to be inserted next
-            const K& key = initKeys[keyIx];
-            const V& val = initValues[keyIx];
-
-            // figure out if any nodes are full (or NULL)
-            //      go bottom up, until you hit a non-empty node
-            //      we will replace all nodes below that
-            int top=-1;
-            for (int i=height-1;i>=0;--i) {
-                if (currNodeAtDepth[i] == NULL || currNodeAtDepth[i]->degree == currNodeAtDepth[i]->capacity) {
-                    top=i;
-                } else {
-                    break;
-                }
-            }
-            // assert: parent of top is not full (or top is root)
-            assert(top <= 0 || currNodeAtDepth[top-1]->degree < currNodeAtDepth[top-1]->capacity);
-            
-            // replace all nodes from top to height-1
-            if (top != -1) {
-                
-                // bottom up: push all initSize values to ancestors
-                // (ending at the parent still in currNodeAtDepth...
-                //  its value will be pushed when is replaced)
-                for (int i=height-1;i>=top;--i) {
-                    if (i > 0) {
-                        auto p = currNodeAtDepth[i-1];
-                        auto curr = currNodeAtDepth[i];
-                        if (p && curr) p->initSize += curr->initSize;
-                    }
-                }
-                
-                // top down: create new nodes of appropriate (random) sizes
-                for (int i=top;i<height;++i) {
-                    uint64_t rint = rng.next();
-                    double r = rint / (double) std::numeric_limits<uint64_t>::max();
-                    double probOneLarger = keysPerNodeAtDepth[i] - floorKeysPerNodeAtDepth[i];
-                    size_t nodeDegree = floorKeysPerNodeAtDepth[i];
-                    if (r < probOneLarger) ++nodeDegree;
-                    if (i==0) nodeDegree *= 2; // make root bigger so it never overflows (HACK!)
-                    if (i==0) assert(currNodeAtDepth[i]==NULL); // non-null root never gets replaced
-                    
-                    auto curr = createNode(tid, nodeDegree);
-                    currNodeAtDepth[i] = curr;
-                    
-                    // link the new node to the existing parent
-                    if (i > 0) {
-                        auto p = currNodeAtDepth[i-1];
-                        curr->parent = p;
-                        auto pdeg = p->degree;
-                        if (pdeg > 0) {
-                            p->key(pdeg-1) = key;
-                            if (pdeg == 1) {
-                                p->minKey = key;
-                            }
-                            p->maxKey = key;
-                        }
-                        *p->ptrAddr(pdeg) = NODE_TO_CASWORD(curr);
-                        ++p->degree;
-                    }
-                }
-            }
-            
-            // insert key and value
-            auto kvptr = createKVPair(tid, key, val);
-            
-            // insert kvpair into current open bottom level node
-            auto node = currNodeAtDepth[height-1];
-            assert(node->degree < node->capacity); // assert: bottom level current node is not full
-            auto deg = node->degree;
-            if (deg > 0) {
-                node->key(deg-1) = key;
-                if (deg == 1) {
-                    node->minKey = key;
-                }
-                node->maxKey = key;
-            }
-            *node->ptrAddr(deg) = KVPAIR_TO_CASWORD(kvptr);
-            assert(kvptr);
-            ++node->initSize;
-            ++node->degree;
+            b.addKV(tid, initKeys[keyIx], initValues[keyIx]);
         }
-        *root->ptrAddr(0) = NODE_TO_CASWORD(currNodeAtDepth[0]);
-        assert(currNodeAtDepth[0]);
+        *root->ptrAddr(0) = NODE_TO_CASWORD(b.getRoot());
+        assert(b.getRoot());
         
 //        // bfs debug print
 //        std::vector<Node<K,V>*> q;
