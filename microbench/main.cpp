@@ -64,7 +64,10 @@ typedef long long test_type;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, num_rebuild_at_depth, 100, { \
+    gstats_handle_stat(LONG_LONG, num_try_rebuild_at_depth, 100, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_complete_rebuild_at_depth, 100, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
     }) \
     /*gstats_handle_stat(LONG_LONG, num_isearch, 1, { \
