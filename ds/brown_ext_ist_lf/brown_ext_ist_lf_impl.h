@@ -98,10 +98,10 @@ void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t pt
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, Node<K,V> * rebuildRoot, const size_t keyCount) {
+casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
     if (keyCount == 0) return KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
-    IdealBuilder b (keyCount, this);
-    createIdeal(tid, NODE_TO_CASWORD(rebuildRoot), &b);
+    IdealBuilder b (this, keyCount, op->depth);
+    createIdeal(tid, NODE_TO_CASWORD(op->candidate), &b);
     return b.getCASWord(tid);
 }
 
@@ -109,14 +109,14 @@ template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
-    casword_t newWord = createIdeal(tid, op->candidate, keyCount);
+    casword_t newWord = createIdeal(tid, op, keyCount);
     if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
     }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index /* of rebuildRoot in parent */, const int depth) {
+void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index /* of rebuildRoot in parent */, const size_t depth) {
     auto op = new RebuildOperation<K,V>(rebuildRoot, parent, index, depth);
     auto ptr = REBUILDOP_TO_CASWORD(op);
     auto old = NODE_TO_CASWORD(op->candidate);
@@ -325,26 +325,26 @@ retryNode:
 //                    // probabilistically increment the changeSums of ancestors
 //                    if (myRNG->next() / (double) std::numeric_limits<uint64_t>::max() < SAMPLING_PROB) {
                         for (int i=0;i<pathLength;++i) {
-                            __sync_fetch_and_add(&path[i]->changeSum, 1);
+                            path[i]->incrementChangeSum(tid, myRNG);
                         }
 //                    }
                     
-                    // TODO: can we only try to rebuild when we've successfully propagated??? (tried it, and it doesn't seem to help at all--maybe if we had huge counter contention)
-                    // TODO: is the num_processes term in the rebuild condition even needed? if there are multiple guys making changes in a subtree, the last guy to finish will see all of those changes.
                     // now, we must determine whether we should rebuild
                     for (int i=0;i<pathLength;++i) {
 //                        if ((path[i]->changeSum + (NUM_PROCESSES-1)) / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
-//                        if (path[i]->changeSum / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
-                        if (path[i]->changeSum >= REBUILD_FRACTION * path[i]->initSize) {
+                        if (path[i]->readChangeSum(tid, myRNG) >= REBUILD_FRACTION * path[i]->initSize) {
                             if (i == 0) {
+#ifndef NO_REBUILDING
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, 0);
                                 rebuild(tid, path[0], root, 0, 0);
+#endif
                             } else {
                                 auto parent = path[i-1];
                                 assert(parent->degree > 1);
                                 assert(path[i]->degree > 1);
                                 auto index = interpolationSearch(tid, path[i]->key(0), parent);
 
+#ifndef NDEBUG
                                 // single threaded only debug info
                                 if (path[i]->degree == 1 || (TOTAL_THREADS == 1 && CASWORD_TO_NODE(parent->ptr(index)) != path[i])) {
                                     std::cout<<"i="<<i<<std::endl;
@@ -372,9 +372,12 @@ retryNode:
                                     std::cout<<"retval="<<retval<<std::endl;
                                     assert(false);
                                 }
-
+#endif
+                                
+#ifndef NO_REBUILDING
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, i);
                                 rebuild(tid, path[i], parent, index, i);
+#endif
                             }
                             break;
                         }
@@ -409,11 +412,23 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
     node->degree = 0;
     node->initSize = 0;
     node->changeSum = 0;
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+    node->externalChangeCounter = NULL;
+#endif
     node->dirty = 0;
     node->parent = NULL;
     assert(node);
 //    if (degree == 1) assert(sz + (size_t) node >= (size_t) node->ptrAddr(0));
 //    if (degree == 2) assert(sz + (size_t) node >= (size_t) node->ptrAddr(1));
+    return node;
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
+Node<K,V>* istree<K,V,Interpolate,RecManager>::createMultiCounterNode(const int tid, const int degree) {
+    auto node = createNode(tid, degree);
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+    node->externalChangeCounter = new MultiCounter(this->NUM_PROCESSES, 1);
+#endif
     return node;
 }
 

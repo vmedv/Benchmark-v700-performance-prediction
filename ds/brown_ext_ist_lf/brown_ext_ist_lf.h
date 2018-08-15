@@ -19,6 +19,9 @@
 #define	ISTREE_H
 
 #define PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
+#define IST_USE_MULTICOUNTER_AT_ROOT
+//#define NO_REBUILDING
+//#define PAD_CHANGESUM
 
 #include <string>
 #include <cstring>
@@ -34,6 +37,9 @@
 #include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#   include "multi_counter.h"
+#endif
 
 #define KVPAIR_MASK             (0x2) /* 0x1 is used by DCSS */
 #define IS_KVPAIR(x)            ((x)&KVPAIR_MASK)
@@ -63,18 +69,24 @@ enum UpdateType {
 
 template <typename K, typename V>
 struct Node {
-    size_t capacity;
+    size_t capacity;            // field likely not needed
     size_t degree;
     size_t initSize;
-    size_t changeSum;
-    size_t dirty;
-    Node<K,V> * parent;
-    K minKey;
-    K maxKey;
+    volatile size_t dirty;      // also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY and DIRTY_TO_SUM)
+    Node<K,V> * parent;         // field likely not needed
+    K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
+    K maxKey;                   // field not *technically* needed (same as above)
+#ifdef PAD_CHANGESUM
+    PAD;
+#endif
+    volatile size_t changeSum;  // could be merged with initSize above (subtract make initSize 1/4 of what it would normally be, then subtract from it instead of incrementing changeSum, and rebuild when it hits zero)
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+    MultiCounter * externalChangeCounter; // NULL for all nodes except the root, and supercedes changeSum in the root.
+#endif
     // unlisted fields: capacity-1 keys of type K followed by capacity "pointers" of type casword_t
     
     inline K * keyAddr(const int ix) {
-        K * const firstKey = ((K *) ((&maxKey)+1));
+        K * const firstKey = ((K *) (((char *) this)+sizeof(Node<K,V>)));
         return &firstKey[ix];
     }
     inline K& key(const int ix) {
@@ -94,6 +106,29 @@ struct Node {
     // conceptually returns node.ptrs[ix]
     inline casword_t volatile ptr(const int ix) {
         return *ptrAddr(ix);
+    }
+    
+    inline void incrementChangeSum(const int tid, RandomFNV1A * rng) {
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+        if (likely(externalChangeCounter == NULL)) {
+            __sync_fetch_and_add(&changeSum, 1);
+        } else {
+            externalChangeCounter->inc(tid, rng);
+        }
+#else
+        __sync_fetch_and_add(&changeSum, 1);
+#endif
+    }
+    inline size_t readChangeSum(const int tid, RandomFNV1A * rng) {
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+        if (likely(externalChangeCounter == NULL)) {
+            return changeSum;
+        } else {
+            return externalChangeCounter->readFast(tid, rng);
+        }
+#else
+        return changeSum;
+#endif
     }
 };
 
@@ -132,12 +167,13 @@ private:
         }
 
     size_t markAndCount(const int tid, const casword_t ptr);
-    void rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index, const int depth);
+    void rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index, const size_t depth);
     void helpRebuild(const int tid, RebuildOperation<K,V> * op);
     int interpolationSearch(const int tid, const K& key, Node<K,V> * const node);
     V doUpdate(const int tid, const K& key, const V& val, UpdateType t);
 
     Node<K,V> * createNode(const int tid, const int degree);
+    Node<K,V> * createMultiCounterNode(const int tid, const int degree);
     KVPair<K,V> * createKVPair(const int tid, const K& key, const V& value);
     KVPair<K,V> * createEmptyKVPair(const int tid);
     
@@ -147,7 +183,7 @@ private:
         //ofs<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n");
     }
     
-    void debugGVPrint(std::ofstream& ofs, casword_t w, int depth, int * numPointers) {
+    void debugGVPrint(std::ofstream& ofs, casword_t w, size_t depth, int * numPointers) {
         if (IS_KVPAIR(w)) {
             auto pair = CASWORD_TO_KVPAIR(w);
             ofs<<"\""<<pair<<"\" ["<<std::endl;
@@ -241,11 +277,12 @@ private:
         static const int MAX_ACCEPTABLE_LEAF_SIZE = 48;
         size_t initNumKeys;
         istree<K,V,Interpolate,RecManager> * ist;
+        size_t depth;
         KVPair<K,V> ** pairs;
         size_t pairsAdded;
         casword_t tree;
         
-        Node<K,V> * build(const int tid, KVPair<K,V> ** pset, int psetSize) {
+        Node<K,V> * build(const int tid, KVPair<K,V> ** pset, int psetSize, const size_t currDepth) {
             if (psetSize <= MAX_ACCEPTABLE_LEAF_SIZE) {
                 auto node = ist->createNode(tid, psetSize);
                 node->degree = psetSize;
@@ -279,14 +316,23 @@ private:
                 // remainder is the number of children with childSize+1 pair subsets
                 // (the other (numChildren - remainder) children have childSize pair subsets)
 
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+                Node<K,V> * node = NULL;
+                if (currDepth <= 1) {
+                    node = ist->createMultiCounterNode(tid, numChildren);
+                } else {
+                    node = ist->createNode(tid, numChildren);
+                }
+#else
                 auto node = ist->createNode(tid, numChildren);
+#endif
                 node->degree = numChildren;
                 node->initSize = psetSize;
 
                 KVPair<K,V> ** childSet = pset;
                 for (int i=0;i<numChildren;++i) {
                     int sz = childSize + (i < remainder);
-                    auto child = build(tid, childSet, sz);
+                    auto child = build(tid, childSet, sz, 1+currDepth);
 
                     child->parent = node;
                     *node->ptrAddr(i) = NODE_TO_CASWORD(child);
@@ -307,9 +353,10 @@ private:
             }
         }
     public:
-        IdealBuilder(const size_t _initNumKeys, istree<K,V,Interpolate,RecManager> * _ist) {
+        IdealBuilder(istree<K,V,Interpolate,RecManager> * _ist, const size_t _initNumKeys, const size_t _depth) {
             initNumKeys = _initNumKeys;
             ist = _ist;
+            depth = _depth;
             pairs = new KVPair<K,V> * [initNumKeys];
             pairsAdded = 0;
             tree = (casword_t) NULL;
@@ -337,7 +384,7 @@ private:
                 } else if (unlikely(pairsAdded == 1)) {
                     tree = KVPAIR_TO_CASWORD(pairs[0]);
                 } else {
-                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded));
+                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth));
                 }
             }
             return tree;
@@ -345,7 +392,7 @@ private:
     };    
 
     void createIdeal(const int tid, casword_t ptr, IdealBuilder * b);
-    casword_t createIdeal(const int tid, Node<K,V> * rebuildRoot, const size_t keyCount);
+    casword_t createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount);
     
     int init[MAX_THREADS_POW2] = {0,};
 public:
@@ -386,11 +433,10 @@ public:
         initThread(tid);
 
         Node<K,V> * _root = createNode(tid, 1);
-        KVPair<K,V> * _rootPair = createKVPair(tid, INF_KEY, NO_VALUE);
         _root->degree = 1;
         _root->minKey = INF_KEY;
         _root->maxKey = INF_KEY;
-        *_root->ptrAddr(0) = KVPAIR_TO_CASWORD(_rootPair);
+        *_root->ptrAddr(0) = KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
         
         root = _root;
     }
@@ -418,15 +464,11 @@ public:
         _root->degree = 1;
         root = _root;
         
-        // build ideal initial tree
-        // note: myRNG must be created by initThread before creating IdealBuilder!!!
-        IdealBuilder b (initNumKeys, this);
+        IdealBuilder b (this, initNumKeys, 0);
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
             b.addKV(tid, createKVPair(tid, initKeys[keyIx], initValues[keyIx]));
         }
         *root->ptrAddr(0) = b.getCASWord(tid);
-                
-        std::cout<<"istree created with NUM_PROCESSES="<<NUM_PROCESSES<<std::endl;
     }
 
     ~istree() {
