@@ -69,13 +69,13 @@ enum UpdateType {
 
 template <typename K, typename V>
 struct Node {
-    size_t capacity;            // field likely not needed
     size_t degree;
+    K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
+    K maxKey;                   // field not *technically* needed (same as above)
+    size_t capacity;            // field likely not needed
     size_t initSize;
     volatile size_t dirty;      // also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY and DIRTY_TO_SUM)
     Node<K,V> * parent;         // field likely not needed
-    K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
-    K maxKey;                   // field not *technically* needed (same as above)
 #ifdef PAD_CHANGESUM
     PAD;
 #endif

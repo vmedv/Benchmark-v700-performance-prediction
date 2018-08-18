@@ -132,6 +132,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
     __builtin_prefetch(&node->degree, 1);
     __builtin_prefetch(&node->maxKey, 1);
     __builtin_prefetch((node->keyAddr(0)), 1);
+    __builtin_prefetch((node->keyAddr(0))+(8), 1);
     __builtin_prefetch((node->keyAddr(0))+(16), 1);
 
     //assert(node->degree >= 1);
@@ -155,8 +156,12 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
     // assert: minKey <= key < maxKey
     int ix = (numKeys * (key - minKey) / (maxKey - minKey));
 
+    __builtin_prefetch((node->keyAddr(0))+(ix-8), 1); // prefetch approximate key location
     __builtin_prefetch((node->keyAddr(0))+(ix), 1); // prefetch approximate key location
+    __builtin_prefetch((node->keyAddr(0))+(ix+8), 1); // prefetch approximate key location
+    __builtin_prefetch((node->keyAddr(0))+(numKeys+ix-8), 1); // prefetch approximate pointer location to accelerate later isDcss check
     __builtin_prefetch((node->keyAddr(0))+(numKeys+ix), 1); // prefetch approximate pointer location to accelerate later isDcss check
+    __builtin_prefetch((node->keyAddr(0))+(numKeys+ix+8), 1); // prefetch approximate pointer location to accelerate later isDcss check
     
     const K& ixKey = node->key(ix);
 //    std::cout<<"key="<<key<<" minKey="<<minKey<<" maxKey="<<maxKey<<" ix="<<ix<<" ixKey="<<ixKey<<std::endl;
