@@ -29,14 +29,14 @@ public:
     MultiCounter(const int numThreads, const int sizeMultiple)
             : counters(new SingleCounter[std::max(2, sizeMultiple*numThreads)+1]) // allocate one extra entry (don't use first entry---to effectively add padding at the start of the array)
             , numCounters(std::max(2, sizeMultiple*numThreads)) {
-        GSTATS_ADD(tid, num_multi_counter_array_created, 1);
+//        GSTATS_ADD(tid, num_multi_counter_array_created, 1);
 //        counters = counters + 1;                                                // shift by +1 (don't use first entry---to effectively add padding at the start of the array)
         for (int i=0;i<numCounters+1;++i) {
             counters[i].v = 0;
         }
     }
     ~MultiCounter() {
-        GSTATS_ADD(tid, num_multi_counter_array_reclaimed, 1);
+//        GSTATS_ADD(tid, num_multi_counter_array_reclaimed, 1);
         delete[] counters;
 //        delete[] (counters - 1);                                                // shift by -1 (don't use first entry---to effectively add padding at the start of the array)
     }

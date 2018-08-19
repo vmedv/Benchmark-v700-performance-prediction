@@ -49,7 +49,7 @@ minimal: $(MINIMAL_BINS)
 %.ubench_rdebra:
 	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
 %.ubench_rdebracap:
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=numa_ebr $(LDFLAGS)
+	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=debracap $(LDFLAGS)
 
 clean:
 	rm $(bin_dir)/*

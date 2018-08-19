@@ -302,7 +302,7 @@ private:
         if (retire) {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
             if (node->externalChangeCounter) {
-                GSTATS_ADD(tid, num_multi_counter_node_retired, 1);
+//                GSTATS_ADD(tid, num_multi_counter_node_retired, 1);
                 recordmgr->retire(tid, node->externalChangeCounter);
             }
 #endif
@@ -310,7 +310,7 @@ private:
         } else {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
             if (node->externalChangeCounter) {
-                GSTATS_ADD(tid, num_multi_counter_node_deallocated, 1);
+//                GSTATS_ADD(tid, num_multi_counter_node_deallocated, 1);
                 recordmgr->deallocate(tid, node->externalChangeCounter);
             }
 #endif

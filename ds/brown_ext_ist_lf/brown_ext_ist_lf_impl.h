@@ -474,7 +474,7 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
 
 template <typename K, typename V, class Interpolate, class RecManager>
 Node<K,V>* istree<K,V,Interpolate,RecManager>::createMultiCounterNode(const int tid, const int degree) {
-    GSTATS_ADD(tid, num_multi_counter_node_created, 1);
+//    GSTATS_ADD(tid, num_multi_counter_node_created, 1);
     auto node = createNode(tid, degree);
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
     node->externalChangeCounter = new MultiCounter(this->NUM_PROCESSES, 1);
