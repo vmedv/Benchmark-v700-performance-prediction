@@ -52,14 +52,16 @@ public:
     inline void qUnprotectAll(const int tid) {}
     inline void getReclaimers(const int tid, void ** const reclaimers, int index) {}
     inline void endOp(const int tid) {}
-    inline void leaveQuiescentStateForEach(const int tid) {}
-    inline void startOp(const int tid, const bool callForEach) {}
+    inline void leaveQuiescentStateForEach(const int tid, const bool readOnly = false) {}
+    inline void startOp(const int tid, const bool callForEach, const bool readOnly = false) {}
 };
 
 // "recursive" case
 template <class Reclaim, class Alloc, class Pool, typename First, typename... Rest>
 class RecordManagerSet<Reclaim, Alloc, Pool, First, Rest...> : RecordManagerSet<Reclaim, Alloc, Pool, Rest...> {
+    PAD;
     record_manager_single_type<First, Reclaim, Alloc, Pool> * const mgr;
+	PAD;
 public:
     RecordManagerSet(const int numProcesses, RecoveryMgr<void *> * const _recoveryMgr)
         : RecordManagerSet<Reclaim, Alloc, Pool, Rest...>(numProcesses, _recoveryMgr)
@@ -113,17 +115,17 @@ public:
         mgr->endOp(tid);
         ((RecordManagerSet<Reclaim, Alloc, Pool, Rest...> *) this)->endOp(tid);
     }
-    inline void leaveQuiescentStateForEach(const int tid) {
-        mgr->startOp(tid, NULL, 0);
-        ((RecordManagerSet <Reclaim, Alloc, Pool, Rest...> *) this)->leaveQuiescentStateForEach(tid);
+    inline void leaveQuiescentStateForEach(const int tid, const bool readOnly = false) {
+        mgr->template startOp<First, Rest...>(tid, NULL, 0, readOnly);
+        ((RecordManagerSet <Reclaim, Alloc, Pool, Rest...> *) this)->leaveQuiescentStateForEach(tid, readOnly);
     }
-    inline void startOp(const int tid, const bool callForEach) {
+    inline void startOp(const int tid, const bool callForEach, const bool readOnly = false) {
         if (callForEach) {
-            leaveQuiescentStateForEach(tid);
+            leaveQuiescentStateForEach(tid, readOnly);
         } else {
             void * reclaimers[1+sizeof...(Rest)];
             getReclaimers(tid, reclaimers, 0);
-            get((First *) NULL)->startOp(tid, reclaimers, 1+sizeof...(Rest));
+            get((First *) NULL)->template startOp<First, Rest...>(tid, reclaimers, 1+sizeof...(Rest), readOnly);
             __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
         }
     }
@@ -186,7 +188,7 @@ public:
     debugInfo * getDebugInfo(T * const recordType) {
         return &rmset->get((T *) NULL)->debugInfoRecord;
     }
-    template<typename T>
+    template <typename T>
     inline record_manager_single_type<T, Reclaim, Alloc, Pool> * get(T * const recordType) {
         return rmset->get((T *) NULL);
     }
@@ -241,7 +243,7 @@ public:
             rmset->get((RecordTypesFirst *) NULL)->endOp(tid);
         }
     }
-    inline void startOp(const int tid) {
+    inline void startOp(const int tid, const bool readOnly = false) {
 //        assert(isQuiescent(tid));
 //        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::startOp(tid="<<tid<<")"<<std::endl);
         // for some types of reclaimers, different types of records retired in the same
@@ -250,7 +252,7 @@ public:
         // if appropriate, we make a single call to startOp,
         // and it takes care of all record types managed by this record manager.
         //cout<<"quiescenceIsPerRecordType = "<<Reclaim::quiescenceIsPerRecordType()<<std::endl;
-        rmset->startOp(tid, Reclaim::quiescenceIsPerRecordType());
+        rmset->startOp(tid, Reclaim::quiescenceIsPerRecordType(), readOnly);
     }
 
     // for all schemes
@@ -285,18 +287,18 @@ public:
         const int tid;
         record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * recmgr;
     public:
-        MemoryReclamationGuard(const int _tid, record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * _recmgr)
+        MemoryReclamationGuard(const int _tid, record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * _recmgr, const bool readOnly = false)
         : tid(_tid), recmgr(_recmgr) {
-            recmgr->startOp(tid);
+            recmgr->startOp(tid, readOnly);
         }
         ~MemoryReclamationGuard() {
             recmgr->endOp(tid);
         }
     };
     
-    inline MemoryReclamationGuard getGuard(const int tid) {
+    inline MemoryReclamationGuard getGuard(const int tid, const bool readOnly = false) {
         SOFTWARE_BARRIER;
-        return MemoryReclamationGuard(tid, this);
+        return MemoryReclamationGuard(tid, this, readOnly);
     }
 };
 

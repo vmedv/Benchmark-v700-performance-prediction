@@ -102,7 +102,7 @@ abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allo
 template <int DEGREE, typename K, class Compare, class RecManager>
 const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
     std::pair<void*,bool> result;
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     Node<DEGREE,K> * l = rqProvider->read_addr(tid, &entry->ptrs[0]);
     prefetch_range(l, sizeof(*l));
     while (!l->isLeaf()) {
@@ -129,7 +129,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::contains(const int tid, con
 template<int DEGREE, typename K, class Compare, class RecManager>
 int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
     block<Node<DEGREE,K>> stack (NULL);
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     rqProvider->traversal_start(tid);
 
     // depth first traversal (of interesting subtrees)

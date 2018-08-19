@@ -103,7 +103,7 @@ bslack_ns::Node<DEGREE,K> * bslack_ns::bslack<DEGREE,K,Compare,RecManager>::allo
 template <int DEGREE, typename K, class Compare, class RecManager>
 const std::pair<void*,bool> bslack_ns::bslack<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
     std::pair<void*,bool> result;
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     Node<DEGREE,K> * l = rqProvider->read_addr(tid, &entry->ptrs[0]);
     while (!l->isLeaf()) {
         int ix = l->getChildIndex(key, cmp);
@@ -128,7 +128,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::contains(const int tid, con
 template<int DEGREE, typename K, class Compare, class RecManager>
 int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
     block<Node<DEGREE,K>> stack (NULL);
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     rqProvider->traversal_start(tid);
 
     // depth first traversal (of interesting subtrees)

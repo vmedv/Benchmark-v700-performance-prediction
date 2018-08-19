@@ -2,7 +2,7 @@
 
 template<class K, class V, class Compare, class RecManager>
 const std::pair<V,bool> bst_hohlock_ns::bst_hohlock<K,V,Compare,RecManager>::find(const int tid, const K& key) {
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
 
     acquireLock(&root->lock);
     auto p = root->left;

@@ -2,7 +2,7 @@
 
 template<class K, class V, class Compare, class RecManager>
 const std::pair<V,bool> bst_rwlock_ns::bst_rwlock<K,V,Compare,RecManager>::find(const int tid, const K& key) {
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
     lock.readLock();
 
     auto p = root->left;

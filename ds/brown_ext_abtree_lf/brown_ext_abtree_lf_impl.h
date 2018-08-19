@@ -59,7 +59,7 @@ abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allo
 template <int DEGREE, typename K, class Compare, class RecManager>
 const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::find(const int tid, const K& key) {
     std::pair<void*,bool> result;
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     Node<DEGREE,K> * l = entry->ptrs[0];
     while (!l->isLeaf()) {
         int ix = l->getChildIndex(key, cmp);

@@ -76,7 +76,7 @@ bool bst_ns::bst<K,V,Compare,RecManager>::contains(const int tid, const K& key) 
 template<class K, class V, class Compare, class RecManager>
 int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
     block<Node<K,V> > stack (NULL);
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
     rqProvider->traversal_start(tid);
     
     // depth first traversal (of interesting subtrees)
@@ -115,7 +115,7 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::find(const int tid,
     Node<K,V> *l;
     for (;;) {
         TRACE COUTATOMICTID("find(tid="<<tid<<" key="<<key<<")"<<std::endl);
-        auto guard = recmgr->getGuard(tid);
+        auto guard = recmgr->getGuard(tid, true);
         p = rqProvider->read_addr(tid, &root->left);
         l = rqProvider->read_addr(tid, &p->left);
         if (l == NULL) {

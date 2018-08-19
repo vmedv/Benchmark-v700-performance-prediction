@@ -159,7 +159,7 @@ public:
         static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) node->key : 0; }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())));
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())), true);
     }
 #endif
 };

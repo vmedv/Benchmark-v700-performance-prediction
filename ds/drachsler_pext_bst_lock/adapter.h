@@ -141,7 +141,7 @@ public:
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->get_root()->left);
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->get_root()->left, true);
     }
 #endif
 };

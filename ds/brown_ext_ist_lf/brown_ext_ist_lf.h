@@ -563,8 +563,8 @@ public:
         *root->ptrAddr(0) = b.getCASWord(tid);
     }
     ~istree() {
-        debugGVPrint();
-//        freeSubtree(0, root, false, false);
+        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
+//        debugGVPrint();
         freeSubtree(0, root, false, true, true);
 ////            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
         recordmgr->printStatus();

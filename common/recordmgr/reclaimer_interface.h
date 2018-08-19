@@ -69,7 +69,7 @@ public:
      * protectObjectEvenAfterRestart.
      */
     inline void endOp(const int tid);
-    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers);
+    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers, const bool readOnly = false);
     inline void rotateEpochBags(const int tid);
 
     // for all schemes except reference counting

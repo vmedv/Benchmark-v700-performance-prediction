@@ -19,7 +19,11 @@ template <typename T = void, class Alloc = allocator_interface<T> >
 class pool_none : public pool_interface<T, Alloc> {
 public:
     PAD; // final padding after superclass layout
-    
+
+    template <typename _Tp1>
+    struct rebindAlloc {
+        typedef typename Alloc::template rebind<_Tp1>::other other;
+    };
     template<typename _Tp1>
     struct rebind {
         typedef pool_none<_Tp1, Alloc> other;

@@ -11,7 +11,7 @@
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ellen<skey_t, sval_t, RecMgr>::bst_find(const int tid, skey_t key) {
-    recmgr->getGuard(tid);
+    recmgr->getGuard(tid, true);
     auto l = root->left;
     while (l->left) l = (key < l->key) ? l->left : l->right;
     return (l->key == key) ? l->value : NO_VALUE;

@@ -210,7 +210,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::getImpl(node_t<skey_t, sval_t>* tree, skey
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::get(const int tid, node_t<skey_t, sval_t>* tree, skey_t key) {
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
     auto retval = decodeNull(getImpl(tree, key));
     return retval;
 }

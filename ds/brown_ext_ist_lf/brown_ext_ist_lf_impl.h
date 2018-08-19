@@ -5,7 +5,7 @@
 
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
-    auto guard = recordmgr->getGuard(tid);
+    auto guard = recordmgr->getGuard(tid, true);
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
     assert(ptr);
     while (true) {

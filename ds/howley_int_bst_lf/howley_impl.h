@@ -36,8 +36,6 @@ const unsigned int val_mask = ~(0x3);
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t howley<skey_t, sval_t, RecMgr>::bst_contains(const int tid, skey_t k) {
-    auto guard = recmgr->getGuard(tid);
-
     node_t<skey_t, sval_t> * pred, * curr;
     operation_t<skey_t, sval_t> * pred_op, * curr_op;
     auto res = bst_find(tid, k, &pred, &pred_op, &curr, &curr_op, root, root);
@@ -53,7 +51,7 @@ find_result<sval_t> howley<skey_t, sval_t, RecMgr>::bst_find(const int tid, skey
     node_t<skey_t, sval_t> * last_right;
     operation_t<skey_t, sval_t> * last_right_op;
 retry:
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
     
     result.val = NO_VALUE;
     result.code = NOT_FOUND_R;

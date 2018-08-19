@@ -58,13 +58,14 @@ private:
     }
     
 public:
-    TreeStats(NodeHandlerT * handler, nodeptr root, bool parallelConstruction = true) {
+    TreeStats(NodeHandlerT * handler, nodeptr root, bool parallelConstruction, bool freeHandler = true) {
         for (size_t d=0;d<MAX_HEIGHT;++d) {
             internalsAtDepth[d] = 0;
             leavesAtDepth[d] = 0;
             keysAtDepth[d] = 0;
         }
         sumOfKeys = 0;
+#ifdef _OPENMP
         if (!parallelConstruction) {
             computeStats(handler, root, 0);
             
@@ -73,7 +74,11 @@ public:
              * PARALLEL constructor
              */
             std::cout<<"computing tree_stats in PARALLEL..."<<std::endl;
-            const size_t minNodes = 4*omp_get_max_threads();
+            #ifdef _OPENMP
+                const size_t minNodes = 4*omp_get_max_threads();
+            #else
+                const size_t minNodes = 1;
+            #endif
             
             std::vector<nodeptr> qn;    // queue of node pointers
             std::vector<size_t> qd;     // queue of depths
@@ -87,7 +92,12 @@ public:
             size_t ixStartOfDepth = 0;
             size_t nodesSeenAtDepth = 0;
 
-            std::cout<<"bounded depth BFS to partition into subtrees for parallel computation ("<<omp_get_max_threads()<<" threads)..."<<std::endl;
+            #ifdef _OPENMP
+                const size_t ompThreads = omp_get_max_threads();
+            #else
+                const size_t ompThreads = 1;
+            #endif
+            std::cout<<"bounded depth BFS to partition into subtrees for parallel computation ("<<ompThreads<<" threads)..."<<std::endl;
             while (ix < qn.size()) {
                 auto node = qn[ix];
                 auto depth = qd[ix];
@@ -122,7 +132,7 @@ public:
             std::cout<<"partitioned into "<<(ix-ixStartOfDepth+1)<<" subtrees; running parallel for..."<<std::endl;
             #pragma omp parallel for schedule(dynamic, 1)
             for (size_t i=ixStartOfDepth;i<ix;++i) {
-                TreeStats<NodeHandlerT> * ts = new TreeStats(handler, qn[i], false);
+                TreeStats<NodeHandlerT> * ts = new TreeStats(handler, qn[i], false, false);
                 for (size_t d=0;d<MAX_HEIGHT-currDepth;++d) {
                     FAA(&internalsAtDepth[d+currDepth], ts->internalsAtDepth[d]);
                     FAA(&leavesAtDepth[d+currDepth], ts->leavesAtDepth[d]);
@@ -143,8 +153,11 @@ public:
             std::cout<<"computing stats for the top of the tree (above the partitions)..."<<std::endl;
             computeStats(handler, root, 0, currDepth - 1);
             
-            delete handler;
         }
+#else
+        computeStats(handler, root, 0);
+#endif
+        if (freeHandler) delete handler;
     }
 
     size_t getInternalsAtDepth(size_t d) {

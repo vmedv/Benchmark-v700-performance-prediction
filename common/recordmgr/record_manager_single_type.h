@@ -32,11 +32,11 @@
 
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"
-#include "reclaimer_numa_ebr.h"
-#include "reclaimer_tree_ebr.h"
-#include "reclaimer_tree_ebr_q.h"
+//#include "reclaimer_tree_ebr.h"
+//#include "reclaimer_tree_ebr_q.h"
 //#include "reclaimer_numa_tree_ebr_q.h"
 #include "reclaimer_debra.h"
+#include "reclaimer_debracap.h"
 #include "reclaimer_debraplus.h"
 #include "reclaimer_hazardptr.h"
 #ifdef USE_RECLAIMER_RCU
@@ -132,9 +132,10 @@ public:
 //        VERBOSE DEBUG2 COUTATOMIC("record_manager_single_type::endOp(tid="<<tid<<")"<<std::endl);
         reclaim->endOp(tid);
     }
-    inline void startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    template <typename First, typename... Rest>
+    inline void startOp(const int tid, void * const * const reclaimers, const int numReclaimers, const bool readOnly = false) {
 //        assert(isQuiescent(tid));
-        reclaim->startOp(tid, reclaimers, numReclaimers);
+        reclaim->template startOp<First, Rest...>(tid, reclaimers, numReclaimers, readOnly);
     }
 
     // for all schemes except reference counting

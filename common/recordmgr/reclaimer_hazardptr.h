@@ -118,7 +118,8 @@ public:
         DEBUG2 assert(announce[tid]->isEmpty());
 //        SOFTWARE_BARRIER;
     }
-    inline static bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    template <typename First, typename... Rest>
+    inline static bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers, const bool readOnly = false) {
         TRACE std::cout<<"reclaimer_hazardptr::startOp(tid="<<tid<<")"<<std::endl;
 //        SOFTWARE_BARRIER;
         return false;

@@ -426,16 +426,26 @@ void prefillInsertionOnly() {
     const int expectedSize = (int)(MAXKEY * expectedFullness);
     
     const int tid = 0;
-    omp_set_num_threads(PREFILL_THREADS);
-    TIMING_START("inserting "<<expectedSize<<" keys with "<<omp_get_max_threads()<<" threads");
+    #ifdef _OPENMP
+        omp_set_num_threads(PREFILL_THREADS);
+        const int ompThreads = omp_get_max_threads();
+    #else
+        const int ompThreads = 1;
+    #endif
+    TIMING_START("inserting "<<expectedSize<<" keys with "<<ompThreads<<" threads");
     #pragma omp parallel for schedule(dynamic, 100000)
     for (size_t i=0;i<expectedSize;++i) {
     retry:
-        test_type key = g.rngs[omp_get_thread_num()].next(MAXKEY) + 1;
-        GSTATS_ADD(omp_get_thread_num(), num_inserts, 1);
-        if (g.dsAdapter->INSERT_FUNC(omp_get_thread_num(), key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
-            GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
-            GSTATS_ADD(omp_get_thread_num(), prefill_size, 1);
+        #ifdef _OPENMP
+            const int tid = omp_get_thread_num();
+        #else
+            const int tid = 0;
+        #endif
+        test_type key = g.rngs[tid].next(MAXKEY) + 1;
+        GSTATS_ADD(tid, num_inserts, 1);
+        if (g.dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
+            GSTATS_ADD(tid, key_checksum, key);
+            GSTATS_ADD(tid, prefill_size, 1);
         } else {
             goto retry;
         }
@@ -763,7 +773,9 @@ void trial() {
         size_t sz = MAXKEY+2;
         const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
         size_t present[sz];
+#ifdef _OPENMP
         omp_set_num_threads(PREFILL_THREADS);
+#endif
         #pragma omp parallel for schedule(dynamic, 100000)
         for (size_t i=0;i<sz;++i) present[i]=DOES_NOT_EXIST;
         TIMING_STOP;
@@ -772,10 +784,15 @@ void trial() {
         #pragma omp parallel for schedule(dynamic, 100000)
         for (size_t i=0;i<sz/2;++i) {
         retry:
-            auto key = g.rngs[omp_get_thread_num()].next(MAXKEY) + 1;
+#ifdef _OPENMP
+            const int tid = omp_get_thread_num();
+#else
+            const int tid = 0;
+#endif
+            auto key = g.rngs[tid].next(MAXKEY) + 1;
             if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
-                GSTATS_ADD(omp_get_thread_num(), key_checksum, key);
-                GSTATS_ADD(omp_get_thread_num(), size_checksum, 1);
+                GSTATS_ADD(tid, key_checksum, key);
+                GSTATS_ADD(tid, size_checksum, 1);
             } else {
                 goto retry;
             }
@@ -783,7 +800,11 @@ void trial() {
         TIMING_STOP;
 
         TIMING_START("parallel sort to obtain keys to insert");
+#ifdef _OPENMP
         __gnu_parallel::sort(present, present+sz);
+#else
+        std::sort(present, present+sz);
+#endif
         TIMING_STOP;
 
         TIMING_START("constructing data structure");

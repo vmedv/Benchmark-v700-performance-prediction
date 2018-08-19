@@ -676,7 +676,7 @@ node_t<skey_t, sval_t> * intlf<skey_t, sval_t, RecMgr>::simpleSeek(skey_t key, s
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t intlf<skey_t, sval_t, RecMgr>::search(tArgs<skey_t, sval_t>* t, skey_t key) {
-    auto guard = recmgr->getGuard(t->tid);
+    auto guard = recmgr->getGuard(t->tid, true);
 
 #ifndef SIMPLE_SEEK
     seek(t, key, &t->targetRecord);

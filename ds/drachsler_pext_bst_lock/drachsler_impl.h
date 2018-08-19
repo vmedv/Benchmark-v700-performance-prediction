@@ -89,7 +89,7 @@ node_t<skey_t, sval_t> * drachsler<skey_t, sval_t, RecMgr>::bst_search(const int
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t drachsler<skey_t, sval_t, RecMgr>::bst_contains(const int tid, skey_t k) {
-    auto guard = recmgr->getGuard(tid);
+    auto guard = recmgr->getGuard(tid, true);
     
     auto n = bst_search(tid, k);
     while (n->key > k) {

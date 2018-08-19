@@ -159,7 +159,7 @@ public:
         static size_t getSumOfKeys(NodePtrType node) { return getNumKeys(node) ? (size_t) CASWORD_TO_KVPAIR(node)->k : 0; }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()));
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()), true);
     }
 #endif
 };

@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef RECLAIM_EPOCH_H
-#define	RECLAIM_EPOCH_H
+#ifndef RECLAIM_DEBRACAP_H
+#define	RECLAIM_DEBRACAP_H
 
 #include <atomic>
 #include <cassert>
@@ -21,7 +21,7 @@
 
 
 template <typename T = void, class Pool = pool_interface<T> >
-class reclaimer_debra : public reclaimer_interface<T, Pool> {
+class reclaimer_debracap : public reclaimer_interface<T, Pool> {
 protected:
 #define EPOCH_INCREMENT 2
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
@@ -57,6 +57,7 @@ protected:
         blockbag<T> * currentBag;  // pointer to current epoch bag for this process
         int checked;               // how far we've come in checking the announced epochs of other threads
         int opsSinceRead;
+        int timesBagTooLargeSinceRotation;
         ThreadData() {}
     private:
         PAD;
@@ -74,13 +75,13 @@ protected:
 public:
     template<typename _Tp1>
     struct rebind {
-        typedef reclaimer_debra<_Tp1, Pool> other;
+        typedef reclaimer_debracap<_Tp1, Pool> other;
     };
     template<typename _Tp1, typename _Tp2>
     struct rebind2 {
-        typedef reclaimer_debra<_Tp1, _Tp2> other;
+        typedef reclaimer_debracap<_Tp1, _Tp2> other;
     };
-    
+        
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         SOFTWARE_BARRIER;
         int ix = threadData[tid].index;
@@ -154,7 +155,7 @@ public:
             typedef typename Pool::template rebindAlloc<First>::other classAlloc;
             typedef typename Pool::template rebind2<First, classAlloc>::other classPool;
 
-            ((reclaimer_debra<First, classPool> * const) reclaimers[i])->rotateEpochBags(tid);
+            ((reclaimer_debracap<First, classPool> * const) reclaimers[i])->rotateEpochBags(tid);
             ((BagRotator<Rest...> *) this)->rotateAllEpochBags(tid, reclaimers, 1+i);
         }
     };
@@ -215,6 +216,27 @@ public:
     inline void retire(const int tid, T* p) {
         threadData[tid].currentBag->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
+        if (threadData[tid].currentBag->getSizeInBlocks() >= 2) {
+            // only execute the following logic once every X times (starting at 0) we see that our current bag is too large
+            // (resetting the count when we rotate bags).
+            // if we are being prevented from reclaiming often, then we will quickly (within X operations) scan all threads.
+            // otherwise, we will avoid scanning all threads too often.
+            if ((++threadData[tid].timesBagTooLargeSinceRotation) % 1000) return;
+
+            long readEpoch = epoch;
+            const long ann = threadData[tid].localvar_announcedEpoch;
+
+            // if our announced epoch is different from the current epoch, skip the following, since we're going to rotate limbo bags on our next operation, anyway
+            if (readEpoch != BITS_EPOCH(ann)) return;
+            
+            // scan all threads (skipping any threads we've already checked) to see if we can advance the epoch (and subsequently reclaim memory)
+            for (; threadData[tid].checked < this->NUM_PROCESSES; ++threadData[tid].checked) {
+                const int otherTid = threadData[tid].checked;
+                long otherAnnounce = threadData[otherTid].announcedEpoch.load(std::memory_order_relaxed);
+                if (!(BITS_EPOCH(otherAnnounce) == readEpoch || QUIESCENT(otherAnnounce))) return;
+            }
+            __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
+        }
     }
     
     void debugPrintStatus(const int tid) {
@@ -227,14 +249,15 @@ public:
         threadData[tid].currentBag = threadData[tid].epochbags[0];
         threadData[tid].opsSinceRead = 0;
         threadData[tid].checked = 0;
+        threadData[tid].timesBagTooLargeSinceRotation = 0;
         for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
             threadData[tid].epochbags[i] = new blockbag<T>(tid, this->pool->blockpools[tid]);
         }
     }
     
-    reclaimer_debra(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
+    reclaimer_debracap(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE std::cout<<"constructor reclaimer_debra helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
+        VERBOSE std::cout<<"constructor reclaimer_debracap helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
         epoch = 0;
         for (int tid=0;tid<numProcesses;++tid) {
             threadData[tid].index = 0;
@@ -245,8 +268,8 @@ public:
             }
         }
     }
-    ~reclaimer_debra() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_debra"<<std::endl;
+    ~reclaimer_debracap() {
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_debracap"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             // move contents of all bags into pool
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
