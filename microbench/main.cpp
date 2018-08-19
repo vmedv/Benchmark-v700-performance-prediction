@@ -24,6 +24,8 @@ typedef long long test_type;
  * Configure global statistics using gstats_global.h and gstats.h
  */
 
+__thread int tid = 0;
+
 #define __AND ,
 #define GSTATS_HANDLE_STATS(gstats_handle_stat) \
     gstats_handle_stat(LONG_LONG, node_allocated_addresses, 100, { \
@@ -69,6 +71,21 @@ typedef long long test_type;
     }) \
     gstats_handle_stat(LONG_LONG, num_complete_rebuild_at_depth, 100, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_multi_counter_node_created, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_multi_counter_node_deallocated, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_multi_counter_node_retired, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_multi_counter_array_created, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_multi_counter_array_reclaimed, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     /*gstats_handle_stat(LONG_LONG, num_isearch, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
@@ -345,7 +362,8 @@ struct globals_t {
 #define CLEAR_COUNTERS 
     
 void *thread_prefill(void *_id) {
-    int tid = *((int*) _id);
+    int __tid = *((int*) _id);
+    tid = __tid;
     binding_bindThread(tid);
     RandomFNV1A *rng = &g.rngs[tid];
     test_type garbage = 0;
@@ -559,7 +577,8 @@ void prefill() {
 }
 
 void *thread_timed(void *_id) {
-    int tid = *((int*) _id);
+    int __tid = *((int*) _id);
+    tid = __tid;
     binding_bindThread(tid);
     test_type garbage = 0;
     RandomFNV1A *rng = &g.rngs[tid];
@@ -650,7 +669,8 @@ void *thread_timed(void *_id) {
 }
 
 void *thread_rq(void *_id) {
-    int tid = *((int*) _id);
+    int __tid = *((int*) _id);
+    tid = __tid;
     binding_bindThread(tid);
     test_type garbage = 0;
     RandomFNV1A *rng = &g.rngs[tid];
@@ -1017,6 +1037,24 @@ void printOutput() {
     std::cout<<"begin delete ds..."<<std::endl;
     delete g.dsAdapter;
     std::cout<<"end delete ds."<<std::endl;
+#endif
+
+#ifdef USE_GSTATS
+    /**
+     * record manager shows 813 deallocated multi counters + 2466 in limbo, which is exactly 3479 = # created,
+     * so it seems the record manager SHOULD actually deallocate everything allocated.
+     * however, it appears that almost no destructors are being called for multi counters
+     * (only 40, which is exactly = # DEALLOCATED, NOT RETIRED).
+     * this is reminiscent of an old problem with the template type system for the record manager,
+     * wherein the type information was not being conveyed correctly through retire() to the eventual deallocate().
+     * i heavily suspect this is happening here, as well.
+     * but why would the type information be lost?
+     *      can i encode it explicitly in the retire calls?
+     *      is there an incorrect or missing cast?
+     */
+    std::cout<<"num_multi_counter_array_created="<<GSTATS_GET_STAT_METRICS(num_multi_counter_array_created, TOTAL)[0].sum<<std::endl;
+    std::cout<<"num_multi_counter_array_reclaimed="<<GSTATS_GET_STAT_METRICS(num_multi_counter_array_reclaimed, TOTAL)[0].sum<<std::endl;
+    std::cout<<std::endl;
 #endif
     
     papi_print_counters(totalAll);

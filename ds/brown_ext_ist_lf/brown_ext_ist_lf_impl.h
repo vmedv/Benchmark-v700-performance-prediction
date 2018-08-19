@@ -5,6 +5,7 @@
 
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
+    auto guard = recordmgr->getGuard(tid);
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
     assert(ptr);
     while (true) {
@@ -28,6 +29,7 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
 
 template <typename K, typename V, class Interpolate, class RecManager>
 size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
+    assert(!recordmgr->isQuiescent(tid));
     if (unlikely(IS_KVPAIR(ptr))) {
         return 1 - CASWORD_TO_KVPAIR(ptr)->empty;
     }
@@ -81,6 +83,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t ptr, IdealBuilder * b) {
+    assert(!recordmgr->isQuiescent(tid));
     if (IS_KVPAIR(ptr)) {
         auto pair = CASWORD_TO_KVPAIR(ptr);
         if (pair->empty) return;
@@ -99,6 +102,7 @@ void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t pt
 
 template <typename K, typename V, class Interpolate, class RecManager>
 casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
+    assert(!recordmgr->isQuiescent(tid));
     if (keyCount == 0) return KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
     IdealBuilder b (this, keyCount, op->depth);
     createIdeal(tid, NODE_TO_CASWORD(op->candidate), &b);
@@ -107,27 +111,46 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, Rebuild
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
+    assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
     casword_t newWord = createIdeal(tid, op, keyCount);
     if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
+        freeSubtree(tid, op->candidate, true, true, false);
+        recordmgr->retire(tid, op);
+        // note: we eliminate empty KVPairs in the old subtree, since they are NOT reused
+    } else {
+        if (IS_KVPAIR(newWord)) {
+            if (keyCount == 0) {
+                recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
+            } else if (CASWORD_TO_KVPAIR(newWord)->empty) {
+                recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
+            }
+        } else {
+            assert(IS_NODE(newWord));
+            freeSubtree(tid, CASWORD_TO_NODE(newWord), false, false, false);
+        }
     }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index /* of rebuildRoot in parent */, const size_t depth) {
+    assert(!recordmgr->isQuiescent(tid));
     auto op = new RebuildOperation<K,V>(rebuildRoot, parent, index, depth);
     auto ptr = REBUILDOP_TO_CASWORD(op);
     auto old = NODE_TO_CASWORD(op->candidate);
     assert(op->parent == parent);
     if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), old, ptr).status == DCSS_SUCCESS) {
         helpRebuild(tid, op);
+    } else {
+        recordmgr->deallocate(tid, op);
     }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const K& key, Node<K,V> * const node) {
+    assert(!recordmgr->isQuiescent(tid));
     // TODO: redo prefetching, taking into account the fact that l2 adjacent line prefetcher DOESN'T grab an adjacent line
     __builtin_prefetch(&node->degree, 1);
     __builtin_prefetch(&node->maxKey, 1);
@@ -193,6 +216,8 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
 // note: val is unused if t == Erase
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::doUpdate(const int tid, const K& key, const V& val, UpdateType t) {
+    auto guard = recordmgr->getGuard(tid);
+
     const double SAMPLING_PROB = 1.;
     const int MAX_PATH_LENGTH = 64; // in practice, the depth is probably less than 10 even for many billions of keys. max is technically nthreads + O(log log n), but this requires an astronomically unlikely event.
     Node<K,V> * path[MAX_PATH_LENGTH]; // stack to save the path
@@ -203,7 +228,6 @@ retry:
     pathLength = 0;
     node = root;
     while (true) {
-retryNode:
         auto ix = interpolationSearch(tid, key, node);
 //        if (node->ptr(ix) & 1) { //////////// debug
 //            std::cout<<"ix="<<ix<<std::endl;
@@ -243,7 +267,7 @@ retryNode:
 //                std::cout<<" @ "<<(size_t) node<<std::endl;
 //                std::cout<<" ptrs";
 //                for (int i=0;i<node->degree;++i) {
-//                    std::cout<<(i==0?":":",")<<(size_t)(node->ptr(i)&~0x7)<<(node->ptr(i)&0x1?"d":node->ptr(i)&0x2?"k":node->ptr(i)&0x4?"r":"n");
+//                    std::cout<<(i==0?":":",")<<(size_t)(node->ptr(i)&~TOTAL_MASK)<<(node->ptr(i)&0x1?"d":node->ptr(i)&0x2?"k":node->ptr(i)&0x4?"r":"n");
 //                }
 //                std::cout<<std::endl;
 //
@@ -261,26 +285,36 @@ retryNode:
 //            }
 //            assert(false);
 //        } //////////// debug
+retryNode:
         bool affectsChangeSum = true;
         auto word = prov->readPtr(tid, node->ptrAddr(ix));
         if (IS_KVPAIR(word)) {
             auto pair = CASWORD_TO_KVPAIR(word);
             
+            assert(!recordmgr->isQuiescent(tid));
+            
             V retval = NO_VALUE;
             auto newWord = (casword_t) NULL;
+            Node<K,V> * newNode = NULL;
+            KVPair<K,V> * newPair = NULL;
+            KVPair<K,V> * deletingPair = NULL;
             switch (t) {
                 case InsertReplace: case InsertIfAbsent:
                     if (pair->k == INF_KEY) {
-                        newWord = KVPAIR_TO_CASWORD(createKVPair(tid, key, val));
+                        newPair = createKVPair(tid, key, val);
+                        deletingPair = pair;
+                        newWord = KVPAIR_TO_CASWORD(newPair);
                         // retval = NO_VALUE;
                     } else if (pair->k == key) {
                         if (t == InsertIfAbsent) return pair->v;
-                        newWord = KVPAIR_TO_CASWORD(createKVPair(tid, key, val));
+                        newPair = createKVPair(tid, key, val);
+                        deletingPair = pair;
+                        newWord = KVPAIR_TO_CASWORD(newPair);
                         retval = pair->v;
                         affectsChangeSum = false; // note: insert replace should NOT count towards changeSum, because it cannot affect the complexity of operations
                     } else {
-                        auto newPair = createKVPair(tid, key, val);
-                        auto newNode = createNode(tid, 2);
+                        newPair = createKVPair(tid, key, val);
+                        newNode = createNode(tid, 2);
                         newNode->degree = 2;
                         newNode->initSize = 2;
                         newNode->parent = node;
@@ -302,7 +336,9 @@ retryNode:
                     break;
                 case Erase:
                     if (pair->k != key) return NO_VALUE;
-                    newWord = KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
+                    newPair = createEmptyKVPair(tid);
+                    deletingPair = pair;
+                    newWord = KVPAIR_TO_CASWORD(newPair);
                     retval = pair->v;
                     break;
                 default:
@@ -310,20 +346,27 @@ retryNode:
                     break;
             }
             assert(newWord);
-            assert((newWord & (~7)));
+            assert((newWord & (~TOTAL_MASK)));
             
             // DCSS that performs the update
+            assert(!recordmgr->isQuiescent(tid));
             assert(ix >= 0);
             assert(ix < node->degree);
             auto result = prov->dcssPtr(tid, (casword_t *) &node->dirty, 0, (casword_t *) node->ptrAddr(ix), word, newWord);
             switch (result.status) {
                 case DCSS_FAILED_ADDR2: // retry from same node
+                    if (newPair) recordmgr->deallocate(tid, newPair);
+                    if (newNode) freeNode(tid, newNode, false);
                     goto retryNode;
                     break;
                 case DCSS_FAILED_ADDR1: // node is dirty; retry from root
+                    if (newPair) recordmgr->deallocate(tid, newPair);
+                    if (newNode) freeNode(tid, newNode, false);
                     goto retry;
                     break;
                 case DCSS_SUCCESS:
+                    assert(!recordmgr->isQuiescent(tid));
+                    if (deletingPair) recordmgr->retire(tid, deletingPair);
                     
                     if (!affectsChangeSum) break;
                     
@@ -360,17 +403,17 @@ retryNode:
                                     for (int j=0;j<parent->degree - 1;++j) std::cout<<" "<<parent->key(j);
                                     std::cout<<std::endl;
                                     std::cout<<"parent ptrs (converted)";
-                                    for (int j=0;j<parent->degree;++j) std::cout<<" "<<(parent->ptr(j) & ~7);
+                                    for (int j=0;j<parent->degree;++j) std::cout<<" "<<(parent->ptr(j) & ~TOTAL_MASK);
                                     std::cout<<std::endl;
                                     std::cout<<"index="<<index<<std::endl;
-                                    std::cout<<"parent->ptr(index) (converted)="<<(parent->ptr(index) & ~7)<<std::endl;
+                                    std::cout<<"parent->ptr(index) (converted)="<<(parent->ptr(index) & ~TOTAL_MASK)<<std::endl;
                                     std::cout<<"path[i]@"<<(size_t) path[i]<<std::endl;
                                     std::cout<<"path[i]->degree="<<path[i]->degree<<std::endl;
                                     std::cout<<"path[i]->key(0)="<<(path[i]->degree > 1 ? path[i]->key(0) : -1)<<std::endl;
                                     std::cout<<"path[i]->ptr(0)="<<(size_t) path[i]->ptr(0)<<std::endl;
-                                    std::cout<<"path[i]->ptr(0) (converted)="<<(path[i]->ptr(0) & ~7)<<std::endl;
+                                    std::cout<<"path[i]->ptr(0) (converted)="<<(path[i]->ptr(0) & ~TOTAL_MASK)<<std::endl;
                                     std::cout<<"newWord="<<newWord<<std::endl;
-                                    std::cout<<"newWord (converted)="<<(newWord & ~7)<<std::endl;
+                                    std::cout<<"newWord (converted)="<<(newWord & ~TOTAL_MASK)<<std::endl;
                                     if (IS_KVPAIR(newWord)) {
                                         std::cout<<"new key="<<CASWORD_TO_KVPAIR(newWord)->k<<std::endl;
                                     }
@@ -410,15 +453,16 @@ retryNode:
 template <typename K, typename V, class Interpolate, class RecManager>
 Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const int degree) {
     size_t sz = sizeof(Node<K,V>) + sizeof(K) * (degree - 1) + sizeof(casword_t) * degree;
-    Node<K,V> * node = (Node<K,V> *) new char[sz];
+    Node<K,V> * node = (Node<K,V> *) ::operator new (sz); //(Node<K,V> *) new char[sz];
 //    std::cout<<"node of degree "<<degree<<" allocated size "<<sz<<" @ "<<(size_t) node<<std::endl;
-    assert((((size_t) node) & 0x7) == 0);
+    assert((((size_t) node) & TOTAL_MASK) == 0);
     node->capacity = degree;
     node->degree = 0;
     node->initSize = 0;
     node->changeSum = 0;
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
     node->externalChangeCounter = NULL;
+    assert(!node->externalChangeCounter);
 #endif
     node->dirty = 0;
     node->parent = NULL;
@@ -430,28 +474,39 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
 
 template <typename K, typename V, class Interpolate, class RecManager>
 Node<K,V>* istree<K,V,Interpolate,RecManager>::createMultiCounterNode(const int tid, const int degree) {
+    GSTATS_ADD(tid, num_multi_counter_node_created, 1);
     auto node = createNode(tid, degree);
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
     node->externalChangeCounter = new MultiCounter(this->NUM_PROCESSES, 1);
+//    std::cout<<"created MultiCounter at address "<<node->externalChangeCounter<<std::endl;
+    assert(node->externalChangeCounter);
 #endif
     return node;
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
 KVPair<K,V> * istree<K,V,Interpolate,RecManager>::createKVPair(const int tid, const K& key, const V& value) {
+//    auto result = (KVPair<K,V> *) new(sizeof(KVPair<K,V>));
+//    result->k = key;
+//    result->v = value;
+//    result->empty = false;
     auto result = new KVPair<K,V>(key, value);
 //    std::cout<<"kvpair allocated of size "<<sizeof(KVPair<K,V>)<<" with key="<<key<<" @ "<<(size_t) result<<std::endl;
-    assert((((size_t) result) & 0x7) == 0);
+    assert((((size_t) result) & TOTAL_MASK) == 0);
     assert(result);
     return result;
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
 KVPair<K,V> * istree<K,V,Interpolate,RecManager>::createEmptyKVPair(const int tid) {
+//    auto result = (KVPair<K,V> *) new(sizeof(KVPair<K,V>));
+//    result->k = INF_KEY;
+//    result->v = NO_VALUE;
+//    result->empty = true;
     auto result = new KVPair<K,V>(INF_KEY, NO_VALUE);
     result->empty = true;
 //    std::cout<<"kvpair allocated of size "<<sizeof(KVPair<K,V>)<<" with key="<<key<<" @ "<<(size_t) result<<std::endl;
-    assert((((size_t) result) & 0x7) == 0);
+    assert((((size_t) result) & TOTAL_MASK) == 0);
     assert(result);
     return result;
 }

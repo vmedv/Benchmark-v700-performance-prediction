@@ -22,47 +22,42 @@ struct SingleCounter {
 class MultiCounter {
 private:
     PAD;
-    SingleCounter * counters;
+    SingleCounter * const counters;
     const int numCounters;
     PAD;
 public:
     MultiCounter(const int numThreads, const int sizeMultiple)
             : counters(new SingleCounter[std::max(2, sizeMultiple*numThreads)+1]) // allocate one extra entry (don't use first entry---to effectively add padding at the start of the array)
             , numCounters(std::max(2, sizeMultiple*numThreads)) {
-        
-        counters = counters + 1;                                                // shift by +1 (don't use first entry---to effectively add padding at the start of the array)
-        for (int i=0;i<numCounters;++i) {
+        GSTATS_ADD(tid, num_multi_counter_array_created, 1);
+//        counters = counters + 1;                                                // shift by +1 (don't use first entry---to effectively add padding at the start of the array)
+        for (int i=0;i<numCounters+1;++i) {
             counters[i].v = 0;
         }
     }
     ~MultiCounter() {
-        delete[] (counters - 1);                                                // shift by -1 (don't use first entry---to effectively add padding at the start of the array)
+        GSTATS_ADD(tid, num_multi_counter_array_reclaimed, 1);
+        delete[] counters;
+//        delete[] (counters - 1);                                                // shift by -1 (don't use first entry---to effectively add padding at the start of the array)
     }
     inline size_t inc(const int tid, RandomFNV1A * rng, const size_t amt = 1) {
-#ifdef USE_LOCAL_HACK
-        bool cheap = rng->next(1024) < 512;
-        if (cheap) {
-            return FAA(&counters[tid].v, amt) + amt;
-        }
-#endif
-        
         const int i = rng->next(numCounters);
         int j;
         do {
             j = rng->next(numCounters);
         } while (i == j);
-        size_t vi = counters[i].v;
-        size_t vj = counters[j].v;
-        return FAA((vi < vj ? &counters[i].v : &counters[j].v), amt) + amt;
+        size_t vi = counters[1+i].v;
+        size_t vj = counters[1+j].v;
+        return FAA((vi < vj ? &counters[1+i].v : &counters[1+j].v), amt) + amt;
     }
     inline size_t readFast(const int tid, RandomFNV1A * rng) {
         const int i = rng->next(numCounters);
-        return numCounters * counters[i].v;
+        return numCounters * counters[1+i].v;
     }
     size_t readAccurate() {
         size_t sum = 0;
         for (int i=0;i<numCounters;++i) {
-            sum += counters[i].v;
+            sum += counters[1+i].v;
         }
         return sum;
     }

@@ -142,6 +142,8 @@ public:
             // compute stats for the top of the tree, ABOVE the parallel constructed subtrees.
             std::cout<<"computing stats for the top of the tree (above the partitions)..."<<std::endl;
             computeStats(handler, root, 0, currDepth - 1);
+            
+            delete handler;
         }
     }
 

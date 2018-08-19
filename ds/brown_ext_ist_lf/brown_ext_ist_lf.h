@@ -41,17 +41,30 @@
 #   include "multi_counter.h"
 #endif
 
+#define TYPE_MASK               (0x6)
+#define DCSS_BITS               (1)
+#define TYPE_BITS               (2)
+#define TOTAL_BITS              (DCSS_BITS+TYPE_BITS)
+#define TOTAL_MASK              (0x7)
+
 #define KVPAIR_MASK             (0x2) /* 0x1 is used by DCSS */
-#define IS_KVPAIR(x)            ((x)&KVPAIR_MASK)
-#define CASWORD_TO_KVPAIR(x)    ((KVPair<K,V> *) ((x)&~KVPAIR_MASK))
+#define IS_KVPAIR(x)            (((x)&TYPE_MASK)==KVPAIR_MASK)
+#define CASWORD_TO_KVPAIR(x)    ((KVPair<K,V> *) ((x)&~TYPE_MASK))
 #define KVPAIR_TO_CASWORD(x)    ((casword_t) (((casword_t) (x))|KVPAIR_MASK))
 
 #define REBUILDOP_MASK          (0x4)
-#define IS_REBUILDOP(x)         ((x)&REBUILDOP_MASK)
-#define CASWORD_TO_REBUILDOP(x) ((RebuildOperation<K,V> *) ((x)&~REBUILDOP_MASK))
+#define IS_REBUILDOP(x)         (((x)&TYPE_MASK)==REBUILDOP_MASK)
+#define CASWORD_TO_REBUILDOP(x) ((RebuildOperation<K,V> *) ((x)&~TYPE_MASK))
 #define REBUILDOP_TO_CASWORD(x) ((casword_t) (((casword_t) (x))|REBUILDOP_MASK))
 
-#define IS_NODE(x)              (((x)&(REBUILDOP_MASK|KVPAIR_MASK))==0)
+#define EMPTY_VAL_TO_CASWORD    (~0x1)
+#define VAL_MASK                (0x6)
+#define IS_VAL(x)               (((x)&TYPE_MASK)==VAL_MASK)
+#define CASWORD_TO_VAL(x)       ((V) ((x)>>TOTAL_BITS))
+#define VAL_TO_CASWORD(x)       ((casword_t) ((((casword_t) (x))<<TOTAL_BITS)|VAL_MASK))
+
+#define NODE_MASK               (0x0) /* no need to use this... 0 mask is implicit */
+#define IS_NODE(x)              (((x)&TYPE_MASK)==0)
 #define CASWORD_TO_NODE(x)      ((Node<K,V> *) (x))
 #define NODE_TO_CASWORD(x)      ((casword_t) (x))
 
@@ -81,9 +94,15 @@ struct Node {
 #endif
     volatile size_t changeSum;  // could be merged with initSize above (subtract make initSize 1/4 of what it would normally be, then subtract from it instead of incrementing changeSum, and rebuild when it hits zero)
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
-    MultiCounter * externalChangeCounter; // NULL for all nodes except the root, and supercedes changeSum in the root.
+    MultiCounter * externalChangeCounter; // NULL for all nodes except the root (or top few nodes), and supercedes changeSum when non-NULL.
 #endif
     // unlisted fields: capacity-1 keys of type K followed by capacity "pointers" of type casword_t
+
+//#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+//    ~Node() {
+//        if (externalChangeCounter) delete externalChangeCounter;
+//    }
+//#endif
     
     inline K * keyAddr(const int ix) {
         K * const firstKey = ((K *) (((char *) this)+sizeof(Node<K,V>)));
@@ -178,7 +197,7 @@ private:
     KVPair<K,V> * createEmptyKVPair(const int tid);
     
     void debugPrintWord(std::ofstream& ofs, casword_t w) {
-        //ofs<<(void *) (w&~7)<<"("<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n")<<")";
+        //ofs<<(void *) (w&~TOTAL_MASK)<<"("<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n")<<")";
         //ofs<<(IS_REBUILDOP(w) ? "RebuildOp *" : IS_KVPAIR(w) ? "KVPair *" : "Node *");
         //ofs<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n");
     }
@@ -218,6 +237,13 @@ private:
             ofs<<"<f"<<(numFixedFields++)<<"> d:"<<node->degree<<"/"<<node->capacity;
             ofs<<" | <f"<<(numFixedFields++)<<"> is:"<<node->initSize;
             ofs<<" | <f"<<(numFixedFields++)<<"> cs:"<<node->changeSum;
+
+            if (node->externalChangeCounter) {
+                ofs<<" | <f"<<(numFixedFields++)<<"> ext";
+            } else {
+                ofs<<" | <f"<<(numFixedFields++)<<"> -";
+            }
+
             //ofs<<" | <f"<<(numFixedFields++)<<"> dirty="<<node->dirty;
             #define FIELD_PTR(i) (numFixedFields+2*(i))
             #define FIELD_KEY(i) (FIELD_PTR(i)-1)
@@ -230,10 +256,23 @@ private:
             ofs<<"\""<<std::endl;
             ofs<<"shape = \"record\""<<std::endl;
             ofs<<"];"<<std::endl;
+
+            if (node->externalChangeCounter) {
+                ofs<<"\""<<node->externalChangeCounter<<"\" ["<<std::endl;
+                ofs<<"label= \"";
+                ofs<<"<f0> cnt="<<(node->externalChangeCounter->readAccurate());
+                ofs<<"\""<<std::endl;
+                ofs<<"shape = \"record\""<<std::endl;
+                ofs<<"];"<<std::endl;
+                
+                ofs<<"\""<<node<<"\":f4 -> \""<<node->externalChangeCounter<<"\":f0 ["<<std::endl;
+                ofs<<"id = "<<((*numPointers)++)<<std::endl;
+                ofs<<"];"<<std::endl;
+            }
             
             for (int i=0;i<node->degree;++i) {
                 casword_t targetWord = node->ptr(i);
-                void * target = (void *) (targetWord & ~7);
+                void * target = (void *) (targetWord & ~TOTAL_MASK);
                 ofs<<"\""<<node<<"\":f"<<FIELD_PTR(i)<<" -> \""<<target<<"\":f0 ["<<std::endl;
                 ofs<<"id = "<<((*numPointers)++)<<std::endl;
                 ofs<<"];"<<std::endl;
@@ -258,7 +297,58 @@ private:
         ofs<<"}"<<std::endl;
         ofs.close();
     }
+    
+    void freeNode(const int tid, Node<K,V> * node, bool retire) {
+        if (retire) {
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+            if (node->externalChangeCounter) {
+                GSTATS_ADD(tid, num_multi_counter_node_retired, 1);
+                recordmgr->retire(tid, node->externalChangeCounter);
+            }
+#endif
+            recordmgr->retire(tid, node);
+        } else {
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+            if (node->externalChangeCounter) {
+                GSTATS_ADD(tid, num_multi_counter_node_deallocated, 1);
+                recordmgr->deallocate(tid, node->externalChangeCounter);
+            }
+#endif
+            recordmgr->deallocate(tid, node);
+        }
+    }
 
+    void freeSubtree(const int tid, Node<K,V> * subtree, bool retire, bool freeEmptyPairs, bool freeAllPairs) {
+        for (int i=0;i<subtree->degree;++i) {
+            auto ptr = prov->readPtr(tid, subtree->ptrAddr(i));
+            /**
+             * note: we do NOT reclaim kvpairs by default,
+             * because they are reused across tree rebuilds (at present).
+             * they will be reclaimed by a thread that replaces them with either
+             * a new kvpair or a masked value.
+             */
+            if (IS_NODE(ptr)) {
+                freeSubtree(tid, CASWORD_TO_NODE(ptr), retire, freeEmptyPairs, freeAllPairs);
+            } else if (IS_REBUILDOP(ptr)) {
+                auto op = CASWORD_TO_REBUILDOP(ptr);
+                freeSubtree(tid, op->candidate, retire, freeEmptyPairs, freeAllPairs);
+                if (retire) {
+                    recordmgr->retire(tid, op);
+                } else {
+                    recordmgr->deallocate(tid, op);
+                }
+            } else if (IS_KVPAIR(ptr)) {
+                if (freeAllPairs || freeEmptyPairs && (CASWORD_TO_KVPAIR(ptr)->empty)) { 
+                    if (retire) {
+                        recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
+                    } else {
+                        recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(ptr));
+                    }
+                }
+            }
+        }
+        freeNode(tid, subtree, retire);
+    }
     
     /**
      * recursive ideal ist construction
@@ -366,6 +456,8 @@ private:
         }
         void addKV(const int tid, KVPair<K,V> * pair) {
             pairs[pairsAdded++] = pair;
+            assert(!pair->empty);
+            assert(pairsAdded <= initNumKeys);
         }
         casword_t getCASWord(const int tid) {
 #ifndef NDEBUG
@@ -470,12 +562,13 @@ public:
         }
         *root->ptrAddr(0) = b.getCASWord(tid);
     }
-
     ~istree() {
-//        int nodes = 0;
-//        freeSubtree(root, &nodes);
+        debugGVPrint();
+//        freeSubtree(0, root, false, false);
+        freeSubtree(0, root, false, true, true);
 ////            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
-////            recordmgr->printStatus();
+        recordmgr->printStatus();
+        delete prov;
         delete recordmgr;
     }
 

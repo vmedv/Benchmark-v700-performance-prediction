@@ -69,6 +69,7 @@ public:
         check_duplicates<First, Rest...>(); // check if first is in {rest...}
     }
     ~RecordManagerSet() {
+        std::cout<<"recordmanager set destructor called for object type "<<typeid(First).name()<<std::endl;
         delete mgr;
         // note: should automatically call the parent class' destructor afterwards
     }
