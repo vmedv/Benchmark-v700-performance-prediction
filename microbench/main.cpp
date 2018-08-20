@@ -832,6 +832,10 @@ void trial() {
                 sz/2, rand());
         TIMING_STOP;
     
+        for (int tid=0;tid<std::max(PREFILL_THREADS, TOTAL_THREADS);++tid) {
+            g.dsAdapter->initThread(tid); // pre-initialize for openmp threads (just to avoid initialization in the openmp parallel for)
+        }
+        
 #elif defined PREFILL_INSERTION_ONLY
         g.dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
         DEINIT_ALL;
