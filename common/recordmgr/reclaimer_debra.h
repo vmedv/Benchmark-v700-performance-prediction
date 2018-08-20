@@ -18,8 +18,6 @@
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
 
-
-
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
 protected:

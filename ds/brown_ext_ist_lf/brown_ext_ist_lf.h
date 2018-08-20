@@ -58,6 +58,8 @@
 #define REBUILDOP_TO_CASWORD(x) ((casword_t) (((casword_t) (x))|REBUILDOP_MASK))
 
 #define EMPTY_VAL_TO_CASWORD    (~0x1)
+#define CASWORD_IS_EMPTY_VAL(x) (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
+
 #define VAL_MASK                (0x6)
 #define IS_VAL(x)               (((x)&TYPE_MASK)==VAL_MASK)
 #define CASWORD_TO_VAL(x)       ((V) ((x)>>TOTAL_BITS))

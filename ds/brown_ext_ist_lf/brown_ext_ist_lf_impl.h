@@ -111,6 +111,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, Rebuild
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
+#ifdef MEASURE_REBUILDING_TIME
+    GSTATS_TIMER_RESET(tid, timer_rebuild);
+#endif
     assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
@@ -132,6 +135,10 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             freeSubtree(tid, CASWORD_TO_NODE(newWord), false, false, false);
         }
     }
+#ifdef MEASURE_REBUILDING_TIME
+    auto cappedDepth = std::min((size_t) 9, op->depth);
+    GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
+#endif
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>

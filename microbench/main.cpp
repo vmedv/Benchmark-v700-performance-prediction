@@ -187,6 +187,13 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
     }) \
+    gstats_handle_stat(LONG_LONG, elapsed_rebuild_depth, 10, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, elapsed_all_ops, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
     gstats_handle_stat(LONG_LONG, latency_searches, 1, { \
             /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
@@ -209,7 +216,9 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, timer_duration, 1, {}) \
-    gstats_handle_stat(LONG_LONG, timer_latency, 1, {})
+    gstats_handle_stat(LONG_LONG, timer_latency, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_rebuild, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_all_ops, 1, {})
 
 #define TIMING_START(s) \
     std::cout<<"timing_start "<<s<<"..."<<std::endl; \
@@ -352,7 +361,7 @@ struct globals_t {
 } g;
 
 #ifndef OPS_BETWEEN_TIME_CHECKS
-#define OPS_BETWEEN_TIME_CHECKS 500
+#define OPS_BETWEEN_TIME_CHECKS 100
 #endif
 #ifndef RQS_BETWEEN_TIME_CHECKS
 #define RQS_BETWEEN_TIME_CHECKS 10
@@ -467,7 +476,7 @@ void prefillInsertionOnly() {
 void prefill() {
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
-    const double PREFILL_THRESHOLD = 0.05;
+    const double PREFILL_THRESHOLD = 0.001;
     const int MAX_ATTEMPTS = 10000;
     const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
     const int expectedSize = (int)(MAXKEY * expectedFullness);
@@ -606,6 +615,11 @@ void *thread_timed(void *_id) {
     papi_start_counters(tid);
     int cnt = 0;
     int rq_cnt = 0;
+    
+#ifdef MEASURE_REBUILDING_TIME
+    GSTATS_TIMER_RESET(tid, timer_all_ops);
+#endif    
+    
     while (!g.done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
             std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = std::chrono::high_resolution_clock::now();
@@ -664,13 +678,17 @@ void *thread_timed(void *_id) {
     __sync_fetch_and_add(&g.running, -1);
 //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
 
+#ifdef MEASURE_REBUILDING_TIME
+    GSTATS_ADD(tid, elapsed_all_ops, GSTATS_TIMER_ELAPSED(tid, timer_all_ops));
+#endif    
+    
     GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
 
     SOFTWARE_BARRIER;
     papi_stop_counters(tid);
     SOFTWARE_BARRIER;
     
-    while (g.running) { /* wait */ }
+    while (g.running) { /* wait */ __sync_synchronize(); }
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
     delete[] rqResultValues;
@@ -809,18 +827,23 @@ void trial() {
 
         TIMING_START("constructing data structure");
         g.dsAdapter = new DS_ADAPTER_T(
-                TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs,
+                std::max(PREFILL_THREADS, TOTAL_THREADS), g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs,
                 (test_type const *) present, (VALUE_TYPE const *) present,
                 sz/2, rand());
         TIMING_STOP;
     
 #elif defined PREFILL_INSERTION_ONLY
-        g.dsAdapter = new DS_ADAPTER_T(TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
+        g.dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
         DEINIT_ALL;
-        if (PREFILL_THREADS > 0) prefillInsertionOnly();
+        if (PREFILL_THREADS > 0) {
+            for (int tid=0;tid<std::max(PREFILL_THREADS, TOTAL_THREADS);++tid) {
+                g.dsAdapter->initThread(tid); // pre-initialize for openmp threads (just to avoid initialization in the openmp parallel for)
+            }
+            prefillInsertionOnly();
+        }
     
 #else
-        g.dsAdapter = new DS_ADAPTER_T(TOTAL_THREADS, g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
+        g.dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g.KEY_MIN, g.KEY_MAX, g.NO_VALUE, g.rngs);
         DEINIT_ALL;
         if (PREFILL_THREADS > 0) prefill();
 #endif
@@ -859,7 +882,7 @@ void trial() {
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC(std::endl);
     
-    PerfTools::profile("perf.trial", PERF_PMU_EVENT, [&]() {
+//    PerfTools::profile("perf.trial", PERF_PMU_EVENT, [&]() {
         SOFTWARE_BARRIER;
         g.startTime = std::chrono::high_resolution_clock::now();
         g.startClockTicks = get_server_clock();
@@ -887,7 +910,7 @@ void trial() {
             nanosleep(&tsNap, NULL);
             g.elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count() - g.elapsedMillis;
         }
-    });
+//    });
 
     if (g.running > 0) {
         COUTATOMIC(std::endl);

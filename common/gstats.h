@@ -204,16 +204,16 @@ private:
 
     #define GSTATS_PRINT_AGG(agg_granularity_str, type, sid, metrics, num_metrics) { \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str; \
+        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
         if (metrics == NULL) { \
             std::cout<<std::endl; \
             for (int __tid=0;__tid<NUM_PROCESSES;++__tid) { \
                 std::cout<<"thread "<<__tid; \
                 for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
                     if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
-                        std::cout<<(__ix?" ":"=")<<"0"; \
+                        std::cout<<(__ix?" ":"")<<"0"; \
                     } else { \
-                        std::cout<<(__ix?" ":"=")<<get_stat<T>(__tid, sid, __ix); \
+                        std::cout<<(__ix?" ":"")<<get_stat<T>(__tid, sid, __ix); \
                     } \
                 } \
                 std::cout<<std::endl; \
@@ -221,9 +221,9 @@ private:
         } else { \
             for (int __i=0;__i<num_metrics;++__i) { \
                 if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) { \
-                    std::cout<<(__i?" ":"=")<<"0"; \
+                    std::cout<<(__i?" ":"")<<"0"; \
                 } else { \
-                    std::cout<<(__i?" ":"=")<<metrics[__i].GSTATS_TYPE_TO_FIELD(type); \
+                    std::cout<<(__i?" ":"")<<metrics[__i].GSTATS_TYPE_TO_FIELD(type); \
                 } \
             } \
             std::cout<<std::endl; \
