@@ -63,6 +63,11 @@ dcssresult_t dcssProvider::dcssHelp(const int tid, dcsstagptr_t tagptr, dcssptr_
 
 void dcssProvider::dcssHelpOther(const int tid, dcsstagptr_t tagptr) {
     const int otherTid = TAGPTR_UNPACK_TID(tagptr);
+#ifndef NDEBUG
+    if (!(otherTid >= 0 && otherTid < NUM_PROCESSES)) {
+        std::cout<<"otherTid="<<otherTid<<" NUM_PROCESSES="<<NUM_PROCESSES<<std::endl;
+    }
+#endif
     assert(otherTid >= 0 && otherTid < NUM_PROCESSES);
     dcssdesc_t newSnapshot;
     const int sz = dcssdesc_t::size;

@@ -124,6 +124,7 @@ public:
         recmgr->printStatus();
     }
     bool validateStructure() {
+//        ds->debugGVPrint();
         return true;
     }
     void printObjectSizes() {
@@ -152,11 +153,33 @@ public:
             NodePtrType next() { return CASWORD_TO_NODE(node)->ptr(ix++); }
         };
         
-        static bool isLeaf(NodePtrType node) { return IS_KVPAIR(node); }
+        static bool isLeaf(NodePtrType node) { return IS_KVPAIR(node) || IS_VAL(node); }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : CASWORD_TO_NODE(node)->degree; }
-        static size_t getNumKeys(NodePtrType node) { return isLeaf(node) && !CASWORD_TO_KVPAIR(node)->empty; }
-        static size_t getSumOfKeys(NodePtrType node) { return getNumKeys(node) ? (size_t) CASWORD_TO_KVPAIR(node)->k : 0; }
+        static size_t getNumKeys(NodePtrType node) {
+            if (IS_KVPAIR(node)) return 1;
+            if (IS_VAL(node)) return 0;
+            assert(IS_NODE(node));
+            auto n = CASWORD_TO_NODE(node);
+            assert(CASWORD_IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
+            size_t ret = 0;
+            for (int i=1; i < n->degree; ++i) {
+                if (!CASWORD_IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ++ret;
+            }
+            return ret;
+        }
+        static size_t getSumOfKeys(NodePtrType node) {
+            if (IS_KVPAIR(node)) return (size_t) CASWORD_TO_KVPAIR(node)->k;
+            if (IS_VAL(node)) return 0;
+            assert(IS_NODE(node));
+            auto n = CASWORD_TO_NODE(node);
+            assert(CASWORD_IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
+            size_t ret = 0;
+            for (int i=1; i < n->degree; ++i) {
+                if (!CASWORD_IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ret += (size_t) n->key(i-1);
+            }
+            return ret;
+        }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()), true);

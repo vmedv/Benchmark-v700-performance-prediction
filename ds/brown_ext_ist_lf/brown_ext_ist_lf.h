@@ -41,34 +41,34 @@
 #   include "multi_counter.h"
 #endif
 
-#define TYPE_MASK               (0x6)
+#define TYPE_MASK               (0x6ll)
 #define DCSS_BITS               (1)
 #define TYPE_BITS               (2)
 #define TOTAL_BITS              (DCSS_BITS+TYPE_BITS)
-#define TOTAL_MASK              (0x7)
+#define TOTAL_MASK              (0x7ll)
 
-#define KVPAIR_MASK             (0x2) /* 0x1 is used by DCSS */
+#define NODE_MASK               (0x0ll) /* no need to use this... 0 mask is implicit */
+#define IS_NODE(x)              (((x)&TYPE_MASK)==NODE_MASK)
+#define CASWORD_TO_NODE(x)      ((Node<K,V> *) (x))
+#define NODE_TO_CASWORD(x)      ((casword_t) (x))
+
+#define KVPAIR_MASK             (0x2ll) /* 0x1 is used by DCSS */
 #define IS_KVPAIR(x)            (((x)&TYPE_MASK)==KVPAIR_MASK)
 #define CASWORD_TO_KVPAIR(x)    ((KVPair<K,V> *) ((x)&~TYPE_MASK))
 #define KVPAIR_TO_CASWORD(x)    ((casword_t) (((casword_t) (x))|KVPAIR_MASK))
 
-#define REBUILDOP_MASK          (0x4)
+#define REBUILDOP_MASK          (0x4ll)
 #define IS_REBUILDOP(x)         (((x)&TYPE_MASK)==REBUILDOP_MASK)
 #define CASWORD_TO_REBUILDOP(x) ((RebuildOperation<K,V> *) ((x)&~TYPE_MASK))
 #define REBUILDOP_TO_CASWORD(x) ((casword_t) (((casword_t) (x))|REBUILDOP_MASK))
 
-#define EMPTY_VAL_TO_CASWORD    (~0x1)
-#define CASWORD_IS_EMPTY_VAL(x) (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
-
-#define VAL_MASK                (0x6)
+#define VAL_MASK                (0x6ll)
 #define IS_VAL(x)               (((x)&TYPE_MASK)==VAL_MASK)
 #define CASWORD_TO_VAL(x)       ((V) ((x)>>TOTAL_BITS))
 #define VAL_TO_CASWORD(x)       ((casword_t) ((((casword_t) (x))<<TOTAL_BITS)|VAL_MASK))
 
-#define NODE_MASK               (0x0) /* no need to use this... 0 mask is implicit */
-#define IS_NODE(x)              (((x)&TYPE_MASK)==0)
-#define CASWORD_TO_NODE(x)      ((Node<K,V> *) (x))
-#define NODE_TO_CASWORD(x)      ((casword_t) (x))
+#define EMPTY_VAL_TO_CASWORD    (((casword_t) ~TOTAL_MASK) | VAL_MASK)
+#define CASWORD_IS_EMPTY_VAL(x) (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
 
 #define SUM_TO_DIRTY(x)         (((x)<<1)|1)
 #define DIRTY_TO_SUM(x)         ((x)>>1)
@@ -100,12 +100,6 @@ struct Node {
 #endif
     // unlisted fields: capacity-1 keys of type K followed by capacity "pointers" of type casword_t
 
-//#ifdef IST_USE_MULTICOUNTER_AT_ROOT
-//    ~Node() {
-//        if (externalChangeCounter) delete externalChangeCounter;
-//    }
-//#endif
-    
     inline K * keyAddr(const int ix) {
         K * const firstKey = ((K *) (((char *) this)+sizeof(Node<K,V>)));
         return &firstKey[ix];
@@ -167,9 +161,8 @@ template <typename K, typename V>
 struct KVPair {
     K k;
     V v;
-    bool empty;
-    KVPair(const K& key, const V& value)
-    : k(key), v(value), empty(false) {}
+//    KVPair(const K& key, const V& value)
+//    : k(key), v(value) {}
 };
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -194,25 +187,25 @@ private:
     V doUpdate(const int tid, const K& key, const V& val, UpdateType t);
 
     Node<K,V> * createNode(const int tid, const int degree);
+    Node<K,V> * createLeaf(const int tid, KVPair<K,V> * pairs, int numPairs);
     Node<K,V> * createMultiCounterNode(const int tid, const int degree);
     KVPair<K,V> * createKVPair(const int tid, const K& key, const V& value);
-    KVPair<K,V> * createEmptyKVPair(const int tid);
     
     void debugPrintWord(std::ofstream& ofs, casword_t w) {
-        //ofs<<(void *) (w&~TOTAL_MASK)<<"("<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n")<<")";
-        //ofs<<(IS_REBUILDOP(w) ? "RebuildOp *" : IS_KVPAIR(w) ? "KVPair *" : "Node *");
-        //ofs<<(IS_REBUILDOP(w) ? "r" : IS_KVPAIR(w) ? "k" : "n");
+        //ofs<<(void *) (w&~TOTAL_MASK)<<"("<<(IS_REBUILDOP(w) ? "r" : IS_VAL(w) ? "v" : "n")<<")";
+        //ofs<<(IS_REBUILDOP(w) ? "RebuildOp *" : IS_VAL(w) ? "V" : "Node *");
+        //ofs<<(IS_REBUILDOP(w) ? "r" : IS_VAL(w) ? "v" : "n");
     }
     
     void debugGVPrint(std::ofstream& ofs, casword_t w, size_t depth, int * numPointers) {
         if (IS_KVPAIR(w)) {
             auto pair = CASWORD_TO_KVPAIR(w);
             ofs<<"\""<<pair<<"\" ["<<std::endl;
-            if (pair->empty) {
-                ofs<<"label = \"<f0> deleted\""<<std::endl;
-            } else {
+//            if (pair->empty) {
+//                ofs<<"label = \"<f0> deleted\""<<std::endl;
+//            } else {
                 ofs<<"label = \"<f0> "<<pair->k<<"\""<<std::endl;
-            }
+//            }
             ofs<<"shape = \"record\""<<std::endl;
             ofs<<"];"<<std::endl;
         } else if (IS_REBUILDOP(w)) {
@@ -253,7 +246,9 @@ private:
                 if (i > 0) ofs<<" | <f"<<FIELD_KEY(i)<<"> "<<node->key(i-1);
                 casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
                 ofs<<" | <f"<<FIELD_PTR(i)<<"> ";
-                debugPrintWord(ofs, targetWord);
+                if (CASWORD_IS_EMPTY_VAL(targetWord)) { /*ofs<<"-";*/ }
+                else if (IS_VAL(targetWord)) { ofs<<"v"; }
+                //debugPrintWord(ofs, targetWord);
             }
             ofs<<"\""<<std::endl;
             ofs<<"shape = \"record\""<<std::endl;
@@ -274,6 +269,8 @@ private:
             
             for (int i=0;i<node->degree;++i) {
                 casword_t targetWord = node->ptr(i);
+                if (IS_VAL(targetWord)) continue;
+                
                 void * target = (void *) (targetWord & ~TOTAL_MASK);
                 ofs<<"\""<<node<<"\":f"<<FIELD_PTR(i)<<" -> \""<<target<<"\":f0 ["<<std::endl;
                 ofs<<"id = "<<((*numPointers)++)<<std::endl;
@@ -285,7 +282,7 @@ private:
             }
         }
     }
-    
+public:
     void debugGVPrint() {
         std::ofstream ofs;
         ofs.open ("gvinput.dot", std::ofstream::out);
@@ -299,7 +296,7 @@ private:
         ofs<<"}"<<std::endl;
         ofs.close();
     }
-    
+private:
     void freeNode(const int tid, Node<K,V> * node, bool retire) {
         if (retire) {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
@@ -320,32 +317,24 @@ private:
         }
     }
 
-    void freeSubtree(const int tid, Node<K,V> * subtree, bool retire, bool freeEmptyPairs, bool freeAllPairs) {
+    void freeSubtree(const int tid, Node<K,V> * subtree, bool retire) {
         for (int i=0;i<subtree->degree;++i) {
             auto ptr = prov->readPtr(tid, subtree->ptrAddr(i));
-            /**
-             * note: we do NOT reclaim kvpairs by default,
-             * because they are reused across tree rebuilds (at present).
-             * they will be reclaimed by a thread that replaces them with either
-             * a new kvpair or a masked value.
-             */
             if (IS_NODE(ptr)) {
-                freeSubtree(tid, CASWORD_TO_NODE(ptr), retire, freeEmptyPairs, freeAllPairs);
+                freeSubtree(tid, CASWORD_TO_NODE(ptr), retire);
             } else if (IS_REBUILDOP(ptr)) {
                 auto op = CASWORD_TO_REBUILDOP(ptr);
-                freeSubtree(tid, op->candidate, retire, freeEmptyPairs, freeAllPairs);
+                freeSubtree(tid, op->candidate, retire);
                 if (retire) {
                     recordmgr->retire(tid, op);
                 } else {
                     recordmgr->deallocate(tid, op);
                 }
             } else if (IS_KVPAIR(ptr)) {
-                if (freeAllPairs || freeEmptyPairs && (CASWORD_TO_KVPAIR(ptr)->empty)) { 
-                    if (retire) {
-                        recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
-                    } else {
-                        recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(ptr));
-                    }
+                if (retire) {
+                    recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
+                } else {
+                    recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(ptr));
                 }
             }
         }
@@ -355,14 +344,15 @@ private:
     /**
      * recursive ideal ist construction
      * divide and conquer,
-     * constructing from a particular set of k kvpairs,
+     * constructing from a particular set of k of pairs,
      * create one node with degree ceil(sqrt(k)),
-     * then recurse on each child (partitioning the kvpairs as evenly as possible),
+     * then recurse on each child (partitioning the pairs as evenly as possible),
      * and attach the resulting ists as children of this node,
      * and return this node.
      * if k is at most 48, there are no recursive calls:
-     * the children are just the kv pairs.)
+     * the key-value pairs are simply encoded in the node.)
      */
+        
     class IdealBuilder {
     private:
         static const int UPPER_LIMIT_DEPTH = 16;
@@ -370,35 +360,13 @@ private:
         size_t initNumKeys;
         istree<K,V,Interpolate,RecManager> * ist;
         size_t depth;
-        KVPair<K,V> ** pairs;
+        KVPair<K,V> * pairs;
         size_t pairsAdded;
         casword_t tree;
         
-        Node<K,V> * build(const int tid, KVPair<K,V> ** pset, int psetSize, const size_t currDepth) {
+        Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth) {
             if (psetSize <= MAX_ACCEPTABLE_LEAF_SIZE) {
-                auto node = ist->createNode(tid, psetSize);
-                node->degree = psetSize;
-                node->initSize = psetSize;
-
-                *node->ptrAddr(0) = KVPAIR_TO_CASWORD(pset[0]);
-                for (int i=1;i<psetSize;++i) {
-#ifndef NDEBUG
-                    if (pset[i]->k <= pset[i-1]->k) {
-                        std::cout<<"pset";
-                        for (int j=0;j<psetSize;++j) {
-                            std::cout<<" "<<pset[j]->k;
-                        }
-                        std::cout<<std::endl;
-                    }
-#endif
-                    assert(pset[i]->k > pset[i-1]->k);
-                    node->key(i-1) = pset[i]->k;
-                    *node->ptrAddr(i) = KVPAIR_TO_CASWORD(pset[i]);
-                }
-                node->minKey = node->key(0);
-                node->maxKey = node->key(node->degree-2);
-                return node;
-                
+                return ist->createLeaf(tid, pset, psetSize);
             } else {
                 double numChildrenD = std::sqrt((double) psetSize);
                 size_t numChildren = (size_t) std::ceil(numChildrenD);
@@ -421,7 +389,7 @@ private:
                 node->degree = numChildren;
                 node->initSize = psetSize;
 
-                KVPair<K,V> ** childSet = pset;
+                KVPair<K,V> * childSet = pset;
                 for (int i=0;i<numChildren;++i) {
                     int sz = childSize + (i < remainder);
                     auto child = build(tid, childSet, sz, 1+currDepth);
@@ -430,12 +398,11 @@ private:
                     *node->ptrAddr(i) = NODE_TO_CASWORD(child);
                     if (i > 0) {
                         assert(child->degree > 1);
-                        node->key(i-1) = childSet[0]->k;
+                        node->key(i-1) = childSet[0].k;
                     }
 #ifndef NDEBUG
                     assert(i < 2 || node->key(i-1) > node->key(i-2));
 #endif
-
                     childSet += sz;
                 }
                 node->minKey = node->key(0);
@@ -449,34 +416,32 @@ private:
             initNumKeys = _initNumKeys;
             ist = _ist;
             depth = _depth;
-            pairs = new KVPair<K,V> * [initNumKeys];
+            pairs = new KVPair<K,V>[initNumKeys];
             pairsAdded = 0;
             tree = (casword_t) NULL;
         }
         ~IdealBuilder() {
             delete[] pairs;
         }
-        void addKV(const int tid, KVPair<K,V> * pair) {
-            pairs[pairsAdded++] = pair;
-            assert(!pair->empty);
+        void addKV(const int tid, const K& key, const V& value) {
+            pairs[pairsAdded++] = {key, value};
             assert(pairsAdded <= initNumKeys);
         }
         casword_t getCASWord(const int tid) {
 #ifndef NDEBUG
             for (int i=1;i<pairsAdded;++i) {
-                if (pairs[i]->k <= pairs[i-1]->k) {
-                    std::cout<<pairs[i]->k<<" is less than or equal to the previous key "<<pairs[i-1]->k<<std::endl;
+                if (pairs[i].k <= pairs[i-1].k) {
+                    std::cout<<pairs[i].k<<" is less than or equal to the previous key "<<pairs[i-1].k<<std::endl;
                     ist->debugGVPrint();
                 }
-                assert(pairs[i]->k > pairs[i-1]->k);
+                assert(pairs[i].k > pairs[i-1].k);
             }
 #endif
             if (!tree) {
-                assert(pairsAdded > 0);
                 if (unlikely(pairsAdded == 0)) {
-                    tree = KVPAIR_TO_CASWORD(ist->createEmptyKVPair(tid));
+                    tree = EMPTY_VAL_TO_CASWORD;
                 } else if (unlikely(pairsAdded == 1)) {
-                    tree = KVPAIR_TO_CASWORD(pairs[0]);
+                    tree = KVPAIR_TO_CASWORD(ist->createKVPair(tid, pairs[0].k, pairs[0].v));
                 } else {
                     tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth));
                 }
@@ -530,7 +495,7 @@ public:
         _root->degree = 1;
         _root->minKey = INF_KEY;
         _root->maxKey = INF_KEY;
-        *_root->ptrAddr(0) = KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
+        *_root->ptrAddr(0) = EMPTY_VAL_TO_CASWORD;
         
         root = _root;
     }
@@ -538,7 +503,7 @@ public:
     istree(const K * const initKeys
          , const V * const initValues
          , const size_t initNumKeys
-         , const size_t initConstructionSeed /* note: randomness is used to ensure good tree structure whp */
+         , const size_t initConstructionSeed
          , const int numProcesses
          , const K infinity
          , const V noValue
@@ -560,14 +525,14 @@ public:
         
         IdealBuilder b (this, initNumKeys, 0);
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
-            b.addKV(tid, createKVPair(tid, initKeys[keyIx], initValues[keyIx]));
+            b.addKV(tid, initKeys[keyIx], initValues[keyIx]);
         }
         *root->ptrAddr(0) = b.getCASWord(tid);
     }
     ~istree() {
         if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
 //        debugGVPrint();
-        freeSubtree(0, root, false, true, true);
+        freeSubtree(0, root, false);
 ////            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
         recordmgr->printStatus();
         delete prov;

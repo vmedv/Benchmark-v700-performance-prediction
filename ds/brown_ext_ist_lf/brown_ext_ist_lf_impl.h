@@ -8,6 +8,8 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     auto guard = recordmgr->getGuard(tid, true);
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
     assert(ptr);
+    Node<K,V> * parent = root;
+    int ixToPtr = 0;
     while (true) {
         if (unlikely(IS_KVPAIR(ptr))) {
             auto kv = CASWORD_TO_KVPAIR(ptr);
@@ -16,13 +18,19 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
         } else if (unlikely(IS_REBUILDOP(ptr))) {
             auto rebuild = CASWORD_TO_REBUILDOP(ptr);
             ptr = NODE_TO_CASWORD(rebuild->candidate);
-        } else {
-            assert(IS_NODE(ptr));
-            assert(ptr);
+        } else if (IS_NODE(ptr)) {
             // ptr is an internal node
-            auto node = CASWORD_TO_NODE(ptr);
-            const int ix = interpolationSearch(tid, key, node);
-            ptr = prov->readPtr(tid, node->ptrAddr(ix));
+            parent = CASWORD_TO_NODE(ptr);
+            assert(parent);
+            ixToPtr = interpolationSearch(tid, key, parent);
+            ptr = prov->readPtr(tid, parent->ptrAddr(ixToPtr));
+        } else {
+            assert(IS_VAL(ptr));
+            assert(CASWORD_IS_EMPTY_VAL(ptr) || ixToPtr > 0); // invariant: leftmost pointer cannot contain a non-empty VAL (it contains a non-NULL pointer or an empty val casword)
+            if (CASWORD_IS_EMPTY_VAL(ptr)) return NO_VALUE;
+            auto v = CASWORD_TO_VAL(ptr);
+            auto ixToKey = ixToPtr - 1;
+            return (parent->key(ixToKey) == key) ? v : NO_VALUE;
         }
     }
 }
@@ -31,34 +39,16 @@ template <typename K, typename V, class Interpolate, class RecManager>
 size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
     assert(!recordmgr->isQuiescent(tid));
     if (unlikely(IS_KVPAIR(ptr))) {
-        return 1 - CASWORD_TO_KVPAIR(ptr)->empty;
-    }
-    
-    if (unlikely(IS_REBUILDOP(ptr))) {
+        return 1;
+    } else if (unlikely(IS_VAL(ptr))) {
+        return 1 - CASWORD_IS_EMPTY_VAL(ptr);
+    } else if (unlikely(IS_REBUILDOP(ptr))) {
         auto op = CASWORD_TO_REBUILDOP(ptr);
         return markAndCount(tid, NODE_TO_CASWORD(op->candidate));
-        
-        // note: the below is not true. if we are here seeing this rebuildop,
+        // if we are here seeing this rebuildop,
         // then we ALREADY marked the node that points to the rebuildop,
         // which means that rebuild op cannot possible change that node
         // to effect the rebuilding.
-        
-//        // if we come across a rebuildop, and someone else actually does the replacement, then we are in trouble!
-//        // so, we need to try to cancel that rebuildop by CASing it back to the original rebuildRoot.
-//        // (we dominate the rebuildop from above, so this doesn't threaten progress)
-//        // then, whoever is doing that rebuildop will fail the final cas.
-//        // (the subtree could be replaced with unmarked nodes when we think it's all marked.)
-//        // on the other hand, if we fail to dominate that rebuildop, then that rebuildop finished,
-//        // and we can descend into that subtree and do our marking.
-//        if (__sync_bool_compare_and_swap(op->parent->ptrAddr(op->index), ptr, NODE_TO_CASWORD(op->candidate))) {
-//            // we defeated that rebuildop
-//            // proceed to that rebuildop's rebuildRoot to mark it
-//            return markAndCount(tid, NODE_TO_CASWORD(op->candidate), someOutputKVPairPtr);
-//        } else {
-//            // that rebuildop finished
-//            // proceed to the replacement subtree to mark it
-//            return markAndCount(tid, prov->readPtr(tid, op->parent->ptrAddr(op->index)));
-//        }
     }
     
     assert(IS_NODE(ptr));
@@ -84,18 +74,27 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t ptr, IdealBuilder * b) {
     assert(!recordmgr->isQuiescent(tid));
-    if (IS_KVPAIR(ptr)) {
+    if (unlikely(IS_KVPAIR(ptr))) {
         auto pair = CASWORD_TO_KVPAIR(ptr);
-        if (pair->empty) return;
-        b->addKV(tid, pair);
-    } else if (IS_REBUILDOP(ptr)) {
+        b->addKV(tid, pair->k, pair->v);
+    } else if (unlikely(IS_REBUILDOP(ptr))) {
         auto op = CASWORD_TO_REBUILDOP(ptr);
         createIdeal(tid, NODE_TO_CASWORD(op->candidate), b);
     } else {
+        //if (!IS_NODE(ptr)) printf("ptr=%lld is not a node! %s\n", ptr, (CASWORD_IS_EMPTY_VAL(ptr)) ? "is empty val\n" : IS_VAL(ptr) ? "is val" : "not sure...");
         assert(IS_NODE(ptr));
         auto node = CASWORD_TO_NODE(ptr);
         for (int i=0;i<node->degree;++i) {
-            createIdeal(tid, prov->readPtr(tid, node->ptrAddr(i)), b);
+            auto childptr = prov->readPtr(tid, node->ptrAddr(i));
+            if (IS_VAL(childptr)) {
+                if (CASWORD_IS_EMPTY_VAL(childptr)) continue;
+                auto v = CASWORD_TO_VAL(childptr);
+                assert(i > 0);
+                auto k = node->key(i - 1); // it's okay that this read is not atomic with the value read, since keys of nodes do not change. (so, we can linearize the two reads when we read the value.)
+                b->addKV(tid, k, v);
+            } else {
+                createIdeal(tid, childptr, b);
+            }
         }
     }
 }
@@ -103,7 +102,7 @@ void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t pt
 template <typename K, typename V, class Interpolate, class RecManager>
 casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
     assert(!recordmgr->isQuiescent(tid));
-    if (keyCount == 0) return KVPAIR_TO_CASWORD(createEmptyKVPair(tid));
+    if (keyCount == 0) return EMPTY_VAL_TO_CASWORD;
     IdealBuilder b (this, keyCount, op->depth);
     createIdeal(tid, NODE_TO_CASWORD(op->candidate), &b);
     return b.getCASWord(tid);
@@ -120,19 +119,16 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     casword_t newWord = createIdeal(tid, op, keyCount);
     if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
-        freeSubtree(tid, op->candidate, true, true, false);
+        freeSubtree(tid, op->candidate, true);
         recordmgr->retire(tid, op);
-        // note: we eliminate empty KVPairs in the old subtree, since they are NOT reused
     } else {
-        if (IS_KVPAIR(newWord)) {
-            if (keyCount == 0) {
-                recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
-            } else if (CASWORD_TO_KVPAIR(newWord)->empty) {
-                recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
-            }
+        if (unlikely(IS_KVPAIR(newWord))) {
+            recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
+        } else if (unlikely(IS_VAL(newWord))) {
+            
         } else {
             assert(IS_NODE(newWord));
-            freeSubtree(tid, CASWORD_TO_NODE(newWord), false, false, false);
+            freeSubtree(tid, CASWORD_TO_NODE(newWord), false);
         }
     }
 #ifdef MEASURE_REBUILDING_TIME
@@ -236,127 +232,71 @@ retry:
     node = root;
     while (true) {
         auto ix = interpolationSearch(tid, key, node);
-//        if (node->ptr(ix) & 1) { //////////// debug
-//            std::cout<<"ix="<<ix<<std::endl;
-//            std::cout<<"node @ "<<(size_t) node<<" node degree="<<node->degree<<" pointers to";
-//            for (int i=0;i<node->degree;++i) std::cout<<" "<<(size_t) node->ptr(i);
-//            std::cout<<std::endl;
-//            std::cout<<"key="<<key<<" node minKey="<<node->minKey<<" maxKey="<<node->maxKey<<std::endl;
-//            
-//            std::cout<<"addr of node="<<(size_t) node<<std::endl;
-//            std::cout<<"offset of capacity=0"<<std::endl;
-//            std::cout<<"offset of degree="<<((size_t) &node->degree) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of initSize="<<((size_t) &node->initSize) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of changeSum="<<((size_t) &node->changeSum) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of dirty="<<((size_t) &node->dirty) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of parent="<<((size_t) &node->parent) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of minKey="<<((size_t) &node->minKey) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of maxKey="<<((size_t) &node->maxKey) - ((size_t) node)<<std::endl;
-//            if (node->degree >= 2) std::cout<<"offset of key0="<<((size_t) node->keyAddr(0)) - ((size_t) node)<<std::endl;
-//            if (node->degree >= 1) std::cout<<"offset of ptr0="<<((size_t) node->ptrAddr(0)) - ((size_t) node)<<std::endl;
-//            if (node->degree >= 2) std::cout<<"offset of ptr1="<<((size_t) node->ptrAddr(1)) - ((size_t) node)<<std::endl;
-//            std::cout<<"offset of end of node="<<((size_t) (((char *) &node->maxKey) + sizeof(node->maxKey) + (sizeof(K) * (node->capacity - 1) + sizeof(casword_t) * node->capacity))) - ((size_t) node)<<std::endl;
-//
-//            // bfs debug print
-//            std::vector<Node<K,V>*> q;
-//            q.push_back(root);
-//            int k=0;
-//            while (k < q.size()) {
-//                auto node = q[k++]; // pop
-//                if (node == NULL) {
-//                    std::cout<<"null"<<std::endl;
-//                    continue;
-//                }
-//                std::cout<<" degree="<<node->degree;
-//                for (int i=0;i<node->degree-1;++i) {
-//                    std::cout<<(i==0?":":",")<<node->key(i);
-//                }
-//                std::cout<<" @ "<<(size_t) node<<std::endl;
-//                std::cout<<" ptrs";
-//                for (int i=0;i<node->degree;++i) {
-//                    std::cout<<(i==0?":":",")<<(size_t)(node->ptr(i)&~TOTAL_MASK)<<(node->ptr(i)&0x1?"d":node->ptr(i)&0x2?"k":node->ptr(i)&0x4?"r":"n");
-//                }
-//                std::cout<<std::endl;
-//
-//                for (int i=0;i<node->degree;++i) {
-//                    auto ptr = node->ptr(i);
-//                    if (IS_KVPAIR(ptr)) {
-//
-//                    } else if (IS_REBUILDOP(ptr)) {
-//
-//                    } else {
-//                        assert(IS_NODE(ptr));
-//                        q.push_back(CASWORD_TO_NODE(ptr));
-//                    }
-//                }
-//            }
-//            assert(false);
-//        } //////////// debug
 retryNode:
         bool affectsChangeSum = true;
         auto word = prov->readPtr(tid, node->ptrAddr(ix));
-        if (IS_KVPAIR(word)) {
-            auto pair = CASWORD_TO_KVPAIR(word);
-            
-            assert(!recordmgr->isQuiescent(tid));
-            
-            V retval = NO_VALUE;
-            auto newWord = (casword_t) NULL;
+        if (IS_KVPAIR(word) || IS_VAL(word)) {
+            KVPair<K,V> * pair = NULL;
             Node<K,V> * newNode = NULL;
             KVPair<K,V> * newPair = NULL;
-            KVPair<K,V> * deletingPair = NULL;
-            switch (t) {
-                case InsertReplace: case InsertIfAbsent:
-                    if (pair->k == INF_KEY) {
+            auto newWord = (casword_t) NULL;
+
+            assert(CASWORD_IS_EMPTY_VAL(word) || !IS_VAL(word) || ix > 0);
+            auto foundKey = INF_KEY;
+            auto foundVal = NO_VALUE;
+            if (IS_VAL(word)) {
+                foundKey = (CASWORD_IS_EMPTY_VAL(word)) ? INF_KEY : foundKey = node->key(ix - 1);
+                if (!CASWORD_IS_EMPTY_VAL(word)) foundVal = CASWORD_TO_VAL(word);
+            } else {
+                assert(IS_KVPAIR(word));
+                pair = CASWORD_TO_KVPAIR(word);
+                foundKey = pair->k;
+                foundVal = pair->v;
+            }
+            assert(foundVal == NO_VALUE || foundVal > 0 && foundKey < INF_KEY/8); // value must have top 3 bits empty so we can shift it
+            
+            if (foundKey == key) {
+                if (t == InsertReplace) {
+                    newWord = VAL_TO_CASWORD(val);
+                    if (foundVal != NO_VALUE) affectsChangeSum = false; // note: should NOT count towards changeSum, because it cannot affect the complexity of operations
+                } else if (t == InsertIfAbsent) {
+                    if (foundVal != NO_VALUE) return foundVal;
+                    newWord = VAL_TO_CASWORD(val);
+                } else {
+                    assert(t == Erase);
+                    if (foundVal == NO_VALUE) return NO_VALUE;
+                    newWord = EMPTY_VAL_TO_CASWORD;
+                }
+            } else {
+                if (t == InsertReplace || t == InsertIfAbsent) {
+                    if (foundVal == NO_VALUE) {
+                        // after the insert, this pointer will lead to only one kvpair in the tree,
+                        // so we just create a kvpair instead of a node
                         newPair = createKVPair(tid, key, val);
-                        deletingPair = pair;
                         newWord = KVPAIR_TO_CASWORD(newPair);
-                        // retval = NO_VALUE;
-                    } else if (pair->k == key) {
-                        if (t == InsertIfAbsent) return pair->v;
-                        newPair = createKVPair(tid, key, val);
-                        deletingPair = pair;
-                        newWord = KVPAIR_TO_CASWORD(newPair);
-                        retval = pair->v;
-                        affectsChangeSum = false; // note: insert replace should NOT count towards changeSum, because it cannot affect the complexity of operations
                     } else {
-                        newPair = createKVPair(tid, key, val);
-                        newNode = createNode(tid, 2);
-                        newNode->degree = 2;
-                        newNode->initSize = 2;
-                        newNode->parent = node;
-                        
-                        if (key < pair->k) {
-                            newNode->key(0) = pair->k;
-                            *newNode->ptrAddr(0) = KVPAIR_TO_CASWORD(newPair);
-                            *newNode->ptrAddr(1) = KVPAIR_TO_CASWORD(pair);
+                        // there would be 2 kvpairs, so we create a node
+                        KVPair<K,V> pairs[2];
+                        if (key < foundKey) {
+                            pairs[0] = { key, val };
+                            pairs[1] = { foundKey, foundVal };
                         } else {
-                            newNode->key(0) = key;
-                            *newNode->ptrAddr(0) = KVPAIR_TO_CASWORD(pair);
-                            *newNode->ptrAddr(1) = KVPAIR_TO_CASWORD(newPair);
+                            pairs[0] = { foundKey, foundVal };
+                            pairs[1] = { key, val };
                         }
-                        newNode->minKey = newNode->key(0);
-                        newNode->maxKey = newNode->key(0);
+                        newNode = createLeaf(tid, pairs, 2);
                         newWord = NODE_TO_CASWORD(newNode);
-                        // retval = NO_VALUE;
+                        foundVal = NO_VALUE; // the key we are inserting had no current value
                     }
-                    break;
-                case Erase:
-                    if (pair->k != key) return NO_VALUE;
-                    newPair = createEmptyKVPair(tid);
-                    deletingPair = pair;
-                    newWord = KVPAIR_TO_CASWORD(newPair);
-                    retval = pair->v;
-                    break;
-                default:
-                    setbench_error("impossible switch case");
-                    break;
+                } else {
+                    assert(t == Erase);
+                    return NO_VALUE;
+                }
             }
             assert(newWord);
             assert((newWord & (~TOTAL_MASK)));
             
             // DCSS that performs the update
-            assert(!recordmgr->isQuiescent(tid));
             assert(ix >= 0);
             assert(ix < node->degree);
             auto result = prov->dcssPtr(tid, (casword_t *) &node->dirty, 0, (casword_t *) node->ptrAddr(ix), word, newWord);
@@ -373,7 +313,7 @@ retryNode:
                     break;
                 case DCSS_SUCCESS:
                     assert(!recordmgr->isQuiescent(tid));
-                    if (deletingPair) recordmgr->retire(tid, deletingPair);
+                    if (pair) recordmgr->retire(tid, pair);
                     
                     if (!affectsChangeSum) break;
                     
@@ -424,7 +364,7 @@ retryNode:
                                     if (IS_KVPAIR(newWord)) {
                                         std::cout<<"new key="<<CASWORD_TO_KVPAIR(newWord)->k<<std::endl;
                                     }
-                                    std::cout<<"retval="<<retval<<std::endl;
+                                    std::cout<<"foundVal="<<foundVal<<std::endl;
                                     assert(false);
                                 }
 #endif
@@ -437,13 +377,12 @@ retryNode:
                             break;
                         }
                     }
-                    
                     break;
                 default:
                     setbench_error("impossible switch case");
                     break;
             }
-            return retval;
+            return foundVal;
         } else if (IS_REBUILDOP(word)) {
             //std::cout<<"found supposed rebuildop "<<(size_t) word<<" at path length "<<pathLength<<std::endl;
             helpRebuild(tid, CASWORD_TO_REBUILDOP(word));
@@ -474,9 +413,32 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
     node->dirty = 0;
     node->parent = NULL;
     assert(node);
-//    if (degree == 1) assert(sz + (size_t) node >= (size_t) node->ptrAddr(0));
-//    if (degree == 2) assert(sz + (size_t) node >= (size_t) node->ptrAddr(1));
     return node;
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
+Node<K,V>* istree<K,V,Interpolate,RecManager>::createLeaf(const int tid, KVPair<K,V> * pairs, int numPairs) {
+    auto node = createNode(tid, numPairs+1);
+    node->degree = numPairs+1;
+    node->initSize = numPairs;
+    *node->ptrAddr(0) = EMPTY_VAL_TO_CASWORD;
+    for (int i=0;i<numPairs;++i) {
+#ifndef NDEBUG
+        if (i && pairs[i].k <= pairs[i-1].k) {
+            std::cout<<"pairs";
+            for (int j=0;j<numPairs;++j) {
+                std::cout<<" "<<pairs[j].k;
+            }
+            std::cout<<std::endl;
+        }
+#endif
+        assert(i==0 || pairs[i].k > pairs[i-1].k);
+        node->key(i) = pairs[i].k;
+        *node->ptrAddr(i+1) = VAL_TO_CASWORD(pairs[i].v);
+    }
+    node->minKey = node->key(0);
+    node->maxKey = node->key(node->degree-2);
+    return node;    
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -493,25 +455,8 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createMultiCounterNode(const int 
 
 template <typename K, typename V, class Interpolate, class RecManager>
 KVPair<K,V> * istree<K,V,Interpolate,RecManager>::createKVPair(const int tid, const K& key, const V& value) {
-//    auto result = (KVPair<K,V> *) new(sizeof(KVPair<K,V>));
-//    result->k = key;
-//    result->v = value;
-//    result->empty = false;
-    auto result = new KVPair<K,V>(key, value);
-//    std::cout<<"kvpair allocated of size "<<sizeof(KVPair<K,V>)<<" with key="<<key<<" @ "<<(size_t) result<<std::endl;
-    assert((((size_t) result) & TOTAL_MASK) == 0);
-    assert(result);
-    return result;
-}
-
-template <typename K, typename V, class Interpolate, class RecManager>
-KVPair<K,V> * istree<K,V,Interpolate,RecManager>::createEmptyKVPair(const int tid) {
-//    auto result = (KVPair<K,V> *) new(sizeof(KVPair<K,V>));
-//    result->k = INF_KEY;
-//    result->v = NO_VALUE;
-//    result->empty = true;
-    auto result = new KVPair<K,V>(INF_KEY, NO_VALUE);
-    result->empty = true;
+    auto result = new KVPair<K,V>(); //key, value);
+    *result = { key, value };
 //    std::cout<<"kvpair allocated of size "<<sizeof(KVPair<K,V>)<<" with key="<<key<<" @ "<<(size_t) result<<std::endl;
     assert((((size_t) result) & TOTAL_MASK) == 0);
     assert(result);
