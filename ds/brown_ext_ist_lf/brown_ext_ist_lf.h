@@ -41,40 +41,45 @@
 #   include "multi_counter.h"
 #endif
 
-#define TYPE_MASK               (0x6ll)
-#define DCSS_BITS               (1)
-#define TYPE_BITS               (2)
-#define TOTAL_BITS              (DCSS_BITS+TYPE_BITS)
-#define TOTAL_MASK              (0x7ll)
+// for fields Node::ptr(...)
+#define TYPE_MASK                   (0x6ll)
+#define DCSS_BITS                   (1)
+#define TYPE_BITS                   (2)
+#define TOTAL_BITS                  (DCSS_BITS+TYPE_BITS)
+#define TOTAL_MASK                  (0x7ll)
 
-#define NODE_MASK               (0x0ll) /* no need to use this... 0 mask is implicit */
-#define IS_NODE(x)              (((x)&TYPE_MASK)==NODE_MASK)
-#define CASWORD_TO_NODE(x)      ((Node<K,V> *) (x))
-#define NODE_TO_CASWORD(x)      ((casword_t) (x))
+#define NODE_MASK                   (0x0ll) /* no need to use this... 0 mask is implicit */
+#define IS_NODE(x)                  (((x)&TYPE_MASK)==NODE_MASK)
+#define CASWORD_TO_NODE(x)          ((Node<K,V> *) (x))
+#define NODE_TO_CASWORD(x)          ((casword_t) (x))
 
-#define KVPAIR_MASK             (0x2ll) /* 0x1 is used by DCSS */
-#define IS_KVPAIR(x)            (((x)&TYPE_MASK)==KVPAIR_MASK)
-#define CASWORD_TO_KVPAIR(x)    ((KVPair<K,V> *) ((x)&~TYPE_MASK))
-#define KVPAIR_TO_CASWORD(x)    ((casword_t) (((casword_t) (x))|KVPAIR_MASK))
+#define KVPAIR_MASK                 (0x2ll) /* 0x1 is used by DCSS */
+#define IS_KVPAIR(x)                (((x)&TYPE_MASK)==KVPAIR_MASK)
+#define CASWORD_TO_KVPAIR(x)        ((KVPair<K,V> *) ((x)&~TYPE_MASK))
+#define KVPAIR_TO_CASWORD(x)        ((casword_t) (((casword_t) (x))|KVPAIR_MASK))
 
-#define REBUILDOP_MASK          (0x4ll)
-#define IS_REBUILDOP(x)         (((x)&TYPE_MASK)==REBUILDOP_MASK)
-#define CASWORD_TO_REBUILDOP(x) ((RebuildOperation<K,V> *) ((x)&~TYPE_MASK))
-#define REBUILDOP_TO_CASWORD(x) ((casword_t) (((casword_t) (x))|REBUILDOP_MASK))
+#define REBUILDOP_MASK              (0x4ll)
+#define IS_REBUILDOP(x)             (((x)&TYPE_MASK)==REBUILDOP_MASK)
+#define CASWORD_TO_REBUILDOP(x)     ((RebuildOperation<K,V> *) ((x)&~TYPE_MASK))
+#define REBUILDOP_TO_CASWORD(x)     ((casword_t) (((casword_t) (x))|REBUILDOP_MASK))
 
-#define VAL_MASK                (0x6ll)
-#define IS_VAL(x)               (((x)&TYPE_MASK)==VAL_MASK)
-#define CASWORD_TO_VAL(x)       ((V) ((x)>>TOTAL_BITS))
-#define VAL_TO_CASWORD(x)       ((casword_t) ((((casword_t) (x))<<TOTAL_BITS)|VAL_MASK))
+#define VAL_MASK                    (0x6ll)
+#define IS_VAL(x)                   (((x)&TYPE_MASK)==VAL_MASK)
+#define CASWORD_TO_VAL(x)           ((V) ((x)>>TOTAL_BITS))
+#define VAL_TO_CASWORD(x)           ((casword_t) ((((casword_t) (x))<<TOTAL_BITS)|VAL_MASK))
 
-#define EMPTY_VAL_TO_CASWORD    (((casword_t) ~TOTAL_MASK) | VAL_MASK)
-#define CASWORD_IS_EMPTY_VAL(x) (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
+#define EMPTY_VAL_TO_CASWORD        (((casword_t) ~TOTAL_MASK) | VAL_MASK)
+#define CASWORD_IS_EMPTY_VAL(x)     (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
 
-#define SUM_TO_DIRTY(x)         (((x)<<1)|1)
-#define DIRTY_TO_SUM(x)         ((x)>>1)
+// for field Node::dirty
+#define DIRTY_STARTED               (0x01)
+#define DIRTY_FINISHED              (0x10)
+#define SUM_TO_DIRTY_FINISHED(x)    (((x)<<2)|DIRTY_FINISHED)
+#define DIRTY_FINISHED_TO_SUM(x)    ((x)>>2)
 
-#define REBUILD_FRACTION        (0.25)
-#define EPS                     (0.25)
+// constants for rebuilding
+#define REBUILD_FRACTION            (0.25)
+#define EPS                         (0.25)
 
 static __thread RandomFNV1A * myRNG = NULL;
 
@@ -89,8 +94,8 @@ struct Node {
     K maxKey;                   // field not *technically* needed (same as above)
     size_t capacity;            // field likely not needed
     size_t initSize;
-    volatile size_t dirty;      // also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY and DIRTY_TO_SUM)
-    Node<K,V> * parent;         // field likely not needed
+    volatile size_t dirty;      // also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
+    size_t nextMarkAndCount;    // facilitates recursive-collaborative markAndCount() by allowing threads to dynamically soft-partition subtrees (NOT workstealing/exclusive access---this is still a lock-free mechanism)
 #ifdef PAD_CHANGESUM
     PAD;
 #endif
@@ -153,16 +158,15 @@ struct RebuildOperation {
     Node<K,V> * parent;
     size_t index;
     size_t depth;
+    Node<K,V> * newRoot;
     RebuildOperation(Node<K,V> * _candidate, Node<K,V> * _parent, size_t _index, size_t _depth)
-        : candidate(_candidate), parent(_parent), index(_index), depth(_depth) {}
+        : candidate(_candidate), parent(_parent), index(_index), depth(_depth), newRoot(NULL) {}
 };
 
 template <typename K, typename V>
 struct KVPair {
     K k;
     V v;
-//    KVPair(const K& key, const V& value)
-//    : k(key), v(value) {}
 };
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -394,7 +398,6 @@ private:
                     int sz = childSize + (i < remainder);
                     auto child = build(tid, childSet, sz, 1+currDepth);
 
-                    child->parent = node;
                     *node->ptrAddr(i) = NODE_TO_CASWORD(child);
                     if (i > 0) {
                         assert(child->degree > 1);

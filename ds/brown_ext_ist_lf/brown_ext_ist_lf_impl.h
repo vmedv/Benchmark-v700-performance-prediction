@@ -55,19 +55,29 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     auto node = CASWORD_TO_NODE(ptr);
     
     // optimize by taking the sum from node->dirty if we run into a finished subtree
-    auto result = __sync_val_compare_and_swap(&node->dirty, 0, 1);
-    auto sum = DIRTY_TO_SUM(result);
-    if (sum) { // markAndCount has already FINISHED in this subtree, and sum is the count
-        return sum;
+    auto result = node->dirty;
+    if (result & DIRTY_FINISHED) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
+
+    if ((result & DIRTY_STARTED) == 0) {
+        result = __sync_val_compare_and_swap(&node->dirty, 0, DIRTY_STARTED);
+        if (result & DIRTY_FINISHED) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
+    }
+    
+    // optimize for contention by first claiming a subtree to recurse on
+    // THEN after there are no more subtrees to claim, help (any that are still DIRTY_STARTED)
+    size_t keyCount = 0;
+    while (1) {
+        auto ix = __sync_fetch_and_add(&node->nextMarkAndCount, 1);
+        if (ix >= node->degree) break;
+        keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(ix)));
     }
     
     // recurse over all subtrees
-    size_t keyCount = 0;
     for (int i=0;i<node->degree;++i) {
         keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)));
     }
     
-    if (keyCount) __sync_bool_compare_and_swap(&node->dirty, 1, SUM_TO_DIRTY(keyCount));
+    if (keyCount) __sync_bool_compare_and_swap(&node->dirty, DIRTY_STARTED, SUM_TO_DIRTY_FINISHED(keyCount));
     return keyCount;
 }
 
@@ -411,7 +421,7 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
     assert(!node->externalChangeCounter);
 #endif
     node->dirty = 0;
-    node->parent = NULL;
+    node->nextMarkAndCount = 0;
     assert(node);
     return node;
 }
