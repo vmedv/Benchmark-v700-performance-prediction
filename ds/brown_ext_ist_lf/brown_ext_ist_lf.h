@@ -92,9 +92,9 @@ struct Node {
     size_t degree;
     K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
     K maxKey;                   // field not *technically* needed (same as above)
-    size_t capacity;            // field likely not needed
+    size_t capacity;            // field likely not needed (but convenient and good for debug asserts)
     size_t initSize;
-    volatile size_t dirty;      // also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
+    volatile size_t dirty;      // 2-LSBs are marked by markAndCount; also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
     size_t nextMarkAndCount;    // facilitates recursive-collaborative markAndCount() by allowing threads to dynamically soft-partition subtrees (NOT workstealing/exclusive access---this is still a lock-free mechanism)
 #ifdef PAD_CHANGESUM
     PAD;
@@ -103,7 +103,8 @@ struct Node {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
     MultiCounter * externalChangeCounter; // NULL for all nodes except the root (or top few nodes), and supercedes changeSum when non-NULL.
 #endif
-    // unlisted fields: capacity-1 keys of type K followed by capacity "pointers" of type casword_t
+    // unlisted fields: capacity-1 keys of type K followed by capacity values/pointers of type casword_t
+    // the values/pointers have tags in their 3 LSBs so that they satisfy either IS_NODE, IS_KVPAIR, IS_REBUILDOP or IS_VAL
 
     inline K * keyAddr(const int ix) {
         K * const firstKey = ((K *) (((char *) this)+sizeof(Node<K,V>)));
