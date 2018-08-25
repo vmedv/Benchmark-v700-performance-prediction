@@ -22,6 +22,8 @@
 #define IST_USE_MULTICOUNTER_AT_ROOT
 //#define NO_REBUILDING
 //#define PAD_CHANGESUM
+//#define SEQUENTIAL_MARK_AND_COUNT
+#define MAX_ACCEPTABLE_LEAF_SIZE (48)
 
 #include <string>
 #include <cstring>
@@ -361,7 +363,6 @@ private:
     class IdealBuilder {
     private:
         static const int UPPER_LIMIT_DEPTH = 16;
-        static const int MAX_ACCEPTABLE_LEAF_SIZE = 48;
         size_t initNumKeys;
         istree<K,V,Interpolate,RecManager> * ist;
         size_t depth;

@@ -63,16 +63,20 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         if (result & DIRTY_FINISHED) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
     }
     
+#if !defined SEQUENTIAL_MARK_AND_COUNT
     // optimize for contention by first claiming a subtree to recurse on
     // THEN after there are no more subtrees to claim, help (any that are still DIRTY_STARTED)
-    size_t keyCount = 0;
-    while (1) {
-        auto ix = __sync_fetch_and_add(&node->nextMarkAndCount, 1);
-        if (ix >= node->degree) break;
-        keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(ix)));
+    if (node->degree > MAX_ACCEPTABLE_LEAF_SIZE) { // prevent this optimization from being applied at the leaves, where the number of fetch&adds will be needlessly high
+        while (1) {
+            auto ix = __sync_fetch_and_add(&node->nextMarkAndCount, 1);
+            if (ix >= node->degree) break;
+            markAndCount(tid, prov->readPtr(tid, node->ptrAddr(ix)));
+        }
     }
+#endif
     
     // recurse over all subtrees
+    size_t keyCount = 0;
     for (int i=0;i<node->degree;++i) {
         keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)));
     }
