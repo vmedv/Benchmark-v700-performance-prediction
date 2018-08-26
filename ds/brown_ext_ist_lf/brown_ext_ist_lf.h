@@ -25,6 +25,8 @@
 //#define SEQUENTIAL_MARK_AND_COUNT
 #define MAX_ACCEPTABLE_LEAF_SIZE (48)
 
+#define GV_FLIP_RECORDS
+
 #include <string>
 #include <cstring>
 #include <fstream>
@@ -71,12 +73,15 @@
 #define VAL_TO_CASWORD(x)           ((casword_t) ((((casword_t) (x))<<TOTAL_BITS)|VAL_MASK))
 
 #define EMPTY_VAL_TO_CASWORD        (((casword_t) ~TOTAL_MASK) | VAL_MASK)
-#define CASWORD_IS_EMPTY_VAL(x)     (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
+#define IS_EMPTY_VAL(x)             (((casword_t) (x)) == EMPTY_VAL_TO_CASWORD)
 
 // for field Node::dirty
-#define DIRTY_STARTED               (0x01)
-#define DIRTY_FINISHED              (0x10)
-#define SUM_TO_DIRTY_FINISHED(x)    (((x)<<2)|DIRTY_FINISHED)
+// note: dirty finished should imply dirty started!
+#define DIRTY_STARTED_MASK          (0x1ll)
+#define DIRTY_FINISHED_MASK         (0x2ll)
+#define IS_DIRTY_STARTED(x)         ((x)&DIRTY_STARTED_MASK)
+#define IS_DIRTY_FINISHED(x)        ((x)&DIRTY_FINISHED_MASK)
+#define SUM_TO_DIRTY_FINISHED(x)    (((x)<<2)|DIRTY_FINISHED_MASK|DIRTY_STARTED_MASK)
 #define DIRTY_FINISHED_TO_SUM(x)    ((x)>>2)
 
 // constants for rebuilding
@@ -91,13 +96,13 @@ enum UpdateType {
 
 template <typename K, typename V>
 struct Node {
-    size_t degree;
+    size_t volatile degree;
     K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
     K maxKey;                   // field not *technically* needed (same as above)
     size_t capacity;            // field likely not needed (but convenient and good for debug asserts)
     size_t initSize;
-    volatile size_t dirty;      // 2-LSBs are marked by markAndCount; also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
-    size_t nextMarkAndCount;    // facilitates recursive-collaborative markAndCount() by allowing threads to dynamically soft-partition subtrees (NOT workstealing/exclusive access---this is still a lock-free mechanism)
+    size_t volatile dirty;      // 2-LSBs are marked by markAndCount; also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
+    size_t volatile nextMarkAndCount; // facilitates recursive-collaborative markAndCount() by allowing threads to dynamically soft-partition subtrees (NOT workstealing/exclusive access---this is still a lock-free mechanism)
 #ifdef PAD_CHANGESUM
     PAD;
 #endif
@@ -161,7 +166,7 @@ struct RebuildOperation {
     Node<K,V> * parent;
     size_t index;
     size_t depth;
-    Node<K,V> * newRoot;
+    Node<K,V> * volatile newRoot;
     RebuildOperation(Node<K,V> * _candidate, Node<K,V> * _parent, size_t _index, size_t _depth)
         : candidate(_candidate), parent(_parent), index(_index), depth(_depth), newRoot(NULL) {}
 };
@@ -170,6 +175,12 @@ template <typename K, typename V>
 struct KVPair {
     K k;
     V v;
+};
+
+template <typename V>
+struct IdealSubtree {
+    casword_t ptr;
+    V minVal;
 };
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -218,7 +229,7 @@ private:
         } else if (IS_REBUILDOP(w)) {
             auto op = CASWORD_TO_REBUILDOP(w);
             ofs<<"\""<<op<<"\" ["<<std::endl;
-            ofs<<"label = \"<f0> ";
+            ofs<<"label = \"<f0> rebuild";
             debugPrintWord(ofs, NODE_TO_CASWORD(op->candidate));
             ofs<<"\""<<std::endl;
             ofs<<"shape = \"record\""<<std::endl;
@@ -233,7 +244,11 @@ private:
             const int tid = 0;
             auto node = CASWORD_TO_NODE(w);
             ofs<<"\""<<node<<"\" ["<<std::endl;
+#ifdef GV_FLIP_RECORDS
+            ofs<<"label = \"{";
+#else
             ofs<<"label = \"";
+#endif
             int numFixedFields = 0;
             //ofs<<"<f"<<(numFixedFields++)<<"> c:"<<node->capacity;
             ofs<<"<f"<<(numFixedFields++)<<"> d:"<<node->degree<<"/"<<node->capacity;
@@ -246,18 +261,23 @@ private:
                 ofs<<" | <f"<<(numFixedFields++)<<"> -";
             }
 
-            //ofs<<" | <f"<<(numFixedFields++)<<"> dirty="<<node->dirty;
+            auto dirty = node->dirty;
+            ofs<<" | <f"<<(numFixedFields++)<<"> m:"<<DIRTY_FINISHED_TO_SUM(dirty)<<(IS_DIRTY_STARTED(dirty) ? "s" : "")<<(IS_DIRTY_FINISHED(dirty) ? "f" : "");
             #define FIELD_PTR(i) (numFixedFields+2*(i))
             #define FIELD_KEY(i) (FIELD_PTR(i)-1)
             for (int i=0;i<node->degree;++i) {
                 if (i > 0) ofs<<" | <f"<<FIELD_KEY(i)<<"> "<<node->key(i-1);
                 casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
                 ofs<<" | <f"<<FIELD_PTR(i)<<"> ";
-                if (CASWORD_IS_EMPTY_VAL(targetWord)) { /*ofs<<"-";*/ }
+                if (IS_EMPTY_VAL(targetWord)) { ofs<<"e"; }
                 else if (IS_VAL(targetWord)) { ofs<<"v"; }
                 //debugPrintWord(ofs, targetWord);
             }
+#ifdef GV_FLIP_RECORDS
+            ofs<<"}\""<<std::endl;
+#else
             ofs<<"\""<<std::endl;
+#endif
             ofs<<"shape = \"record\""<<std::endl;
             ofs<<"];"<<std::endl;
 
@@ -269,13 +289,13 @@ private:
                 ofs<<"shape = \"record\""<<std::endl;
                 ofs<<"];"<<std::endl;
                 
-                ofs<<"\""<<node<<"\":f4 -> \""<<node->externalChangeCounter<<"\":f0 ["<<std::endl;
+                ofs<<"\""<<node<<"\":f3 -> \""<<node->externalChangeCounter<<"\":f0 ["<<std::endl;
                 ofs<<"id = "<<((*numPointers)++)<<std::endl;
                 ofs<<"];"<<std::endl;
             }
             
             for (int i=0;i<node->degree;++i) {
-                casword_t targetWord = node->ptr(i);
+                casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
                 if (IS_VAL(targetWord)) continue;
                 
                 void * target = (void *) (targetWord & ~TOTAL_MASK);
@@ -285,14 +305,22 @@ private:
             }
 
             for (int i=0;i<node->degree;++i) {
-                debugGVPrint(ofs, prov->readPtr(tid, node->ptrAddr(i)), 1+depth, numPointers);
+                casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
+                if (IS_VAL(targetWord)) continue;
+                
+                debugGVPrint(ofs, targetWord, 1+depth, numPointers);
             }
         }
     }
 public:
-    void debugGVPrint() {
+    void debugGVPrint(const int tid = 0) {
+        std::stringstream ss;
+        ss<<"gvinput_tid"<<tid<<".dot";
+        auto s = ss.str();
+        printf("dumping tree to dot file \"%s\"\n", s.c_str());
         std::ofstream ofs;
-        ofs.open ("gvinput.dot", std::ofstream::out);
+        ofs.open (s, std::ofstream::out);
+//        ofs<<"digraph g {"<<std::endl<<"graph ["<<std::endl<<"rankdir = \"LR\""<<std::endl<<"];"<<std::endl;
         ofs<<"digraph g {"<<std::endl<<"graph ["<<std::endl<<"rankdir = \"TB\""<<std::endl<<"];"<<std::endl;
         ofs<<"node ["<<std::endl<<"fontsize = \"16\""<<std::endl<<"shape = \"ellipse\""<<std::endl<<"];"<<std::endl;
         ofs<<"edge ["<<std::endl<<"];"<<std::endl;
@@ -430,9 +458,23 @@ private:
         }
         void addKV(const int tid, const K& key, const V& value) {
             pairs[pairsAdded++] = {key, value};
+#ifndef NDEBUG
+            if (pairsAdded > initNumKeys) {
+                printf("tid=%d key=%lld pairsAdded=%lld initNumKeys=%lld\n", tid, key, pairsAdded, initNumKeys);
+                ist->debugGVPrint(tid);
+            }
+#endif
             assert(pairsAdded <= initNumKeys);
         }
         casword_t getCASWord(const int tid) {
+#ifndef NDEBUG
+            if (pairsAdded != initNumKeys) {
+                printf("tid=%d pairsAdded=%lld initNumKeys=%lld\n", tid, pairsAdded, initNumKeys);
+                if (pairsAdded > 0) printf("tid=%d key[0]=%lld\n", tid, pairs[0].k);
+                ist->debugGVPrint(tid);
+            }
+#endif
+            assert(pairsAdded == initNumKeys);
 #ifndef NDEBUG
             for (int i=1;i<pairsAdded;++i) {
                 if (pairs[i].k <= pairs[i-1].k) {
@@ -453,10 +495,16 @@ private:
             }
             return tree;
         }
+        
+        K getMinKey() {
+            assert(pairsAdded > 0);
+            return pairs[0].k;
+        }
     };    
 
-    void createIdeal(const int tid, casword_t ptr, IdealBuilder * b);
-    casword_t createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount);
+    void addKVPairs(const int tid, casword_t ptr, IdealBuilder * b);
+    void addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, IdealBuilder * b);
+    casword_t createIdealConcurrent(const int tid, RebuildOperation<K,V> * op, const size_t keyCount);
     
     int init[MAX_THREADS_POW2] = {0,};
 public:

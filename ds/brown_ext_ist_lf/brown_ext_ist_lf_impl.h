@@ -26,8 +26,8 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
             ptr = prov->readPtr(tid, parent->ptrAddr(ixToPtr));
         } else {
             assert(IS_VAL(ptr));
-            assert(CASWORD_IS_EMPTY_VAL(ptr) || ixToPtr > 0); // invariant: leftmost pointer cannot contain a non-empty VAL (it contains a non-NULL pointer or an empty val casword)
-            if (CASWORD_IS_EMPTY_VAL(ptr)) return NO_VALUE;
+            assert(IS_EMPTY_VAL(ptr) || ixToPtr > 0); // invariant: leftmost pointer cannot contain a non-empty VAL (it contains a non-NULL pointer or an empty val casword)
+            if (IS_EMPTY_VAL(ptr)) return NO_VALUE;
             auto v = CASWORD_TO_VAL(ptr);
             auto ixToKey = ixToPtr - 1;
             return (parent->key(ixToKey) == key) ? v : NO_VALUE;
@@ -37,11 +37,10 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
 
 template <typename K, typename V, class Interpolate, class RecManager>
 size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
-    assert(!recordmgr->isQuiescent(tid));
     if (unlikely(IS_KVPAIR(ptr))) {
         return 1;
     } else if (unlikely(IS_VAL(ptr))) {
-        return 1 - CASWORD_IS_EMPTY_VAL(ptr);
+        return 1 - IS_EMPTY_VAL(ptr);
     } else if (unlikely(IS_REBUILDOP(ptr))) {
         auto op = CASWORD_TO_REBUILDOP(ptr);
         return markAndCount(tid, NODE_TO_CASWORD(op->candidate));
@@ -56,11 +55,11 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     
     // optimize by taking the sum from node->dirty if we run into a finished subtree
     auto result = node->dirty;
-    if (result & DIRTY_FINISHED) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
+    if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
 
-    if ((result & DIRTY_STARTED) == 0) {
-        result = __sync_val_compare_and_swap(&node->dirty, 0, DIRTY_STARTED);
-        if (result & DIRTY_FINISHED) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
+    if (!IS_DIRTY_STARTED(result)) {
+        result = __sync_val_compare_and_swap(&node->dirty, 0, DIRTY_STARTED_MASK);
+        if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
     }
     
 #if !defined SEQUENTIAL_MARK_AND_COUNT
@@ -81,45 +80,243 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)));
     }
     
-    if (keyCount) __sync_bool_compare_and_swap(&node->dirty, DIRTY_STARTED, SUM_TO_DIRTY_FINISHED(keyCount));
+    __sync_bool_compare_and_swap(&node->dirty, DIRTY_STARTED_MASK, SUM_TO_DIRTY_FINISHED(keyCount));
     return keyCount;
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-void istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, casword_t ptr, IdealBuilder * b) {
-    assert(!recordmgr->isQuiescent(tid));
+void istree<K,V,Interpolate,RecManager>::addKVPairs(const int tid, casword_t ptr, IdealBuilder * b) {
     if (unlikely(IS_KVPAIR(ptr))) {
         auto pair = CASWORD_TO_KVPAIR(ptr);
         b->addKV(tid, pair->k, pair->v);
     } else if (unlikely(IS_REBUILDOP(ptr))) {
         auto op = CASWORD_TO_REBUILDOP(ptr);
-        createIdeal(tid, NODE_TO_CASWORD(op->candidate), b);
+        addKVPairs(tid, NODE_TO_CASWORD(op->candidate), b);
     } else {
-        //if (!IS_NODE(ptr)) printf("ptr=%lld is not a node! %s\n", ptr, (CASWORD_IS_EMPTY_VAL(ptr)) ? "is empty val\n" : IS_VAL(ptr) ? "is val" : "not sure...");
         assert(IS_NODE(ptr));
         auto node = CASWORD_TO_NODE(ptr);
+        assert(IS_DIRTY_FINISHED(node->dirty) && IS_DIRTY_STARTED(node->dirty));
         for (int i=0;i<node->degree;++i) {
             auto childptr = prov->readPtr(tid, node->ptrAddr(i));
             if (IS_VAL(childptr)) {
-                if (CASWORD_IS_EMPTY_VAL(childptr)) continue;
+                if (IS_EMPTY_VAL(childptr)) continue;
                 auto v = CASWORD_TO_VAL(childptr);
                 assert(i > 0);
                 auto k = node->key(i - 1); // it's okay that this read is not atomic with the value read, since keys of nodes do not change. (so, we can linearize the two reads when we read the value.)
                 b->addKV(tid, k, v);
             } else {
-                createIdeal(tid, childptr, b);
+                addKVPairs(tid, childptr, b);
             }
         }
     }
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-casword_t istree<K,V,Interpolate,RecManager>::createIdeal(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
-    assert(!recordmgr->isQuiescent(tid));
-    if (keyCount == 0) return EMPTY_VAL_TO_CASWORD;
-    IdealBuilder b (this, keyCount, op->depth);
-    createIdeal(tid, NODE_TO_CASWORD(op->candidate), &b);
-    return b.getCASWord(tid);
+void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, IdealBuilder * b) {
+    for (int i=0;i<node->degree;++i) {
+        assert(*numKeysToAdd > 0);
+        assert(*numKeysToSkip >= 0);
+        auto childptr = prov->readPtr(tid, node->ptrAddr(i));
+        if (IS_VAL(childptr)) {
+            if (IS_EMPTY_VAL(childptr)) {
+                TRACE if (tid == 0) printf(" (e)");
+                continue;
+            }
+            if (*numKeysToSkip > 0) {
+                --*numKeysToSkip;
+                TRACE if (tid == 0) printf(" (%lld)", (long long) CASWORD_TO_VAL(childptr));
+            } else {
+                assert(*numKeysToSkip == 0);
+                auto v = CASWORD_TO_VAL(childptr);
+                assert(i > 0);
+                auto k = node->key(i - 1); // it's okay that this read is not atomic with the value read, since keys of nodes do not change. (so, we can linearize the two reads when we read the value.)
+                b->addKV(tid, k, v);
+                TRACE if (tid == 0) printf(" %lld", k);
+                if (--*numKeysToAdd == 0) return;
+            }
+        } else if (unlikely(IS_KVPAIR(childptr))) {
+            if (*numKeysToSkip > 0) {
+                --*numKeysToSkip;
+                TRACE if (tid == 0) printf(" (%lld)", CASWORD_TO_KVPAIR(childptr)->k);
+            } else {
+                assert(*numKeysToSkip == 0);
+                auto pair = CASWORD_TO_KVPAIR(childptr);
+                b->addKV(tid, pair->k, pair->v);
+                TRACE if (tid == 0) printf(" (%lld)", pair->k);
+                if (--*numKeysToAdd == 0) return;
+            }
+        } else if (unlikely(IS_REBUILDOP(childptr))) {
+            auto child = CASWORD_TO_REBUILDOP(childptr)->candidate;
+            assert(IS_DIRTY_FINISHED(child->dirty));
+            auto childSize = DIRTY_FINISHED_TO_SUM(child->dirty);
+            if (*numKeysToSkip < childSize) {
+                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
+                if (*numKeysToAdd == 0) return;
+            } else {
+                TRACE if (tid == 0) printf(" ([subtree containing %lld])", childSize);
+                *numKeysToSkip -= childSize;
+            }
+        } else {
+            assert(IS_NODE(childptr));
+            auto child = CASWORD_TO_NODE(childptr);
+            assert(IS_DIRTY_FINISHED(child->dirty));
+            auto childSize = DIRTY_FINISHED_TO_SUM(child->dirty);
+            if (*numKeysToSkip < childSize) {
+                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
+                if (*numKeysToAdd == 0) return;
+            } else {
+                TRACE if (tid == 0) printf(" ([subtree containing %lld])", childSize);
+                *numKeysToSkip -= childSize;
+            }
+        }
+    }
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
+casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
+    // Note: the following could be encapsulated in a ConcurrentIdealBuilder class
+    
+    TRACE printf("createIdealConcurrent(tid=%d, rebuild op=%llx, keyCount=%lld)\n", tid, op, keyCount);
+
+    if (unlikely(keyCount == 0)) return EMPTY_VAL_TO_CASWORD;
+    if (unlikely(keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) /*|| true*/) {
+        IdealBuilder b (this, keyCount, op->depth);
+//        size_t ___numKeysToSkip = 0;
+//        size_t ___numKeysToAdd = keyCount;
+//        addKVPairsSubset(tid, op, op->candidate, &___numKeysToSkip, &___numKeysToAdd, &b);
+        addKVPairs(tid, NODE_TO_CASWORD(op->candidate), &b);
+        return b.getCASWord(tid);
+    }
+    
+    double numChildrenD = std::sqrt((double) keyCount);
+    size_t numChildren = (size_t) std::ceil(numChildrenD);
+    size_t childSize = keyCount / (size_t) numChildren;
+    size_t remainder = keyCount % numChildren;
+    // remainder is the number of children with childSize+1 pair subsets
+    // (the other (numChildren - remainder) children have childSize pair subsets)
+    TRACE printf("    tid=%d numChildrenD=%f numChildren=%lld childSize=%lld remainder=%lld\n", tid, numChildrenD, numChildren, childSize, remainder);
+    
+    Node<K,V> * node = NULL;
+    if (op->newRoot) {
+        node = op->newRoot;
+        TRACE printf("    tid=%d used existing op->newRoot=%llx\n", tid, op->newRoot);
+    } else {
+#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+        if (op->depth <= 1) {
+            node = createMultiCounterNode(tid, numChildren);
+            TRACE printf("    tid=%d create multi counter root=%llx\n", tid, node);
+        } else {
+            node = createNode(tid, numChildren);
+            TRACE printf("    tid=%d create regular root=%llx\n", tid, node);
+        }
+#else
+        node = createNode(tid, numChildren);
+        TRACE printf("    tid=%d create regular root=%llx\n", tid, node);
+#endif
+        node->degree = node->capacity; // to appease debug asserts (which state that we never go out of degree bounds on pointer/key accesses)
+        for (int i=0;i<node->capacity;++i) {
+            *node->ptrAddr(i) = NODE_TO_CASWORD(NULL);
+        }
+        node->degree = 0; // zero this out so we can have threads synchronize a bit later by atomically incrementing this until it hits node->capacity
+        
+        // try to CAS the new node into the RebuildOp
+        if (__sync_bool_compare_and_swap(&op->newRoot, NULL, node)) {
+            TRACE printf("    tid=%d CAS'd op->newRoot successfully\n", tid);
+            // success; node == op->newRoot will be built by us and possibly by helpers
+        } else {
+            TRACE printf("    tid=%d failed to CAS op->newRoot\n", tid);
+            // we did not win consensus; deallocate our newly created node,
+            // and simply use the one that caused us to fail our CAS.
+            recordmgr->deallocate(tid, node);
+            node = op->newRoot;
+            assert(node);
+        }
+    }
+    assert(node);
+    assert(op->newRoot);
+    assert(op->newRoot == node);
+#ifndef NDEBUG
+    if (node->capacity != numChildren) {
+        printf("keyCount=%lld node->capacity=%lld numChildren=%lld numChildrenD=%f childSize=%lld remainder=%lld op->depth=%lld node=%llx\n", keyCount, node->capacity, numChildren, numChildrenD, childSize, remainder, op->depth, node);
+        //std::cout<<"node->capacity="<<node->capacity<<" numChildren="<<numChildren<<" numChildrenD="<<numChildrenD<<" childSize="<<childSize<<" remainder="<<remainder<<" op->depth="<<op->depth<<" node="<<node<<std::endl;
+    }
+#endif
+    assert(node->capacity == numChildren);
+    
+//    /*** BEGIN DEBUG **/
+//    IdealBuilder b (this, keyCount, op->depth);
+//    addKVPairs(tid, NODE_TO_CASWORD(op->candidate), &b);
+//    auto ptr = b.getCASWord(tid);
+//    auto newnode = CASWORD_TO_NODE(ptr);
+//    assert(IS_NODE(ptr));
+//    assert(node->capacity == newnode->capacity);
+//    node->degree = node->capacity;
+//    for (int i=0;i<node->degree;++i) {
+//        if (i > 0) *node->keyAddr(i-1) = newnode->key(i-1);
+//        __sync_bool_compare_and_swap(node->ptrAddr(i), NODE_TO_CASWORD(NULL), newnode->ptr(i));
+//    }
+//    
+//    assert(node->capacity == node->degree);
+//    assert(node->capacity == numChildren);
+//    /*** END DEBUG **/
+    
+    // opportunistically try to build different subtrees from any other concurrent threads
+    // by synchronizing via node->degree. concurrent threads increment node->degree using cas
+    // to "reserve" a subtree to work on (not truly exclusively---still a lock-free mechanism).
+    TRACE printf("    tid=%d starting to build subtrees\n", tid);
+    while (1) {
+        auto deg = node->degree;
+        if (deg < node->capacity) {                                                         // if not all subtrees are being constructed
+            if (__sync_bool_compare_and_swap(&node->degree, deg, 1+deg)) {                  // choose a subtree to construct
+                TRACE printf("    tid=%d incremented degree from %lld\n", tid, deg);
+                // compute initSize of new subtree
+                auto totalSizeSoFar = deg*childSize + (deg < remainder ? deg : remainder);
+                auto newChildSize = childSize + (deg < remainder);
+                
+                // build new subtree
+                IdealBuilder b (this, newChildSize, 1+op->depth);
+                auto numKeysToSkip = totalSizeSoFar;
+                auto numKeysToAdd = newChildSize;
+                TRACE printf("    tid=%d calls addKVPairsSubset with numKeysToSkip=%lld and numKeysToAdd=%lld\n", tid, numKeysToSkip, numKeysToAdd);
+                TRACE printf("    tid=%d visits keys", tid);
+                addKVPairsSubset(tid, op, op->candidate, &numKeysToSkip, &numKeysToAdd, &b); // construct the subtree
+                TRACE printf("\n");
+                auto ptr = b.getCASWord(tid);
+                
+                // try to attach new subtree
+                if (deg > 0) *node->keyAddr(deg-1) = b.getMinKey();
+                if (__sync_bool_compare_and_swap(node->ptrAddr(deg), NODE_TO_CASWORD(NULL), ptr)) { // try to CAS the subtree in to the new root we are building (consensus to decide who built it)
+                    TRACE printf("    tid=%d successfully CASs newly build subtree\n", tid);
+                    // success
+                } else {
+                    TRACE printf("    tid=%d fails to CAS newly build subtree\n", tid);
+                    // TODO: deallocate the subtree (must handle KVPairs appropriately)
+                    //freeSubtree(tid, newSubtree)
+                }
+                assert(prov->readPtr(tid, node->ptrAddr(deg)));
+            }
+        } else {
+            break;
+        }
+    }
+    
+    for (int i=0;i<numChildren;++i) {
+        // wait until subtree is built by the guy who started building it (not lock-free;;; just for testing)
+        while (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {}
+
+//        // TODO: try to build the subtree if necessary
+//        if (prov->readPtr(tid, node->ptrAddr(i)) == NULL) {
+//            
+//        }
+    }
+
+    node->initSize = keyCount;
+    node->minKey = node->key(0);
+    node->maxKey = node->key(node->degree-2);
+    assert(node->minKey != INF_KEY);
+    assert(node->maxKey != INF_KEY);
+    assert(node->minKey <= node->maxKey);
+    return NODE_TO_CASWORD(node);
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -130,7 +327,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
-    casword_t newWord = createIdeal(tid, op, keyCount);
+    casword_t newWord = createIdealConcurrent(tid, op, keyCount);
     if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
         freeSubtree(tid, op->candidate, true);
@@ -142,7 +339,9 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             
         } else {
             assert(IS_NODE(newWord));
-            freeSubtree(tid, CASWORD_TO_NODE(newWord), false);
+            // TODO: no longer appropriate to deallocate this subtree, because we are collaborating through the rebuildop
+            //       need to determine how correctly to deallocate this.
+            //freeSubtree(tid, CASWORD_TO_NODE(newWord), false);
         }
     }
 #ifdef MEASURE_REBUILDING_TIME
@@ -169,7 +368,7 @@ template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const K& key, Node<K,V> * const node) {
     assert(!recordmgr->isQuiescent(tid));
     // TODO: redo prefetching, taking into account the fact that l2 adjacent line prefetcher DOESN'T grab an adjacent line
-    __builtin_prefetch(&node->degree, 1);
+    //__builtin_prefetch(&node->degree, 1);
     __builtin_prefetch(&node->maxKey, 1);
     __builtin_prefetch((node->keyAddr(0)), 1);
     __builtin_prefetch((node->keyAddr(0))+(8), 1);
@@ -255,12 +454,12 @@ retryNode:
             KVPair<K,V> * newPair = NULL;
             auto newWord = (casword_t) NULL;
 
-            assert(CASWORD_IS_EMPTY_VAL(word) || !IS_VAL(word) || ix > 0);
+            assert(IS_EMPTY_VAL(word) || !IS_VAL(word) || ix > 0);
             auto foundKey = INF_KEY;
             auto foundVal = NO_VALUE;
             if (IS_VAL(word)) {
-                foundKey = (CASWORD_IS_EMPTY_VAL(word)) ? INF_KEY : foundKey = node->key(ix - 1);
-                if (!CASWORD_IS_EMPTY_VAL(word)) foundVal = CASWORD_TO_VAL(word);
+                foundKey = (IS_EMPTY_VAL(word)) ? INF_KEY : foundKey = node->key(ix - 1);
+                if (!IS_EMPTY_VAL(word)) foundVal = CASWORD_TO_VAL(word);
             } else {
                 assert(IS_KVPAIR(word));
                 pair = CASWORD_TO_KVPAIR(word);

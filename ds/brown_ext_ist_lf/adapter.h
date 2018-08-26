@@ -161,10 +161,10 @@ public:
             if (IS_VAL(node)) return 0;
             assert(IS_NODE(node));
             auto n = CASWORD_TO_NODE(node);
-            assert(CASWORD_IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
+            assert(IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
             size_t ret = 0;
             for (int i=1; i < n->degree; ++i) {
-                if (!CASWORD_IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ++ret;
+                if (!IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ++ret;
             }
             return ret;
         }
@@ -173,10 +173,10 @@ public:
             if (IS_VAL(node)) return 0;
             assert(IS_NODE(node));
             auto n = CASWORD_TO_NODE(node);
-            assert(CASWORD_IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
+            assert(IS_EMPTY_VAL(n->ptr(0)) || !IS_VAL(n->ptr(0)));
             size_t ret = 0;
             for (int i=1; i < n->degree; ++i) {
-                if (!CASWORD_IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ret += (size_t) n->key(i-1);
+                if (!IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ret += (size_t) n->key(i-1);
             }
             return ret;
         }
