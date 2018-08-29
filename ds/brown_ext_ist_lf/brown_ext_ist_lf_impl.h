@@ -3,6 +3,10 @@
 
 #include "brown_ext_ist_lf.h"
 
+// TODO: parallel construction from array
+// TODO: fix memory reclamation in collaborative rebuild
+// TODO: eliminate waiting in collaborative rebuild
+
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     auto guard = recordmgr->getGuard(tid, true);
@@ -153,7 +157,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
                 addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
                 if (*numKeysToAdd == 0) return;
             } else {
-                TRACE if (tid == 0) printf(" ([subtree containing %lld])", childSize);
+                TRACE if (tid == 0) printf(" ([subtree containing %lld])", (long long) childSize);
                 *numKeysToSkip -= childSize;
             }
         } else {
@@ -165,7 +169,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
                 addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
                 if (*numKeysToAdd == 0) return;
             } else {
-                TRACE if (tid == 0) printf(" ([subtree containing %lld])", childSize);
+                TRACE if (tid == 0) printf(" ([subtree containing %lld])", (long long) childSize);
                 *numKeysToSkip -= childSize;
             }
         }
@@ -176,7 +180,7 @@ template <typename K, typename V, class Interpolate, class RecManager>
 casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
     // Note: the following could be encapsulated in a ConcurrentIdealBuilder class
     
-    TRACE printf("createIdealConcurrent(tid=%d, rebuild op=%llx, keyCount=%lld)\n", tid, op, keyCount);
+    TRACE printf("createIdealConcurrent(tid=%d, rebuild op=%llx, keyCount=%lld)\n", tid, (unsigned long long) op, (long long) keyCount);
 
     if (unlikely(keyCount == 0)) return EMPTY_VAL_TO_CASWORD;
     if (unlikely(keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) /*|| true*/) {
@@ -194,20 +198,20 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     size_t remainder = keyCount % numChildren;
     // remainder is the number of children with childSize+1 pair subsets
     // (the other (numChildren - remainder) children have childSize pair subsets)
-    TRACE printf("    tid=%d numChildrenD=%f numChildren=%lld childSize=%lld remainder=%lld\n", tid, numChildrenD, numChildren, childSize, remainder);
+    TRACE printf("    tid=%d numChildrenD=%f numChildren=%lld childSize=%lld remainder=%lld\n", tid, numChildrenD, (long long) numChildren, (long long) childSize, (long long) remainder);
     
     Node<K,V> * node = NULL;
     if (op->newRoot) {
         node = op->newRoot;
-        TRACE printf("    tid=%d used existing op->newRoot=%llx\n", tid, op->newRoot);
+        TRACE printf("    tid=%d used existing op->newRoot=%llx\n", tid, (unsigned long long) op->newRoot);
     } else {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
         if (op->depth <= 1) {
             node = createMultiCounterNode(tid, numChildren);
-            TRACE printf("    tid=%d create multi counter root=%llx\n", tid, node);
+            TRACE printf("    tid=%d create multi counter root=%llx\n", tid, (unsigned long long) node);
         } else {
             node = createNode(tid, numChildren);
-            TRACE printf("    tid=%d create regular root=%llx\n", tid, node);
+            TRACE printf("    tid=%d create regular root=%llx\n", tid, (unsigned long long) node);
         }
 #else
         node = createNode(tid, numChildren);
@@ -268,7 +272,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         auto deg = node->degree;
         if (deg < node->capacity) {                                                         // if not all subtrees are being constructed
             if (__sync_bool_compare_and_swap(&node->degree, deg, 1+deg)) {                  // choose a subtree to construct
-                TRACE printf("    tid=%d incremented degree from %lld\n", tid, deg);
+                TRACE printf("    tid=%d incremented degree from %lld\n", tid, (long long) deg);
                 // compute initSize of new subtree
                 auto totalSizeSoFar = deg*childSize + (deg < remainder ? deg : remainder);
                 auto newChildSize = childSize + (deg < remainder);
@@ -277,7 +281,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
                 IdealBuilder b (this, newChildSize, 1+op->depth);
                 auto numKeysToSkip = totalSizeSoFar;
                 auto numKeysToAdd = newChildSize;
-                TRACE printf("    tid=%d calls addKVPairsSubset with numKeysToSkip=%lld and numKeysToAdd=%lld\n", tid, numKeysToSkip, numKeysToAdd);
+                TRACE printf("    tid=%d calls addKVPairsSubset with numKeysToSkip=%lld and numKeysToAdd=%lld\n", tid, (long long) numKeysToSkip, (long long) numKeysToAdd);
                 TRACE printf("    tid=%d visits keys", tid);
                 addKVPairsSubset(tid, op, op->candidate, &numKeysToSkip, &numKeysToAdd, &b); // construct the subtree
                 TRACE printf("\n");

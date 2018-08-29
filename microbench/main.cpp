@@ -790,7 +790,7 @@ void trial() {
         TIMING_START("creating key array");
         size_t sz = MAXKEY+2;
         const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
-        size_t present[sz];
+        size_t * present = new size_t[sz];
 #ifdef _OPENMP
         omp_set_num_threads(PREFILL_THREADS);
 #endif
@@ -832,6 +832,8 @@ void trial() {
                 sz/2, rand());
         TIMING_STOP;
     
+        delete[] present;
+        
         for (int tid=0;tid<std::max(PREFILL_THREADS, TOTAL_THREADS);++tid) {
             g.dsAdapter->initThread(tid); // pre-initialize for openmp threads (just to avoid initialization in the openmp parallel for)
         }
