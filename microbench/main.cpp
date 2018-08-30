@@ -20,6 +20,13 @@ typedef long long test_type;
 #include <omp.h>
 #include <perftools.h>
 
+#ifdef PRINT_JEMALLOC_STATS
+    #include <jemalloc/jemalloc.h>
+    #define DEBUG_PRINT_ARENA_STATS malloc_stats_print(printCallback, NULL, "ag")
+#else
+    #define DEBUG_PRINT_ARENA_STATS 
+#endif
+
 /**
  * Configure global statistics using gstats_global.h and gstats.h
  */
@@ -65,6 +72,15 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_bail_from_addkv_at_depth, 10, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_bail_from_build_at_depth, 10, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_help_subtree, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_try_rebuild_at_depth, 100, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
@@ -763,6 +779,10 @@ void *thread_rq(void *_id) {
     pthread_exit(NULL);
 }
 
+void printCallback(void * nothing, const char * data) {
+    std::cout<<data;
+}
+
 void trial() {
     const int tid = 0; // dummy thread id for main thread (technically this means the main thread shared any GSTATS_ counters that it accesses with experimental thread 0. so, they should never access these counters at the same time.
     INIT_ALL;
@@ -882,6 +902,7 @@ void trial() {
     } // wait for all threads to be ready
     COUTATOMIC("main thread: starting timer..."<<std::endl);
     
+    DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC("################################ BEGIN RUNNING ################################"<<std::endl);
@@ -908,7 +929,14 @@ void trial() {
             g.done = true;
             __sync_synchronize();
         }
-
+        
+        DEBUG_PRINT_ARENA_STATS;
+        COUTATOMIC(std::endl);
+        COUTATOMIC("###############################################################################"<<std::endl);
+        COUTATOMIC("################################## TIME IS UP #################################"<<std::endl);
+        COUTATOMIC("###############################################################################"<<std::endl);
+        COUTATOMIC(std::endl);
+        
         const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 5000 : 30000);
         g.elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count();
         g.elapsedMillisNapping = 0;

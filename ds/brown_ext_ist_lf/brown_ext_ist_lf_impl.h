@@ -3,9 +3,9 @@
 
 #include "brown_ext_ist_lf.h"
 
-// TODO: parallel construction from array
 // TODO: fix memory reclamation in collaborative rebuild
-// TODO: eliminate waiting in collaborative rebuild
+// eventual TODO: full recursive helping of collaborative ideal tree construction???
+// eventual TODO: parallel construction from array?? (very low priority)
 
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
@@ -116,8 +116,13 @@ void istree<K,V,Interpolate,RecManager>::addKVPairs(const int tid, casword_t ptr
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, IdealBuilder * b) {
+void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, size_t depth, IdealBuilder * b, casword_t volatile * constructingSubtree) {
     for (int i=0;i<node->degree;++i) {
+        if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
+            GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, (depth > 9 ? 9 : depth));
+            return; // stop early if someone else built the subtree already
+        }
+        
         assert(*numKeysToAdd > 0);
         assert(*numKeysToSkip >= 0);
         auto childptr = prov->readPtr(tid, node->ptrAddr(i));
@@ -154,7 +159,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
             assert(IS_DIRTY_FINISHED(child->dirty));
             auto childSize = DIRTY_FINISHED_TO_SUM(child->dirty);
             if (*numKeysToSkip < childSize) {
-                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
+                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, 1+depth, b, constructingSubtree);
                 if (*numKeysToAdd == 0) return;
             } else {
                 TRACE if (tid == 0) printf(" ([subtree containing %lld])", (long long) childSize);
@@ -166,7 +171,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
             assert(IS_DIRTY_FINISHED(child->dirty));
             auto childSize = DIRTY_FINISHED_TO_SUM(child->dirty);
             if (*numKeysToSkip < childSize) {
-                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, b);
+                addKVPairsSubset(tid, op, child, numKeysToSkip, numKeysToAdd, 1+depth, b, constructingSubtree);
                 if (*numKeysToAdd == 0) return;
             } else {
                 TRACE if (tid == 0) printf(" ([subtree containing %lld])", (long long) childSize);
@@ -174,6 +179,39 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
             }
         }
     }
+}
+
+template<typename K, typename V, class Interpolate, class RecManager>
+void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid, RebuildOperation<K,V>* op, Node<K,V>* parent, size_t ix, size_t childSize, size_t remainder) {
+    // compute initSize of new subtree
+    auto totalSizeSoFar = ix*childSize + (ix < remainder ? ix : remainder);
+    auto newChildSize = childSize + (ix < remainder);
+    
+    // build new subtree
+    IdealBuilder b (this, newChildSize, 1+op->depth);
+    auto numKeysToSkip = totalSizeSoFar;
+    auto numKeysToAdd = newChildSize;
+    TRACE printf("    tid=%d calls addKVPairsSubset with numKeysToSkip=%lld and numKeysToAdd=%lld\n", tid, (long long) numKeysToSkip, (long long) numKeysToAdd);
+    TRACE printf("    tid=%d visits keys", tid);
+    addKVPairsSubset(tid, op, op->candidate, &numKeysToSkip, &numKeysToAdd, op->depth, &b, parent->ptrAddr(ix)); // construct the subtree
+    TRACE printf("\n");
+    if (parent->ptr(ix) != NODE_TO_CASWORD(NULL)) {
+        GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, op->depth);
+        return;
+    }
+    auto ptr = b.getCASWord(tid, parent->ptrAddr(ix));
+    
+    // try to attach new subtree
+    if (ix > 0) *parent->keyAddr(ix-1) = b.getMinKey();
+    if (__sync_bool_compare_and_swap(parent->ptrAddr(ix), NODE_TO_CASWORD(NULL), ptr)) { // try to CAS the subtree in to the new root we are building (consensus to decide who built it)
+        TRACE printf("    tid=%d successfully CASs newly build subtree\n", tid);
+        // success
+    } else {
+        TRACE printf("    tid=%d fails to CAS newly build subtree\n", tid);
+        // TODO: deallocate the subtree (must handle KVPairs appropriately)
+//        freeSubtree(tid, newSubtree)
+    }
+    assert(prov->readPtr(tid, parent->ptrAddr(ix)));
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -185,11 +223,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     if (unlikely(keyCount == 0)) return EMPTY_VAL_TO_CASWORD;
     if (unlikely(keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) /*|| true*/) {
         IdealBuilder b (this, keyCount, op->depth);
-//        size_t ___numKeysToSkip = 0;
-//        size_t ___numKeysToAdd = keyCount;
-//        addKVPairsSubset(tid, op, op->candidate, &___numKeysToSkip, &___numKeysToAdd, &b);
+        casword_t dummy = NODE_TO_CASWORD(NULL);
         addKVPairs(tid, NODE_TO_CASWORD(op->candidate), &b);
-        return b.getCASWord(tid);
+        return b.getCASWord(tid, &dummy);
     }
     
     double numChildrenD = std::sqrt((double) keyCount);
@@ -247,72 +283,33 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 #endif
     assert(node->capacity == numChildren);
     
-//    /*** BEGIN DEBUG **/
-//    IdealBuilder b (this, keyCount, op->depth);
-//    addKVPairs(tid, NODE_TO_CASWORD(op->candidate), &b);
-//    auto ptr = b.getCASWord(tid);
-//    auto newnode = CASWORD_TO_NODE(ptr);
-//    assert(IS_NODE(ptr));
-//    assert(node->capacity == newnode->capacity);
-//    node->degree = node->capacity;
-//    for (int i=0;i<node->degree;++i) {
-//        if (i > 0) *node->keyAddr(i-1) = newnode->key(i-1);
-//        __sync_bool_compare_and_swap(node->ptrAddr(i), NODE_TO_CASWORD(NULL), newnode->ptr(i));
-//    }
-//    
-//    assert(node->capacity == node->degree);
-//    assert(node->capacity == numChildren);
-//    /*** END DEBUG **/
-    
     // opportunistically try to build different subtrees from any other concurrent threads
     // by synchronizing via node->degree. concurrent threads increment node->degree using cas
     // to "reserve" a subtree to work on (not truly exclusively---still a lock-free mechanism).
     TRACE printf("    tid=%d starting to build subtrees\n", tid);
     while (1) {
-        auto deg = node->degree;
-        if (deg < node->capacity) {                                                         // if not all subtrees are being constructed
-            if (__sync_bool_compare_and_swap(&node->degree, deg, 1+deg)) {                  // choose a subtree to construct
-                TRACE printf("    tid=%d incremented degree from %lld\n", tid, (long long) deg);
-                // compute initSize of new subtree
-                auto totalSizeSoFar = deg*childSize + (deg < remainder ? deg : remainder);
-                auto newChildSize = childSize + (deg < remainder);
-                
-                // build new subtree
-                IdealBuilder b (this, newChildSize, 1+op->depth);
-                auto numKeysToSkip = totalSizeSoFar;
-                auto numKeysToAdd = newChildSize;
-                TRACE printf("    tid=%d calls addKVPairsSubset with numKeysToSkip=%lld and numKeysToAdd=%lld\n", tid, (long long) numKeysToSkip, (long long) numKeysToAdd);
-                TRACE printf("    tid=%d visits keys", tid);
-                addKVPairsSubset(tid, op, op->candidate, &numKeysToSkip, &numKeysToAdd, &b); // construct the subtree
-                TRACE printf("\n");
-                auto ptr = b.getCASWord(tid);
-                
-                // try to attach new subtree
-                if (deg > 0) *node->keyAddr(deg-1) = b.getMinKey();
-                if (__sync_bool_compare_and_swap(node->ptrAddr(deg), NODE_TO_CASWORD(NULL), ptr)) { // try to CAS the subtree in to the new root we are building (consensus to decide who built it)
-                    TRACE printf("    tid=%d successfully CASs newly build subtree\n", tid);
-                    // success
-                } else {
-                    TRACE printf("    tid=%d fails to CAS newly build subtree\n", tid);
-                    // TODO: deallocate the subtree (must handle KVPairs appropriately)
-                    //freeSubtree(tid, newSubtree)
-                }
-                assert(prov->readPtr(tid, node->ptrAddr(deg)));
-            }
-        } else {
-            break;
+        auto ix = node->degree;
+        if (ix >= node->capacity) break;                                        // skip to the helping phase if all subtrees are already being constructed
+        if (__sync_bool_compare_and_swap(&node->degree, ix, 1+ix)) {            // use cas to soft-reserve a subtree to construct
+            TRACE printf("    tid=%d incremented degree from %lld\n", tid, (long long) ix);
+            subtreeBuildAndReplace(tid, op, node, ix, childSize, remainder);
         }
     }
     
-    for (int i=0;i<numChildren;++i) {
-        // wait until subtree is built by the guy who started building it (not lock-free;;; just for testing)
-        while (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {}
+    // try to help complete subtree building if necessary
+    // (partially for lock-freedom, and partially for performance)
 
-//        // TODO: try to build the subtree if necessary
-//        if (prov->readPtr(tid, node->ptrAddr(i)) == NULL) {
-//            
-//        }
+    // help linearly starting at a random position (to probabilistically scatter helpers)
+    auto ix = myRNG->next(numChildren);
+    for (int __i=0;__i<numChildren;++__i) {
+        auto i = (__i+ix)%numChildren;
+        if (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {
+            subtreeBuildAndReplace(tid, op, node, i, childSize, remainder);
+            GSTATS_ADD(tid, num_help_subtree, 1);
+        }
     }
+
+    // TODO: possibly help according to random permutation (generated once per thread)?
 
     node->initSize = keyCount;
     node->minKey = node->key(0);

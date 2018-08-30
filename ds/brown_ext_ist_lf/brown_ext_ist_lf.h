@@ -398,7 +398,12 @@ private:
         size_t pairsAdded;
         casword_t tree;
         
-        Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth) {
+        Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth, casword_t volatile * constructingSubtree) {
+            if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
+                GSTATS_ADD_IX(tid, num_bail_from_build_at_depth, 1, (currDepth > 9 ? 9 : currDepth));
+                return NODE_TO_CASWORD(NULL); // bail early if tree was already constructed by someone else
+            }
+            
             if (psetSize <= MAX_ACCEPTABLE_LEAF_SIZE) {
                 return ist->createLeaf(tid, pset, psetSize);
             } else {
@@ -426,7 +431,7 @@ private:
                 KVPair<K,V> * childSet = pset;
                 for (int i=0;i<numChildren;++i) {
                     int sz = childSize + (i < remainder);
-                    auto child = build(tid, childSet, sz, 1+currDepth);
+                    auto child = build(tid, childSet, sz, 1+currDepth, constructingSubtree);
 
                     *node->ptrAddr(i) = NODE_TO_CASWORD(child);
                     if (i > 0) {
@@ -466,7 +471,8 @@ private:
 #endif
             assert(pairsAdded <= initNumKeys);
         }
-        casword_t getCASWord(const int tid) {
+        casword_t getCASWord(const int tid, casword_t volatile * constructingSubtree) {
+            if (*constructingSubtree != NODE_TO_CASWORD(NULL)) return NODE_TO_CASWORD(NULL);
 #ifndef NDEBUG
             if (pairsAdded != initNumKeys) {
                 printf("tid=%d pairsAdded=%lld initNumKeys=%lld\n", tid, pairsAdded, initNumKeys);
@@ -490,9 +496,10 @@ private:
                 } else if (unlikely(pairsAdded == 1)) {
                     tree = KVPAIR_TO_CASWORD(ist->createKVPair(tid, pairs[0].k, pairs[0].v));
                 } else {
-                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth));
+                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth, constructingSubtree));
                 }
             }
+            if (*constructingSubtree != NODE_TO_CASWORD(NULL)) return NODE_TO_CASWORD(NULL);
             return tree;
         }
         
@@ -503,9 +510,10 @@ private:
     };    
 
     void addKVPairs(const int tid, casword_t ptr, IdealBuilder * b);
-    void addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, IdealBuilder * b);
+    void addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, size_t depth, IdealBuilder * b, casword_t volatile * constructingSubtree);
     casword_t createIdealConcurrent(const int tid, RebuildOperation<K,V> * op, const size_t keyCount);
-    
+    void subtreeBuildAndReplace(const int tid, RebuildOperation<K,V>* op, Node<K,V>* parent, size_t ix, size_t childSize, size_t remainder);
+
     int init[MAX_THREADS_POW2] = {0,};
 public:
     const K INF_KEY;
@@ -580,7 +588,8 @@ public:
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
             b.addKV(tid, initKeys[keyIx], initValues[keyIx]);
         }
-        *root->ptrAddr(0) = b.getCASWord(tid);
+        casword_t dummy = NODE_TO_CASWORD(NULL);
+        *root->ptrAddr(0) = b.getCASWord(tid, &dummy);
     }
     ~istree() {
         if (myRNG != NULL) { delete myRNG; myRNG = NULL; }

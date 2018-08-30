@@ -169,9 +169,6 @@ public:
         long readEpoch = epoch;
         const long ann = threadData[tid].localvar_announcedEpoch;
         threadData[tid].localvar_announcedEpoch = readEpoch;
-        threadData[tid].announcedEpoch.store(readEpoch, std::memory_order_relaxed); // note: this must be written, regardless of whether the announced epochs are the same, because the quiescent bit will vary
-        // note: readEpoch, when written to announcedEpoch[tid],
-        //       sets the state to non-quiescent and non-neutralized
 
         // if our announced epoch was different from the current epoch
         if (readEpoch != ann /* invariant: ann is not quiescent */) {
@@ -183,6 +180,12 @@ public:
             //this->template rotateAllEpochBags<First, Rest...>(tid, reclaimers, 0);
             result = true;
         }
+        // we should announce AFTER rotating bags if we're going to do so!!
+        // (very problematic interaction with lazy dirty page purging in jemalloc triggered by bag rotation,
+        //  which causes massive non-quiescent regions if non-Q announcement happens before bag rotation)
+        threadData[tid].announcedEpoch.store(readEpoch, std::memory_order_relaxed); // note: this must be written, regardless of whether the announced epochs are the same, because the quiescent bit will vary
+        // note: readEpoch, when written to announcedEpoch[tid],
+        //       sets the state to non-quiescent and non-neutralized
 
 #ifndef DEBRA_DISABLE_READONLY_OPT
         if (!readOnly) {

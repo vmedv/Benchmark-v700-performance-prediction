@@ -6,6 +6,11 @@ GPP = g++
 FLAGS += -DUSE_PAPI
 LDFLAGS += -lpapi
 
+### if you don't want to use jemalloc, comment out these two lines
+#LDFLAGS += -I../include/
+#LDFLAGS += -ljemalloc
+#FLAGS += -DPRINT_JEMALLOC_STATS
+
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
