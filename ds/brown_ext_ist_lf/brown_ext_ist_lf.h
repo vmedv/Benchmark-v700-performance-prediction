@@ -166,9 +166,9 @@ struct RebuildOperation {
     Node<K,V> * parent;
     size_t index;
     size_t depth;
-    Node<K,V> * volatile newRoot;
+    casword_t volatile newRoot;
     RebuildOperation(Node<K,V> * _candidate, Node<K,V> * _parent, size_t _index, size_t _depth)
-        : candidate(_candidate), parent(_parent), index(_index), depth(_depth), newRoot(NULL) {}
+        : candidate(_candidate), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)) {}
 };
 
 template <typename K, typename V>
@@ -352,28 +352,29 @@ private:
         }
     }
 
-    void freeSubtree(const int tid, Node<K,V> * subtree, bool retire) {
-        for (int i=0;i<subtree->degree;++i) {
-            auto ptr = prov->readPtr(tid, subtree->ptrAddr(i));
-            if (IS_NODE(ptr)) {
-                freeSubtree(tid, CASWORD_TO_NODE(ptr), retire);
-            } else if (IS_REBUILDOP(ptr)) {
-                auto op = CASWORD_TO_REBUILDOP(ptr);
-                freeSubtree(tid, op->candidate, retire);
-                if (retire) {
-                    recordmgr->retire(tid, op);
-                } else {
-                    recordmgr->deallocate(tid, op);
-                }
-            } else if (IS_KVPAIR(ptr)) {
-                if (retire) {
-                    recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
-                } else {
-                    recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(ptr));
-                }
+    void freeSubtree(const int tid, casword_t ptr, bool retire) {
+        if (unlikely(IS_KVPAIR(ptr))) {
+            if (retire) {
+                recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
+            } else {
+                recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(ptr));
             }
+        } else if (IS_REBUILDOP(ptr)) {
+            auto op = CASWORD_TO_REBUILDOP(ptr);
+            freeSubtree(tid, NODE_TO_CASWORD(op->candidate), retire);
+            if (retire) {
+                recordmgr->retire(tid, op);
+            } else {
+                recordmgr->deallocate(tid, op);
+            }
+        } else if (IS_NODE(ptr) && ptr != NODE_TO_CASWORD(NULL)) {
+            auto node = CASWORD_TO_NODE(ptr);
+            for (int i=0;i<node->degree;++i) {
+                auto child = prov->readPtr(tid, node->ptrAddr(i));
+                freeSubtree(tid, child, retire);
+            }
+            freeNode(tid, node, retire);
         }
-        freeNode(tid, subtree, retire);
     }
     
     /**
@@ -387,7 +388,7 @@ private:
      * if k is at most 48, there are no recursive calls:
      * the key-value pairs are simply encoded in the node.)
      */
-        
+    
     class IdealBuilder {
     private:
         static const int UPPER_LIMIT_DEPTH = 16;
@@ -435,7 +436,7 @@ private:
 
                     *node->ptrAddr(i) = NODE_TO_CASWORD(child);
                     if (i > 0) {
-                        assert(child->degree > 1);
+                        assert(child == NODE_TO_CASWORD(NULL) || child->degree > 1);
                         node->key(i-1) = childSet[0].k;
                     }
 #ifndef NDEBUG
@@ -499,7 +500,10 @@ private:
                     tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth, constructingSubtree));
                 }
             }
-            if (*constructingSubtree != NODE_TO_CASWORD(NULL)) return NODE_TO_CASWORD(NULL);
+            if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
+                ist->freeSubtree(tid, tree, false);
+                return NODE_TO_CASWORD(NULL);
+            }
             return tree;
         }
         
@@ -594,7 +598,7 @@ public:
     ~istree() {
         if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
 //        debugGVPrint();
-        freeSubtree(0, root, false);
+        freeSubtree(0, NODE_TO_CASWORD(root), false);
 ////            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
         recordmgr->printStatus();
         delete prov;
