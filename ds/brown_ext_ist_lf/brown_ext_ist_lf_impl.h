@@ -230,10 +230,15 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     TRACE printf("    tid=%d numChildrenD=%f numChildren=%lld childSize=%lld remainder=%lld\n", tid, numChildrenD, (long long) numChildren, (long long) childSize, (long long) remainder);
     
     casword_t word = NODE_TO_CASWORD(NULL);
-    if (op->newRoot != NODE_TO_CASWORD(NULL)) {
-        word = op->newRoot;
+    casword_t newRoot = op->newRoot;
+    if (newRoot == EMPTY_VAL_TO_CASWORD) {
+        return NODE_TO_CASWORD(NULL);
+    } else if (newRoot != NODE_TO_CASWORD(NULL)) {
+        word = newRoot;
         TRACE printf("    tid=%d used existing op->newRoot=%llx\n", tid, (unsigned long long) op->newRoot);
     } else {
+        assert(newRoot == NODE_TO_CASWORD(NULL));
+        
         if (keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) {
             IdealBuilder b (this, keyCount, op->depth);
             casword_t dummy = NODE_TO_CASWORD(NULL);
@@ -261,7 +266,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         }
         
         // try to CAS node into the RebuildOp
-        if (__sync_bool_compare_and_swap(&op->newRoot, NODE_TO_CASWORD(NULL), word)) {
+        if (__sync_bool_compare_and_swap(&op->newRoot, NODE_TO_CASWORD(NULL), word)) { // this should (and will) fail if op->newRoot == EMPTY_VAL_TO_CASWORD because helping is done
             TRACE printf("    tid=%d CAS'd op->newRoot successfully\n", tid);
             // success; node == op->newRoot will be built by us and possibly by helpers
         } else {
@@ -271,8 +276,18 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             // someone else CAS'd their newRoot in, so ours is NOT the new root.
             // reclaim ours, and help theirs instead.
             freeSubtree(tid, word, false);
+            
+            // try to help theirs
             word = op->newRoot;
-            assert(word);
+            assert(word != NODE_TO_CASWORD(NULL));
+            if (word == EMPTY_VAL_TO_CASWORD) {
+                // this rebuildop was part of a subtree that was rebuilt,
+                // and someone else CAS'd the newRoot from non-null to null
+                // (as part of reclamation) since we performed our CAS above.
+                // at any rate, we no longer need to help.
+                assert(IS_DIRTY_STARTED(op->parent->dirty));
+                return NODE_TO_CASWORD(NULL);
+            }
         }
     }
     assert(word);
@@ -318,7 +333,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         }
     }
 
-    // TODO: possibly help according to random permutation (generated once per thread)?
+    // TODO: possibly help according to random permutation?
 
     node->initSize = keyCount;
     node->minKey = node->key(0);
@@ -338,22 +353,29 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
+    if (newWord == NODE_TO_CASWORD(NULL)) return; // someone else already *finished* helping
     auto result = prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status;
     if (result == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
         freeSubtree(tid, NODE_TO_CASWORD(op->candidate), true);
         recordmgr->retire(tid, op);
     } else {
-        // if we fail to CAS, someone else CAS'd exactly newWord into op->parent->ptrAddr(op->index) !
-        // (once the rebuild op is there, we are guaranteed someone will CAS exactly op->newRoot in)
-        // there actually one other possibility as well:
-        // if this rebuildop is part of a subtree that is marked and rebuilt
-        // by another rebuildop, then this DCSS could fail because op->parent->dirty == 1.
-        // in this case, we should free the subtree at newWord.
+        // if we fail to CAS, then either:
+        // 1. someone else CAS'd exactly newWord into op->parent->ptrAddr(op->index), or
+        // 2. this rebuildop is part of a subtree that is marked and rebuilt by another rebuildop,
+        //    and this DCSS failed because op->parent->dirty == 1.
+        //    in this case, we should try to reclaim the subtree at newWord.
+        //
         if (result == DCSS_FAILED_ADDR1) {
-            freeSubtree(tid, newWord, true);
-            // note that other threads might be trying to help our rebuildop,
-            // and so might be accessing the subtree at newWord.
+            // try to claim the subtree at newWord for rebuilding
+            if (op->newRoot != NODE_TO_CASWORD(NULL)
+                    && __sync_bool_compare_and_swap(&op->newRoot, newWord, EMPTY_VAL_TO_CASWORD)) {
+                freeSubtree(tid, newWord, true);
+                // note that other threads might be trying to help our rebuildop,
+                // and so might be accessing the subtree at newWord.
+                // so, we use retire rather than deallocate.
+            }
+            // otherwise, someone else reclaimed the subtree
         }
     }
 #ifdef MEASURE_REBUILDING_TIME

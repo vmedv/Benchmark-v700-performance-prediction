@@ -626,7 +626,8 @@ void *thread_timed(void *_id) {
     papi_create_eventset(tid);
     __sync_fetch_and_add(&g.running, 1);
     __sync_synchronize();
-    while (!g.start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    std::cout<<"thread "<<__tid<<" wait for g.start running="<<g.running<<std::endl;
+    while (!g.start) { sched_yield(); __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
     papi_start_counters(tid);
     int cnt = 0;
@@ -704,7 +705,7 @@ void *thread_timed(void *_id) {
     papi_stop_counters(tid);
     SOFTWARE_BARRIER;
     
-    while (g.running) { /* wait */ __sync_synchronize(); }
+    while (g.running) { sched_yield(); __sync_synchronize(); }
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
     delete[] rqResultValues;
@@ -726,7 +727,7 @@ void *thread_rq(void *_id) {
     papi_create_eventset(tid);
     __sync_fetch_and_add(&g.running, 1);
     __sync_synchronize();
-    while (!g.start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    while (!g.start) { sched_yield(); __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
 
     papi_start_counters(tid);
@@ -769,7 +770,7 @@ void *thread_rq(void *_id) {
 
     //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
     while (g.running) {
-        // wait
+        sched_yield(); // wait
     }
     
     DEINIT_THREAD(tid);
