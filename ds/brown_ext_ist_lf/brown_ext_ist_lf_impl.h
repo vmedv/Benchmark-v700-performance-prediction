@@ -239,6 +239,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             casword_t dummy = NODE_TO_CASWORD(NULL);
             addKVPairs(tid, NODE_TO_CASWORD(op->candidate), &b);
             word = b.getCASWord(tid, &dummy);
+            assert(word != NODE_TO_CASWORD(NULL));
         } else {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
             if (op->depth <= 1) {
@@ -248,8 +249,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 #endif
                 word = NODE_TO_CASWORD(createNode(tid, numChildren));
                 TRACE printf("    tid=%d create regular root=%llx\n", tid, (unsigned long long) word);
-            }
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
+            }
+#endif
 
             CASWORD_TO_NODE(word)->degree = CASWORD_TO_NODE(word)->capacity; // to appease debug asserts (which state that we never go out of degree bounds on pointer/key accesses)
             for (int i=0;i<CASWORD_TO_NODE(word)->capacity;++i) {
@@ -257,10 +259,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             }
             CASWORD_TO_NODE(word)->degree = 0; // zero this out so we can have threads synchronize a bit later by atomically incrementing this until it hits node->capacity
         }
-#endif
         
         // try to CAS node into the RebuildOp
-        if (__sync_bool_compare_and_swap(&op->newRoot, NULL, word)) {
+        if (__sync_bool_compare_and_swap(&op->newRoot, NODE_TO_CASWORD(NULL), word)) {
             TRACE printf("    tid=%d CAS'd op->newRoot successfully\n", tid);
             // success; node == op->newRoot will be built by us and possibly by helpers
         } else {
@@ -337,29 +338,23 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
-    if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status == DCSS_SUCCESS) {
+    auto result = prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status;
+    if (result == DCSS_SUCCESS) {
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
         freeSubtree(tid, NODE_TO_CASWORD(op->candidate), true);
         recordmgr->retire(tid, op);
     } else {
         // if we fail to CAS, someone else CAS'd exactly newWord into op->parent->ptrAddr(op->index) !
         // (once the rebuild op is there, we are guaranteed someone will CAS exactly op->newRoot in)
-        
-//        if (unlikely(IS_KVPAIR(newWord))) {
-//            recordmgr->deallocate(tid, CASWORD_TO_KVPAIR(newWord));
-//        } else if (unlikely(IS_VAL(newWord))) {
-//            
-//        } else {
-//            assert(IS_NODE(newWord));
-//            if (__sync_bool_compare_and_swap(&op->candidate, newWord, NODE_TO_CASWORD(NULL))) {
-//                // we have exclusive access to reclaim the subtree
-//                // however, others may have access to it, and be accessing it as part of collaborative rebuilding
-//                // so, we must retire rather than deallocate
-//                freeSubtree(tid, newWord, true);
-//            } else {
-//                // someone else reclaimed the subtree
-//            }
-//        }
+        // there actually one other possibility as well:
+        // if this rebuildop is part of a subtree that is marked and rebuilt
+        // by another rebuildop, then this DCSS could fail because op->parent->dirty == 1.
+        // in this case, we should free the subtree at newWord.
+        if (result == DCSS_FAILED_ADDR1) {
+            freeSubtree(tid, newWord, true);
+            // note that other threads might be trying to help our rebuildop,
+            // and so might be accessing the subtree at newWord.
+        }
     }
 #ifdef MEASURE_REBUILDING_TIME
     auto cappedDepth = std::min((size_t) 9, op->depth);
