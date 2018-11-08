@@ -2,9 +2,9 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-### if you do not have PAPI, comment out these two lines
-FLAGS += -DUSE_PAPI
-LDFLAGS += -lpapi
+#### if you do not have PAPI, comment out these two lines
+#FLAGS += -DUSE_PAPI
+#LDFLAGS += -lpapi
 
 ### if you don't want to use jemalloc, comment out these two lines
 #LDFLAGS += -I../include/
@@ -45,17 +45,21 @@ bin_dir=bin
 all: ubench
 #all: minimal
 
-ubench: $(UBENCH_RNONE_BINS) $(UBENCH_RDEBRA_BINS) $(UBENCH_RDEBRACAP_BINS)
+dir_guard:
+	@mkdir -p $(bin_dir)
+
+ubench: $(UBENCH_RDEBRA_BINS)
+#buench: $(UBENCH_RNONE_BINS) 
 minimal: $(MINIMAL_BINS)
 
-%.minimal:
+%.minimal: dir_guard
 	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
-%.ubench_rnone:
+%.ubench_rnone: dir_guard
 	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rnone=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rnone=%) main.cpp -DRECLAIM_TYPE=none $(LDFLAGS)
-%.ubench_rdebra:
+%.ubench_rdebra: dir_guard
 	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
-%.ubench_rdebracap:
+%.ubench_rdebracap: dir_guard
 	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=debracap $(LDFLAGS)
 
 clean:
