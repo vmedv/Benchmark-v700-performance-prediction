@@ -49,7 +49,7 @@ dir_guard:
 	@mkdir -p $(bin_dir)
 
 ubench: $(UBENCH_RDEBRA_BINS)
-#buench: $(UBENCH_RNONE_BINS) 
+#ubench: $(UBENCH_RNONE_BINS) 
 minimal: $(MINIMAL_BINS)
 
 %.minimal: dir_guard
