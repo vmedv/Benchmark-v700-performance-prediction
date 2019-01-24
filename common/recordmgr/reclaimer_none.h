@@ -28,6 +28,7 @@ public:
         typedef reclaimer_none<_Tp1, _Tp2> other;
     };
     
+    std::string getDetailsString() { return "no reclaimer"; }
     std::string getSizeString() { return "no reclaimer"; }
     inline static bool shouldHelp() {
         return true;

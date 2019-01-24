@@ -73,6 +73,10 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
+    gstats_handle_stat(LONG_LONG, limbo_reclamation_event_size, 100000, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
     gstats_handle_stat(LONG_LONG, num_bail_from_addkv_at_depth, 10, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
     }) \
@@ -138,7 +142,7 @@ __thread int tid = 0;
     gstats_handle_stat(LONG_LONG, num_prop_root_read_time, 1, { \
             gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, timer_guard_latency, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_guard_latency, 1, {}) */ \
     gstats_handle_stat(LONG_LONG, timer_epoch_latency, 1, {}) \
     gstats_handle_stat(LONG_LONG, num_prop_epoch_latency, 100000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
@@ -147,7 +151,7 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, num_prop_guard_latency, 100000, { \
+/*  gstats_handle_stat(LONG_LONG, num_prop_guard_latency, 100000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
@@ -173,8 +177,10 @@ __thread int tid = 0;
     }) \
     gstats_handle_stat(LONG_LONG, num_prop_thread_exit_time, 1, { \
             gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) */ \
+    gstats_handle_stat(LONG_LONG, thread_announced_epoch, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
     }) \
-    gstats_handle_stat(LONG_LONG, thread_announced_epoch, 1, {})*/ \
     gstats_handle_stat(LONG_LONG, visited_in_bags, 1, { \
             /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
@@ -607,7 +613,7 @@ void prefill() {
     std::cout<<"pref_size="<<sz<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
-//    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
 //    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
 }
 
@@ -626,7 +632,7 @@ void *thread_timed(void *_id) {
     papi_create_eventset(tid);
     __sync_fetch_and_add(&g.running, 1);
     __sync_synchronize();
-    std::cout<<"thread "<<__tid<<" wait for g.start running="<<g.running<<std::endl;
+    //std::cout<<"thread "<<__tid<<" wait for g.start running="<<g.running<<std::endl;
     while (!g.start) { sched_yield(); __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
     papi_start_counters(tid);
@@ -947,6 +953,10 @@ void trial() {
         }
 //    });
 
+#if defined USE_GSTATS
+        GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), 10000);
+#endif
+
     if (g.running > 0) {
         COUTATOMIC(std::endl);
         COUTATOMIC("Validation FAILURE: "<<g.running<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<std::endl);
@@ -962,6 +972,12 @@ void trial() {
         } else {
             std::cout<<"Structural validation FAILURE."<<std::endl;
         }
+        
+        #if defined USE_GSTATS && defined OVERRIDE_PRINT_STATS_ON_ERROR
+            GSTATS_PRINT;
+            std::cout<<std::endl;
+        #endif
+        
         g.dsAdapter->printSummary();
 #ifdef RQ_DEBUGGING_H
         DEBUG_VALIDATE_RQ(TOTAL_THREADS);
@@ -1219,7 +1235,7 @@ int main(int argc, char** argv) {
     std::cout<<std::endl;
     
     // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
-//    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
 //    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
 
     trial();

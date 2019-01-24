@@ -226,6 +226,7 @@ public:
         }
         return sum;
     }
+    std::string getDetailsString() { return ""; }
     std::string getSizeString() {
         std::stringstream ss;
         ss<<getSizeInNodes();
@@ -242,7 +243,7 @@ public:
     inline static void qUnprotectAll(const int tid) {}
     inline static bool shouldHelp() { return true; }
     
-private:
+public:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (thread_data[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = thread_data[tid].epochbags[((nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS)];
@@ -251,6 +252,27 @@ private:
         thread_data[tid].index = nextIndex;
         thread_data[tid].currentBag = thread_data[tid].epochbags[nextIndex];
     }
+    
+private:
+    template <typename... Rest>
+    class BagRotator {
+    public:
+        BagRotator() {}
+        inline void rotateAllEpochBags(const int tid, void * const * const reclaimers, const int i) {
+        }
+    };
+
+    template <typename First, typename... Rest>
+    class BagRotator<First, Rest...> : public BagRotator<Rest...> {
+    public:
+        inline void rotateAllEpochBags(const int tid, void * const * const reclaimers, const int i) {
+            typedef typename Pool::template rebindAlloc<First>::other classAlloc;
+            typedef typename Pool::template rebind2<First, classAlloc>::other classPool;
+
+            ((reclaimer_tree_ebr<First, classPool> * const) reclaimers[i])->rotateEpochBags(tid);
+            ((BagRotator<Rest...> *) this)->rotateAllEpochBags(tid, reclaimers, 1+i);
+        }
+    };
 
 public:
     inline void endOp(const int tid) {
@@ -258,7 +280,8 @@ public:
         //epoch->announce(tid, GET_WITH_QUIESCENT(epoch->readThread(tid)));
     }
     
-    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
+    template <typename First, typename... Rest>
+    inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers, const bool readOnly = false) {
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
 //        GSTATS_TIMER_RESET(tid, timer_guard_latency);
 //        GSTATS_ADD(tid, num_getguard, 1);
@@ -270,22 +293,31 @@ public:
 //        __sync_synchronize();
         const long ann = epoch->readThread(tid);
 
-        // if our announced epoch is different from the current epoch
+        // if our previous announced epoch is different from the current epoch
         if (readEpoch != BITS_EPOCH(ann)) {
-            // announce the new epoch, and rotate the epoch bags
+            // announce new epoch
             epoch->announce(tid, readEpoch);
+            // NOTE: we are sensitive to big delays caused by dirty page purging when bag rotation happens below!
+            // rotate the epoch bags
             thread_data[tid].timesBagTooLargeSinceRotation = 0;
-            for (int i=0;i<numReclaimers;++i) {
-                ((reclaimer_tree_ebr<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
-            }
+            BagRotator<First, Rest...> rotator;
+            rotator.rotateAllEpochBags(tid, reclaimers, 0);
+//            for (int i=0;i<numReclaimers;++i) {
+//                ((reclaimer_tree_ebr<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
+//            }
             result = true;
         }
 
-//        epoch->announce(tid, readEpoch); // must always announce because of quiescence bit
-        // periodically try advancing the epoch
-        if ((++thread_data[tid].timeSinceTryAdvance % MIN_TIME_BEFORE_TRY_ADVANCE) == 0) {
-            epoch->tryAdvance(tid);
+#ifndef DEBRA_DISABLE_READONLY_OPT
+        if (!readOnly) {
+#endif
+            // periodically try advancing the epoch
+            if ((++thread_data[tid].timeSinceTryAdvance % MIN_TIME_BEFORE_TRY_ADVANCE) == 0) {
+                epoch->tryAdvance(tid);
+            }
+#ifndef DEBRA_DISABLE_READONLY_OPT
         }
+#endif
         return result;
     }
     

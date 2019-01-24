@@ -42,7 +42,7 @@ some results with jemalloc and tcmalloc are below
 if the intended use case of a data structure is with pooling, might not want to use eval with jemalloc (tcmalloc?)
 tcmalloc still appears to have some big overhead with big nodes (but not as big as jemalloc).
 	can we confirm the overhead is tcmalloc free (by eliminating the actual free calls)?
-	
+
 jemalloc (very aggressive purging)
 
     0    50           brown_ext_ist_lf.ubench_rdebra    36      total_throughput=11332162      10002         5548                     29064158 1099740 5379138 7488
@@ -70,8 +70,8 @@ jemalloc (very aggressive purging)
     0     0       bronson_pext_bst_occ.ubench_rdebra    36      total_throughput=13290958      10002        11460                                                 0
     0     0       bronson_pext_bst_occ.ubench_rdebra   144      total_throughput=52954689      10008          660                                                 0
 
-tcmalloc (little or no purging)
 
+tcmalloc (little purging) --- later found purging to still be an issue!
     0    50           brown_ext_ist_lf.ubench_rdebra    36      total_throughput=13970687      10000         4684                     29007346 1104104 5380431 7446
     0    50           brown_ext_ist_lf.ubench_rdebra   144       total_throughput=9802539      10000          340                     29709069 1062863 4901059 9849
     0    50        brown_ext_abtree_lf.ubench_rdebra    36      total_throughput=20907483      10000        28884                                         239687371
@@ -97,7 +97,10 @@ tcmalloc (little or no purging)
     0     0       bronson_pext_bst_occ.ubench_rdebra    36      total_throughput=13184954      10000        21992                                                 0
     0     0       bronson_pext_bst_occ.ubench_rdebra   144      total_throughput=52177636      10000         3040                                                 0
 
-
+another thought: perhaps the purging is triggered by deallocate calls performed inside non-Q section (in IST and abtree)
+	test by delaying all deallocation (and maybe retire) until after we are Q
+	(use some thread local vector to store lambdas for freeSubtree calls?)
+	
 ================ backtrace showing MASSIVE delay by one thread (this thread) ===============
 
 #0  0x00002aaaac391567 in madvise () at ../sysdeps/unix/syscall-template.S:84
@@ -161,3 +164,7 @@ tcmalloc (little or no purging)
 #32 thread_timed (_id=<optimized out>) at main.cpp:680
 #33 0x00002aaaab3c9494 in start_thread (arg=0x2aaebb155700) at pthread_create.c:333
 #34 0x00002aaaac395acf in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:97
+
+
+
+Possible stop-gap solution: use supermalloc? It likely deals with page purging better.

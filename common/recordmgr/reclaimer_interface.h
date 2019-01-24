@@ -42,6 +42,7 @@ public:
     
     long long getSizeInNodes() { return 0; }
     std::string getSizeString() { return ""; }
+    std::string getDetailsString() { return ""; }
 
     inline static bool quiescenceIsPerRecordType() { return true; }
     inline static bool shouldHelp() { return true; } // FOR DEBUGGING PURPOSES

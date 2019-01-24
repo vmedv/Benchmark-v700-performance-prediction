@@ -104,6 +104,19 @@ public:
         return ss.str();
     }
     
+    std::string getDetailsString() {
+        std::stringstream ss;
+        long long sum[NUMBER_OF_EPOCH_BAGS];
+        for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
+            sum[j] = 0;
+            for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
+                sum[j] += threadData[tid].epochbags[j]->computeSize();
+            }
+            ss<<sum[j]<<" ";
+        }
+        return ss.str();
+    }
+    
     inline static bool quiescenceIsPerRecordType() { return false; }
     
     inline bool isQuiescent(const int tid) {
@@ -131,6 +144,7 @@ public:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
+        GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
         threadData[tid].index = nextIndex;
@@ -183,7 +197,11 @@ public:
         // we should announce AFTER rotating bags if we're going to do so!!
         // (very problematic interaction with lazy dirty page purging in jemalloc triggered by bag rotation,
         //  which causes massive non-quiescent regions if non-Q announcement happens before bag rotation)
+        SOFTWARE_BARRIER;
         threadData[tid].announcedEpoch.store(readEpoch, std::memory_order_relaxed); // note: this must be written, regardless of whether the announced epochs are the same, because the quiescent bit will vary
+#if defined USE_GSTATS
+        GSTATS_SET(tid, thread_announced_epoch, readEpoch);
+#endif
         // note: readEpoch, when written to announcedEpoch[tid],
         //       sets the state to non-quiescent and non-neutralized
 
@@ -198,7 +216,11 @@ public:
                 if (BITS_EPOCH(otherAnnounce) == readEpoch || QUIESCENT(otherAnnounce)) {
                     const int c = ++threadData[tid].checked;
                     if (c >= this->NUM_PROCESSES /*&& c > MIN_OPS_BEFORE_CAS_EPOCH*/) {
-                        __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
+                        if (__sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT)) {
+#if defined USE_GSTATS
+                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), readEpoch+EPOCH_INCREMENT);
+#endif
+                        }
                     }
                 }
             }

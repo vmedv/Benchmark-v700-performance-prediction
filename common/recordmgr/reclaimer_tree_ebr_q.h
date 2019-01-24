@@ -238,6 +238,7 @@ public:
         }
         return sum;
     }
+    std::string getDetailsString() { return ""; }
     std::string getSizeString() {
         std::stringstream ss;
         ss<<getSizeInNodes();

@@ -32,7 +32,7 @@
 
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"
-//#include "reclaimer_tree_ebr.h"
+#include "reclaimer_tree_ebr.h"
 //#include "reclaimer_tree_ebr_q.h"
 //#include "reclaimer_numa_tree_ebr_q.h"
 #include "reclaimer_debra.h"
@@ -175,6 +175,7 @@ public:
         COUTATOMIC(typeid(Record).name()<<"_recycled="<<recycled<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_deallocated="<<deallocated<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_limbo_count="<<reclaim->getSizeString()<<std::endl);
+        COUTATOMIC(typeid(Record).name()<<"_limbo_details="<<reclaim->getDetailsString()<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_pool_count="<<pool->getSizeString()<<std::endl);
         COUTATOMIC(std::endl);
 
