@@ -579,7 +579,7 @@ void prefill() {
 
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
         totalThreadsPrefillElapsedMillis += g.prefillIntervalElapsedMillis;
-        if (sz > expectedSize*(1-PREFILL_THRESHOLD)) {
+        if (sz >= (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
             break;
         } else {
             auto currTime = std::chrono::high_resolution_clock::now();
