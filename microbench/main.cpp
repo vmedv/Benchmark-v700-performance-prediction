@@ -449,6 +449,7 @@ void *thread_prefill(void *_id) {
     pthread_exit(NULL);
 }
 
+// note: this function guarantees that exactly expectedSize keys are inserted into the data structure by the end
 void prefillInsertionOnly() {
     std::cout<<"Info: prefilling using INSERTION ONLY."<<std::endl;
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
@@ -1044,9 +1045,15 @@ void printOutput() {
         threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g.prefillSize;
         long long dsKeySum = treeStats->getSumOfKeys();
         long long dsSize = treeStats->getKeys();
+        std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
+        std::cout<<"threads_final_size="<<threadsSize<<std::endl;
+        std::cout<<"final_keysum"<<dsKeySum<<std::endl;
+        std::cout<<"final_size"<<dsSize<<std::endl;
         if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
+            std::cout<<"validate_result=success"<<std::endl;
             std::cout<<"Validation OK."<<std::endl;
         } else {
+            std::cout<<"validate_result=fail"<<std::endl;
             std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
             std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime();
@@ -1057,8 +1064,6 @@ void printOutput() {
             
             exit(-1);
         }
-        std::cout<<"final_keysum="<<threadsKeySum<<std::endl;
-        std::cout<<"final_size="<<threadsSize<<std::endl;
     }
 #endif
     
