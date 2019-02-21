@@ -11,7 +11,8 @@
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ellen<skey_t, sval_t, RecMgr>::bst_find(const int tid, skey_t key) {
-    recmgr->getGuard(tid, true);
+    auto guard = recmgr->getGuard(tid, true);
+    
     auto l = root->left;
     while (l->left) l = (key < l->key) ? l->left : l->right;
     return (l->key == key) ? l->value : NO_VALUE;
@@ -20,7 +21,7 @@ sval_t ellen<skey_t, sval_t, RecMgr>::bst_find(const int tid, skey_t key) {
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ellen<skey_t, sval_t, RecMgr>::bst_insert(const int tid, const skey_t key, const sval_t value) {
     while (1) {
-        recmgr->getGuard(tid);
+        auto guard = recmgr->getGuard(tid);
         
         auto p = root;
         auto pupdate = p->update;
@@ -62,7 +63,7 @@ sval_t ellen<skey_t, sval_t, RecMgr>::bst_insert(const int tid, const skey_t key
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ellen<skey_t, sval_t, RecMgr>::bst_delete(const int tid, skey_t key) {
     while (1) {
-        recmgr->getGuard(tid);
+        auto guard = recmgr->getGuard(tid);
         
         node_t<skey_t, sval_t> * gp = NULL;
         info_t<skey_t, sval_t> * gpupdate = NULL;
