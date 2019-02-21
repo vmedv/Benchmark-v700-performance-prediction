@@ -66,6 +66,22 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
     }
     
+    // high level idea: if not at a leaf, try to divide work between any helpers at this node
+    //      by using fetch&add to "soft-reserve" a subtree to work on.
+    //      (each helper will get a different subtree!)
+    // note that all helpers must still try to help ALL subtrees after, though,
+    //      since a helper might crash after soft-reserving a subtree.
+    //      the DIRTY_FINISHED indicator makes these final helping attempts more efficient.
+    //
+    // this entire idea of dividing work between helpers first can be disabled
+    //      by defining SEQUENTIAL_MARK_AND_COUNT
+    //
+    // can the clean fetch&add work division be adapted better for concurrent ideal tree construction?
+    //
+    // note: could i save a second traversal to build KVPair arrays by having
+    //      each thread call addKVPair for each key it sees in THIS traversal?
+    //      (maybe avoiding sort order issues by saving per-thread lists and merging)
+    
 #if !defined SEQUENTIAL_MARK_AND_COUNT
     // optimize for contention by first claiming a subtree to recurse on
     // THEN after there are no more subtrees to claim, help (any that are still DIRTY_STARTED)
@@ -268,6 +284,8 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         // try to CAS node into the RebuildOp
         if (__sync_bool_compare_and_swap(&op->newRoot, NODE_TO_CASWORD(NULL), word)) { // this should (and will) fail if op->newRoot == EMPTY_VAL_TO_CASWORD because helping is done
             TRACE printf("    tid=%d CAS'd op->newRoot successfully\n", tid);
+            assert(word != NODE_TO_CASWORD(NULL));
+            //assert(word == op->newRoot); // not a valid assert, since we could change from NODE to EMPTY_VAL!
             // success; node == op->newRoot will be built by us and possibly by helpers
         } else {
             TRACE printf("    tid=%d failed to CAS op->newRoot\n", tid);
@@ -280,19 +298,27 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             // try to help theirs
             word = op->newRoot;
             assert(word != NODE_TO_CASWORD(NULL));
+            //assert(word == op->newRoot); // not a valid assert, since earlier read can be a new node, and this read can be EMPTY_VAL!
             if (word == EMPTY_VAL_TO_CASWORD) {
                 // this rebuildop was part of a subtree that was rebuilt,
-                // and someone else CAS'd the newRoot from non-null to null
-                // (as part of reclamation) since we performed our CAS above.
+                // and someone else CAS'd the newRoot from non-null to "null" (empty val)
+                // (as part of reclamation) *after* we performed our CAS above.
                 // at any rate, we no longer need to help.
+                
+                // TODO: i forget now how this interacts with reclamation?
+                //      need to re-conceptualize the algorithm in its entirety!
+                // IIRC, op->newRoot can only transition from CASWORD(NULL) to CASWORD(node) to CASWORD_EMPTYVAL
+                //      (the final state meaning the new root / subtree(?) was *reclaimed*)
+                // QUESTION: how can this safely be reclaimed while we have a pointer to it? shouldn't EBR stop this?
+                
                 assert(IS_DIRTY_STARTED(op->parent->dirty));
                 return NODE_TO_CASWORD(NULL);
             }
         }
     }
-    assert(word);
-    assert(op->newRoot);
-    assert(op->newRoot == word);
+    assert(word != NODE_TO_CASWORD(NULL));
+    assert(op->newRoot != NODE_TO_CASWORD(NULL));
+    assert(op->newRoot == word || EMPTY_VAL_TO_CASWORD /* as per above, rebuildop was part of a subtree that was rebuilt, and "word" was reclaimed! */);
     
     // stop here if there is no subtree to build (just one kvpair or node)
     if (IS_KVPAIR(word) || keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) return word;
@@ -587,6 +613,7 @@ retryNode:
                                 auto index = interpolationSearch(tid, path[i]->key(0), parent);
 
 #ifndef NDEBUG
+#ifdef TOTAL_THREADS
                                 // single threaded only debug info
                                 if (path[i]->degree == 1 || (TOTAL_THREADS == 1 && CASWORD_TO_NODE(parent->ptr(index)) != path[i])) {
                                     std::cout<<"i="<<i<<std::endl;
@@ -614,6 +641,7 @@ retryNode:
                                     std::cout<<"foundVal="<<foundVal<<std::endl;
                                     assert(false);
                                 }
+#endif
 #endif
                                 
 #ifndef NO_REBUILDING

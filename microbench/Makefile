@@ -2,9 +2,9 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-#### if you do not have PAPI, comment out these two lines
-#FLAGS += -DUSE_PAPI
-#LDFLAGS += -lpapi
+### if you do not have PAPI, comment out these two lines
+FLAGS += -DUSE_PAPI
+LDFLAGS += -lpapi
 
 ### if you don't want to use jemalloc, comment out these two lines
 #LDFLAGS += -I../include/
@@ -20,7 +20,7 @@ FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
 FLAGS += -DNO_DELETE_DS
 #FLAGS += -DRAPID_RECLAMATION
-#FLAGS += -DPREFILL_INSERTION_ONLY
+FLAGS += -DPREFILL_INSERTION_ONLY
 FLAGS += -DMEASURE_REBUILDING_TIME
 FLAGS += -DDEBRA_DISABLE_READONLY_OPT
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
@@ -45,13 +45,13 @@ UBENCH_RDEBRACAP_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebracap,$(DATA_STR
 bin_dir=bin
 
 all: ubench
-#all: minimal
+all: minimal
 
 dir_guard:
 	@mkdir -p $(bin_dir)
 
 ubench: $(UBENCH_RDEBRA_BINS)
-#ubench: $(UBENCH_RNONE_BINS) 
+ubench: $(UBENCH_RNONE_BINS)
 minimal: $(MINIMAL_BINS)
 
 %.minimal: dir_guard

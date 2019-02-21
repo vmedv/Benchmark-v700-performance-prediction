@@ -7,16 +7,16 @@ echo "" > $exp.csv
 
 step=10000
 maxstep=$step
-thread_counts=`cd .. ; ./get_thread_counts.sh`
+thread_count_max=`cd .. ; ./get_thread_count_max.sh`
 pinning_policy=`cd .. ; ./get_pinning_cluster.sh`
 t=16000
 
 for counting in 1 0 ; do
     for ((trial=0;trial<5;++trial)) ; do
-        for uhalf in 0 0.5 5 20 ; do
-            for k in 2000000 20000000 200000000 ; do
+        for uhalf in 5 ; do
+            for ((k=(1<<11);k<=(1<<31);k<<=1)) ; do
                 for alg in brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ ellen_ext_bst_lf guerraoui_ext_bst_ticket natarajan_ext_bst_lf ; do
-                    for n in $thread_counts ; do
+                    for n in $thread_count_max ; do
                         if ((counting)); then
                             maxstep=$((maxstep+1))
                         else
