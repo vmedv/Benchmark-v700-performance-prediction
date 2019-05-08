@@ -72,10 +72,10 @@ private:
                 while (!b->isEmpty()) {
                     auto obj = b->pop();
                     this->alloc->deallocate(tid, obj);
-#ifdef USE_GSTATS
-                    GSTATS_ADD(tid, move_block_global_to_alloc, 1);
-#endif
                 }
+#ifdef USE_GSTATS
+                GSTATS_ADD(tid, move_block_global_to_alloc, 1);
+#endif
             }
         }
     }

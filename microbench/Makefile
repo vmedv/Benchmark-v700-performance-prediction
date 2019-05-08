@@ -38,21 +38,24 @@ MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(wildcard ../ds/*
 minimal_%: dir_guard
 	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
-DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
-DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(DATA_STRUCTURE_ADAPTERS_H))
-
-RECLAIMERS=none debra ebr_token ebr_tree
-POOLS=none numa
+DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/*/adapter.h))
+RECLAIMERS=none debra
+POOLS=none
 ALLOCATORS=new
 
+#DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ab*/adapter.h))
+#$(info $(DATA_STRUCTURES))
+#RECLAIMERS=debra
+#POOLS=none numa
+#ALLOCATORS=new
+
 define make-custom-target =
-bin=ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4)
-$(bin): dir_guard
-	$(GPP) main.cpp -o $(bin_dir)/$(bin) -I../ds/$1 -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
-all:: $(bin)
+ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out: dir_guard
+	$(GPP) main.cpp -o $(bin_dir)/ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out -I../ds/$1 -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
+all:: ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out
 endef
 
-$(foreach alg,$(DATA_STRUCTURES),$(foreach a,$(ALLOCATORS),$(foreach r,$(RECLAIMERS),$(foreach p,$(POOLS),$(eval $(call make-custom-target,$(alg),$(a),$(r),$(p)))))))
+$(foreach ds,$(DATA_STRUCTURES),$(foreach alloc,$(ALLOCATORS),$(foreach reclaim,$(RECLAIMERS),$(foreach pool,$(POOLS),$(eval $(call make-custom-target,$(ds),$(alloc),$(reclaim),$(pool)))))))
 
 clean:
-	rm $(bin_dir)/*
+	rm $(bin_dir)/*.out
