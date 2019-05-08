@@ -17,6 +17,7 @@
 #include "plaf.h"
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
+#include "server_clock.h"
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
@@ -193,7 +194,11 @@ public:
             // reclaim any objects retired two epochs ago.
             threadData[tid].checked = 0;
             BagRotator<First, Rest...> rotator;
+            //auto time = get_server_clock();
+            //GSTATS_APPEND(tid, thread_reclamation_start, time);
             rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            //auto time2 = get_server_clock();
+            //GSTATS_APPEND(tid, thread_reclamation_end, time);
             //this->template rotateAllEpochBags<First, Rest...>(tid, reclaimers, 0);
             result = true;
         }
@@ -221,7 +226,7 @@ public:
                     if (c >= this->NUM_PROCESSES /*&& c > MIN_OPS_BEFORE_CAS_EPOCH*/) {
                         if (__sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT)) {
 #if defined USE_GSTATS
-                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), readEpoch+EPOCH_INCREMENT);
+                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), readEpoch+EPOCH_INCREMENT);
 #endif
                         }
                     }

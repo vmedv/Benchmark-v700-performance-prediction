@@ -3,13 +3,8 @@ LDFLAGS =
 GPP = g++
 
 ### if you do not have PAPI, comment out these two lines
-FLAGS += -DUSE_PAPI
-LDFLAGS += -lpapi
-
-### if you don't want to use jemalloc, comment out these two lines
-#LDFLAGS += -I../include/
-#LDFLAGS += -ljemalloc
-#FLAGS += -DPRINT_JEMALLOC_STATS
+#FLAGS += -DUSE_PAPI
+#LDFLAGS += -lpapi
 
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
@@ -23,6 +18,7 @@ FLAGS += -DNO_DELETE_DS
 FLAGS += -DPREFILL_INSERTION_ONLY
 FLAGS += -DMEASURE_REBUILDING_TIME
 FLAGS += -DDEBRA_DISABLE_READONLY_OPT
+FLAGS += -DUSE_TREE_STATS
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
 #FLAGS += -DNDEBUG
 FLAGS += -Wno-format
@@ -32,37 +28,31 @@ LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
-
-MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
-MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
-
-DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
-
-UBENCH_RNONE_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rnone,$(DATA_STRUCTURE_ADAPTERS_H))
-UBENCH_RDEBRA_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebra,$(DATA_STRUCTURE_ADAPTERS_H))
-UBENCH_RDEBRACAP_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebracap,$(DATA_STRUCTURE_ADAPTERS_H))
+LDFLAGS += -lnuma
 
 bin_dir=bin
-
-all: ubench
-all: minimal
-
 dir_guard:
 	@mkdir -p $(bin_dir)
 
-ubench: $(UBENCH_RDEBRA_BINS)
-ubench: $(UBENCH_RNONE_BINS)
-minimal: $(MINIMAL_BINS)
+MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(wildcard ../ds/*/minimal_example.cpp))
+minimal_%: dir_guard
+	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
-%.minimal: dir_guard
-	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
+DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
+DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(DATA_STRUCTURE_ADAPTERS_H))
 
-%.ubench_rnone: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rnone=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rnone=%) main.cpp -DRECLAIM_TYPE=none $(LDFLAGS)
-%.ubench_rdebra: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
-%.ubench_rdebracap: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=debracap $(LDFLAGS)
+RECLAIMERS=none debra ebr_token ebr_tree
+POOLS=none numa
+ALLOCATORS=new
+
+define make-custom-target =
+bin=ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4)
+$(bin): dir_guard
+	$(GPP) main.cpp -o $(bin_dir)/$(bin) -I../ds/$1 -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
+all:: $(bin)
+endef
+
+$(foreach alg,$(DATA_STRUCTURES),$(foreach a,$(ALLOCATORS),$(foreach r,$(RECLAIMERS),$(foreach p,$(POOLS),$(eval $(call make-custom-target,$(alg),$(a),$(r),$(p)))))))
 
 clean:
 	rm $(bin_dir)/*

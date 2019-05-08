@@ -24,23 +24,23 @@ class block;
 
 #include "lockfreeblockbag.h"
 
-// BLOCK_SIZE must be a power of two, or else the bitwise math is invalid.
-#define BLOCK_SIZE (1<<8)
+//#define BLOCK_SIZE 64
+#define BLOCK_SIZE_DESIRED_BYTES 512
+#define BLOCK_SIZE (BLOCK_SIZE_DESIRED_BYTES/sizeof(T*)-3*sizeof(size_t))
     
     template <typename T>
     class block { // stack implemented as an array
-        private:
-//            PAD;
-            T * data[BLOCK_SIZE];
-            int size;
         public:
             block<T> *next;
-//        private:
-//            PAD;
-//        public:
+            size_t nextCount; // intrusive pointer used for *other* purposes (outside this file -- currently only in lockfreeblockstack.h)
+        private:
+            size_t size;
+            T * data[BLOCK_SIZE];
+        public:
             
             block(block<T> * const _next) : next(_next) {
                 size = 0;
+                nextCount = 0;
             }
             ~block() {
                 assert(size == 0);
@@ -311,6 +311,7 @@ class block;
         }
         
     public:
+        blockbag() {}
         blockbag(const int tid, blockpool<T> * const _pool) : pool(_pool) {
 //            VERBOSE DEBUG std::cout<<"constructor blockbag"<<std::endl;
             owner = tid;
@@ -443,6 +444,7 @@ class block;
                 return true;
             }
         }
+
         // precondition: !isEmpty()
         T* remove() {
             assert(!isEmpty());
@@ -469,10 +471,8 @@ class block;
         }
         
         
-        ////////// not anymore // precondition: !isEmpty()
         template <typename Alloc>
         T* remove(const int tid, lockfreeblockbag<T> * const sharedBag, Alloc * const alloc) {
-            //assert(!isEmpty());
             DEBUG2 validate();
             int oldsize; DEBUG2 oldsize = computeSize();
             T *result;

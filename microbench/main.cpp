@@ -73,9 +73,36 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, limbo_reclamation_event_size, 100000, { \
+    gstats_handle_stat(LONG_LONG, limbo_reclamation_event_size, 10000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, pool_cpu_get, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, pool_cpu_add, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_reclaimer_to_cpu, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_cpu_to_node, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_node_to_global, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_global_to_alloc, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_alloc_to_cpu, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_global_to_cpu, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, move_block_node_to_cpu, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_bail_from_addkv_at_depth, 10, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
@@ -142,16 +169,47 @@ __thread int tid = 0;
     gstats_handle_stat(LONG_LONG, num_prop_root_read_time, 1, { \
             gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, timer_guard_latency, 1, {}) */ \
-    gstats_handle_stat(LONG_LONG, timer_epoch_latency, 1, {}) \
-    gstats_handle_stat(LONG_LONG, num_prop_epoch_latency, 100000, { \
+    gstats_handle_stat(LONG_LONG, timersplit_guard, 1, {}) */ \
+    gstats_handle_stat(LONG_LONG, timersplit_epoch, 1, {}) \
+    gstats_handle_stat(LONG_LONG, num_prop_epoch_latency, 10000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL) \
     }) \
-/*  gstats_handle_stat(LONG_LONG, num_prop_guard_latency, 100000, { \
+    gstats_handle_stat(LONG_LONG, bag_rotation_reclaim_size, 100, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      /*__AND gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, timersplit_token_received, 1, {}) \
+    gstats_handle_stat(LONG_LONG, timer_bag_rotation_start, 1, {}) \
+    gstats_handle_stat(LONG_LONG, token_received_time_split_ms, 10000, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+      /*__AND gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, token_received_time_last_ms, 1, { \
+           gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) \
+    gstats_handle_stat(LONG_LONG, bag_rotation_start_time_us, 100, { \
+            /*gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, bag_rotation_end_time_us, 100, { \
+            /*gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, bag_rotation_duration_split_ms, 10000, { \
+            gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
+    }) \
+    gstats_handle_stat(LONG_LONG, bag_curr_size, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) \
+    gstats_handle_stat(LONG_LONG, bag_last_size, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) \
+    gstats_handle_stat(LONG_LONG, token_counts, 1, { \
+            gstats_output_item(PRINT_RAW, FIRST, BY_THREAD) \
+    }) \
+/*  gstats_handle_stat(LONG_LONG, num_prop_guard_split, 100000, { \
             gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, AVERAGE, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, STDEV, TOTAL) \
@@ -180,6 +238,12 @@ __thread int tid = 0;
     }) */ \
     gstats_handle_stat(LONG_LONG, thread_announced_epoch, 1, { \
             gstats_output_item(PRINT_RAW, FIRST, BY_INDEX) \
+    }) \
+    gstats_handle_stat(LONG_LONG, thread_reclamation_start, 10, { \
+           /* gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
+    }) \
+    gstats_handle_stat(LONG_LONG, thread_reclamation_end, 10, { \
+           /* gstats_output_item(PRINT_RAW, NONE, FULL_DATA)*/ \
     }) \
     gstats_handle_stat(LONG_LONG, visited_in_bags, 1, { \
             /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
@@ -279,7 +343,7 @@ __thread int tid = 0;
     #define RQ_SNAPCOLLECTOR_OBJ_SIZES 
 #endif
 
-#define KEY_TO_VALUE(key) &key /*((void*) (size_t) (key))*/ /* note: unsafe hack to get a pointer, but no one ever follows these pointers */
+#define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
 #define VALUE_TYPE void *
 
 #ifdef USE_RCU
@@ -614,8 +678,10 @@ void prefill() {
     std::cout<<"pref_size="<<sz<<std::endl;
     std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
-    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
-//    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
+    GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_bag_rotation_start, get_server_clock());
+//    GSTATS_CLEAR_VAL(timersplit_guard, get_server_clock());
 }
 
 void *thread_timed(void *_id) {
@@ -802,7 +868,7 @@ void trial() {
 
     // initialize (lots of) RNGs
     for (int i=0;i<MAX_THREADS_POW2;++i) {
-        g.rngs[i].setSeed(rand());
+        g.rngs[i].setSeed(rand()); // note: it is important that rand() and rngs[i] use different RNG algorithms (else they will generate the same sequence of random numbers, shifted by a small constant)...
     }
     
     // create thread data
@@ -954,19 +1020,15 @@ void trial() {
         }
 //    });
 
-#if defined USE_GSTATS
-        GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), 10000);
-#endif
+//#if defined USE_GSTATS
+//        GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), 10000);
+//#endif
 
     if (g.running > 0) {
         COUTATOMIC(std::endl);
         COUTATOMIC("Validation FAILURE: "<<g.running<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<std::endl);
         COUTATOMIC(std::endl);
         COUTATOMIC("elapsedMillis="<<g.elapsedMillis<<" elapsedMillisNapping="<<g.elapsedMillisNapping<<std::endl);
-        
-//        for (int i=0;i<TOTAL_THREADS;++i) {
-//            pthread_cancel(*(threads[i]));
-//        }
         
         if (g.dsAdapter->validateStructure()) {
             std::cout<<"Structural validation OK"<<std::endl;
@@ -1003,6 +1065,7 @@ void trial() {
     COUTATOMIC(std::endl);
     
     COUTATOMIC(((g.elapsedMillis+g.elapsedMillisNapping)/1000.)<<"s"<<std::endl);
+    std::cout<<"gstats_timer_elapsed timer_bag_rotation_start="<<GSTATS_TIMER_ELAPSED(0, timer_bag_rotation_start)/1000000000.<<std::endl;
 
     papi_deinit_program();
     DEINIT_ALL;
@@ -1029,12 +1092,22 @@ void printOutput() {
     std::cout<<std::endl;
     std::cout<<"size_nodes="<<treeStats->toString()<<std::endl;
     
+    g.dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
+
 #ifdef USE_GSTATS
     GSTATS_PRINT;
     std::cout<<std::endl;
-#endif
     
-    g.dsAdapter->printSummary();
+    for (int threadID = 0; threadID < TOTAL_THREADS; ++threadID) {
+        for (int index=0;index<10;++index) {
+            auto startTime = GSTATS_GET_IX(threadID, thread_reclamation_start, index);
+            auto endTime = GSTATS_GET_IX(threadID, thread_reclamation_end, index);
+            std::cout<<"tid="<<threadID<<" startTime="<<startTime<<" endTime="<<endTime<<std::endl;
+        }
+    }
+    
+    std::cout<<std::endl;
+#endif
     
     long long threadsKeySum = 0;
     long long threadsSize = 0;
@@ -1057,10 +1130,6 @@ void printOutput() {
             std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
             std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime();
-//            const long long totalInserts = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum;
-//            const long long totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
-//            COUTATOMIC("total_inserts="<<totalInserts<<std::endl);
-//            COUTATOMIC("total_deletes="<<totalDeletes<<std::endl);
             
             exit(-1);
         }
@@ -1240,8 +1309,10 @@ int main(int argc, char** argv) {
     std::cout<<std::endl;
     
     // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
-    GSTATS_CLEAR_VAL(timer_epoch_latency, get_server_clock());
-//    GSTATS_CLEAR_VAL(timer_guard_latency, get_server_clock());
+    GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
+    GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
+    GSTATS_CLEAR_VAL(timer_bag_rotation_start, get_server_clock());
+    //GSTATS_CLEAR_VAL(timersplit_guard, get_server_clock());
 
     trial();
     printOutput();

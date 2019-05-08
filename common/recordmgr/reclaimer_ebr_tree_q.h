@@ -31,7 +31,7 @@
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0
 
 template <typename T = void, class Pool = pool_interface<T> >
-class reclaimer_tree_ebr_q : public reclaimer_interface<T, Pool> {
+class reclaimer_ebr_tree_q : public reclaimer_interface<T, Pool> {
 private:
     static int roundUpPow2(int x) {
         unsigned int v = (unsigned int) x;
@@ -215,9 +215,9 @@ protected:
     
 public:
     template<typename _Tp1>
-    struct rebind { typedef reclaimer_tree_ebr_q<_Tp1, Pool> other; };
+    struct rebind { typedef reclaimer_ebr_tree_q<_Tp1, Pool> other; };
     template<typename _Tp1, typename _Tp2>
-    struct rebind2 { typedef reclaimer_tree_ebr_q<_Tp1, _Tp2> other; };
+    struct rebind2 { typedef reclaimer_ebr_tree_q<_Tp1, _Tp2> other; };
     
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         SOFTWARE_BARRIER;
@@ -267,7 +267,7 @@ private:
 
 public:
     inline void endOp(const int tid) {
-//        GSTATS_TIMER_APPEND_ELAPSED(tid, timer_guard_latency, num_prop_guard_latency);
+//        GSTATS_TIMER_APPEND_ELAPSED(tid, timersplit_guard, num_prop_guard_split);
         auto ann = epoch->readThread(tid) + 1;
         epoch->announce(tid, ann);
         assert(QUIESCENT(ann));
@@ -276,7 +276,7 @@ public:
     
     inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
-//        GSTATS_TIMER_RESET(tid, timer_guard_latency);
+//        GSTATS_TIMER_RESET(tid, timersplit_guard);
 //        GSTATS_ADD(tid, num_getguard, 1);
         bool result = false;
 
@@ -290,7 +290,7 @@ public:
         if (readEpoch != BITS_EPOCH(ann)) {
             thread_data[tid].timesBagTooLargeSinceRotation = 0;
             for (int i=0;i<numReclaimers;++i) {
-                ((reclaimer_tree_ebr_q<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
+                ((reclaimer_ebr_tree_q<T, Pool> * const) reclaimers[i])->rotateEpochBags(tid);
             }
             result = true;
         }
@@ -333,9 +333,9 @@ public:
         }
     }
 
-    reclaimer_tree_ebr_q(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
+    reclaimer_ebr_tree_q(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
-        VERBOSE std::cout<<"constructor reclaimer_tree_ebr_q helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
+        VERBOSE std::cout<<"constructor reclaimer_ebr_tree_q helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
         if (numProcesses > MAX_THREADS_POW2) {
             setbench_error("number of threads is greater than MAX_THREADS_POW2 = "<<MAX_THREADS_POW2);
         }
@@ -348,12 +348,12 @@ public:
             thread_data[tid].currentBag = thread_data[tid].epochbags[0];
             thread_data[tid].index = 0;
             thread_data[tid].timeSinceTryAdvance = 0;
-//            GSTATS_TIMER_RESET(tid, timer_guard_latency);
-//            GSTATS_TIMER_RESET(tid, timer_epoch_latency);
+//            GSTATS_TIMER_RESET(tid, timersplit_guard);
+//            GSTATS_TIMER_RESET(tid, timersplit_epoch);
         }
     }
-    ~reclaimer_tree_ebr_q() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_tree_ebr_q"<<std::endl;
+    ~reclaimer_ebr_tree_q() {
+        VERBOSE DEBUG std::cout<<"destructor reclaimer_ebr_tree_q"<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
                 this->pool->addMoveAll(tid, thread_data[tid].epochbags[i]);
