@@ -318,6 +318,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
                 fixDegreeViolation(tid, n);
                 return std::pair<void*,bool>(oldValue, true);
             }
+            this->recordmgr->endOp(tid);
             this->recordmgr->deallocate(tid, n);
         }
     }
