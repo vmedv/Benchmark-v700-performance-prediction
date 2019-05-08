@@ -375,7 +375,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #ifdef MEASURE_REBUILDING_TIME
     GSTATS_TIMER_RESET(tid, timer_rebuild);
 #endif
-    assert(!recordmgr->isQuiescent(tid));
+//    assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->candidate));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
@@ -412,7 +412,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index /* of rebuildRoot in parent */, const size_t depth) {
-    assert(!recordmgr->isQuiescent(tid));
+//    assert(!recordmgr->isQuiescent(tid));
     auto op = new RebuildOperation<K,V>(rebuildRoot, parent, index, depth);
     auto ptr = REBUILDOP_TO_CASWORD(op);
     auto old = NODE_TO_CASWORD(op->candidate);
@@ -426,7 +426,7 @@ void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebu
 
 template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const K& key, Node<K,V> * const node) {
-    assert(!recordmgr->isQuiescent(tid));
+//    assert(!recordmgr->isQuiescent(tid));
     // TODO: redo prefetching, taking into account the fact that l2 adjacent line prefetcher DOESN'T grab an adjacent line
     //__builtin_prefetch(&node->degree, 1);
     __builtin_prefetch(&node->maxKey, 1);
@@ -585,7 +585,7 @@ retryNode:
                     goto retry;
                     break;
                 case DCSS_SUCCESS:
-                    assert(!recordmgr->isQuiescent(tid));
+                    //assert(!recordmgr->isQuiescent(tid));
                     if (pair) recordmgr->retire(tid, pair);
                     
                     if (!affectsChangeSum) break;

@@ -208,18 +208,30 @@ private:
         if (metrics == NULL) { \
             std::cout<<std::endl; \
             for (int __tid=0;__tid<NUM_PROCESSES;++__tid) { \
-                std::cout<<"thread "<<__tid; \
-                for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
-                    if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
-                        std::cout<<(__ix?" ":"")<<"0"; \
-                    } else { \
-                        std::cout<<(__ix?" ":"")<<get_stat<T>(__tid, sid, __ix); \
+                if (thread_data[__tid].size[sid]) { \
+                    std::cout<<"thread "<<__tid; \
+                    for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
+                        if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
+                            std::cout<<" "<<"0"; \
+                        } else { \
+                            std::cout<<" "<<get_stat<T>(__tid, sid, __ix); \
+                        } \
                     } \
+                    std::cout<<std::endl; \
                 } \
-                std::cout<<std::endl; \
             } \
         } else { \
-            for (int __i=0;__i<num_metrics;++__i) { \
+            /* get last "empty" field so we can avoid printing lots of trailing zeros */ \
+            int __lastEmpty = num_metrics; \
+            for (int __i=num_metrics-1;__i>=0;--__i) { \
+                if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == 0) { \
+                    __lastEmpty = __i; \
+                } else { \
+                    break; \
+                } \
+            } \
+            /* print the fields (metrics) */ \
+            for (int __i=0;__i<__lastEmpty;++__i) { \
                 if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) { \
                     std::cout<<(__i?" ":"")<<"0"; \
                 } else { \

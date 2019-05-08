@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef RECLAIM_EPOCH_H
-#define	RECLAIM_EPOCH_H
+#ifndef RECLAIM_DEBRA_H
+#define	RECLAIM_DEBRA_H
 
 #include <atomic>
 #include <cassert>
@@ -80,6 +80,9 @@ public:
     };
     
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
+        if (NUMBER_OF_EPOCH_BAGS < 9 || NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS < 3) {
+            setbench_error("unsupported operation with these parameters (see if-statement above this line)")
+        }
         SOFTWARE_BARRIER;
         int ix = threadData[tid].index;
         bags[0] = threadData[tid].epochbags[ix];

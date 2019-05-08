@@ -27,8 +27,8 @@ for counting in 1 0 ; do
                                 fi
                             fi
                             args="-nwork $n -nprefill $n -i $uhalf -d $uhalf -rq 0 -rqsize 1 -k $k -nrq 0 -t $t -pin $pinning_policy"
-                            echo "LD_PRELOAD=../../../lib/libjemalloc-5.0.1-25.so numactl --interleave=all ../../bin/${alg}.ubench_rdebra $args" > $exp/step$step.txt
-                            LD_PRELOAD=../../../lib/libjemalloc-5.0.1-25.so numactl --interleave=all ../../bin/${alg}.ubench_rdebra $args >> $exp/step$step.txt
+                            echo "LD_PRELOAD=../../../lib/libjemalloc-5.0.1-25.so numactl --interleave=all timeout 300s ../../bin/${alg}.ubench_rdebra $args" > $exp/step$step.txt
+                            LD_PRELOAD=../../../lib/libjemalloc-5.0.1-25.so numactl --interleave=all timeout 300s ../../bin/${alg}.ubench_rdebra $args >> $exp/step$step.txt
                             ../parse.sh $exp/step$step.txt | tail -1 >> $exp.csv
                             echo -n "step $step/$maxstep: "
                             cat $exp.csv | tail -1
