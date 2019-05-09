@@ -145,6 +145,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 fixDegreeViolation(tid, n);
                 return oldValue;
             }
+            guard.end();
             this->recordmgr->deallocate(tid, n);
 
         } else {
@@ -184,6 +185,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixDegreeViolation(tid, n);
                     return NO_VALUE;
                 }
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 
             } else { // assert: l->getKeyCount() == DEGREE == b)
@@ -247,6 +249,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixWeightViolation(tid, n);
                     return NO_VALUE;
                 }
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 this->recordmgr->deallocate(tid, left);
                 this->recordmgr->deallocate(tid, right);
@@ -318,7 +321,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
                 fixDegreeViolation(tid, n);
                 return std::pair<void*,bool>(oldValue, true);
             }
-            this->recordmgr->endOp(tid);
+            guard.end();
             this->recordmgr->deallocate(tid, n);
         }
     }

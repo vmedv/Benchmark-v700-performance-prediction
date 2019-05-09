@@ -1098,13 +1098,13 @@ void printOutput() {
     GSTATS_PRINT;
     std::cout<<std::endl;
     
-    for (int threadID = 0; threadID < TOTAL_THREADS; ++threadID) {
-        for (int index=0;index<10;++index) {
-            auto startTime = GSTATS_GET_IX(threadID, thread_reclamation_start, index);
-            auto endTime = GSTATS_GET_IX(threadID, thread_reclamation_end, index);
-            std::cout<<"tid="<<threadID<<" startTime="<<startTime<<" endTime="<<endTime<<std::endl;
-        }
-    }
+//    for (int threadID = 0; threadID < TOTAL_THREADS; ++threadID) {
+//        for (int index=0;index<10;++index) {
+//            auto startTime = GSTATS_GET_IX(threadID, thread_reclamation_start, index);
+//            auto endTime = GSTATS_GET_IX(threadID, thread_reclamation_end, index);
+//            std::cout<<"tid="<<threadID<<" startTime="<<startTime<<" endTime="<<endTime<<std::endl;
+//        }
+//    }
     
     std::cout<<std::endl;
 #endif

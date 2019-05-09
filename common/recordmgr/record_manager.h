@@ -294,6 +294,9 @@ public:
         ~MemoryReclamationGuard() {
             recmgr->endOp(tid);
         }
+        void end() {
+            recmgr->endOp(tid);
+        }
     };
     
     inline MemoryReclamationGuard getGuard(const int tid, const bool readOnly = false) {

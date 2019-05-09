@@ -247,6 +247,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 return oldValue;
             }
             TRACE COUTATOMICTID("replace std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
+            guard.end();
             this->recordmgr->deallocate(tid, n);
 
         } else {
@@ -297,6 +298,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     return NO_VALUE;
                 }
                 TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 
             } else { // assert: l->getKeyCount() == DEGREE == b)
@@ -382,6 +384,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     return NO_VALUE;
                 }
                 TRACE COUTATOMICTID("insert overflow ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 this->recordmgr->deallocate(tid, left);
                 this->recordmgr->deallocate(tid, right);
@@ -470,6 +473,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
                 return std::pair<void*,bool>(oldValue, true);
             }
             TRACE COUTATOMICTID("delete std::pair ("<<key<<", "<<oldValue<<"): SCX FAILED"<<std::endl);
+            guard.end();
             this->recordmgr->deallocate(tid, n);
         }
     }
