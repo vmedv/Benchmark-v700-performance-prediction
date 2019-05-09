@@ -176,10 +176,11 @@ public:
             : pool_interface<T, Alloc>(numProcesses, _alloc, _debug) {
         VERBOSE DEBUG COUTATOMIC("constructor pool_numa"<<std::endl);
         
-        cpuBlockUB = 8;
-        nodeBlockUB = 128; //8 * __numa.get_num_cpus() / __numa.get_num_nodes();
-        globalBlockUB = 1024; 8 * __numa.get_num_cpus();
-        // (example: 192 threads x 256b objects x block size 128 x (4 cpuBlockUB + 2 nodeBlockUB + 2 globalBlockUB) = 100MB)
+        // example: suppose 256b objects and block size 64
+        cpuBlockUB = 8; // then this is 128kb per thread
+        nodeBlockUB = 64 * __numa.get_num_cpus() / __numa.get_num_nodes(); // and with 48 threads per socket, this is 768kb per socket PER BLOCK, or 50mb per socket
+        globalBlockUB = 8 * __numa.get_num_cpus(); // and with 192 threads total, this is 25mb
+        // for a total of 24mb + 200mb + 25mb = 250mb (per 256kb object type)
         
         globalPool = new lfbstack<T>();
         

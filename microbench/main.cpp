@@ -585,9 +585,10 @@ void prefill() {
 
         // start all threads
         for (int i=0;i<PREFILL_THREADS;++i) {
-            if (pthread_create(&threads[i], NULL, thread_prefill, (void *) &ids[i])) {
-                std::cerr<<"ERROR: could not create thread"<<std::endl;
-                exit(-1);
+            int err = 0;
+            if (err = pthread_create(&threads[i], NULL, thread_prefill, (void *) &ids[i])) {
+                std::cerr<<"ERROR NUMBER FROM pthread_create: "<<err<<std::endl;
+                setbench_error("could not create thread");
             }
         }
 
@@ -637,10 +638,7 @@ void prefill() {
         while (g.running > 0) {}
 
         for (int i=0;i<PREFILL_THREADS;++i) {
-            if (pthread_join(threads[i], NULL)) {
-                std::cerr<<"ERROR: could not join prefilling thread"<<std::endl;
-                exit(-1);
-            }
+            if (pthread_join(threads[i], NULL)) setbench_error("could not join prefilling thread");
         }
         
         delete[] threads;
@@ -966,8 +964,7 @@ void trial() {
                     (i < WORK_THREADS
                        ? thread_timed
                        : thread_rq), &ids[i])) {
-            std::cerr<<"ERROR: could not create thread"<<std::endl;
-            exit(-1);
+            setbench_error("could not create thread");
         }
     }
 
