@@ -39,13 +39,13 @@ minimal_%: dir_guard
 	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
 DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/*/adapter.h))
-RECLAIMERS=none debra
+RECLAIMERS=none
 POOLS=none
 ALLOCATORS=new
 
 #DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ab*/adapter.h))
 #$(info $(DATA_STRUCTURES))
-#RECLAIMERS=debra
+#RECLAIMERS=debra none ebr_token ebr_tree
 #POOLS=none numa
 #ALLOCATORS=new
 

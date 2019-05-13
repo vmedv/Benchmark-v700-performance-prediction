@@ -41,6 +41,8 @@ private:
         if (cpuPools[tid]->getSizeInBlocks() <= cpuBlockUB) return; // common case ; note: past this line, we are guaranteed to move at least one block to the node pool
         auto node = __numa.get_node_periodic();
         
+        // TODO: I AM FORGETTING TO FREE THE ACTUAL BLOCKS????
+        
         // move blocks from cpu pool to node pool
         while (cpuPools[tid]->getSizeInBlocks() > cpuBlockUB) {
             auto b = cpuPools[tid]->removeFullBlock();
@@ -180,7 +182,7 @@ public:
         cpuBlockUB = 8; // then this is 128kb per thread
         nodeBlockUB = 64 * __numa.get_num_cpus() / __numa.get_num_nodes(); // and with 48 threads per socket, this is 768kb per socket PER BLOCK, or 50mb per socket
         globalBlockUB = 8 * __numa.get_num_cpus(); // and with 192 threads total, this is 25mb
-        // for a total of 24mb + 200mb + 25mb = 250mb (per 256kb object type)
+        // for a total of 24mb + 200mb + 25mb = 250mb (per 256b object type)
         
         globalPool = new lfbstack<T>();
         
