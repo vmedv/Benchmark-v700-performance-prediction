@@ -563,7 +563,7 @@ void prefillInsertionOnly() {
 void prefill() {
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
-    const double PREFILL_THRESHOLD = 0.001;
+    const double PREFILL_THRESHOLD = 0.02;
     const int MAX_ATTEMPTS = 10000;
     const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
     const int expectedSize = (int)(MAXKEY * expectedFullness);
