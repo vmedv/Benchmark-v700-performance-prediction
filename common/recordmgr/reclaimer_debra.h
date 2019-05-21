@@ -149,8 +149,23 @@ public:
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
+
+#ifdef MEASURE_REBUILDING_TIME
+        auto startTime = get_server_clock();
+        auto bagsize = freeable->computeSize();
+#endif
+
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
+        
+#ifdef MEASURE_REBUILDING_TIME
+        auto endTime = get_server_clock();
+        auto duration_ms = (endTime - startTime) / 1000000;
+        if (duration_ms >= MIN_INTERVAL_DURATION) {
+            printf("timeline_rotateEpochBags tid=%d start=%lld end=%lld duration_ms=%lld bagsize=%lld\n", tid, startTime, endTime, duration_ms, bagsize);
+        }
+#endif
+    
         threadData[tid].index = nextIndex;
         threadData[tid].currentBag = threadData[tid].epochbags[nextIndex];
     }

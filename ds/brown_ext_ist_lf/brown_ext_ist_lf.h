@@ -162,13 +162,13 @@ struct Node {
 
 template <typename K, typename V>
 struct RebuildOperation {
-    Node<K,V> * candidate;
+    Node<K,V> * rebuildRoot;
     Node<K,V> * parent;
     size_t index;
     size_t depth;
     casword_t volatile newRoot;
-    RebuildOperation(Node<K,V> * _candidate, Node<K,V> * _parent, size_t _index, size_t _depth)
-        : candidate(_candidate), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)) {}
+    RebuildOperation(Node<K,V> * _rebuildRoot, Node<K,V> * _parent, size_t _index, size_t _depth)
+        : rebuildRoot(_rebuildRoot), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)) {}
 };
 
 template <typename K, typename V>
@@ -230,15 +230,15 @@ private:
             auto op = CASWORD_TO_REBUILDOP(w);
             ofs<<"\""<<op<<"\" ["<<std::endl;
             ofs<<"label = \"<f0> rebuild";
-            debugPrintWord(ofs, NODE_TO_CASWORD(op->candidate));
+            debugPrintWord(ofs, NODE_TO_CASWORD(op->rebuildRoot));
             ofs<<"\""<<std::endl;
             ofs<<"shape = \"record\""<<std::endl;
             ofs<<"];"<<std::endl;
             
-            ofs<<"\""<<op<<"\":f0 -> \""<<op->candidate<<"\":f0 ["<<std::endl;
+            ofs<<"\""<<op<<"\":f0 -> \""<<op->rebuildRoot<<"\":f0 ["<<std::endl;
             ofs<<"id = "<<((*numPointers)++)<<std::endl;
             ofs<<"];"<<std::endl;
-            debugGVPrint(ofs, NODE_TO_CASWORD(op->candidate), 1+depth, numPointers);
+            debugGVPrint(ofs, NODE_TO_CASWORD(op->rebuildRoot), 1+depth, numPointers);
         } else {
             assert(IS_NODE(w));
             const int tid = 0;
@@ -352,7 +352,13 @@ private:
         }
     }
 
-    void freeSubtree(const int tid, casword_t ptr, bool retire) {
+    void freeSubtree(const int tid, casword_t ptr, bool retire, bool topLevelCall = true) {
+#ifdef MEASURE_REBUILDING_TIME
+        uint64_t startTime;
+        if (topLevelCall) {
+            startTime = get_server_clock();
+        }
+#endif
         if (unlikely(IS_KVPAIR(ptr))) {
             if (retire) {
                 recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
@@ -361,7 +367,7 @@ private:
             }
         } else if (IS_REBUILDOP(ptr)) {
             auto op = CASWORD_TO_REBUILDOP(ptr);
-            freeSubtree(tid, NODE_TO_CASWORD(op->candidate), retire);
+            freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), retire, false);
             if (retire) {
                 recordmgr->retire(tid, op);
             } else {
@@ -371,10 +377,19 @@ private:
             auto node = CASWORD_TO_NODE(ptr);
             for (int i=0;i<node->degree;++i) {
                 auto child = prov->readPtr(tid, node->ptrAddr(i));
-                freeSubtree(tid, child, retire);
+                freeSubtree(tid, child, retire, false);
             }
             freeNode(tid, node, retire);
         }
+#ifdef MEASURE_REBUILDING_TIME
+        if (topLevelCall) {
+            auto endTime = get_server_clock();
+            auto duration_ms = (endTime - startTime) / 1000000;
+            if (duration_ms >= MIN_INTERVAL_DURATION) {
+                printf("timeline_freeSubtree tid=%d start=%lld end=%lld duration_ms=%lld\n", tid, startTime, endTime, (endTime - startTime) / 1000000);
+            }
+        }
+#endif
     }
     
     /**

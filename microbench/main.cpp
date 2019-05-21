@@ -119,6 +119,9 @@ __thread int tid = 0;
     gstats_handle_stat(LONG_LONG, num_complete_rebuild_at_depth, 100, { \
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
     }) \
+    gstats_handle_stat(LONG_LONG, num_help_rebuild, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
 /*    gstats_handle_stat(LONG_LONG, num_multi_counter_node_created, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
