@@ -40,14 +40,70 @@ V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
+void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V> * node) {
+    // if node is the root of a *large* subtree (256+ children),
+    // then have threads *collaborate* by reserving individual subtrees to free.
+    // idea: reserve a subtree before freeing it by CASing it to NULL
+    //       we are done when all pointers are NULL.
+    
+    // conceptually you reserve the right to reclaim everything under a node
+    // (including the node) when you set its DIRTY_DIRTY_MARKED_FOR_FREE_MASK bit
+    //
+    // note: the dirty field doesn't exist for kvpair, value, empty value and rebuildop objects...
+    // so to reclaim those if they are children of the root node passed to this function,
+    // we claim the entire root node at the end, and go through those with one thread.
+    
+    TIMELINE_START(tid);
+    
+    // TODO: does this improve if we scatter threads in this iteration?
+    for (int i=0;i<node->degree;++i) {
+        auto ptr = prov->readPtr(tid, node->ptrAddr(i));
+        if (IS_NODE(ptr)) {
+            auto child = CASWORD_TO_NODE(ptr);
+            if (child == NULL) continue;
+            
+            // claim subtree rooted at child
+            while (true) {
+                auto old = child->dirty;
+                if (IS_DIRTY_MARKED_FOR_FREE(old)) break;
+                if (CASB(&child->dirty, old, old | DIRTY_MARKED_FOR_FREE_MASK)) {
+                    freeSubtree(tid, ptr, true, false);
+                }
+            }
+        }
+    }
+    
+    // claim node and its pointers that go to kvpair, value, empty value and rebuildop objects, specifically
+    // (since those objects, and their descendents in the case of a rebuildop object,
+    // are what remain unfreed [since all descendents of direct child *node*s have all been freed])
+    while (true) {
+        auto old = node->dirty;
+        if (IS_DIRTY_MARKED_FOR_FREE(old)) break;
+        if (CASB(&node->dirty, old, old | DIRTY_MARKED_FOR_FREE_MASK)) {
+            // clean up pointers to non-*node* objects (and descendents of such objects)
+            for (int i=0;i<node->degree;++i) {
+                auto ptr = prov->readPtr(tid, node->ptrAddr(i));
+                if (!IS_NODE(ptr)) {
+                    freeSubtree(tid, ptr, true, false);
+                }
+            }
+        }
+    }
+        
+    TIMELINE_END("freeSubtree", tid);
+}
+
+template <typename K, typename V, class Interpolate, class RecManager>
 size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
     if (unlikely(IS_KVPAIR(ptr))) return 1;
     if (unlikely(IS_VAL(ptr))) return 1 - IS_EMPTY_VAL(ptr);
-    if (unlikely(IS_REBUILDOP(ptr))) return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot));
+    if (unlikely(IS_REBUILDOP(ptr))) {
         // if we are here seeing this rebuildop,
         // then we ALREADY marked the node that points to the rebuildop,
         // which means that rebuild op cannot possible change that node
         // to effect the rebuilding.
+        return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot));
+    }
     
     assert(IS_NODE(ptr));
     auto node = CASWORD_TO_NODE(ptr);
@@ -369,12 +425,10 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
+    TIMELINE_START_C(tid, (op->depth < 1));
+    
 #ifdef MEASURE_REBUILDING_TIME
-    uint64_t startTime;
-    if (op->depth < 2) {
-        GSTATS_TIMER_RESET(tid, timer_rebuild);
-        startTime = GSTATS_GET(tid, timer_rebuild);
-    }
+    GSTATS_TIMER_RESET(tid, timer_rebuild);
     GSTATS_ADD(tid, num_help_rebuild, 1);
 #endif
     
@@ -382,12 +436,21 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->rebuildRoot));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
-    if (newWord == NODE_TO_CASWORD(NULL)) return; // someone else already *finished* helping
+    if (newWord == NODE_TO_CASWORD(NULL)) {
+        return; // someone else already *finished* helping
+        
+        // TODO: help to free old subtree?
+    }
     auto result = prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status;
     if (result == DCSS_SUCCESS) {
+        SOFTWARE_BARRIER;
+        assert(op->success == false);
+        op->success = true;
+        SOFTWARE_BARRIER;
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
-        freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
-        recordmgr->retire(tid, op);
+//        freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
+//        helpFreeSubtree(tid, op->rebuildRoot);
+        recordmgr->retire(tid, op); // note: it's okay to retire this before reading op-> fields below!!! (this is because retire means don't deallocate until AFTER our memory guard section)
     } else {
         // if we fail to CAS, then either:
         // 1. someone else CAS'd exactly newWord into op->parent->ptrAddr(op->index), or
@@ -396,7 +459,23 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
         //    in this case, we should try to reclaim the subtree at newWord.
         //
         if (result == DCSS_FAILED_ADDR1) {
-            // try to claim the subtree at newWord for rebuilding
+            // [[failed because dirty (subsumed by another rebuild operation)]]
+            // note: a rebuild operation should almost never be subsumed by one started higher up,
+            // because it's unlikely that while we are trying to
+            // rebuild one subtree another rebuild just so happens to start above
+            // (since one will only start if it was ineligible to start when we began our own reconstruction,
+            //  then enough operations are performed to make a higher tree eligible for rebuild,
+            //  then we finish our own rebuilding and try to DCSS our new subtree in)
+            // to test this: let's measure whether this happens...
+            // apparently it does happen... in a 100% update workload for 15sec with 192 threads, we have: sum rebuild_is_subsumed_at_depth by_index=0 210 1887 277 5 
+            //      these numbers represent how many subsumptions happened at each depth (none at depth 0 (impossible), 210 at depth 1, and so on).
+            //      regardless, this is not a performance issue for now. (at most 3 of these calls took 10ms+; the rest were below that threshold.)
+            //      *if* it becomes an issue then helpFreeSubtree or something like it should fix the problem.
+            
+            GSTATS_ADD(tid, rebuild_is_subsumed, 1); // if this DOES happen, it will be very expensive (well, *if* it's at the top of the tree...) because ONE thread will do it, and this will delay epoch advancement greatly
+            GSTATS_ADD_IX(tid, rebuild_is_subsumed_at_depth, 1, op->depth);
+            
+            // try to claim the NEW subtree located at op->newWord for reclamation
             if (op->newRoot != NODE_TO_CASWORD(NULL)
                     && __sync_bool_compare_and_swap(&op->newRoot, newWord, EMPTY_VAL_TO_CASWORD)) {
                 freeSubtree(tid, newWord, true);
@@ -404,23 +483,34 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
                 // and so might be accessing the subtree at newWord.
                 // so, we use retire rather than deallocate.
             }
-            // otherwise, someone else reclaimed the subtree
+            // otherwise, someone else reclaimed the NEW subtree
+        } else {
+            assert(result == DCSS_FAILED_ADDR2);
         }
     }
     
 #ifdef MEASURE_REBUILDING_TIME
     auto cappedDepth = std::min((size_t) 9, op->depth);
     GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
-    
-    if (op->depth < 2) {
-        GSTATS_TIMER_RESET(tid, timer_rebuild);
-        auto endTime = GSTATS_GET(tid, timer_rebuild);
-        auto duration_ms = (endTime - startTime) / 1000000;
-        if (duration_ms >= MIN_INTERVAL_DURATION) {
-            printf("timeline_helpRebuild tid=%d start=%lld end=%lld duration_ms=%lld num_help_rebuild=%lld depth=%lld keyCount=%lld\n", tid, startTime, endTime, duration_ms, GSTATS_GET(tid, num_help_rebuild), op->depth, keyCount);
+#endif
+
+    TIMELINE_END_C("helpRebuild", tid, (op->depth < 1));
+
+    // collaboratively free the old subtree, if appropriate (if it was actually replaced)
+    if (op->success) {
+        if (op->rebuildRoot->degree < 256) {
+            if (result == DCSS_SUCCESS) {
+                // this thread was the one whose DCSS operation performed the actual swap
+                freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
+            }
+        } else {
+#ifdef ISTREE_REBUILD_SEQUENTIAL_FREE
+            if (result == DCSS_SUCCESS) freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
+#else
+            helpFreeSubtree(tid, op->rebuildRoot);
+#endif
         }
     }
-#endif
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -430,9 +520,13 @@ void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebu
     auto ptr = REBUILDOP_TO_CASWORD(op);
     auto old = NODE_TO_CASWORD(op->rebuildRoot);
     assert(op->parent == parent);
-    if (prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), old, ptr).status == DCSS_SUCCESS) {
+    auto result = prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), old, ptr).status;
+    if (result == DCSS_SUCCESS) {
         helpRebuild(tid, op);
     } else {
+        // in this case, we have exclusive access to free op.
+        // this is because we are the only ones who will try to perform a DCSS to insert op into the data structure.
+        assert(result == DCSS_FAILED_ADDR1 || result == DCSS_FAILED_ADDR2);
         recordmgr->deallocate(tid, op);
     }
 }

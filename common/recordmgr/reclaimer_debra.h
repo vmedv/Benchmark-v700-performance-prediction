@@ -31,12 +31,12 @@ protected:
 #define MIN_OPS_BEFORE_READ 1
 //#define MIN_OPS_BEFORE_CAS_EPOCH 1
 #else
-#define MIN_OPS_BEFORE_READ 20
+#define MIN_OPS_BEFORE_READ 10
 //#define MIN_OPS_BEFORE_CAS_EPOCH 100
 #endif
-    
-#define NUMBER_OF_EPOCH_BAGS 9
-#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
+
+#define NUMBER_OF_EPOCH_BAGS 3 // 9 for range query support
+#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0 // 3 for range query support
 
     class ThreadData {
     private:
@@ -150,21 +150,12 @@ public:
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
 
-#ifdef MEASURE_REBUILDING_TIME
-        auto startTime = get_server_clock();
-        auto bagsize = freeable->computeSize();
-#endif
+        TIMELINE_START(tid);
 
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
         
-#ifdef MEASURE_REBUILDING_TIME
-        auto endTime = get_server_clock();
-        auto duration_ms = (endTime - startTime) / 1000000;
-        if (duration_ms >= MIN_INTERVAL_DURATION) {
-            printf("timeline_rotateEpochBags tid=%d start=%lld end=%lld duration_ms=%lld bagsize=%lld\n", tid, startTime, endTime, duration_ms, bagsize);
-        }
-#endif
+        TIMELINE_END("rotateEpochBags", tid);
     
         threadData[tid].index = nextIndex;
         threadData[tid].currentBag = threadData[tid].epochbags[nextIndex];

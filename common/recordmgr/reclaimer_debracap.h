@@ -32,12 +32,12 @@ protected:
 #define MIN_OPS_BEFORE_READ 1
 //#define MIN_OPS_BEFORE_CAS_EPOCH 1
 #else
-#define MIN_OPS_BEFORE_READ 20
+#define MIN_OPS_BEFORE_READ 10
 //#define MIN_OPS_BEFORE_CAS_EPOCH 100
 #endif
     
-#define NUMBER_OF_EPOCH_BAGS 9
-#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
+#define NUMBER_OF_EPOCH_BAGS 3 // 9 for range query support
+#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0 // 3 for range query support
 
     class ThreadData {
     private:
@@ -83,6 +83,9 @@ public:
     };
         
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
+        if (NUMBER_OF_EPOCH_BAGS < 9 || NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS < 3) {
+            setbench_error("unsupported operation with these parameters (see if-statement above this line)")
+        }
         SOFTWARE_BARRIER;
         int ix = threadData[tid].index;
         bags[0] = threadData[tid].epochbags[ix];

@@ -17,6 +17,7 @@ FLAGS += -DNO_DELETE_DS
 #FLAGS += -DRAPID_RECLAMATION
 #FLAGS += -DPREFILL_INSERTION_ONLY
 FLAGS += -DMEASURE_REBUILDING_TIME
+FLAGS += -DMEASURE_TIMELINE_STATS
 FLAGS += -DDEBRA_DISABLE_READONLY_OPT
 FLAGS += -DUSE_TREE_STATS
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
@@ -39,7 +40,7 @@ minimal_%: dir_guard
 	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
 DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/*/adapter.h))
-RECLAIMERS=debra
+RECLAIMERS=debra ebr_tree none
 POOLS=none
 ALLOCATORS=new
 

@@ -62,5 +62,30 @@ inline uint64_t get_server_clock() {
 //    }
 //};
 
+#ifdef MEASURE_TIMELINE_STATS
+    #define ___MIN_INTERVAL_DURATION 10
+    #define TIMELINE_START_C(tid, condition) \
+        uint64_t ___startTime; \
+        if ((condition)) { \
+            ___startTime = get_server_clock(); \
+        }
+    #define TIMELINE_START(tid) TIMELINE_START_C((tid), true)
+    #define TIMELINE_END_C(name, tid, condition) \
+        uint64_t ___endTime; \
+        if ((condition)) { \
+            ___endTime = get_server_clock(); \
+            auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
+            if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
+                printf("timeline_%s tid=%d start=%lld end=%lld duration_ms=%lld\n", (name), (tid), ___startTime, ___endTime, ___duration_ms); \
+            } \
+        }
+    #define TIMELINE_END(name, tid) TIMELINE_END_C((name), (tid), true)
+#else
+    #define TIMELINE_START_C(tid, condition)
+    #define TIMELINE_START(tid)
+    #define TIMELINE_END_C(name, tid, condition)
+    #define TIMELINE_END(name, tid)
+#endif
+
 #endif /* SERVER_CLOCK_H */
 

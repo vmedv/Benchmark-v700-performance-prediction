@@ -56,8 +56,6 @@ extern std::atomic_bool ___validateops;
 
 #include "server_clock.h"
 
-#define MIN_INTERVAL_DURATION 20
-
 /**
  * Configure record manager: reclaimer, allocator and pool
  */

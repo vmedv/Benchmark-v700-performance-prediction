@@ -291,6 +291,12 @@ __thread int tid = 0;
       __AND gstats_output_item(PRINT_RAW, MIN, TOTAL) \
       __AND gstats_output_item(PRINT_RAW, MAX, TOTAL)*/ \
     }) \
+    gstats_handle_stat(LONG_LONG, rebuild_is_subsumed, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, rebuild_is_subsumed_at_depth, 100, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+    }) \
     gstats_handle_stat(LONG_LONG, size_checksum, 1, {}) \
     gstats_handle_stat(LONG_LONG, key_checksum, 1, {}) \
     gstats_handle_stat(LONG_LONG, prefill_size, 1, {}) \
@@ -1011,7 +1017,7 @@ void trial() {
         COUTATOMIC("###############################################################################"<<std::endl);
         COUTATOMIC(std::endl);
         
-        const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 5000 : 30000);
+        const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 30000 : 30000);
         g.elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count();
         g.elapsedMillisNapping = 0;
         while (g.running > 0 && g.elapsedMillisNapping < MAX_NAPPING_MILLIS) {

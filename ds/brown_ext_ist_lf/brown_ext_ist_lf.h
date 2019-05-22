@@ -79,10 +79,13 @@
 // note: dirty finished should imply dirty started!
 #define DIRTY_STARTED_MASK          (0x1ll)
 #define DIRTY_FINISHED_MASK         (0x2ll)
+#define DIRTY_MARKED_FOR_FREE_MASK  (0x4ll) /* used for memory reclamation */
 #define IS_DIRTY_STARTED(x)         ((x)&DIRTY_STARTED_MASK)
 #define IS_DIRTY_FINISHED(x)        ((x)&DIRTY_FINISHED_MASK)
-#define SUM_TO_DIRTY_FINISHED(x)    (((x)<<2)|DIRTY_FINISHED_MASK|DIRTY_STARTED_MASK)
-#define DIRTY_FINISHED_TO_SUM(x)    ((x)>>2)
+#define IS_DIRTY_MARKED_FOR_FREE(x) ((x)&DIRTY_MARKED_FOR_FREE_MASK)
+#define SUM_TO_DIRTY_FINISHED(x)    (((x)<<3)|DIRTY_FINISHED_MASK|DIRTY_STARTED_MASK)
+#define DIRTY_FINISHED_TO_SUM(x)    ((x)>>3)
+
 
 // constants for rebuilding
 #define REBUILD_FRACTION            (0.25)
@@ -167,8 +170,9 @@ struct RebuildOperation {
     size_t index;
     size_t depth;
     casword_t volatile newRoot;
+    bool volatile success;
     RebuildOperation(Node<K,V> * _rebuildRoot, Node<K,V> * _parent, size_t _index, size_t _depth)
-        : rebuildRoot(_rebuildRoot), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)) {}
+        : rebuildRoot(_rebuildRoot), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)), success(false) {}
 };
 
 template <typename K, typename V>
@@ -332,6 +336,9 @@ public:
         ofs.close();
     }
 private:
+    
+    void helpFreeSubtree(const int tid, Node<K,V> * node);
+    
     void freeNode(const int tid, Node<K,V> * node, bool retire) {
         if (retire) {
 #ifdef IST_USE_MULTICOUNTER_AT_ROOT
@@ -352,13 +359,9 @@ private:
         }
     }
 
-    void freeSubtree(const int tid, casword_t ptr, bool retire, bool topLevelCall = true) {
-#ifdef MEASURE_REBUILDING_TIME
-        uint64_t startTime;
-        if (topLevelCall) {
-            startTime = get_server_clock();
-        }
-#endif
+    void freeSubtree(const int tid, casword_t ptr, bool retire, bool tryTimingCall = true) {
+        TIMELINE_START_C(tid, tryTimingCall);
+
         if (unlikely(IS_KVPAIR(ptr))) {
             if (retire) {
                 recordmgr->retire(tid, CASWORD_TO_KVPAIR(ptr));
@@ -381,15 +384,8 @@ private:
             }
             freeNode(tid, node, retire);
         }
-#ifdef MEASURE_REBUILDING_TIME
-        if (topLevelCall) {
-            auto endTime = get_server_clock();
-            auto duration_ms = (endTime - startTime) / 1000000;
-            if (duration_ms >= MIN_INTERVAL_DURATION) {
-                printf("timeline_freeSubtree tid=%d start=%lld end=%lld duration_ms=%lld\n", tid, startTime, endTime, (endTime - startTime) / 1000000);
-            }
-        }
-#endif
+        
+        TIMELINE_END_C("freeSubtree", tid, tryTimingCall);
     }
     
     /**
@@ -502,6 +498,7 @@ private:
                 if (pairs[i].k <= pairs[i-1].k) {
                     std::cout<<pairs[i].k<<" is less than or equal to the previous key "<<pairs[i-1].k<<std::endl;
                     ist->debugGVPrint();
+                    setbench_error("violation of data structure invariant. halting...");
                 }
                 assert(pairs[i].k > pairs[i-1].k);
             }
