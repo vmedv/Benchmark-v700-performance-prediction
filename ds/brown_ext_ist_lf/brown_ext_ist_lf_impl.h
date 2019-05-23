@@ -3,10 +3,6 @@
 
 #include "brown_ext_ist_lf.h"
 
-// eventual TODO: fix memory reclamation in collaborative rebuild
-// eventual TODO: full recursive helping of collaborative ideal tree construction???
-// eventual TODO: parallel construction from array?? (very low priority)
-
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     auto guard = recordmgr->getGuard(tid, true);
@@ -533,21 +529,23 @@ void istree<K,V,Interpolate,RecManager>::rebuild(const int tid, Node<K,V> * rebu
 
 template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const K& key, Node<K,V> * const node) {
-//    assert(!recordmgr->isQuiescent(tid));
-    // TODO: redo prefetching, taking into account the fact that l2 adjacent line prefetcher DOESN'T grab an adjacent line
-    //__builtin_prefetch(&node->degree, 1);
+    __builtin_prefetch(&node->minKey, 1);
     __builtin_prefetch(&node->maxKey, 1);
+    
+    // these next 3 prefetches are shockingly effective... 20% performance boost in some large scale search-only workloads... (reducing L3 cache misses by 2-3 per search...)
     __builtin_prefetch((node->keyAddr(0)), 1);
     __builtin_prefetch((node->keyAddr(0))+(8), 1);
     __builtin_prefetch((node->keyAddr(0))+(16), 1);
 
+    auto deg = node->degree;
+    
     //assert(node->degree >= 1);
-    if (unlikely(node->degree == 1)) {
+    if (unlikely(deg == 1)) {
 //        GSTATS_APPEND_D(tid, visited_in_isearch, 1);
         return 0;
     }
     
-    const int numKeys = node->degree - 1;
+    const int numKeys = deg - 1;
     const K& minKey = node->minKey;
     const K& maxKey = node->maxKey;
     
@@ -562,12 +560,9 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
     // assert: minKey <= key < maxKey
     int ix = (numKeys * (key - minKey) / (maxKey - minKey));
 
-    __builtin_prefetch((node->keyAddr(0))+(ix-8), 1); // prefetch approximate key location
-    __builtin_prefetch((node->keyAddr(0))+(ix), 1); // prefetch approximate key location
-    __builtin_prefetch((node->keyAddr(0))+(ix+8), 1); // prefetch approximate key location
-    __builtin_prefetch((node->keyAddr(0))+(numKeys+ix-8), 1); // prefetch approximate pointer location to accelerate later isDcss check
-    __builtin_prefetch((node->keyAddr(0))+(numKeys+ix), 1); // prefetch approximate pointer location to accelerate later isDcss check
-    __builtin_prefetch((node->keyAddr(0))+(numKeys+ix+8), 1); // prefetch approximate pointer location to accelerate later isDcss check
+    __builtin_prefetch((node->keyAddr(0))+(ix-8), 1);                           // prefetch approximate key location
+    __builtin_prefetch((node->keyAddr(0))+(ix), 1);                             // prefetch approximate key location
+    __builtin_prefetch((node->keyAddr(0))+(ix+8), 1);                           // prefetch approximate key location
     
     const K& ixKey = node->key(ix);
 //    std::cout<<"key="<<key<<" minKey="<<minKey<<" maxKey="<<maxKey<<" ix="<<ix<<" ixKey="<<ixKey<<std::endl;

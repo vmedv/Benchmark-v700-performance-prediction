@@ -887,7 +887,7 @@ void trial() {
     }
 
 //    PerfTools::profile("perf.prefilling", PERF_PMU_EVENT, [&]() {
-#ifdef PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
+#ifdef PREFILL_BUILD_FROM_ARRAY
         TIMING_START("creating key array");
         size_t sz = MAXKEY+2;
         const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();

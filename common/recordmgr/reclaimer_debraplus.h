@@ -22,6 +22,8 @@
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debraplus : public reclaimer_interface<T, Pool> {
 private:
+#define DEBRA_DISABLE_READONLY_OPT
+
 #define EPOCH_INCREMENT 2
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)

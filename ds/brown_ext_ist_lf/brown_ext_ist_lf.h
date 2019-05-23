@@ -18,7 +18,8 @@
 #ifndef ISTREE_H
 #define	ISTREE_H
 
-#define PREFILL_SEQUENTIAL_BUILD_FROM_ARRAY
+#define PREFILL_BUILD_FROM_ARRAY
+#define IST_INIT_PARALLEL_IDEAL_BUILD
 #define IST_USE_MULTICOUNTER_AT_ROOT
 //#define NO_REBUILDING
 //#define PAD_CHANGESUM
@@ -410,7 +411,7 @@ private:
         size_t pairsAdded;
         casword_t tree;
         
-        Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth, casword_t volatile * constructingSubtree) {
+        Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth, casword_t volatile * constructingSubtree, bool parallelizeWithOMP = false) {
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
                 GSTATS_ADD_IX(tid, num_bail_from_build_at_depth, 1, (currDepth > 9 ? 9 : currDepth));
                 return NODE_TO_CASWORD(NULL); // bail early if tree was already constructed by someone else
@@ -440,20 +441,40 @@ private:
                 node->degree = numChildren;
                 node->initSize = psetSize;
 
-                KVPair<K,V> * childSet = pset;
-                for (int i=0;i<numChildren;++i) {
-                    int sz = childSize + (i < remainder);
-                    auto child = build(tid, childSet, sz, 1+currDepth, constructingSubtree);
+                if (parallelizeWithOMP) { // special code for partially parallel initialization
+                    #pragma omp parallel
+                    {
+                        auto sub_thread_id = omp_get_thread_num();
+                        ist->initThread(sub_thread_id);
+                        
+                        #pragma omp for
+                        for (int i=0;i<numChildren;++i) {
+                            int sz = childSize + (i < remainder);
+                            KVPair<K,V> * childSet = pset + i*sz + (i >= remainder ? remainder : 0);
+                            auto child = build(sub_thread_id, childSet, sz, 1+currDepth, constructingSubtree);
 
-                    *node->ptrAddr(i) = NODE_TO_CASWORD(child);
-                    if (i > 0) {
-                        assert(child == NODE_TO_CASWORD(NULL) || child->degree > 1);
-                        node->key(i-1) = childSet[0].k;
+                            *node->ptrAddr(i) = NODE_TO_CASWORD(child);
+                            if (i > 0) {
+                                node->key(i-1) = childSet[0].k;
+                            }
+                        }
                     }
+                } else {
+                    KVPair<K,V> * childSet = pset;
+                    for (int i=0;i<numChildren;++i) {
+                        int sz = childSize + (i < remainder);
+                        auto child = build(tid, childSet, sz, 1+currDepth, constructingSubtree);
+
+                        *node->ptrAddr(i) = NODE_TO_CASWORD(child);
+                        if (i > 0) {
+                            assert(child == NODE_TO_CASWORD(NULL) || child->degree > 1);
+                            node->key(i-1) = childSet[0].k;
+                        }
 #ifndef NDEBUG
-                    assert(i < 2 || node->key(i-1) > node->key(i-2));
+                        assert(i < 2 || node->key(i-1) > node->key(i-2));
 #endif
-                    childSet += sz;
+                        childSet += sz;
+                    }
                 }
                 node->minKey = node->key(0);
                 node->maxKey = node->key(node->degree-2);
@@ -473,6 +494,12 @@ private:
         ~IdealBuilder() {
             delete[] pairs;
         }
+        void ___experimental_setNumPairs(const size_t numPairs) {
+            pairsAdded = numPairs;
+        }
+        void ___experimental_addKV(const K& key, const V& value, const size_t index) {
+            pairs[index] = {key, value};
+        }
         void addKV(const int tid, const K& key, const V& value) {
             pairs[pairsAdded++] = {key, value};
 #ifndef NDEBUG
@@ -483,7 +510,7 @@ private:
 #endif
             assert(pairsAdded <= initNumKeys);
         }
-        casword_t getCASWord(const int tid, casword_t volatile * constructingSubtree) {
+        casword_t getCASWord(const int tid, casword_t volatile * constructingSubtree, bool parallelizeWithOMP = false) {
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) return NODE_TO_CASWORD(NULL);
 #ifndef NDEBUG
             if (pairsAdded != initNumKeys) {
@@ -509,7 +536,7 @@ private:
                 } else if (unlikely(pairsAdded == 1)) {
                     tree = KVPAIR_TO_CASWORD(ist->createKVPair(tid, pairs[0].k, pairs[0].v));
                 } else {
-                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth, constructingSubtree));
+                    tree = NODE_TO_CASWORD(build(tid, pairs, pairsAdded, depth, constructingSubtree, parallelizeWithOMP));
                 }
             }
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
@@ -591,6 +618,70 @@ public:
     , NO_VALUE(noValue)
     , NUM_PROCESSES(numProcesses) 
     {
+        
+#if defined IST_INIT_CONCURRENT_INSERT_THEN_REBUILD
+        
+        srand(time(0)); // for seeding per-thread RNGs in initThread
+        cmp = Interpolate();
+
+        const int dummyTid = 0;
+        initThread(dummyTid);
+
+        Node<K,V> * _root = createNode(dummyTid, 1);
+        _root->degree = 1;
+        _root->minKey = INF_KEY;
+        _root->maxKey = INF_KEY;
+        *_root->ptrAddr(0) = EMPTY_VAL_TO_CASWORD;
+        
+        root = _root;
+        
+        #pragma omp parallel
+        {
+            int tid = omp_get_thread_num();
+            initThread(tid);
+        
+            //std::cout<<"parallel for insertion"<<std::endl;
+            #pragma omp for
+            for (int i=0;i<initNumKeys;++i) {
+                auto result = insert(tid, initKeys[i], initValues[i]);
+                assert(result == NO_VALUE);
+            }
+
+            //std::cout<<"parallel root rebuild"<<std::endl;
+            auto rootChild = prov->readPtr(tid, root->ptrAddr(0));
+            if (IS_NODE(rootChild)) {
+                rebuild(tid, CASWORD_TO_NODE(rootChild), root, 0, 0);
+            } else if (IS_REBUILDOP(rootChild)) {
+                helpRebuild(tid, CASWORD_TO_REBUILDOP(rootChild));
+            }
+        }
+
+#elif defined IST_INIT_PARALLEL_IDEAL_BUILD
+        
+        // parallelization of sequential ideal builder
+        srand(time(0)); // for seeding per-thread RNGs in initThread
+        cmp = Interpolate();
+
+        const int tid = 0;
+        initThread(tid);
+
+        Node<K,V> * _root = createNode(tid, 1);
+        _root->degree = 1;
+        root = _root;
+        
+        IdealBuilder b (this, initNumKeys, 0);
+        #pragma omp parallel for
+        for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
+            b.___experimental_addKV(initKeys[keyIx], initValues[keyIx], keyIx);
+        }
+        b.___experimental_setNumPairs(initNumKeys);
+        casword_t dummy = NODE_TO_CASWORD(NULL);
+        *root->ptrAddr(0) = b.getCASWord(tid, &dummy, true);
+        
+#elif defined IST_INIT_SEQUENTIAL
+        
+        // old sequential tree building method
+        srand(time(0)); // for seeding per-thread RNGs in initThread
         cmp = Interpolate();
 
         const int tid = 0;
@@ -606,6 +697,7 @@ public:
         }
         casword_t dummy = NODE_TO_CASWORD(NULL);
         *root->ptrAddr(0) = b.getCASWord(tid, &dummy);
+#endif
     }
     ~istree() {
         if (myRNG != NULL) { delete myRNG; myRNG = NULL; }

@@ -23,6 +23,8 @@
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debracap : public reclaimer_interface<T, Pool> {
 protected:
+#define DEBRA_DISABLE_READONLY_OPT
+
 #define EPOCH_INCREMENT 2
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)
@@ -38,7 +40,7 @@ protected:
     
 #define NUMBER_OF_EPOCH_BAGS 3 // 9 for range query support
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0 // 3 for range query support
-
+    
     class ThreadData {
     private:
         PAD;

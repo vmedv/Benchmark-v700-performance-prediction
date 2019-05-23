@@ -13,21 +13,18 @@ fields="$fields tree_stats_numKeys tree_stats_avgDegreeInternal tree_stats_avgDe
 fields="$fields tree_stats_avgDegree tree_stats_avgKeyDepth"
 fields="$fields total_find total_rq total_updates total_queries total_ops"
 fields="$fields find_throughput rq_throughput update_throughput query_throughput total_throughput"
-fields="$fields PAPI_L1_DCM PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC PAPI_TOT_INS"
+fields="$fields PAPI_L1_DCM PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC PAPI_TOT_INS maxresident"
 
 outfile=data.csv
 echo "filename $fields" | tr " " "," > $outfile ; tail -1 $outfile
 for fname in $@ ; do
+    if [ -e "$fname" ]; then
 	echo -n $fname >> $outfile
 	for f in $fields ; do
 		val=`cat $fname | grep "^${f}=" | cut -d"=" -f2`
 		echo -n ,$val >> $outfile
 	done
 
-	#############
-	#val=`cat $fname | grep "sizes: node=" | cut -d"=" -f2`
-	#echo -n ,$val >> $outfile
-	#############
-
 	echo "" >> $outfile ; tail -1 $outfile
+    fi
 done
