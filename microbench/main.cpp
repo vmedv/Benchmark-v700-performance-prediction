@@ -424,6 +424,7 @@ struct globals_t {
     PAD;
     long elapsedMillisNapping;
     volatile long long prefillIntervalElapsedMillis;
+    std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime;
     PAD;
     volatile test_type garbage; // used to prevent optimizing out some code
     PAD;
@@ -479,7 +480,7 @@ void *thread_prefill(void *_id) {
     __sync_synchronize();
     while (!g.start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     int cnt = 0;
-    std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = g.startTime;
+    auto __endTime = g.startTime;
     while (!g.done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
             __endTime = std::chrono::high_resolution_clock::now();
@@ -525,7 +526,7 @@ void *thread_prefill(void *_id) {
 // note: this function guarantees that exactly expectedSize keys are inserted into the data structure by the end
 void prefillInsertionOnly() {
     std::cout<<"Info: prefilling using INSERTION ONLY."<<std::endl;
-    std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
+    auto prefillStartTime = std::chrono::high_resolution_clock::now();
     
     const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
     const int expectedSize = (int)(MAXKEY * expectedFullness);
@@ -538,26 +539,43 @@ void prefillInsertionOnly() {
         const int ompThreads = 1;
     #endif
     TIMING_START("inserting "<<expectedSize<<" keys with "<<ompThreads<<" threads");
-    #pragma omp parallel for schedule(dynamic, 100000)
-    for (size_t i=0;i<expectedSize;++i) {
-    retry:
+    #pragma omp parallel
+    {
         #ifdef _OPENMP
             const int tid = omp_get_thread_num();
+            binding_bindThread(tid);
         #else
             const int tid = 0;
         #endif
-        test_type key = g.rngs[tid].next(MAXKEY) + 1;
-        GSTATS_ADD(tid, num_inserts, 1);
-        if (g.dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
-            GSTATS_ADD(tid, key_checksum, key);
-            GSTATS_ADD(tid, prefill_size, 1);
-        } else {
-            goto retry;
+        
+        #pragma omp for schedule(dynamic, 100000)
+        for (size_t i=0;i<expectedSize;++i) {
+        retry:
+            test_type key = g.rngs[tid].next(MAXKEY) + 1;
+            GSTATS_ADD(tid, num_inserts, 1);
+            if (g.dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
+                GSTATS_ADD(tid, key_checksum, key);
+                GSTATS_ADD(tid, prefill_size, 1);
+                
+                // monitor prefilling progress
+                if ((tid == 0) && (GSTATS_GET(tid, prefill_size) % 1000000) == 0) {
+                    double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.prefillStartTime).count();
+                    //double percent_done = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum / (double) expectedSize;
+                    double percent_done = GSTATS_GET(tid, prefill_size) * ompThreads / (double) expectedSize;
+                    double magic_error_multiplier = (1+(1-percent_done)*1.75); // derived experimentally using huge trees. super rough and silly linear estimator for what is clearly a curve...
+                    double total_estimate_ms = magic_error_multiplier * elapsed_ms / percent_done;
+                    double remaining_ms = total_estimate_ms - elapsed_ms;
+                    printf("tid=%d thread_prefill_amount=%lld percent_done_estimate=%.1f elapsed_s=%.0f est_remaining_s=%.0f / %0.f\n", tid, GSTATS_GET(tid, prefill_size), (100*percent_done), (elapsed_ms / 1000), (remaining_ms / 1000), (total_estimate_ms / 1000));
+                    fflush(stdout); // for some reason the above is stubborn and doesn't print until too late (to watch progress) if i don't flush explicitly.
+                }
+            } else {
+                goto retry;
+            }
         }
     }
     TIMING_STOP;
     
-    std::chrono::time_point<std::chrono::high_resolution_clock> prefillEndTime = std::chrono::high_resolution_clock::now();
+    auto prefillEndTime = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
     GSTATS_PRINT;
     const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum + GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
@@ -565,7 +583,7 @@ void prefillInsertionOnly() {
     g.prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<expectedSize<<" keysum="<<g.prefillKeySum<<", performing "<<totalSuccUpdates<<" successful updates in "<<(elapsed/1000.)<<"s"<<std::endl);
     std::cout<<"pref_size="<<expectedSize<<std::endl;
-    std::cout<<"pref_millis="<<elapsed<<std::endl;
+    //std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
 }
 
@@ -674,7 +692,7 @@ void prefill() {
         exit(-1);
     }
     
-    std::chrono::time_point<std::chrono::high_resolution_clock> prefillEndTime = std::chrono::high_resolution_clock::now();
+    auto prefillEndTime = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
     GSTATS_PRINT;
@@ -683,7 +701,7 @@ void prefill() {
     g.prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
     COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< g.prefillKeySum /*<<" dskeysum="<<g.ds->getKeyChecksum()<<" dssize="<<g.ds->getSize()*/<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<std::endl);
     std::cout<<"pref_size="<<sz<<std::endl;
-    std::cout<<"pref_millis="<<elapsed<<std::endl;
+//    std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
     GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
     GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
@@ -719,7 +737,7 @@ void *thread_timed(void *_id) {
     
     while (!g.done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = std::chrono::high_resolution_clock::now();
+            auto __endTime = std::chrono::high_resolution_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g.startTime).count() >= std::abs(MILLIS_TO_RUN)) {
                 __sync_synchronize();
                 g.done = true;
@@ -814,7 +832,7 @@ void *thread_rq(void *_id) {
     int cnt = 0;
     while (!g.done) {
         if (((++cnt) % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            std::chrono::time_point<std::chrono::high_resolution_clock> __endTime = std::chrono::high_resolution_clock::now();
+            auto __endTime = std::chrono::high_resolution_clock::now();
             if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g.startTime).count() >= MILLIS_TO_RUN) {
                 __sync_synchronize();
                 g.done = true;
@@ -886,6 +904,9 @@ void trial() {
         ids[i] = i;
     }
 
+    // prefill data structure to mimic its structure in the steady state
+    g.prefillStartTime = std::chrono::high_resolution_clock::now();
+    
 //    PerfTools::profile("perf.prefilling", PERF_PMU_EVENT, [&]() {
 #ifdef PREFILL_BUILD_FROM_ARRAY
         TIMING_START("creating key array");
@@ -932,7 +953,7 @@ void trial() {
                 (test_type const *) present, (VALUE_TYPE const *) present,
                 sz/2, rand());
         TIMING_STOP;
-    
+        
         delete[] present;
         
         for (int tid=0;tid<std::max(PREFILL_THREADS, TOTAL_THREADS);++tid) {
@@ -955,9 +976,15 @@ void trial() {
         if (PREFILL_THREADS > 0) prefill();
 #endif
 //    });
+        
+    // print total prefilling time
+    std::cout<<"prefill_elapsed_ms="<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.prefillStartTime).count()<<std::endl;
     
+    // setup measured part of the experiment
     INIT_ALL;
-
+    
+    // TODO: reclaim all garbage floating in the record manager that was generated during prefilling, so it doesn't get freed at the start of the measured part of the execution? (maybe it's better not to do this, since it's realistic that there is some floating garbage in the steady state. that said, it's probably not realistic that it's all eligible for reclamation, first thing...)
+    
     // amount of time for main thread to wait for children threads
     timespec tsExpected;
     tsExpected.tv_sec = MILLIS_TO_RUN / 1000;

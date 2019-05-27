@@ -13,7 +13,8 @@ fields="$fields tree_stats_numKeys tree_stats_avgDegreeInternal tree_stats_avgDe
 fields="$fields tree_stats_avgDegree tree_stats_avgKeyDepth"
 fields="$fields total_find total_rq total_updates total_queries total_ops"
 fields="$fields find_throughput rq_throughput update_throughput query_throughput total_throughput"
-fields="$fields PAPI_L1_DCM PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC PAPI_TOT_INS maxresident"
+fields="$fields PAPI_L1_DCM PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC PAPI_TOT_INS"
+fields="$fields maxresident_mb prefill_elapsed_ms"
 
 outfile=data.csv
 echo "filename $fields" | tr " " "," > $outfile ; tail -1 $outfile
