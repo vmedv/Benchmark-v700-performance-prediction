@@ -399,7 +399,7 @@ public:
             }
             thread_data[tid].size[id] = 0;
             //if (tid == 0) std::cout<<"stat id="<<id<<" name="<<name<<" tid="<<tid<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<" size="<<thread_data[tid].size[id]<<" stat_ptr_addr="<<(long long) thread_data[tid].get_ptr<void>(id)<<std::endl;
-            if (tid == 0) std::cout<<"stat "<<id<<": "<<name<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<std::endl;
+            //if (tid == 0) std::cout<<"stat "<<id<<": "<<name<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<std::endl;
         }
 
         num_stats++;

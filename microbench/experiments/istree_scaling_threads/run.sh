@@ -7,7 +7,7 @@ cat $exp.csv
 
 step=10000
 maxstep=$step
-thread_counts="190 144 96 24 48" #`cd .. ; ./get_thread_counts.sh`
+thread_counts=`cd .. ; ./get_thread_counts.sh`
 pinning_policy=`cd .. ; ./get_pinning_cluster.sh`
 t=30000
 timeout_s=600
@@ -15,8 +15,8 @@ timeout_s=600
 for counting in 1 0 ; do
     for ((trial=0;trial<1;++trial)) ; do
         for uhalf in 0 0.5 5 20 ; do
-            for k in 2000000000 ; do #2000000 20000000 200000000 2000000000 ; do
-                for alg in bronson_pext_bst_occ natarajan_ext_bst_lf ; do #brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf ; do
+            for k in 2000000 20000000 200000000 2000000000 ; do
+                for alg in brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf ; do
                     for n in $thread_counts ; do
                         if ((counting)); then
                             maxstep=$((maxstep+1))
