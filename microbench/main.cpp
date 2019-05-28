@@ -1153,8 +1153,8 @@ void printOutput() {
         long long dsSize = treeStats->getKeys();
         std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
         std::cout<<"threads_final_size="<<threadsSize<<std::endl;
-        std::cout<<"final_keysum"<<dsKeySum<<std::endl;
-        std::cout<<"final_size"<<dsSize<<std::endl;
+        std::cout<<"final_keysum="<<dsKeySum<<std::endl;
+        std::cout<<"final_size="<<dsSize<<std::endl;
         if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
             std::cout<<"validate_result=success"<<std::endl;
             std::cout<<"Validation OK."<<std::endl;

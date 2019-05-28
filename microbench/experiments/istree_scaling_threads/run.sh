@@ -10,10 +10,11 @@ maxstep=$step
 thread_counts=`cd .. ; ./get_thread_counts.sh`
 pinning_policy=`cd .. ; ./get_pinning_cluster.sh`
 t=30000
+num_trials=2
 timeout_s=600
 
 for counting in 1 0 ; do
-    for ((trial=0;trial<1;++trial)) ; do
+    for ((trial=0;trial<num_trials;++trial)) ; do
         for uhalf in 0 0.5 5 20 ; do
             for k in 2000000 20000000 200000000 2000000000 ; do
                 for alg in brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf ; do
