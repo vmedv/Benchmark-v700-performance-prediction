@@ -562,7 +562,7 @@ void prefillInsertionOnly() {
                     double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.prefillStartTime).count();
                     //double percent_done = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum / (double) expectedSize;
                     double percent_done = GSTATS_GET(tid, prefill_size) * ompThreads / (double) expectedSize;
-                    double magic_error_multiplier = (1+(1-percent_done)*1.75); // derived experimentally using huge trees. super rough and silly linear estimator for what is clearly a curve...
+                    double magic_error_multiplier = (1+(1-percent_done)*1.25); // derived experimentally using huge trees. super rough and silly linear estimator for what is clearly a curve...
                     double total_estimate_ms = magic_error_multiplier * elapsed_ms / percent_done;
                     double remaining_ms = total_estimate_ms - elapsed_ms;
                     printf("tid=%d thread_prefill_amount=%lld percent_done_estimate=%.1f elapsed_s=%.0f est_remaining_s=%.0f / %0.f\n", tid, GSTATS_GET(tid, prefill_size), (100*percent_done), (elapsed_ms / 1000), (remaining_ms / 1000), (total_estimate_ms / 1000));
@@ -1243,6 +1243,13 @@ void printOutput() {
 
     papi_print_counters(totalAll);
     delete treeStats;
+    
+#if !defined NDEBUG
+    std::cout<<"WARNING: NDEBUG is not defined, so experiment results may be affected by assertions and debug code."<<std::endl;
+#endif
+#if defined MEASURE_REBUILDING_TIME || defined MEASURE_TIMELINE_STATS || defined RAPID_RECLAMATION
+    std::cout<<"WARNING: one or more of MEASURE_REBUILDING_TIME | MEASURE_TIMELINE_STATS | RAPID_RECLAMATION are defined, which *may* affect experiments results."<<std::endl;
+#endif
 }
 
 int main(int argc, char** argv) {
