@@ -11,6 +11,7 @@
 #include "random_fnv1a.h"
 #include "brown_ext_abtree_lf_impl.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 
@@ -118,6 +119,7 @@ public:
             }
             return result;
         }
+        static size_t getSizeInBytes(NodePtrType node) { return sizeof(*node); }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->debug_getEntryPoint(), true);

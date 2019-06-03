@@ -1,6 +1,6 @@
 /**
  * Implementation of a lock-free interpolation search tree.
- * Trevor Brown, 2018.
+ * Trevor Brown, 2019.
  */
 
 #ifndef DS_ADAPTER_H
@@ -11,21 +11,33 @@
 #include "random_fnv1a.h"
 #include "brown_ext_ist_lf_impl.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
+#if defined IST_DISABLE_MULTICOUNTER_AT_ROOT
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
+#else
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
+#endif
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
 
 template <typename T>
 struct ValidAllocatorTest { static constexpr bool value = false; };
-
 template <typename T>
 struct ValidAllocatorTest<allocator_new<T>> { static constexpr bool value = true; };
-
 template <typename Alloc>
 static bool isValidAllocator(void) {
     return ValidAllocatorTest<Alloc>::value;
+}
+
+template <typename T>
+struct ValidPoolTest { static constexpr bool value = false; };
+template <typename T>
+struct ValidPoolTest<pool_none<T>> { static constexpr bool value = true; };
+template <typename Pool>
+static bool isValidPool(void) {
+    return ValidPoolTest<Pool>::value;
 }
 
 template <typename K>
@@ -63,6 +75,9 @@ public:
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")
         }
+        if (!isValidPool<Pool>()) {
+            setbench_error("This data structure must be used with pool_none.")
+        }
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
         }
@@ -81,6 +96,9 @@ public:
     {
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")
+        }
+        if (!isValidPool<Pool>()) {
+            setbench_error("This data structure must be used with pool_none.")
         }
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
@@ -122,6 +140,8 @@ public:
     void printSummary() {
         auto recmgr = ds->debugGetRecMgr();
         recmgr->printStatus();
+//        auto sizeBytes = ds->debugComputeSizeBytes();
+//        std::cout<<"endingSizeBytes="<<sizeBytes<<std::endl;
     }
     bool validateStructure() {
 //        ds->debugGVPrint();
@@ -179,6 +199,16 @@ public:
                 if (!IS_EMPTY_VAL(n->ptr(i)) && IS_VAL(n->ptr(i))) ret += (size_t) n->key(i-1);
             }
             return ret;
+        }
+        static size_t getSizeInBytes(NodePtrType node) {
+            if (IS_KVPAIR(node)) return sizeof(*CASWORD_TO_KVPAIR(node));
+            if (IS_VAL(node)) return 0;
+            if (IS_NODE(node) && node != NODE_TO_CASWORD(NULL)) {
+                auto child = CASWORD_TO_NODE(node);
+                auto degree = child->degree;
+                return sizeof(*child) + sizeof(K) * (degree - 1) + sizeof(casword_t) * degree;
+            }
+            return 0;
         }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {

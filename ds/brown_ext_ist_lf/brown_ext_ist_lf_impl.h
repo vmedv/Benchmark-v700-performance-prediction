@@ -96,7 +96,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     if (unlikely(IS_REBUILDOP(ptr))) {
         // if we are here seeing this rebuildop,
         // then we ALREADY marked the node that points to the rebuildop,
-        // which means that rebuild op cannot possible change that node
+        // which means that rebuild op cannot possibly change that node
         // to effect the rebuilding.
         return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot));
     }
@@ -118,7 +118,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     //      the DIRTY_FINISHED indicator makes these final helping attempts more efficient.
     //
     // this entire idea of dividing work between helpers first can be disabled
-    //      by defining SEQUENTIAL_MARK_AND_COUNT
+    //      by defining IST_DISABLE_COLLABORATIVE_MARK_AND_COUNT
     //
     // can the clean fetch&add work division be adapted better for concurrent ideal tree construction?
     //
@@ -126,7 +126,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     //      each thread call addKVPair for each key it sees in THIS traversal?
     //      (maybe avoiding sort order issues by saving per-thread lists and merging)
     
-#if !defined SEQUENTIAL_MARK_AND_COUNT
+#if !defined IST_DISABLE_COLLABORATIVE_MARK_AND_COUNT
     // optimize for contention by first claiming a subtree to recurse on
     // THEN after there are no more subtrees to claim, help (any that are still DIRTY_STARTED)
     if (node->degree > MAX_ACCEPTABLE_LEAF_SIZE) { // prevent this optimization from being applied at the leaves, where the number of fetch&adds will be needlessly high
@@ -312,7 +312,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             word = b.getCASWord(tid, &dummy);
             assert(word != NODE_TO_CASWORD(NULL));
         } else {
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
             if (op->depth <= 1) {
                 word = NODE_TO_CASWORD(createMultiCounterNode(tid, numChildren));
                 TRACE printf("    tid=%d create multi counter root=%llx\n", tid, (unsigned long long) word);
@@ -320,7 +320,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 #endif
                 word = NODE_TO_CASWORD(createNode(tid, numChildren));
                 TRACE printf("    tid=%d create regular root=%llx\n", tid, (unsigned long long) word);
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
             }
 #endif
 
@@ -500,7 +500,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
                 freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
             }
         } else {
-#ifdef ISTREE_REBUILD_SEQUENTIAL_FREE
+#ifdef IST_DISABLE_COLLABORATIVE_FREE_SUBTREE
             if (result == DCSS_SUCCESS) freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
 #else
             helpFreeSubtree(tid, op->rebuildRoot);
@@ -762,7 +762,10 @@ retryNode:
             return foundVal;
         } else if (IS_REBUILDOP(word)) {
             //std::cout<<"found supposed rebuildop "<<(size_t) word<<" at path length "<<pathLength<<std::endl;
+#ifdef IST_DISABLE_REBUILD_HELPING
+#else
             helpRebuild(tid, CASWORD_TO_REBUILDOP(word));
+#endif
             goto retry;
         } else {
             assert(IS_NODE(word));
@@ -783,7 +786,7 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createNode(const int tid, const i
     node->degree = 0;
     node->initSize = 0;
     node->changeSum = 0;
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
     node->externalChangeCounter = NULL;
     assert(!node->externalChangeCounter);
 #endif
@@ -822,7 +825,7 @@ template <typename K, typename V, class Interpolate, class RecManager>
 Node<K,V>* istree<K,V,Interpolate,RecManager>::createMultiCounterNode(const int tid, const int degree) {
 //    GSTATS_ADD(tid, num_multi_counter_node_created, 1);
     auto node = createNode(tid, degree);
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
     node->externalChangeCounter = new MultiCounter(this->NUM_PROCESSES, 1);
 //    std::cout<<"created MultiCounter at address "<<node->externalChangeCounter<<std::endl;
     assert(node->externalChangeCounter);

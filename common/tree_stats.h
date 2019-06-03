@@ -38,6 +38,9 @@ private:
     size_t leavesAtDepth[MAX_HEIGHT];
     size_t keysAtDepth[MAX_HEIGHT];
     size_t sumOfKeys;
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+    size_t bytesAtDepth[MAX_HEIGHT];
+#endif
     PAD;
     
     void computeStats(NodeHandlerT * handler, nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
@@ -45,6 +48,9 @@ private:
         if (depth > maxDepth) return;
         keysAtDepth[depth] += handler->getNumKeys(node);
         sumOfKeys += handler->getSumOfKeys(node);
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+        bytesAtDepth[depth] += handler->getSizeInBytes(node);
+#endif
         if (handler->isLeaf(node)) {
             ++leavesAtDepth[depth];
         } else {
@@ -63,6 +69,9 @@ public:
             internalsAtDepth[d] = 0;
             leavesAtDepth[d] = 0;
             keysAtDepth[d] = 0;
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+            bytesAtDepth[d] = 0;
+#endif
         }
         sumOfKeys = 0;
 #ifdef _OPENMP
@@ -137,6 +146,9 @@ public:
                     FAA(&internalsAtDepth[d+currDepth], ts->internalsAtDepth[d]);
                     FAA(&leavesAtDepth[d+currDepth], ts->leavesAtDepth[d]);
                     FAA(&keysAtDepth[d+currDepth], ts->keysAtDepth[d]);
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+                    FAA(&bytesAtDepth[d+currDepth], ts->bytesAtDepth[d]);
+#endif
                 }
                 FAA(&sumOfKeys, ts->sumOfKeys);
                 delete ts;
@@ -247,7 +259,19 @@ public:
         double denom = getKeys();
         return (denom == 0) ? 0 : sumDepths / denom;
     }
-    
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+    size_t getBytesAtDepth(size_t d) {
+        return bytesAtDepth[d];
+    }
+    size_t getSizeInBytes() {
+        size_t height = getHeight();
+        size_t bytes = 0;
+        for (size_t d=0;d<height;++d) {
+            bytes += bytesAtDepth[d];
+        }
+        return bytes;
+    }
+#endif
     size_t getSumOfKeys() {
         return sumOfKeys;
     }
@@ -315,6 +339,16 @@ public:
         ss<<"tree_stats_avgDegreeLeaves="<<getAverageDegreeLeaves()<<std::endl;
         ss<<"tree_stats_avgDegree="<<getAverageDegree()<<std::endl;
         ss<<"tree_stats_avgKeyDepth="<<getAverageKeyDepth()<<std::endl;
+
+#ifdef TREE_STATS_BYTES_AT_DEPTH
+        ss<<std::endl;
+        ss<<"tree_stats_bytesAtDepth=";
+        for (size_t d=0;d<height;++d) {
+            ss<<(d?" ":"")<<getBytesAtDepth(d);
+        }
+        ss<<std::endl;
+        ss<<"tree_stats_sizeInBytes="<<getSizeInBytes()<<std::endl;
+#endif
 
         return ss.str();
     }

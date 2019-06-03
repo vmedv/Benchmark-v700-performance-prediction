@@ -1,16 +1,13 @@
-alg=./bronson_pext_bst_occ n=20 ; for trial in 1 ; do LD_PRELOAD=../../lib/libjemalloc-5.0.1-25.so numactl -N 0 $alg.ubench_rdebra -t 10000 -i 1 -d 1 -rq 0 -rqsize 1 -k 1000000000 -nrq 0 -pin 0-9,20-29,10-19,30-39 -nwork $n -nprefill $n > output.txt ; grep "total throughput" output.txt ; done
 
-exp1: scaling vs threads (k=2m,20m,200m; u=0%,1%,10%,40%) [i *think* i've now done this]
+exp1: scaling vs threads (k=2m,20m,200m,2b; u=0%,1%,10%,40%)
 
-exp2: scaling vs size (max threads, k=powers of 2 up to TWO BILLION) [i *think* i've now done this]
+exp2: memory consumption for static tree (ignoring working set for updates is relevant for search dominated)
 
-exp3: memory consumption for static tree (ignoring working set for updates is relevant for search dominated)
+exp3: impact of multi counter at root
 
-how many rebuildings were there
+exp4: impact of collaborative rebalancing
 
-impact of multi counter at root
-
-impact of collaborative rebalancing
+exp5: how many rebuildings were there
 
 numerical stability w.r.t.
     trial length (max threads, vary length)
@@ -19,3 +16,7 @@ numerical stability w.r.t.
     [?] relative invariance of results with changes in allocator/reclamation and even system architecture
 
 recall: should explain how we reclaim memory
+
+[[[deleted]]]
+
+exp: scaling vs size (powers of 2)

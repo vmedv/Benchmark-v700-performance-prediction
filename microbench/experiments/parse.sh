@@ -10,10 +10,10 @@ fields="$fields PREFILL_THREADS TOTAL_THREADS WORK_THREADS RQ_THREADS INSERT_FUN
 fields="$fields threads_final_keysum threads_final_size final_keysum final_size validate_result"
 fields="$fields tree_stats_height tree_stats_numInternals tree_stats_numLeaves tree_stats_numNodes"
 fields="$fields tree_stats_numKeys tree_stats_avgDegreeInternal tree_stats_avgDegreeLeaves"
-fields="$fields tree_stats_avgDegree tree_stats_avgKeyDepth"
+fields="$fields tree_stats_avgDegree tree_stats_avgKeyDepth tree_stats_sizeInBytes"
 fields="$fields total_find total_rq total_updates total_queries total_ops"
 fields="$fields find_throughput rq_throughput update_throughput query_throughput total_throughput"
-fields="$fields PAPI_L1_DCM PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC PAPI_TOT_INS"
+fields="$fields PAPI_L2_TCM PAPI_L3_TCM PAPI_TOT_CYC"
 fields="$fields maxresident_mb prefill_elapsed_ms"
 
 outfile=data.csv

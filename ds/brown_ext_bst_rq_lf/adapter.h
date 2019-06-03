@@ -10,6 +10,7 @@
 #include "errors.h"
 #include "random_fnv1a.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 #include "bst_impl.h"
@@ -137,6 +138,7 @@ public:
         static ChildIterator getChildIterator(NodePtrType node) {
             return ChildIterator(node);
         }
+        static size_t getSizeInBytes(NodePtrType node) { return sizeof(*node); }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->debug_getEntryPoint()->left->left, true);

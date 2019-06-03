@@ -20,10 +20,10 @@
 
 #define PREFILL_BUILD_FROM_ARRAY
 #define IST_INIT_PARALLEL_IDEAL_BUILD
-#define IST_USE_MULTICOUNTER_AT_ROOT
+//#define IST_DISABLE_MULTICOUNTER_AT_ROOT
 //#define NO_REBUILDING
 //#define PAD_CHANGESUM
-//#define SEQUENTIAL_MARK_AND_COUNT
+//#define IST_DISABLE_COLLABORATIVE_MARK_AND_COUNT
 #define MAX_ACCEPTABLE_LEAF_SIZE (48)
 
 #define GV_FLIP_RECORDS
@@ -42,9 +42,21 @@
 #include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
 #   include "multi_counter.h"
 #endif
+
+// Note: the following are hacky macros to essentially replace polymorphic types
+//       since polymorphic types are unnecessarily expensive. A child pointer in
+//       a node can actually represent several different things: a pointer to
+//       another node, a pointer to a key-value pair, a pointer to a rebuild
+//       object, or a value. To figure out which is the case, use the macros
+//       IS_[NODE|KVPAIR|REBUILDOP|VAL]. To cast neutral casword_t types to
+//       pointers to these objects, use CASWORD_TO_[NODE|KVPAIR|REBUILDOP|VAL].
+//       To cast object pointers to casword_t, use the macros
+//       [NODE|KVPAIR|REBUILDOP|VAL]_TO_CASWORD. There is additionally a special
+//       reserved/distinguished "EMPTY" value, which can be identified by using
+//       IS_EMPTY_VAL. To store an empty value, use EMPTY_VAL_TO_CASWORD.
 
 // for fields Node::ptr(...)
 #define TYPE_MASK                   (0x6ll)
@@ -111,7 +123,7 @@ struct Node {
     PAD;
 #endif
     volatile size_t changeSum;  // could be merged with initSize above (subtract make initSize 1/4 of what it would normally be, then subtract from it instead of incrementing changeSum, and rebuild when it hits zero)
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
     MultiCounter * externalChangeCounter; // NULL for all nodes except the root (or top few nodes), and supercedes changeSum when non-NULL.
 #endif
     // unlisted fields: capacity-1 keys of type K followed by capacity values/pointers of type casword_t
@@ -141,7 +153,7 @@ struct Node {
     }
     
     inline void incrementChangeSum(const int tid, RandomFNV1A * rng) {
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
         if (likely(externalChangeCounter == NULL)) {
             __sync_fetch_and_add(&changeSum, 1);
         } else {
@@ -152,7 +164,7 @@ struct Node {
 #endif
     }
     inline size_t readChangeSum(const int tid, RandomFNV1A * rng) {
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
         if (likely(externalChangeCounter == NULL)) {
             return changeSum;
         } else {
@@ -342,7 +354,7 @@ private:
     
     void freeNode(const int tid, Node<K,V> * node, bool retire) {
         if (retire) {
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
             if (node->externalChangeCounter) {
 //                GSTATS_ADD(tid, num_multi_counter_node_retired, 1);
                 recordmgr->retire(tid, node->externalChangeCounter);
@@ -350,7 +362,7 @@ private:
 #endif
             recordmgr->retire(tid, node);
         } else {
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
             if (node->externalChangeCounter) {
 //                GSTATS_ADD(tid, num_multi_counter_node_deallocated, 1);
                 recordmgr->deallocate(tid, node->externalChangeCounter);
@@ -388,6 +400,32 @@ private:
         
         TIMELINE_END_C("freeSubtree", tid, tryTimingCall);
     }
+    
+//public:
+//    size_t debugComputeSizeBytes(casword_t ptr) {
+//        // note: this can only be run when there are NO threads performing updates on the data structure
+//        if (unlikely(IS_KVPAIR(ptr))) {
+//            return sizeof(*CASWORD_TO_KVPAIR(ptr));
+//        } else if (IS_REBUILDOP(ptr)) {
+//            auto op = CASWORD_TO_REBUILDOP(ptr);
+//            return sizeof(*op) + debugComputeSizeBytes(NODE_TO_CASWORD(op->rebuildRoot));
+//        } else if (IS_NODE(ptr) && ptr != NODE_TO_CASWORD(NULL)) {
+//            auto child = CASWORD_TO_NODE(ptr);
+//            auto degree = child->degree;
+//            size_t size = sizeof(*child) + sizeof(K) * (degree - 1) + sizeof(casword_t) * degree;
+//            for (int i=0;i<child->degree;++i) {
+//                size += debugComputeSizeBytes(child->ptr(i));
+//            }
+//            return size;
+//        }
+//        return 0;
+//    }
+//    
+//    size_t debugComputeSizeBytes() {
+//        return debugComputeSizeBytes(NODE_TO_CASWORD(root));
+//    }
+    
+private:
     
     /**
      * recursive ideal ist construction
@@ -428,7 +466,7 @@ private:
                 // remainder is the number of children with childSize+1 pair subsets
                 // (the other (numChildren - remainder) children have childSize pair subsets)
 
-#ifdef IST_USE_MULTICOUNTER_AT_ROOT
+#ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
                 Node<K,V> * node = NULL;
                 if (currDepth <= 1) {
                     node = ist->createMultiCounterNode(tid, numChildren);

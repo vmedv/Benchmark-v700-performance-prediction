@@ -1123,7 +1123,8 @@ void printOutput() {
     std::cout<<std::endl;
     std::cout<<"tree_stats_computeWalltime="<<(elapsedTreeStats/1000.)<<"s"<<std::endl;
     std::cout<<std::endl;
-    std::cout<<"size_nodes="<<treeStats->toString()<<std::endl;
+    //std::cout<<"size_nodes="<<
+    std::cout<<treeStats->toString()<<std::endl;
     
     g.dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
 
