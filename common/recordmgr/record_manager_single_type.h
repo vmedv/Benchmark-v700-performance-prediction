@@ -29,7 +29,9 @@
 #include "pool_interface.h"
 #include "pool_none.h"
 #include "pool_perthread_and_shared.h"
+#ifdef USE_LIBNUMA
 #include "pool_numa.h"
+#endif
 
 #include "reclaimer_interface.h"
 #include "reclaimer_none.h"

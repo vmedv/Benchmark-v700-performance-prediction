@@ -6,6 +6,10 @@ GPP = g++
 FLAGS += -DUSE_PAPI
 LDFLAGS += -lpapi
 
+### if you do not have libnuma, comment out these two lines
+FLAGS += -DUSE_LIBNUMA
+LDFLAGS += -lnuma
+
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
@@ -28,7 +32,6 @@ LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
-LDFLAGS += -lnuma
 
 bin_dir=bin
 dir_guard:
