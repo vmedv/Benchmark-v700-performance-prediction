@@ -373,7 +373,9 @@ private:
     }
 
     void freeSubtree(const int tid, casword_t ptr, bool retire, bool tryTimingCall = true) {
+#ifdef USE_GSTATS
         TIMELINE_START_C(tid, tryTimingCall);
+#endif
 
         if (unlikely(IS_KVPAIR(ptr))) {
             if (retire) {
@@ -398,7 +400,9 @@ private:
             freeNode(tid, node, retire);
         }
         
+#ifdef USE_GSTATS
         TIMELINE_END_C("freeSubtree", tid, tryTimingCall);
+#endif
     }
     
 //public:
@@ -482,7 +486,11 @@ private:
                 if (parallelizeWithOMP) { // special code for partially parallel initialization
                     #pragma omp parallel
                     {
+#ifdef _OPENMP
                         auto sub_thread_id = omp_get_thread_num();
+#else
+                        auto sub_thread_id = tid; // it will just be this main thread
+#endif
                         ist->initThread(sub_thread_id);
                         
                         #pragma omp for
