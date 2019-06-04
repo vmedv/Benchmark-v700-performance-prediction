@@ -17,7 +17,9 @@
 #include "plaf.h"
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
-#include "server_clock.h"
+#ifdef USE_GSTATS
+#   include "server_clock.h"
+#endif
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
@@ -97,9 +99,12 @@ public:
     
     long long getSizeInNodes() {
         long long sum = 0;
+        //std::cout<<"NUM_PROC="<<this->NUM_PROCESSES<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
-                sum += threadData[tid].epochbags[j]->computeSize();
+                if (threadData[tid].epochbags[j]) {
+                    sum += threadData[tid].epochbags[j]->computeSize();
+                }
             }
         }
         return sum;
@@ -116,7 +121,9 @@ public:
         for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
             sum[j] = 0;
             for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-                sum[j] += threadData[tid].epochbags[j]->computeSize();
+                if (threadData[tid].epochbags[j]) {
+                    sum[j] += threadData[tid].epochbags[j]->computeSize();
+                }
             }
             ss<<sum[j]<<" ";
         }
@@ -150,14 +157,17 @@ public:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
+#ifdef USE_GSTATS
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
-
         TIMELINE_START(tid);
+#endif
 
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
         
+#ifdef USE_GSTATS
         TIMELINE_END("rotateEpochBags", tid);
+#endif
     
         threadData[tid].index = nextIndex;
         threadData[tid].currentBag = threadData[tid].epochbags[nextIndex];

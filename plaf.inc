@@ -18,4 +18,4 @@ cpu_freq_ghz=2.1
 ## Blank means no thread pinning. (Threads can run wherever they want.)
 pinning_policy="-pin 0-17.72-89.18-35.90-107.36-53.108-125.54-71.126-143"
 
-jemalloc_file="lib/libjemalloc-5.0.1-25.so"
+jemalloc_file="lib/libjemalloc.so"

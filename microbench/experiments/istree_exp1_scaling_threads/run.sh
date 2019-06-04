@@ -13,6 +13,7 @@ t=30000
 num_trials=2
 timeout_s=600
 
+started=`date`
 for counting in 1 0 ; do
     for ((trial=0;trial<num_trials;++trial)) ; do
         for uhalf in 0 0.5 5 20 ; do
@@ -47,3 +48,5 @@ for counting in 1 0 ; do
         done
     done
 done
+echo "started: $started"
+echo "finished:" `date`

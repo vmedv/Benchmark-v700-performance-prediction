@@ -204,7 +204,7 @@ private:
 
     #define GSTATS_PRINT_AGG(agg_granularity_str, type, sid, metrics, num_metrics) { \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         if (metrics == NULL) { \
             std::cout<<std::endl; \
             for (int __tid=0;__tid<NUM_PROCESSES;++__tid) { \
@@ -252,9 +252,9 @@ private:
             } \
         } \
         if (__first_nonzero == -1) __first_nonzero = 0; \
-        std::cout<<std::endl<<"log histogram of "; \
+        std::cout<<std::endl<<"log_histogram_of_"; \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         for (int __i=0;__i<=__last_nonzero;++__i) std::cout<<(__i?" ":"")<<(1LL<<__i)<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
         for (int __i=__first_nonzero;__i<=__last_nonzero;++__i) { \
@@ -271,9 +271,9 @@ private:
         stat_metrics<long long> * __histogram = __p.first; \
         histogram_lin_dims __dims = __p.second; \
         auto __num_buckets = (__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)) < 1e-6) ? 0 : (num_buckets) - 1; \
-        std::cout<<std::endl<<"linear histogram of "; \
+        std::cout<<std::endl<<"linear_histogram_of_"; \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         for (int __i=0;__i<=__num_buckets;++__i) std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
         for (int __i=0;__i<=__num_buckets;++__i) { \
@@ -923,22 +923,22 @@ public:
             case FULL_DATA:
                 metrics = NULL;
                 num_metrics = -1;
-                granularity_str=" full_data";
+                granularity_str="_full_data";
                 break;
             case TOTAL:
                 metrics = (stat_metrics<T> *) computed_gstats_total[id];
                 num_metrics = 1; 
-                granularity_str=" total";
+                granularity_str="_total";
                 break;
             case BY_INDEX:
                 metrics = (stat_metrics<T> *) computed_gstats_by_index[id];
                 num_metrics = num_indices[id];
-                granularity_str=" by_index";
+                granularity_str="_by_index";
                 break;
             case BY_THREAD:
                 metrics = (stat_metrics<T> *) computed_gstats_by_thread[id];
                 num_metrics = NUM_PROCESSES;
-                granularity_str=" by_thread";
+                granularity_str="_by_thread";
                 break;
         }
 

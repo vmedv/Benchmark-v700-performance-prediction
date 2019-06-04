@@ -7,7 +7,18 @@ exp3: impact of multi counter at root
 
 exp4: impact of collaborative rebalancing
 
-exp5: how many rebuildings were there
+exp: rebuilding
+    how many are there?
+    how effective is helping?
+    what fraction of the execution is spent on rebalancing?
+
+exp: how effective is interpolation?
+    uniform
+    non-uniform
+
+exp: stats about the trees (shape of trees, etc)
+
+picture of small tree generated via graphviz to demonstrate the layout?
 
 numerical stability w.r.t.
     trial length (max threads, vary length)

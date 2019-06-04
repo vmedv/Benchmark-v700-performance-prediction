@@ -18,7 +18,9 @@
 #include "plaf.h"
 #include "errors.h"
 //#include "globals.h"
-#include "globals_extern.h"
+#ifdef USE_GSTATS
+#   include "globals_extern.h"
+#endif
 #include "numa_tools.h"
 
 template <typename T = void, class Alloc = allocator_interface<T> >
@@ -139,13 +141,17 @@ public:
     
     inline T* get(const int tid) {
         //MEMORY_STATS2 this->alloc->debug->addFromPool(tid, 1);
+#ifdef USE_GSTATS
         GSTATS_ADD(tid, pool_cpu_get, 1);
+#endif
         pullBlock(tid); // after this, we are guaranteed to have a non-empty cpuPool
         return cpuPools[tid]->remove();
     }
     inline void add(const int tid, T* ptr) {
         //MEMORY_STATS2 this->debug->addToPool(tid, 1);
+#ifdef USE_GSTATS
         GSTATS_ADD(tid, pool_cpu_get, 1);
+#endif
         cpuPools[tid]->add(ptr);
         tryPushBlocks(tid);
     }
@@ -159,7 +165,9 @@ public:
         auto sizeBefore = cpuPools[tid]->getSizeInBlocks();
         cpuPools[tid]->appendMoveFullBlocks(bag);
         auto sizeAfter = cpuPools[tid]->getSizeInBlocks();
+#ifdef USE_GSTATS
         GSTATS_ADD(tid, move_block_reclaimer_to_cpu, sizeAfter - sizeBefore);
+#endif
 
         tryPushBlocks(tid);
     }

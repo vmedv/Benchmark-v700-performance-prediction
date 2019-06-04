@@ -49,7 +49,9 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
     // so to reclaim those if they are children of the root node passed to this function,
     // we claim the entire root node at the end, and go through those with one thread.
     
+#ifdef USE_GSTATS
     TIMELINE_START(tid);
+#endif
     
     // TODO: does this improve if we scatter threads in this iteration?
     for (int i=0;i<node->degree;++i) {
@@ -86,7 +88,9 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
         }
     }
         
+#ifdef USE_GSTATS
     TIMELINE_END("freeSubtree", tid);
+#endif
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -401,6 +405,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 
     // help linearly starting at a random position (to probabilistically scatter helpers)
     // TODO: determine if helping starting at my own thread id would help? or randomizing my chosen subtree every time i want to help one? possibly help according to a random permutation?
+    //printf("tid=%d myRNG=%lld\n", tid, (size_t) myRNG);
     auto ix = myRNG->next(numChildren);
     for (int __i=0;__i<numChildren;++__i) {
         auto i = (__i+ix)%numChildren;
@@ -421,7 +426,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
+#ifdef USE_GSTATS
     TIMELINE_START_C(tid, (op->depth < 1));
+#endif
     
 #ifdef MEASURE_REBUILDING_TIME
     GSTATS_TIMER_RESET(tid, timer_rebuild);
@@ -490,7 +497,9 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
 #endif
 
+#ifdef USE_GSTATS
     TIMELINE_END_C("helpRebuild", tid, (op->depth < 1));
+#endif
 
     // collaboratively free the old subtree, if appropriate (if it was actually replaced)
     if (op->success) {
@@ -606,7 +615,7 @@ retry:
     pathLength = 0;
     node = root;
     while (true) {
-        auto ix = interpolationSearch(tid, key, node);
+        auto ix = interpolationSearch(tid, key, node); // search INSIDE one node
 retryNode:
         bool affectsChangeSum = true;
         auto word = prov->readPtr(tid, node->ptrAddr(ix));

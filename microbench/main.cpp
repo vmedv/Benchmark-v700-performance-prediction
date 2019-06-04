@@ -795,7 +795,7 @@ void *thread_timed(void *_id) {
 
 #ifdef MEASURE_REBUILDING_TIME
     GSTATS_ADD(tid, elapsed_all_ops, GSTATS_TIMER_ELAPSED(tid, timer_all_ops));
-#endif    
+#endif
     
     GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
 
