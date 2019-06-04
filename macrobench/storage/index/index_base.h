@@ -20,11 +20,11 @@ class table_t;
 
 #define IS_THREAD_INITIALIZED(tid) initializedThreads[(tid)*PREFETCH_SIZE_BYTES]
 #define TRY_INIT_THREAD(tid) \
-    if (!IS_THREAD_INITIALIZED((tid))) { \
-        IS_THREAD_INITIALIZED((tid)) = true; \
+    /*if (!IS_THREAD_INITIALIZED((tid))) {*/ \
+        /*IS_THREAD_INITIALIZED((tid)) = true;*/ \
         if ((tid) >= MAX_THREADS_POW2) setbench_error("tid >= MAX_THREADS_POW2. too many threads created. increase MAX_THREADS_POW2."); \
         index->initThread(tid); \
-    }
+    /*}*/
 
 #define _TABSZ (1<< 20)
 typedef uintptr_t vwlock;  /* (Version,LOCKBIT) */

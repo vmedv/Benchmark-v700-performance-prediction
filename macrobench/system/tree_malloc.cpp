@@ -41,6 +41,9 @@ void tree_malloc::init(void)
 
 	if (!lib) {
 		printf("no TREE_MALLOC defined: using default!\n");
+                allocfn = malloc;
+                allocnodefn = malloc;
+                freefn = ::free;
 		return;
 	}
 

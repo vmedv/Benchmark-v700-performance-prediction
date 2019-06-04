@@ -122,7 +122,7 @@ void ycsb_wl::init_table_parallel() {
 
     enable_thread_mem_pool = true;
     pthread_t p_thds[g_init_parallelism /*- 1*/];
-    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
     for (UInt32 i = 0; i<g_init_parallelism /*- 1*/; i++)
         pthread_create(&p_thds[i], NULL, threadInitTable, this);
     /*threadInitTable(this);*/
@@ -134,7 +134,7 @@ void ycsb_wl::init_table_parallel() {
             exit(-1);
         }
     }
-    RLU_FINISH();
+//    RLU_FINISH();
     enable_thread_mem_pool = false;
     mem_allocator.unregister();
 }
@@ -142,8 +142,8 @@ void ycsb_wl::init_table_parallel() {
 void * ycsb_wl::init_table_slice() {
     UInt32 __tid = ATOM_FETCH_ADD(next_tid, 1);
     urcu::registerThread(__tid);
-    rlu_self = &rlu_tdata[__tid];
-    RLU_THREAD_INIT(rlu_self);
+//    rlu_self = &rlu_tdata[__tid];
+//    RLU_THREAD_INIT(rlu_self);
     thread_pinning::bindThread(__tid);
     //	// set cpu affinity
     //	set_affinity(__tid);
@@ -194,7 +194,7 @@ void * ycsb_wl::init_table_slice() {
     }
 
     this->deinitThread(tid);
-    RLU_THREAD_FINISH(rlu_self);
+//    RLU_THREAD_FINISH(rlu_self);
     urcu::unregisterThread();
     return NULL;
 }

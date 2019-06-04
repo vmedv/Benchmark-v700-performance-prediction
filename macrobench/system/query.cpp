@@ -24,7 +24,7 @@ Query_queue::init(workload * h_wl) {
 #elif WORKLOAD == TPCC
 	assert(tpcc_buffer != NULL);
 #endif
-        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 	int64_t begin = get_server_clock();
 	pthread_t p_thds[g_thread_cnt - 1];
 	for (UInt32 i = 0; i < g_thread_cnt - 1; i++) {
@@ -34,7 +34,7 @@ Query_queue::init(workload * h_wl) {
 	for (uint32_t i = 0; i < g_thread_cnt - 1; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t end = get_server_clock();
-        RLU_FINISH();
+//        RLU_FINISH();
 	printf("Query Queue Init Time %f\n", 1.0 * (end - begin) / 1000000000UL);
 }
 
@@ -55,14 +55,14 @@ Query_queue::threadInitQuery(void * This) {
 	Query_queue * query_queue = (Query_queue *)This;
 	uint32_t tid = ATOM_FETCH_ADD(_next_tid, 1);
 	urcu::registerThread(tid);
-        rlu_self = &rlu_tdata[tid];
-        RLU_THREAD_INIT(rlu_self);
+//        rlu_self = &rlu_tdata[tid];
+//        RLU_THREAD_INIT(rlu_self);
         thread_pinning::bindThread(tid);
 //	// set cpu affinity
 //	set_affinity(tid);
 
 	query_queue->init_per_thread(tid);
-        RLU_THREAD_FINISH(rlu_self);
+//        RLU_THREAD_FINISH(rlu_self);
         urcu::unregisterThread();
 	return NULL;
 }

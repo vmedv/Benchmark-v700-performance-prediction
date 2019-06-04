@@ -15,10 +15,10 @@
 
 #define __PAD_INTS (PREFETCH_SIZE_WORDS*2)
 
-__thread int __currNode = -1;
-__thread int __currCPU = -1;
-__thread int __callsNode = 0;
-__thread int __callsCPU = 0;
+static __thread int __currNode = -1;
+static __thread int __currCPU = -1;
+static __thread int __callsNode = 0;
+static __thread int __callsCPU = 0;
 
 class NumaTools {
 private:
@@ -73,7 +73,7 @@ public:
     }
 };
 
-NumaTools __numa;
+static NumaTools __numa;
 
 #endif /* NUMA_TOOLS_H */
 

@@ -104,7 +104,7 @@
 #define REBUILD_FRACTION            (0.25)
 #define EPS                         (0.25)
 
-static __thread RandomFNV1A * myRNG = NULL;
+static thread_local RandomFNV1A * myRNG = NULL; //new RandomFNV1A(rand());
 
 enum UpdateType {
     InsertIfAbsent, InsertReplace, Erase
@@ -205,7 +205,7 @@ class istree {
 private:
     PAD;
     RecManager * const recordmgr;
-    dcssProvider * const prov;
+    dcssProvider<void* /* unused */> * const prov;
     Interpolate cmp;
 
     Node<K,V> * root;
@@ -630,7 +630,7 @@ public:
          , const V noValue
     )
     : recordmgr(new RecManager(numProcesses, SIGQUIT))
-    , prov(new dcssProvider(numProcesses))
+    , prov(new dcssProvider<void* /* unused */>(numProcesses))
     , INF_KEY(infinity)
     , NO_VALUE(noValue)
     , NUM_PROCESSES(numProcesses) 
@@ -659,7 +659,7 @@ public:
          , const V noValue
     )
     : recordmgr(new RecManager(numProcesses, SIGQUIT))
-    , prov(new dcssProvider(numProcesses))
+    , prov(new dcssProvider<void* /* unused */>(numProcesses))
     , INF_KEY(infinity)
     , NO_VALUE(noValue)
     , NUM_PROCESSES(numProcesses) 
@@ -748,6 +748,7 @@ public:
     ~istree() {
         if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
 //        debugGVPrint();
+        //std::cout<<"start deconstructor ~istree()"<<std::endl;
         freeSubtree(0, NODE_TO_CASWORD(root), false);
 ////            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
         recordmgr->printStatus();

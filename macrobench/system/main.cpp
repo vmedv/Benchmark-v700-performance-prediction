@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
         thread_pinning::configurePolicy(g_thread_cnt, g_thr_pinning_policy);
 	
         urcu::init(g_thread_cnt);
-        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
+//        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
 //        tree_malloc::init();
 	papi_init_program(g_thread_cnt);
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 
 	if (WARMUP > 0){
 		printf("WARMUP start!\n");
-                RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//                RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 		for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) {
 			uint64_t vid = i;
 			pthread_create(&p_thds[i], NULL, f_warmup, (void *)vid);
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 		/*f_warmup((void *)(thd_cnt - 1));*/
 		for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++)
 			pthread_join(p_thds[i], NULL);
-                RLU_FINISH();
+//                RLU_FINISH();
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 
 	// spawn and run txns again.
-        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 	int64_t starttime = get_server_clock();
 	for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) {
 		uint64_t vid = i;
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t endtime = get_server_clock();
-        RLU_FINISH();
+//        RLU_FINISH();
 	
 #ifdef  VERBOSE_1
         for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
@@ -189,7 +189,7 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
         
-        delete[] rlu_tdata;        
+//        delete[] rlu_tdata;        
         
 	return 0;
 }
@@ -202,12 +202,12 @@ void * f_warmup(void * id) {
 #ifdef VERBOSE_1
         cout<<"WARMUP: Assigned thread ID="<<tid<<std::endl;
 #endif
-        rlu_self = &rlu_tdata[__tid];
-        RLU_THREAD_INIT(rlu_self);
+//        rlu_self = &rlu_tdata[__tid];
+//        RLU_THREAD_INIT(rlu_self);
         m_thds[__tid]->_wl->initThread(tid);
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
-        RLU_THREAD_FINISH(rlu_self);
+//        RLU_THREAD_FINISH(rlu_self);
         urcu::unregisterThread();
 	return NULL;
 }
@@ -221,12 +221,12 @@ void * f_real(void * id) {
 #ifdef VERBOSE_1
         cout<<"REAL: Assigned thread ID="<<tid<<std::endl;
 #endif
-        rlu_self = &rlu_tdata[__tid];
-        RLU_THREAD_INIT(rlu_self);
+//        rlu_self = &rlu_tdata[__tid];
+//        RLU_THREAD_INIT(rlu_self);
         m_thds[__tid]->_wl->initThread(tid);
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
-        RLU_THREAD_FINISH(rlu_self);
+//        RLU_THREAD_FINISH(rlu_self);
         urcu::unregisterThread();
 	return NULL;
 }

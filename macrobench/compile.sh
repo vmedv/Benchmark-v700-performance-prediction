@@ -6,17 +6,25 @@
 # Created on May 28, 2017, 9:56:43 PM
 #
 
-workloads="TPCC YCSB"
+workloads="TPCC"
 
 ## format is the following is
 ## data_structure_name:compilation_arguments
+#algs=( \
+#    "hash_chaining:-DIDX_HASH=1" \
+#    "bronson_pext_bst_occ:" \
+#    "brown_ext_ist_lf:" \
+#    "brown_ext_abtree_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+#    "natarajan_ext_bst_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+#)
+
 algs=( \
     "hash_chaining:-DIDX_HASH=1" \
     "bronson_pext_bst_occ:" \
-    "brown_ext_abtree_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_bslack_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "natarajan_ext_bst_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+    "brown_ext_abtree_rq_lf:" \
+#    "brown_ext_bslack_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+#    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
+    "brown_ext_ist_lf:" \
 )
 
 make_workload_dict() {

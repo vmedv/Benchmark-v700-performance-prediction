@@ -10,9 +10,9 @@
 #include <string>
 #include "papi_util_impl.h"
 
-#include "rlu.h"
-__thread rlu_thread_data_t * rlu_self;
-rlu_thread_data_t * rlu_tdata;
+//#include "rlu.h"
+//__thread rlu_thread_data_t * rlu_self;
+//rlu_thread_data_t * rlu_tdata;
 
 __thread int tid = 0;
 

@@ -33,9 +33,9 @@ using namespace std;
 //#include "tree_malloc.h"
 #include "thread_pinning.h"
 
-#include "rlu.h"
-extern __thread rlu_thread_data_t * rlu_self;
-extern rlu_thread_data_t * rlu_tdata;
+//#include "rlu.h"
+//extern __thread rlu_thread_data_t * rlu_self;
+//extern rlu_thread_data_t * rlu_tdata;
 
 extern __thread int tid;
 

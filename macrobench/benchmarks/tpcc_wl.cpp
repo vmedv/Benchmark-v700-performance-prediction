@@ -23,6 +23,7 @@ RC tpcc_wl::init() {
     cout<<"reading schema file: "<<path<<std::endl;
     init_schema(path.c_str());
     cout<<"TPCC schema initialized"<<std::endl;
+    next_tid = 0;
     init_table();
     next_tid = 0;
     return RCOK;
@@ -68,7 +69,7 @@ RC tpcc_wl::init_table() {
     //		- new order
     //		- order line
     /**********************************/
-    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
     tpcc_buffer = new drand48_data * [g_num_wh];
     pthread_t * p_thds = new pthread_t[g_num_wh /*- 1*/];
     for (uint32_t i = 0; i<g_num_wh /*- 1*/; i++)
@@ -76,7 +77,7 @@ RC tpcc_wl::init_table() {
     /*threadInitWarehouse(this);*/
     for (uint32_t i = 0; i<g_num_wh /*- 1*/; i++)
         pthread_join(p_thds[i], NULL);
-    RLU_FINISH();
+//    RLU_FINISH();
 
     printf("TPCC Data Initialization Complete!\n");
     return RCOK;
@@ -198,7 +199,6 @@ void tpcc_wl::init_tab_dist(uint64_t wid) {
         row->set_value(D_TAX, tax);
         row->set_value(D_YTD, w_ytd);
         row->set_value(D_NEXT_O_ID, 3001);
-
         index_insert(i_district, distKey(did, wid), row, wh_to_part(wid));
     }
 }
@@ -460,10 +460,11 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
     int __tid = ATOM_FETCH_ADD(wl->next_tid, 1);
     thread_pinning::bindThread(__tid);
     urcu::registerThread(__tid);
-    rlu_self = &rlu_tdata[__tid];
-    RLU_THREAD_INIT(rlu_self);
+//    rlu_self = &rlu_tdata[__tid];
+//    RLU_THREAD_INIT(rlu_self);
     
     uint32_t wid = __tid+1;
+    cout<<"TPCC_WL DEBUG: tpcc_buffer="<<(uintptr_t) tpcc_buffer<<" __tid="<<__tid<<endl;
     tpcc_buffer[__tid] = (drand48_data *) _mm_malloc(sizeof (drand48_data), ALIGNMENT);
     assert((uint64_t) __tid<g_num_wh);
     srand48_r(wid, tpcc_buffer[__tid]);
@@ -473,6 +474,7 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
     cout<<"TPCC_WL INIT: Assigned thread ID="<<tid<<std::endl;
 #endif
     wl->initThread(tid);
+    wl->initThread(wid); // stupid hack because this TPCC implementation uses wid as tid in some of the functions below...
 
     if (__tid==0)
         wl->init_tab_item();
@@ -488,7 +490,7 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
 
     wl->deinitThread(tid);
 
-    RLU_THREAD_FINISH(rlu_self);
+//    RLU_THREAD_FINISH(rlu_self);
     urcu::unregisterThread();
     return NULL;
 }

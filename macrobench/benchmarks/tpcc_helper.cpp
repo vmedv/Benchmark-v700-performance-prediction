@@ -2,7 +2,8 @@
 
 drand48_data ** tpcc_buffer;
 
-#define ZERO_MSB_64B_MASK 0x7FFFFFFFFFFFFFFF
+#define ZERO_MSB_64B_MASK 0x0FFFFFFFFFFFFFFF /* claim 4 MSBs for indexes to use as reserved bits */
+//#define ZERO_MSB_64B_MASK 0x7FFFFFFFFFFFFFFF
 
 #ifdef HASH_PRIMARY_KEYS
 
