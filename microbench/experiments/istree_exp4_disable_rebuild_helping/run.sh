@@ -4,46 +4,19 @@
 #### Experiment configuration
 #########################################################################
 
-exp="disable_rebuild_helping"
 t=30000
 num_trials=3
-timeout_s=600
 halved_update_rates="0.5 5 20"
 key_range_sizes="2000000 20000000 200000000"
 algorithms="brown_ext_ist_lf"
 thread_counts=`cd .. ; ./get_thread_count_max.sh`
-compile_args_for_disabled="-DIST_DISABLE_REBUILD_HELPING -DMEASURE_REBUILDING_TIME"
-compile_args_for_enabled="-DMEASURE_REBUILDING_TIME"
-
-echo "#########################################################################"
-echo "#### Compiling binaries with the desired functionality disabled"
-echo "#########################################################################"
-
-here=`pwd`
-mkdir ${here}/bin 2>/dev/null
-cd .. ; cd .. ; make -j all bin_dir=${here}/bin_disabled xargs="$compile_args_for_disabled" > compiling.txt 2>&1
-if [ "$?" -ne "0" ]; then
-    echo "ERROR compiling; see compiling.txt"
-    exit
-fi
-cd $here
-
-echo "#########################################################################"
-echo "#### Compiling binaries with the desired functionality enabled"
-echo "#########################################################################"
-
-here=`pwd`
-mkdir ${here}/bin 2>/dev/null
-cd .. ; cd .. ; make -j all bin_dir=${here}/bin_enabled xargs="$compile_args_for_enabled" >> compiling.txt 2>&1
-if [ "$?" -ne "0" ]; then
-    echo "ERROR compiling; see compiling.txt"
-    exit
-fi
-cd $here
 
 #########################################################################
 #### Produce header
 #########################################################################
+
+timeout_s=600
+exp="`pwd | rev | cut -d'/' -f1 | rev`"
 
 mkdir $exp 2>/dev/null
 ../parse.sh null > $exp.csv
@@ -82,20 +55,23 @@ for counting in 1 0 ; do
                                 echo "step=$step" >> $f
                                 echo "fname=$f" >> $f
                                 eval $cmd >> $f 2>&1
+                                if [ "$?" -ne "0" ]; then
+                                    cat $f
+                                fi
 
                                 ## manually parse the maximum resident size from the output of `time` and add it to the step file
-                                maxres=`../grep_maxres.sh $f`
+                                maxres=`../grep_maxres.sh $f 2> /dev/null`
                                 echo "maxresident_mb=$maxres" >> $f
 
                                 ## parse step file to extract fields of interest, and also *rename* the algorithm to explicitly encode whether the functionality is enabled or disabled
-                                ../parse.sh $f | tail -1 | sed 's/${alg}/${alg}_${mode}/g' >> $exp.csv
+                                ../parse.sh $f | tail -1 | sed "s/${alg}/${alg}_${mode}/g" >> $exp.csv
 
                                 echo -n "step $step/$maxstep: "
                                 cat $exp.csv | tail -1
                             fi
                         done
                     done
-                 done
+                done
             done
         done
     done
@@ -103,3 +79,6 @@ done
 
 echo "started: $started"
 echo "finished:" `date`
+
+zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
+rm -f data.csv 2> /dev/null # clean up after parse.sh

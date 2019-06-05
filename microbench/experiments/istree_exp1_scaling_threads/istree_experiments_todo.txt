@@ -1,12 +1,4 @@
 
-exp1: scaling vs threads (k=2m,20m,200m,2b; u=0%,1%,10%,40%)
-
-exp2: memory consumption for static tree (ignoring working set for updates is relevant for search dominated)
-
-exp3: impact of multi counter at root
-
-exp4: impact of collaborative rebalancing
-
 exp: rebuilding
     how many are there?
     how effective is helping?
@@ -16,18 +8,49 @@ exp: how effective is interpolation?
     uniform
     non-uniform
 
-exp: stats about the trees (shape of trees, etc)
-
 picture of small tree generated via graphviz to demonstrate the layout?
-
-numerical stability w.r.t.
-    trial length (max threads, vary length)
-            alg=./brown_ext_ist_lf n=20 ; for ((t=1000;t<70000;t*=2)) ; do for ((trial=0;trial<3;++trial)) ; do LD_PRELOAD=../../lib/libjemalloc-5.0.1-25.so numactl -N 0 $alg.ubench_rdebra -t $t -i 20 -d 20 -rq 0 -rqsize 1 -k 100000000 -nrq 0 -pin 0-9,20-29,10-19,30-39 -nwork $n -nprefill $n > output.txt ; printf "%-20s" "t=$t" ; grep "total throughput" output.txt ; done ; done
-    repeated trials (max threads, vary trial number)
-    [?] relative invariance of results with changes in allocator/reclamation and even system architecture
 
 recall: should explain how we reclaim memory
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[[[done]]]
+
+exp1: scaling vs threads (k=2m,20m,200m,2b; u=0%,1%,10%,40%)
+
+exp1b: llc misses and cycles breakdown
+
+exp1c: stats about the trees (shape of trees, etc)
+
+exp2: memory consumption for static tree (ignoring working set for updates is relevant for search dominated)
+
+exp3: impact of multi counter at root
+
+exp4: impact of collaborative rebalancing
+
+exp5: numerical stability w.r.t.
+    trial length (max threads, vary length) [[[i *think* i've done this now...]]]
+            alg=./brown_ext_ist_lf n=20 ; for ((t=1000;t<70000;t*=2)) ; do for ((trial=0;trial<3;++trial)) ; do LD_PRELOAD=../../lib/libjemalloc-5.0.1-25.so numactl -N 0 $alg.ubench_rdebra -t $t -i 20 -d 20 -rq 0 -rqsize 1 -k 100000000 -nrq 0 -pin 0-9,20-29,10-19,30-39 -nwork $n -nprefill $n > output.txt ; printf "%-20s" "t=$t" ; grep "total throughput" output.txt ; done ; done
+    [NO] repeated trials (max threads, vary trial number) [[[handled already by min/max error bars]]]
+    [NO] relative invariance of results with changes in allocator/reclamation and even system architecture
+
+
 [[[deleted]]]
 
-exp: scaling vs size (powers of 2)
+exp: scaling vs size (powers of 2) [[subsumed by exp1]]

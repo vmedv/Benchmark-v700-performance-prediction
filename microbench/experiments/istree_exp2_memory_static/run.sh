@@ -50,3 +50,6 @@ for counting in 1 0 ; do
 done
 echo "started: $started"
 echo "finished:" `date`
+
+zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
+rm -f data.csv 2> /dev/null # clean up after parse.sh
