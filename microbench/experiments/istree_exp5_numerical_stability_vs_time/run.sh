@@ -4,11 +4,12 @@
 #### Experiment configuration
 #########################################################################
 
-num_trials=3
-halved_update_rates="20 0.5"
+## estimated 2h10m per trial (maybe up to 3h or so, depending on how slow other algs are)
+num_trials=2
+halved_update_rates="20 5 0.5 0"
 durations_ms="1000 2000 4000 8000 16000 32000 64000" ## total 127s, plus lets say 5s per run, so 162s total
-key_range_sizes="20000000"
-algorithms="brown_ext_ist_lf bronson_pext_bst_occ" #"brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf"
+key_range_sizes="2000000 20000000 200000000"
+algorithms="brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf"
 thread_counts=`cd .. ; ./get_thread_count_max.sh`
 
 #########################################################################
@@ -65,7 +66,6 @@ for counting in 1 0 ; do
 
                                 ## parse step file to extract fields of interest
                                 ../parse.sh $f | tail -1 >> $exp.csv
-
                                 echo -n "step $step/$maxstep: "
                                 cat $exp.csv | tail -1
                             fi

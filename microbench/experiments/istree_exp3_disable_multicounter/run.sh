@@ -4,6 +4,7 @@
 #### Experiment configuration
 #########################################################################
 
+## estimated 10 minutes per trial
 t=30000
 num_trials=3
 halved_update_rates="0.5 5 20"
@@ -65,7 +66,6 @@ for counting in 1 0 ; do
 
                                 ## parse step file to extract fields of interest, and also *rename* the algorithm to explicitly encode whether the functionality is enabled or disabled
                                 ../parse.sh $f | tail -1 | sed "s/${alg}/${alg}_${mode}/g" >> $exp.csv
-
                                 echo -n "step $step/$maxstep: "
                                 cat $exp.csv | tail -1
                             fi

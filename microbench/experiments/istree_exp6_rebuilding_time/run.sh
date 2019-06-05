@@ -4,13 +4,13 @@
 #### Experiment configuration
 #########################################################################
 
-## estimated 10 minutes per trial
-t=30000
-num_trials=3
-halved_update_rates="0.5 5 20"
-key_range_sizes="2000000 20000000 200000000"
+## estimated 54 minutes per trial
+num_trials=2
+halved_update_rates="20 5 0.5"
+durations_ms="30000"
+key_range_sizes="2000000 20000000 200000000 2000000000"
 algorithms="brown_ext_ist_lf"
-thread_counts=`cd .. ; ./get_thread_count_max.sh`
+thread_counts=`cd .. ; ./get_thread_counts.sh`
 
 #########################################################################
 #### Produce header
@@ -28,17 +28,17 @@ maxstep=$step
 pinning_policy=`cd .. ; ./get_pinning_cluster.sh`
 
 #########################################################################
-#### Run trials with the desired functionality disabled, then enabled
+#### Run trials
 #########################################################################
 
 started=`date`
 for counting in 1 0 ; do
-    for mode in disabled enabled ; do
-        for ((trial=0;trial<num_trials;++trial)) ; do
-            for uhalf in $halved_update_rates ; do
-                for k in $key_range_sizes ; do
-                    for alg in $algorithms ; do
-                        for n in $thread_counts ; do
+    for ((trial=0;trial<num_trials;++trial)) ; do
+        for uhalf in $halved_update_rates ; do
+            for k in $key_range_sizes ; do
+                for alg in $algorithms ; do
+                    for n in $thread_counts ; do
+                        for t in $durations_ms ; do
                             if ((counting)); then
                                 maxstep=$((maxstep+1))
                             else
@@ -51,7 +51,7 @@ for counting in 1 0 ; do
 
                                 f="$exp/step$step.txt"
                                 args="-nwork $n -nprefill $n -i $uhalf -d $uhalf -rq 0 -rqsize 1 -k $k -nrq 0 -t $t -pin $pinning_policy"
-                                cmd="LD_PRELOAD=../../../lib/libjemalloc.so timeout $timeout_s numactl --interleave=all time bin_${mode}/ubench_${alg}.alloc_new.reclaim_debra.pool_none.out $args"
+                                cmd="LD_PRELOAD=../../../lib/libjemalloc.so timeout $timeout_s numactl --interleave=all time ./bin_enabled/ubench_${alg}.alloc_new.reclaim_debra.pool_none.out $args"
                                 echo "cmd=$cmd" > $f
                                 echo "step=$step" >> $f
                                 echo "fname=$f" >> $f
@@ -64,15 +64,15 @@ for counting in 1 0 ; do
                                 maxres=`../grep_maxres.sh $f 2> /dev/null`
                                 echo "maxresident_mb=$maxres" >> $f
 
-                                ## parse step file to extract fields of interest, and also *rename* the algorithm to explicitly encode whether the functionality is enabled or disabled
-                                ../parse.sh $f | tail -1 | sed "s/${alg}/${alg}_${mode}/g" >> $exp.csv
+                                ## parse step file to extract fields of interest
+                                ../parse.sh $f | tail -1 >> $exp.csv
                                 echo -n "step $step/$maxstep: "
                                 cat $exp.csv | tail -1
                             fi
                         done
                     done
                 done
-            done
+             done
         done
     done
 done
