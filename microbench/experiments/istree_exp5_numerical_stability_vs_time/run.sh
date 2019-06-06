@@ -4,7 +4,10 @@
 #### Experiment configuration
 #########################################################################
 
-## estimated 2h10m per trial (maybe up to 3h or so, depending on how slow other algs are)
+## estimate prefilling takes max 4s for 200M, and probably ~2s for smaller, let's say 3s avg
+## so estimate total time of sum(duration_ms) + 3*count(duration_ms) = 148s over all time durations
+## so estimate 2h per trial (so 4h total) -- confirmed at 1h56m
+
 num_trials=2
 halved_update_rates="20 5 0.5 0"
 durations_ms="1000 2000 4000 8000 16000 32000 64000" ## total 127s, plus lets say 5s per run, so 162s total
@@ -55,6 +58,8 @@ for counting in 1 0 ; do
                                 echo "cmd=$cmd" > $f
                                 echo "step=$step" >> $f
                                 echo "fname=$f" >> $f
+
+#                                echo "eval $cmd >> $f 2>&1"
                                 eval $cmd >> $f 2>&1
                                 if [ "$?" -ne "0" ]; then
                                     cat $f
@@ -77,8 +82,8 @@ for counting in 1 0 ; do
     done
 done
 
-echo "started: $started"
-echo "finished:" `date`
+echo "started: $started" | tee "time_started.txt"
+echo "finished:" `date` | tee "time_finished.txt"
 
 zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
 rm -f data.csv 2> /dev/null # clean up after parse.sh

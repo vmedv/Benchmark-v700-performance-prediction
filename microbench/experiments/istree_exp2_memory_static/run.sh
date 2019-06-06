@@ -4,7 +4,8 @@
 #### Experiment configuration
 #########################################################################
 
-## estimated 15 minutes per trial
+## estimated 15 minutes per trial (so 45m total) -- confirmed at 11.66m
+
 t=30000
 num_trials=3
 halved_update_rates="20"
@@ -54,6 +55,8 @@ for counting in 1 0 ; do
                             echo "cmd=$cmd" > $f
                             echo "step=$step" >> $f
                             echo "fname=$f" >> $f
+
+#                            echo "eval $cmd >> $f 2>&1"
                             eval $cmd >> $f 2>&1
                             if [ "$?" -ne "0" ]; then
                                 cat $f
@@ -75,8 +78,8 @@ for counting in 1 0 ; do
     done
 done
 
-echo "started: $started"
-echo "finished:" `date`
+echo "started: $started" | tee "time_started.txt"
+echo "finished:" `date` | tee "time_finished.txt"
 
 zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
 rm -f data.csv 2> /dev/null # clean up after parse.sh

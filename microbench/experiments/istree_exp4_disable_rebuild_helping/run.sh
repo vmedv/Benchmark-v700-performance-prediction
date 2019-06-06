@@ -77,8 +77,8 @@ for counting in 1 0 ; do
     done
 done
 
-echo "started: $started"
-echo "finished:" `date`
+echo "started: $started" | tee "time_started.txt"
+echo "finished:" `date` | tee "time_finished.txt"
 
 zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
 rm -f data.csv 2> /dev/null # clean up after parse.sh

@@ -1,8 +1,17 @@
+exp7: run some absurdly long (2 minute or more... maybe 5 minute) 2B trials to confirm throughput numbers don't change significantly
+
+get rid of experiments that show scaling of rebuilding vs time spent rebuilding.
+    replace with just the graphs that show breakdown of time spent rebuilding vs other
+    replace "other" with time spent rotating bags and freeing, traversing the old subtree, and other
 
 exp: rebuilding
-    how many are there?
-    how effective is helping?
+    how many are there? [[done]]
     what fraction of the execution is spent on rebalancing?
+        answer with breakdown of current (collaborative) rebalancing time [[done]]
+    how effective is helping?
+        answer with scaling of d1_rebuilds per rebuilding_sec
+        (for pre vs post collaborative rebuilding!)
+    merge this (which was basically exp4) with exp6
 
 exp: how effective is interpolation?
     uniform

@@ -4,9 +4,10 @@
 #### Experiment configuration
 #########################################################################
 
-## estimated 4.5 hours per trial
+## estimated 4.5 hours per trial (maybe 5) -- confirmed at exactly 5h
+
 t=30000
-num_trials=2
+num_trials=1
 halved_update_rates="0 0.5 5 20"
 key_range_sizes="2000000 20000000 200000000 2000000000"
 algorithms="brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf"
@@ -54,6 +55,8 @@ for counting in 1 0 ; do
                             echo "cmd=$cmd" > $f
                             echo "step=$step" >> $f
                             echo "fname=$f" >> $f
+
+#                            echo "eval $cmd >> $f 2>&1"
                             eval $cmd >> $f 2>&1
                             if [ "$?" -ne "0" ]; then
                                 cat $f
@@ -75,8 +78,8 @@ for counting in 1 0 ; do
     done
 done
 
-echo "started: $started"
-echo "finished:" `date`
+echo "started: $started" | tee "time_started.txt"
+echo "finished:" `date` | tee "time_finished.txt"
 
 zip -r ${exp}.zip ${exp} ${exp}.csv *.sh
 rm -f data.csv 2> /dev/null # clean up after parse.sh

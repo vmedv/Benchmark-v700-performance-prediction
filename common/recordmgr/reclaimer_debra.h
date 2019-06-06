@@ -228,6 +228,7 @@ public:
 #if defined USE_GSTATS
         GSTATS_SET(tid, thread_announced_epoch, readEpoch);
 #endif
+        SOFTWARE_BARRIER;
         // note: readEpoch, when written to announcedEpoch[tid],
         //       sets the state to non-quiescent and non-neutralized
 
