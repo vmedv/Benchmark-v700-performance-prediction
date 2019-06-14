@@ -1054,7 +1054,7 @@ void trial() {
         COUTATOMIC("###############################################################################"<<std::endl);
         COUTATOMIC(std::endl);
         
-        const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 60000 : 60000);
+        const long MAX_NAPPING_MILLIS = (MAXKEY > 5e7 ? 120000 : 30000);
         g.elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count();
         g.elapsedMillisNapping = 0;
         while (g.running > 0 && g.elapsedMillisNapping < MAX_NAPPING_MILLIS) {

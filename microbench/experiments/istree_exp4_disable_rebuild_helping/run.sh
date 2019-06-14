@@ -4,11 +4,11 @@
 #### Experiment configuration
 #########################################################################
 
-## estimated 10 minutes per trial
-t=30000
+## estimated 20-30 minutes per trial
+t=60000
 num_trials=3
 halved_update_rates="0.5 5 20"
-key_range_sizes="2000000 20000000 200000000"
+key_range_sizes="2000000 20000000 200000000 2000000000"
 algorithms="brown_ext_ist_lf"
 thread_counts=`cd .. ; ./get_thread_count_max.sh`
 

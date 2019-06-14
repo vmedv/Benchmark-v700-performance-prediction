@@ -1,7 +1,3 @@
-get rid of experiments that show scaling of rebuilding vs time spent rebuilding.
-    replace with just the graphs that show breakdown of time spent rebuilding vs other
-    replace "other" with time spent rotating bags and freeing, traversing the old subtree, and other
-
 exp: how effective is interpolation?
     uniform
     non-uniform
@@ -69,6 +65,10 @@ exp5: numerical stability w.r.t.
             alg=./brown_ext_ist_lf n=20 ; for ((t=1000;t<70000;t*=2)) ; do for ((trial=0;trial<3;++trial)) ; do LD_PRELOAD=../../lib/libjemalloc-5.0.1-25.so numactl -N 0 $alg.ubench_rdebra -t $t -i 20 -d 20 -rq 0 -rqsize 1 -k 100000000 -nrq 0 -pin 0-9,20-29,10-19,30-39 -nwork $n -nprefill $n > output.txt ; printf "%-20s" "t=$t" ; grep "total throughput" output.txt ; done ; done
     [NO] repeated trials (max threads, vary trial number) [[[handled already by min/max error bars]]]
     [NO] relative invariance of results with changes in allocator/reclamation and even system architecture
+
+exp6: get rid of experiments that show scaling of rebuilding vs time spent rebuilding.
+    replace with just the graphs that show breakdown of time spent rebuilding vs other
+    replace "other" with time spent rotating bags and freeing, traversing the old subtree, and other
 
 exp7: run some absurdly long (2 minute or more... maybe 5 minute) 2B trials to confirm throughput numbers don't change significantly
 
