@@ -3,6 +3,35 @@
 
 #include "brown_ext_ist_lf.h"
 
+class TimeThisScope {
+private:
+#ifdef MEASURE_DURATION_STATS
+    bool condition;
+    int tid;
+    gstats_stat_id stat_id;
+    uint64_t start;
+#endif
+public:
+    TimeThisScope(const int _tid, gstats_stat_id _stat_id, bool _condition = true) {
+#ifdef MEASURE_DURATION_STATS
+        condition = _condition;
+        if (condition) {
+            tid = _tid;
+            stat_id = _stat_id;
+            start = get_server_clock();
+        }
+#endif
+    }
+    ~TimeThisScope() {
+#ifdef MEASURE_DURATION_STATS
+        if (condition) {
+            auto duration = get_server_clock() - start;
+            GSTATS_ADD(tid, stat_id, duration);
+        }
+#endif
+    }
+};
+
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
     auto guard = recordmgr->getGuard(tid, true);
@@ -51,8 +80,10 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
     
 #ifdef USE_GSTATS
     TIMELINE_START(tid);
+    DURATION_START(tid);
 #endif
     
+    // first, claim subtrees rooted at CHILDREN of this node
     // TODO: does this improve if we scatter threads in this iteration?
     for (int i=0;i<node->degree;++i) {
         auto ptr = prov->readPtr(tid, node->ptrAddr(i));
@@ -71,6 +102,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
         }
     }
     
+    // then try to claim the node itself to handle special object types (kvpair, value, empty value, rebuildop).
     // claim node and its pointers that go to kvpair, value, empty value and rebuildop objects, specifically
     // (since those objects, and their descendents in the case of a rebuildop object,
     // are what remain unfreed [since all descendents of direct child *node*s have all been freed])
@@ -89,12 +121,15 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
     }
         
 #ifdef USE_GSTATS
-    TIMELINE_END("freeSubtree", tid);
+    DURATION_END(tid, duration_traverseAndRetire);
+    TIMELINE_END(tid, "freeSubtree");
 #endif
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
-size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr) {
+size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr, bool tryTiming /* = true by default */) {
+    TimeThisScope obj (tid, duration_markAndCount, tryTiming);
+    
     if (unlikely(IS_KVPAIR(ptr))) return 1;
     if (unlikely(IS_VAL(ptr))) return 1 - IS_EMPTY_VAL(ptr);
     if (unlikely(IS_REBUILDOP(ptr))) {
@@ -102,7 +137,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         // then we ALREADY marked the node that points to the rebuildop,
         // which means that rebuild op cannot possibly change that node
         // to effect the rebuilding.
-        return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot));
+        return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot), false);
     }
     
     assert(IS_NODE(ptr));
@@ -137,7 +172,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         while (1) {
             auto ix = __sync_fetch_and_add(&node->nextMarkAndCount, 1);
             if (ix >= node->degree) break;
-            markAndCount(tid, prov->readPtr(tid, node->ptrAddr(ix)));
+            markAndCount(tid, prov->readPtr(tid, node->ptrAddr(ix)), false);
 
             auto result = node->dirty;
             if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
@@ -148,7 +183,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     // recurse over all subtrees
     size_t keyCount = 0;
     for (int i=0;i<node->degree;++i) {
-        keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)));
+        keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)), false);
         
         auto result = node->dirty;
         if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
@@ -253,6 +288,10 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
 
 template<typename K, typename V, class Interpolate, class RecManager>
 void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid, RebuildOperation<K,V>* op, Node<K,V>* parent, size_t ix, size_t childSize, size_t remainder) {
+#ifdef USE_GSTATS
+    DURATION_START(tid);
+#endif
+    
     // compute initSize of new subtree
     auto totalSizeSoFar = ix*childSize + (ix < remainder ? ix : remainder);
     auto newChildSize = childSize + (ix < remainder);
@@ -267,9 +306,18 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
     TRACE printf("\n");
     if (parent->ptr(ix) != NODE_TO_CASWORD(NULL)) {
         GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, op->depth);
+#ifdef USE_GSTATS
+        DURATION_END(tid, duration_wastedWorkBuilding);
+#endif
         return;
     }
     auto ptr = b.getCASWord(tid, parent->ptrAddr(ix));
+    if (NODE_TO_CASWORD(NULL) == ptr) {
+#ifdef USE_GSTATS
+        DURATION_END(tid, duration_wastedWorkBuilding);
+#endif
+        return; // if we didn't build a tree, because someone else already replaced this subtree, then we just stop here (just avoids an unnecessary cas below in this case; apart from this cas, which will fail, the behaviour is no different whether we return here or execute the following...)
+    }
 
     // try to attach new subtree
     if (ix > 0) *parent->keyAddr(ix-1) = b.getMinKey();
@@ -279,6 +327,9 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
     } else {
         TRACE printf("    tid=%d fails to CAS newly build subtree\n", tid);
         freeSubtree(tid, ptr, false);
+#ifdef USE_GSTATS
+        DURATION_END(tid, duration_wastedWorkBuilding);
+#endif
     }
     assert(prov->readPtr(tid, parent->ptrAddr(ix)));
 }
@@ -408,7 +459,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     //printf("tid=%d myRNG=%lld\n", tid, (size_t) myRNG);
     auto ix = myRNG->next(numChildren);
     for (int __i=0;__i<numChildren;++__i) {
-        auto i = (__i+ix)%numChildren;
+        auto i = (__i+ix) % numChildren;
         if (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {
             subtreeBuildAndReplace(tid, op, node, i, childSize, remainder);
             GSTATS_ADD(tid, num_help_subtree, 1);
@@ -431,15 +482,56 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #endif
     
 #ifdef MEASURE_REBUILDING_TIME
-    GSTATS_TIMER_RESET(tid, timer_rebuild);
+//    GSTATS_TIMER_RESET(tid, timer_rebuild);
     GSTATS_ADD(tid, num_help_rebuild, 1);
 #endif
     
 //    assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->rebuildRoot));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
+    
+#ifdef IST_DISABLE_REBUILD_HELPING
+    {
+#ifdef USE_GSTATS
+        DURATION_START(tid);
+#endif
+        if (__sync_bool_compare_and_swap(&op->debug_sync_in_experimental_no_collaboration_version, 0, 1)) {
+            // continue; you are the chosen one to rebuild the tree
+        } else {
+            // you are not the chosen one. you are not the rebuilder.
+            while (op->debug_sync_in_experimental_no_collaboration_version == 1) {
+                // minor experimental hack: just WAIT until op is replaced
+                // (no point "helping" (duplicating work) to facilitate a true simulation
+                //  of the lock-free no-collaboration algorithm in this case, since it
+                //  won't change results at all. no extra parallelism or performance is
+                //  gained by having n threads duplicate efforts rebuilding the entire
+                //  tree until exactly one succeeds. in practice there are no thread
+                //  crashes, and no major delays. in fact, the real lock-free algorithm
+                //  performs WORSE than this version, since there is a high cost for
+                //  allocating MANY tree nodes that are doomed to be useless, and will
+                //  subsequently need to be freed. so, the experiments will simply
+                //  *underestimate* the benefit of our collaborative rebuilding alg.)
+            }
+#ifdef USE_GSTATS
+            DURATION_END(tid, duration_wastedWorkBuilding);
+#endif
+            return;
+        }
+    }
+#endif
+
+    
+#ifdef USE_GSTATS
+    DURATION_START(tid);
+#endif
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
     if (newWord == NODE_TO_CASWORD(NULL)) {
+#ifdef USE_GSTATS
+        DURATION_END(tid, duration_buildAndReplace);
+#endif
+#ifdef IST_DISABLE_REBUILD_HELPING
+        op->debug_sync_in_experimental_no_collaboration_version = 2;
+#endif
         return; // someone else already *finished* helping
         
         // TODO: help to free old subtree?
@@ -491,16 +583,19 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             assert(result == DCSS_FAILED_ADDR2);
         }
     }
-    
-#ifdef MEASURE_REBUILDING_TIME
-    auto cappedDepth = std::min((size_t) 9, op->depth);
-    GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
+#ifdef USE_GSTATS
+    DURATION_END(tid, duration_buildAndReplace);
 #endif
-
+    
+//#ifdef MEASURE_REBUILDING_TIME
+//    auto cappedDepth = std::min((size_t) 9, op->depth);
+//    GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
+//#endif
+    
 #ifdef USE_GSTATS
     TIMELINE_END_C("helpRebuild", tid, (op->depth < 1));
 #endif
-
+    
     // collaboratively free the old subtree, if appropriate (if it was actually replaced)
     if (op->success) {
         if (op->rebuildRoot->degree < 256) {
@@ -516,6 +611,10 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #endif
         }
     }
+    
+#ifdef IST_DISABLE_REBUILD_HELPING
+        op->debug_sync_in_experimental_no_collaboration_version = 2;
+#endif
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>
@@ -603,9 +702,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
 // note: val is unused if t == Erase
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::doUpdate(const int tid, const K& key, const V& val, UpdateType t) {
-    auto guard = recordmgr->getGuard(tid); // TODO: why do we guard out here, instead of just before reading root?
-
-    const double SAMPLING_PROB = 1.;
+//    const double SAMPLING_PROB = 1.;
     const int MAX_PATH_LENGTH = 64; // in practice, the depth is probably less than 10 even for many billions of keys. max is technically nthreads + O(log log n), but this requires an astronomically unlikely event.
     Node<K,V> * path[MAX_PATH_LENGTH]; // stack to save the path
     int pathLength;
@@ -613,6 +710,7 @@ V istree<K,V,Interpolate,RecManager>::doUpdate(const int tid, const K& key, cons
 
 retry:
     pathLength = 0;
+    auto guard = recordmgr->getGuard(tid);
     node = root;
     while (true) {
         auto ix = interpolationSearch(tid, key, node); // search INSIDE one node
@@ -771,10 +869,7 @@ retryNode:
             return foundVal;
         } else if (IS_REBUILDOP(word)) {
             //std::cout<<"found supposed rebuildop "<<(size_t) word<<" at path length "<<pathLength<<std::endl;
-#ifdef IST_DISABLE_REBUILD_HELPING
-#else
             helpRebuild(tid, CASWORD_TO_REBUILDOP(word));
-#endif
             goto retry;
         } else {
             assert(IS_NODE(word));

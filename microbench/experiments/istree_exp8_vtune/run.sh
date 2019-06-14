@@ -9,13 +9,10 @@
 ## so avg prefill cost is approx (3*2s + 11s) / 4 = 4.3s 
 ## so estimate ~35s total for one execution
 ## so estimate 35 min per trial -- confirmed at 35.33m
-## (with both enabled and disabled trials, new trial estimate of 71m!! total 3.5h)
-
-## with 120s x 3 trials and one update rate, now estimated at 125m...
 
 num_trials=3
 halved_update_rates="0.5 5 20"
-durations_ms="60000"
+durations_ms="30000"
 key_range_sizes="2000000 20000000 200000000 2000000000"
 algorithms="brown_ext_ist_lf"
 thread_counts=`cd .. ; ./get_thread_counts.sh`

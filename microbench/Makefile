@@ -2,22 +2,28 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-### if you do not have PAPI, comment out these two lines
-FLAGS += -DUSE_PAPI
-LDFLAGS += -lpapi
+### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
+has_libpapi=$(shell ldconfig -p | grep libpapi | wc -l)
+ifneq ($(has_libpapi), 0)
+    FLAGS += -DUSE_PAPI
+    LDFLAGS += -lpapi
+endif
 
-### if you do not have libnuma, comment out these two lines
-FLAGS += -DUSE_LIBNUMA
-LDFLAGS += -lnuma
+### if you do not want libnuma to be used, invoke make with "has_libnuma=0"
+has_libnuma=$(shell ldconfig -p | grep libnuma | wc -l)
+ifneq ($(has_libnuma), 0)
+    FLAGS += -DUSE_LIBNUMA
+    LDFLAGS += -lnuma
+endif
 
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
-FLAGS += -std=c++11 -mcx16 -O3 -g
+FLAGS += -std=c++11 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
-FLAGS += -DNO_DELETE_DS
+FLAGS += -DNO_DELETE_DS ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
 #FLAGS += -DRAPID_RECLAMATION
 FLAGS += -DPREFILL_INSERTION_ONLY
 #FLAGS += -DMEASURE_REBUILDING_TIME

@@ -1,8 +1,7 @@
 #!/bin/sh
 
-args_for_both="-DMEASURE_DURATION_STATS"
-compile_args_for_disabled="-DIST_DISABLE_REBUILD_HELPING ${args_for_both}"
-compile_args_for_enabled="${args_for_both}"
+compile_args_for_disabled="-DIST_DISABLE_REBUILD_HELPING -DMEASURE_REBUILDING_TIME"
+compile_args_for_enabled="-DMEASURE_REBUILDING_TIME"
 
 echo "#########################################################################"
 echo "#### Compiling binaries with the desired functionality disabled"

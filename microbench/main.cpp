@@ -280,7 +280,22 @@ __thread int tid = 0;
             gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, elapsed_all_ops, 1, { \
+    gstats_handle_stat(LONG_LONG, duration_all_ops, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, duration_markAndCount, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, duration_wastedWorkBuilding, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, duration_buildAndReplace, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, duration_rotateAndFree, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, duration_traverseAndRetire, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, latency_searches, 1, { \
@@ -312,8 +327,7 @@ __thread int tid = 0;
     }) \
     gstats_handle_stat(LONG_LONG, timer_duration, 1, {}) \
     gstats_handle_stat(LONG_LONG, timer_latency, 1, {}) \
-    gstats_handle_stat(LONG_LONG, timer_rebuild, 1, {}) \
-    gstats_handle_stat(LONG_LONG, timer_all_ops, 1, {})
+    /*gstats_handle_stat(LONG_LONG, timer_rebuild, 1, {})*/
 
 #define TIMING_START(s) \
     std::cout<<"timing_start "<<s<<"..."<<std::endl; \
@@ -731,9 +745,7 @@ void *thread_timed(void *_id) {
     int cnt = 0;
     int rq_cnt = 0;
     
-#ifdef MEASURE_REBUILDING_TIME
-    GSTATS_TIMER_RESET(tid, timer_all_ops);
-#endif    
+    DURATION_START(tid);
     
     while (!g.done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
@@ -793,9 +805,7 @@ void *thread_timed(void *_id) {
     __sync_fetch_and_add(&g.running, -1);
 //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g.startClockTicks);
 
-#ifdef MEASURE_REBUILDING_TIME
-    GSTATS_ADD(tid, elapsed_all_ops, GSTATS_TIMER_ELAPSED(tid, timer_all_ops));
-#endif
+    DURATION_END(tid, duration_all_ops);
     
     GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count());
 
@@ -1044,7 +1054,7 @@ void trial() {
         COUTATOMIC("###############################################################################"<<std::endl);
         COUTATOMIC(std::endl);
         
-        const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 30000 : 30000);
+        const long MAX_NAPPING_MILLIS = (MILLIS_TO_RUN > 0 ? 60000 : 60000);
         g.elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g.startTime).count();
         g.elapsedMillisNapping = 0;
         while (g.running > 0 && g.elapsedMillisNapping < MAX_NAPPING_MILLIS) {

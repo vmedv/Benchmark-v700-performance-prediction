@@ -184,8 +184,10 @@ struct RebuildOperation {
     size_t depth;
     casword_t volatile newRoot;
     bool volatile success;
+    int volatile debug_sync_in_experimental_no_collaboration_version; // serves as a sort of lock in a crappy version of the algorithm that is only included to show the advantage of our collaborative rebuilding technique (vs this crappy algorithm that has no collaborative rebuilding) ;; 0=unlocked, 1=locked in progress, 2=locked forever done
     RebuildOperation(Node<K,V> * _rebuildRoot, Node<K,V> * _parent, size_t _index, size_t _depth)
-        : rebuildRoot(_rebuildRoot), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)), success(false) {}
+        : rebuildRoot(_rebuildRoot), parent(_parent), index(_index), depth(_depth), newRoot(NODE_TO_CASWORD(NULL)), success(false),
+          debug_sync_in_experimental_no_collaboration_version(0) {}
 };
 
 template <typename K, typename V>
@@ -215,7 +217,7 @@ private:
             (dest)[(destStart)+___i] = (src)[(srcStart)+___i]; \
         }
 
-    size_t markAndCount(const int tid, const casword_t ptr);
+    size_t markAndCount(const int tid, const casword_t ptr, bool tryTiming = true);
     void rebuild(const int tid, Node<K,V> * rebuildRoot, Node<K,V> * parent, int index, const size_t depth);
     void helpRebuild(const int tid, RebuildOperation<K,V> * op);
     int interpolationSearch(const int tid, const K& key, Node<K,V> * const node);
@@ -375,6 +377,7 @@ private:
     void freeSubtree(const int tid, casword_t ptr, bool retire, bool tryTimingCall = true) {
 #ifdef USE_GSTATS
         TIMELINE_START_C(tid, tryTimingCall);
+        DURATION_START_C(tid, tryTimingCall);
 #endif
 
         if (unlikely(IS_KVPAIR(ptr))) {
@@ -401,7 +404,8 @@ private:
         }
         
 #ifdef USE_GSTATS
-        TIMELINE_END_C("freeSubtree", tid, tryTimingCall);
+        DURATION_END_C(tid, duration_traverseAndRetire, tryTimingCall);
+        TIMELINE_END_C(tid, "freeSubtree", tryTimingCall);
 #endif
     }
     

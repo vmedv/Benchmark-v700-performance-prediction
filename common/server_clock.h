@@ -70,22 +70,42 @@ inline uint64_t get_server_clock() {
             ___startTime = get_server_clock(); \
         }
     #define TIMELINE_START(tid) TIMELINE_START_C((tid), true)
-    #define TIMELINE_END_C(name, tid, condition) \
-        uint64_t ___endTime; \
+    #define TIMELINE_END_C(tid, name, condition) { \
         if ((condition)) { \
-            ___endTime = get_server_clock(); \
+            uint64_t ___endTime = get_server_clock(); \
             auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
             if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
                 printf("timeline_%s tid=%d start=%lld end=%lld duration_ms=%lld\n", (name), (tid), ___startTime, ___endTime, ___duration_ms); \
             } \
-        }
-    #define TIMELINE_END(name, tid) TIMELINE_END_C((name), (tid), true)
+        } \
+    } 
+    #define TIMELINE_END(tid, name) TIMELINE_END_C((tid), (name), true)
 #else
     #define TIMELINE_START_C(tid, condition)
     #define TIMELINE_START(tid)
-    #define TIMELINE_END_C(name, tid, condition)
-    #define TIMELINE_END(name, tid)
+    #define TIMELINE_END_C(tid, name, condition)
+    #define TIMELINE_END(tid, name)
+#endif
+
+#ifdef MEASURE_DURATION_STATS
+    #define DURATION_START_C(tid, condition) \
+        uint64_t ___startTime; \
+        if ((condition)) { \
+            ___startTime = get_server_clock(); \
+        }
+    #define DURATION_START(tid) DURATION_START_C((tid), true)
+    #define DURATION_END_C(tid, stat_id, condition) { \
+        if ((condition)) { \
+            uint64_t ___endTime = get_server_clock(); \
+            GSTATS_ADD((tid), (stat_id), (___endTime - ___startTime)); \
+        } \
+    }
+    #define DURATION_END(tid, stat_id) DURATION_END_C((tid), (stat_id), true)
+#else
+    #define DURATION_START_C(tid, condition)
+    #define DURATION_START(tid)
+    #define DURATION_END_C(tid, stat_id, condition)
+    #define DURATION_END(tid, stat_id)
 #endif
 
 #endif /* SERVER_CLOCK_H */
-

@@ -160,13 +160,15 @@ public:
 #ifdef USE_GSTATS
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
         TIMELINE_START(tid);
+        DURATION_START(tid);
 #endif
 
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
         
 #ifdef USE_GSTATS
-        TIMELINE_END("rotateEpochBags", tid);
+        DURATION_END(tid, duration_rotateAndFree);
+        TIMELINE_END(tid, "rotateEpochBags");
 #endif
     
         threadData[tid].index = nextIndex;
