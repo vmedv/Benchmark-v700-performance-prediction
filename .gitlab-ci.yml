@@ -30,3 +30,5 @@ test_microbench_istree_throughput:
 # numactl           sudo apt install numactl
 # libnuma           sudo apt install libnuma-dev
 # papi              
+
+##### big problems with running out of virtual memory... compiling too much at once?

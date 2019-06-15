@@ -1,6 +1,6 @@
 #!/bin/sh
 
-hwthreads=`lscpu | grep "CPU(s):" | cut -d":" -f2 | tr -d " "`
+hwthreads=`lscpu | grep -e "^CPU(s):" | cut -d":" -f2 | tr -d " "`
 #echo "hwthreads=$hwthreads"
 use=`expr $hwthreads - 2`
 #echo "make -j $use all"
