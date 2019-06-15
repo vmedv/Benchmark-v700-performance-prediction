@@ -2,6 +2,10 @@ stages:
     - build
     - test
 
+before_script:
+    - dos2unix `find . -type f -exec grep -Iq . {} \; -print`
+    - chmod 755 `find . -type f -name "*.sh" -print`
+
 compile_microbench:
     stage: build
     script:
