@@ -18,7 +18,7 @@ test_microbench_istree_throughput:
     script:
         - mkdir -p tests
         - maxthr=`cd microbench/experiments ; ./get_thread_count_max.sh`
-        - thread_pinning=`cd microbench/experiments ; ./get_pinning_Cluster.sh`
+        - thread_pinning=`cd microbench/experiments ; ./get_pinning_cluster.sh`
         - args="-nwork ${maxthr} -nprefill ${maxthr} -i 5 -d 5 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 10000 -pin ${thread_pinning}"
         - f="tests/test_microbench_istree_throughput.txt"
         - LD_PRELOAD=./lib/libjemalloc.so timeout 600 numactl --interleave=all time ./microbench/bin/ubench_brown_ext_ist_lf.alloc_new.reclaim_debra.pool_none.out $args | tee $f 2>&1
