@@ -3,7 +3,8 @@ stages:
     - test
 
 before_script:
-    - dos2unix `find . -type f -exec grep -Iq . {} \; -print`
+    - dos2unix `find . -type f -name "*.txt" -print`
+    - dos2unix `find . -type f -name "*.sh" -print`
     - chmod 755 `find . -type f -name "*.sh" -print`
 
 compile_microbench:
@@ -23,3 +24,9 @@ test_microbench_istree_throughput:
         - LD_PRELOAD=./lib/libjemalloc.so timeout 600 numactl --interleave=all time ./microbench/bin/ubench_brown_ext_ist_lf.alloc_new.reclaim_debra.pool_none.out $args | tee $f 2>&1
         - tput=`cat $f | grep "total through" | cut -d":" -f2 | tr -d " "`
         - echo "tput=$tput"
+
+# dependencies
+# dos2unix          sudo apt install dos2unix
+# numactl           sudo apt install numactl
+# libnuma           sudo apt install libnuma-dev
+# papi              
