@@ -52,11 +52,9 @@ RECLAIMERS=debra none
 POOLS=none
 ALLOCATORS=new
 
-DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_*/adapter.h))
+DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ist*/adapter.h))
+
 #$(info $(DATA_STRUCTURES))
-#RECLAIMERS=debra none ebr_token ebr_tree
-#POOLS=none numa
-#ALLOCATORS=new
 
 define make-custom-target =
 ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out: dir_guard
