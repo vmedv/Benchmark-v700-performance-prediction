@@ -16,9 +16,6 @@
 
 __thread int tid = 0;
 
-__thread unsigned nodeAllocations = 0;
-__thread unsigned scxRecordAllocations = 0;
-
 mem_alloc mem_allocator;
 Stats stats;
 DL_detect dl_detector;

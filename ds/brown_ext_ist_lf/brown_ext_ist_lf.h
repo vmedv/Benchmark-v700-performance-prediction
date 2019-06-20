@@ -101,10 +101,10 @@
 
 
 // constants for rebuilding
-#define REBUILD_FRACTION            (0.25)
-#define EPS                         (0.25)
+#define REBUILD_FRACTION            (0.25) /* any subtree will be rebuilt after a number of updates equal to this fraction of its size are performed; example: after 250k updates in a subtree that contained 1M keys at the time it was last rebuilt, it will be rebuilt again */
+#define EPS                         (0.25) /* unused */
 
-static thread_local RandomFNV1A * myRNG = NULL; //new RandomFNV1A(rand());
+//static thread_local RandomFNV1A * myRNG = NULL; //new RandomFNV1A(rand());
 
 enum UpdateType {
     InsertIfAbsent, InsertReplace, Erase
@@ -113,10 +113,10 @@ enum UpdateType {
 template <typename K, typename V>
 struct Node {
     size_t volatile degree;
-    K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefilling while interpolation arithmetic occurs)
+    K minKey;                   // field not *technically* needed (used to avoid loading extra cache lines for interpolationSearch in the common case, buying for time for prefetching while interpolation arithmetic occurs)
     K maxKey;                   // field not *technically* needed (same as above)
     size_t capacity;            // field likely not needed (but convenient and good for debug asserts)
-    size_t initSize;
+    size_t initSize;            // initial size (at time of last rebuild) of the subtree rooted at this node
     size_t volatile dirty;      // 2-LSBs are marked by markAndCount; also stores the number of pairs in a subtree as recorded by markAndCount (see SUM_TO_DIRTY_FINISHED and DIRTY_FINISHED_TO_SUM)
     size_t volatile nextMarkAndCount; // facilitates recursive-collaborative markAndCount() by allowing threads to dynamically soft-partition subtrees (NOT workstealing/exclusive access---this is still a lock-free mechanism)
 #ifdef PAD_CHANGESUM
@@ -608,6 +608,9 @@ private:
     void subtreeBuildAndReplace(const int tid, RebuildOperation<K,V>* op, Node<K,V>* parent, size_t ix, size_t childSize, size_t remainder);
 
     int init[MAX_THREADS_POW2] = {0,};
+    PAD;
+    RandomFNV1A threadRNGs[MAX_THREADS_POW2];
+    PAD;
 public:
     const K INF_KEY;
     const V NO_VALUE;
@@ -615,14 +618,16 @@ public:
     PAD;
 
     void initThread(const int tid) {
-        if (myRNG == NULL) myRNG = new RandomFNV1A(rand());
+//        if (myRNG == NULL) myRNG = new RandomFNV1A(rand());
         if (init[tid]) return; else init[tid] = !init[tid];
 
+        threadRNGs[tid].setSeed(rand());
+        assert(threadRNGs[tid].next());
         prov->initThread(tid);
         recordmgr->initThread(tid);
     }
     void deinitThread(const int tid) {
-        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
+//        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
         if (!init[tid]) return; else init[tid] = !init[tid];
 
         prov->deinitThread(tid);
@@ -750,7 +755,7 @@ public:
 #endif
     }
     ~istree() {
-        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
+//        if (myRNG != NULL) { delete myRNG; myRNG = NULL; }
 //        debugGVPrint();
         //std::cout<<"start deconstructor ~istree()"<<std::endl;
         freeSubtree(0, NODE_TO_CASWORD(root), false);

@@ -76,6 +76,10 @@ private:
 //        }
 //    }
 public:
+    ~Index() {
+        delete index;
+    }
+    
     // WARNING: DO NOT OVERLOAD init() WITH NO ARGUMENTS!!!
     RC init(uint64_t part_cnt, table_t * table) {
         if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
@@ -127,7 +131,9 @@ public:
         return RCOK;
     }
     RC index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id = -1, int thd_id = 0) {
-        *item = (VALUE_TYPE) index->find(tid, key);
+        lock_key(key);
+            *item = (VALUE_TYPE) index->find(tid, key);
+        unlock_key(key);
         INCREMENT_NUM_READS(tid);
         return RCOK;
     }

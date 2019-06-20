@@ -261,6 +261,19 @@ public:
         }
     }
     
+    void deinitThread(const int tid) {
+        // WARNING: this moves objects to the pool immediately,
+        // which is only safe if this thread is deinitializing specifically
+        // because *ALL THREADS* have already finished accessing
+        // the data structure and are now quiescent!!
+        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
+            if (threadData[tid].epochbags[i]) {
+                this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
+                delete threadData[tid].epochbags[i];
+            }
+        }
+    }
+
     reclaimer_debracap(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
         VERBOSE std::cout<<"constructor reclaimer_debracap helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
@@ -275,16 +288,16 @@ public:
         }
     }
     ~reclaimer_debracap() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_debracap"<<std::endl;
-        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-            // move contents of all bags into pool
-            for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-                if (threadData[tid].epochbags[i]) {
-                    this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
-                    delete threadData[tid].epochbags[i];
-                }
-            }
-        }
+//        VERBOSE DEBUG std::cout<<"destructor reclaimer_debracap"<<std::endl;
+//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
+//            // move contents of all bags into pool
+//            for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
+//                if (threadData[tid].epochbags[i]) {
+//                    this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
+//                    delete threadData[tid].epochbags[i];
+//                }
+//            }
+//        }
     }
 
 };

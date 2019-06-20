@@ -135,37 +135,43 @@ public:
     }
     
     void initThread(const int tid) {
-        // create mapping between tid and pthread_self for the signal handler
-        // and for any thread that neutralizes another
-        registeredThreads[tid] = pthread_self();
+        if (MasterRecordMgr::supportsCrashRecovery()) {
+            // create mapping between tid and pthread_self for the signal handler
+            // and for any thread that neutralizes another
+            registeredThreads[tid] = pthread_self();
 
-        // here, we use the fact that errno is defined to be a thread local variable
-        errnoThreads[tid] = &errno;
-        if (pthread_setspecific(pthreadkey, (void*) (long) tid)) {
-            COUTATOMIC("ERROR: failure of pthread_setspecific for tid="<<tid<<std::endl);
+            // here, we use the fact that errno is defined to be a thread local variable
+            errnoThreads[tid] = &errno;
+            if (pthread_setspecific(pthreadkey, (void*) (long) tid)) {
+                COUTATOMIC("ERROR: failure of pthread_setspecific for tid="<<tid<<std::endl);
+            }
+            const long __readtid = (long) ((int *) pthread_getspecific(pthreadkey));
+            VERBOSE DEBUG COUTATOMICTID("did pthread_setspecific, pthread_getspecific of "<<__readtid<<std::endl);
+            assert(__readtid == tid);
         }
-        const long __readtid = (long) ((int *) pthread_getspecific(pthreadkey));
-        VERBOSE DEBUG COUTATOMICTID("did pthread_setspecific, pthread_getspecific of "<<__readtid<<std::endl);
-        assert(__readtid == tid);
     }
+    void deinitThread(const int tid) {}
     
     void unblockCrashRecoverySignal() {
-        __sync_synchronize();
-        sigset_t oldset;
-        sigemptyset(&oldset);
-        sigaddset(&oldset, neutralizeSignal);
-        if (pthread_sigmask(SIG_UNBLOCK, &oldset, NULL)) {
-            VERBOSE COUTATOMIC("ERROR UNBLOCKING SIGNAL"<<std::endl);
-            exit(-1);
+        if (MasterRecordMgr::supportsCrashRecovery()) {
+            __sync_synchronize();
+            sigset_t oldset;
+            sigemptyset(&oldset);
+            sigaddset(&oldset, neutralizeSignal);
+            if (pthread_sigmask(SIG_UNBLOCK, &oldset, NULL)) {
+                VERBOSE COUTATOMIC("ERROR UNBLOCKING SIGNAL"<<std::endl);
+                exit(-1);
+            }
         }
     }
     
     RecoveryMgr(const int numProcesses, const int _neutralizeSignal, MasterRecordMgr * const masterRecordMgr)
             : NUM_PROCESSES(numProcesses) , neutralizeSignal(_neutralizeSignal){
-        setjmpbuffers = new sigjmp_buf[numProcesses];
-        pthread_key_create(&pthreadkey, NULL);
         
         if (MasterRecordMgr::supportsCrashRecovery()) {
+            setjmpbuffers = new sigjmp_buf[numProcesses];
+            pthread_key_create(&pthreadkey, NULL);
+        
             // set up crash recovery signal handling for this process
             memset(&___act, 0, sizeof(___act));
             ___act.sa_sigaction = crashhandler<MasterRecordMgr>; // specify signal handler
@@ -178,12 +184,15 @@ public:
             } else {
                 VERBOSE COUTATOMIC("registered signal "<<_neutralizeSignal<<" for crash recovery"<<std::endl);
             }
+            
+            // set up shared pointer to this class instance for the signal handler
+            ___singleton = (void *) masterRecordMgr;
         }
-        // set up shared pointer to this class instance for the signal handler
-        ___singleton = (void *) masterRecordMgr;
     }
     ~RecoveryMgr() {
-        delete[] setjmpbuffers;
+        if (MasterRecordMgr::supportsCrashRecovery()) {
+            delete[] setjmpbuffers;
+        }
     }
 };
 

@@ -182,6 +182,9 @@ public:
     
     void debugPrintStatus(const int tid) {}
     
+    void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
+
     pool_numa(const int numProcesses, Alloc * const _alloc, debugInfo * const _debug)
             : pool_interface<T, Alloc>(numProcesses, _alloc, _debug) {
         VERBOSE DEBUG COUTATOMIC("constructor pool_numa"<<std::endl);

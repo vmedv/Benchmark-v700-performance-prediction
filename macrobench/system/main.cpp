@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#include "urcu_impl.h"
+//#include "urcu_impl.h"
 
 void * f_warmup(void *);
 void * f_real(void *);
@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
 
         thread_pinning::configurePolicy(g_thread_cnt, g_thr_pinning_policy);
 	
-        urcu::init(g_thread_cnt);
+//        urcu::init(g_thread_cnt);
 //        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
 //        tree_malloc::init();
@@ -189,14 +189,21 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
         
-//        delete[] rlu_tdata;        
+        // free indexes
+        for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
+            printf("deleting index: %s\n", it->first.c_str());
+            it->second->~Index();
+            free(it->second);
+        }
+        
+        //delete[] rlu_tdata; 
         
 	return 0;
 }
 
 void * f_warmup(void * id) {
 	uint64_t __tid = (uint64_t)id;
-        urcu::registerThread(__tid);
+//        urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid);
         tid = __tid;
 #ifdef VERBOSE_1
@@ -208,14 +215,14 @@ void * f_warmup(void * id) {
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
 //        RLU_THREAD_FINISH(rlu_self);
-        urcu::unregisterThread();
+//        urcu::unregisterThread();
 	return NULL;
 }
 
 void * f_real(void * id) {
 	uint64_t __tid = (uint64_t)id;
         tid = __tid;
-        urcu::registerThread(__tid);
+//        urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid);
         papi_create_eventset(__tid);
 #ifdef VERBOSE_1
@@ -227,6 +234,6 @@ void * f_real(void * id) {
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
 //        RLU_THREAD_FINISH(rlu_self);
-        urcu::unregisterThread();
+//        urcu::unregisterThread();
 	return NULL;
 }

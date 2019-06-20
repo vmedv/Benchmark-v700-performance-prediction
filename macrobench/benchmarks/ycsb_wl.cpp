@@ -141,7 +141,7 @@ void ycsb_wl::init_table_parallel() {
 
 void * ycsb_wl::init_table_slice() {
     UInt32 __tid = ATOM_FETCH_ADD(next_tid, 1);
-    urcu::registerThread(__tid);
+//    urcu::registerThread(__tid);
 //    rlu_self = &rlu_tdata[__tid];
 //    RLU_THREAD_INIT(rlu_self);
     thread_pinning::bindThread(__tid);
@@ -195,7 +195,7 @@ void * ycsb_wl::init_table_slice() {
 
     this->deinitThread(tid);
 //    RLU_THREAD_FINISH(rlu_self);
-    urcu::unregisterThread();
+//    urcu::unregisterThread();
     return NULL;
 }
 

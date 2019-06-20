@@ -78,6 +78,7 @@ public:
     void debugPrintStatus(const int tid) {}
     
     void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
     
     static void* dummy_thr(void *p) { return 0; }
     

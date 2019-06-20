@@ -75,10 +75,9 @@ public:
 
     // for all schemes except reference counting
     inline void retire(const int tid, T* p);
-    inline void unretireLast(const int tid) {}
     
-    inline void initThread(const int tid) {}
-    inline void deinitThread(const int tid) {}
+    inline void initThread(const int tid);
+    inline void deinitThread(const int tid);
     void debugPrintStatus(const int tid);
     
     reclaimer_interface(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)

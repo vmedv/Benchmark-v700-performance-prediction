@@ -219,6 +219,21 @@ public:
         threadData[tid].last = new blockbag<T>(tid, this->pool->blockpools[tid]);
     }
     
+    void deinitThread(const int tid) {
+        // WARNING: this moves objects to the pool immediately,
+        // which is only safe if this thread is deinitializing specifically
+        // because *ALL THREADS* have already finished accessing
+        // the data structure and are now quiescent!!
+        if (threadData[tid].curr) {
+            this->pool->addMoveAll(tid, threadData[tid].curr);
+            delete threadData[tid].curr;
+        }
+        if (threadData[tid].last) {
+            this->pool->addMoveAll(tid, threadData[tid].last);
+            delete threadData[tid].last;
+        }
+    }
+    
     reclaimer_ebr_token(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
         VERBOSE std::cout<<"constructor reclaimer_ebr_token helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
@@ -230,34 +245,34 @@ public:
         }
     }
     ~reclaimer_ebr_token() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_ebr_token"<<std::endl;
-        
-//        std::cout<<"token_counts=";
-//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].tokenCount<<" ";
-//        std::cout<<std::endl;
+//        VERBOSE DEBUG std::cout<<"destructor reclaimer_ebr_token"<<std::endl;
 //        
-//        std::cout<<"bag_curr_size=";
-//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].curr->computeSize()<<" ";
-//        std::cout<<std::endl;
+////        std::cout<<"token_counts=";
+////        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].tokenCount<<" ";
+////        std::cout<<std::endl;
+////        
+////        std::cout<<"bag_curr_size=";
+////        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].curr->computeSize()<<" ";
+////        std::cout<<std::endl;
+////
+////        std::cout<<"bag_last_size=";
+////        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].last->computeSize()<<" ";
+////        std::cout<<std::endl;
+//        
+//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
 //
-//        std::cout<<"bag_last_size=";
-//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) std::cout<<threadData[tid].last->computeSize()<<" ";
-//        std::cout<<std::endl;
-        
-        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-
-            // move contents of all bags into pool
-
-            if (threadData[tid].curr) {
-                this->pool->addMoveAll(tid, threadData[tid].curr);
-                delete threadData[tid].curr;
-            }
-
-            if (threadData[tid].last) {
-                this->pool->addMoveAll(tid, threadData[tid].last);
-                delete threadData[tid].last;
-            }
-        }
+//            // move contents of all bags into pool
+//
+//            if (threadData[tid].curr) {
+//                this->pool->addMoveAll(tid, threadData[tid].curr);
+//                delete threadData[tid].curr;
+//            }
+//
+//            if (threadData[tid].last) {
+//                this->pool->addMoveAll(tid, threadData[tid].last);
+//                delete threadData[tid].last;
+//            }
+//        }
     }
 
 };

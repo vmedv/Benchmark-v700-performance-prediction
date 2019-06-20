@@ -176,6 +176,7 @@ public:
     void deinitThread(const int tid) {
         if (!init[tid]) return; else init[tid] = !init[tid];
 
+        recoveryMgr->deinitThread(tid);
         rmset->unregisterThread(tid);
     }
     void clearCounters() {

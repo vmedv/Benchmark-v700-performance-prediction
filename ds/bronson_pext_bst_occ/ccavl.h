@@ -221,7 +221,16 @@ public:
         root = rbnode_create(tid, KEY_NEG_INFTY, NULL, NULL);
     }
 
+    void dfsDeallocateBottomUp(node_t<skey_t, sval_t> * const u) {
+        if (u == NULL) return;
+        dfsDeallocateBottomUp(u->left);
+        dfsDeallocateBottomUp(u->right);
+        recmgr->deallocate(0 /* tid */, u);
+    }
     ~ccavl() {
+        std::cout<<"ccavl destructor"<<std::endl;
+        dfsDeallocateBottomUp(root);
+        recmgr->printStatus();
         delete recmgr;
     }
 

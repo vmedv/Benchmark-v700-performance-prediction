@@ -23,7 +23,7 @@
 #include "allocator_interface.h"
 #include "allocator_bump.h"
 #include "allocator_new.h"
-#include "allocator_new_segregated.h"
+//#include "allocator_new_segregated.h"
 #include "allocator_once.h"
 
 #include "pool_interface.h"
@@ -85,11 +85,14 @@ public:
     void initThread(const int tid) {
         alloc->initThread(tid);
         reclaim->initThread(tid);
+        pool->initThread(tid);
 //        endOp(tid);
     }
     
     void deinitThread(const int tid) {
         reclaim->deinitThread(tid);
+        pool->deinitThread(tid);
+        alloc->deinitThread(tid);
     }
     
     inline void clearCounters() {

@@ -240,6 +240,9 @@ public:
 //        assert(tid < this->NUM_PROCESSES);
     }
 
+    void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
+
     reclaimer_hazardptr(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : scanThreshold(5*numProcesses*MAX_HAZARDPTRS_PER_THREAD),
               reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {

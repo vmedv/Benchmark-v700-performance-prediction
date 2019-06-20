@@ -3,37 +3,34 @@
 
 #include "brown_ext_ist_lf.h"
 
+#ifdef MEASURE_DURATION_STATS
 class TimeThisScope {
 private:
-#ifdef MEASURE_DURATION_STATS
     bool condition;
     int tid;
     gstats_stat_id stat_id;
     uint64_t start;
-#endif
 public:
     TimeThisScope(const int _tid, gstats_stat_id _stat_id, bool _condition = true) {
-#ifdef MEASURE_DURATION_STATS
         condition = _condition;
         if (condition) {
             tid = _tid;
             stat_id = _stat_id;
             start = get_server_clock();
         }
-#endif
     }
     ~TimeThisScope() {
-#ifdef MEASURE_DURATION_STATS
         if (condition) {
             auto duration = get_server_clock() - start;
             GSTATS_ADD(tid, stat_id, duration);
         }
-#endif
     }
 };
+#endif
 
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::find(const int tid, const K& key) {
+    assert(init[tid]);
     auto guard = recordmgr->getGuard(tid, true);
     casword_t ptr = prov->readPtr(tid, root->ptrAddr(0));
     assert(ptr);
@@ -128,7 +125,9 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
 
 template <typename K, typename V, class Interpolate, class RecManager>
 size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const casword_t ptr, bool tryTiming /* = true by default */) {
+#ifdef MEASURE_DURATION_STATS
     TimeThisScope obj (tid, duration_markAndCount, tryTiming);
+#endif
     
     if (unlikely(IS_KVPAIR(ptr))) return 1;
     if (unlikely(IS_VAL(ptr))) return 1 - IS_EMPTY_VAL(ptr);
@@ -457,7 +456,8 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     // help linearly starting at a random position (to probabilistically scatter helpers)
     // TODO: determine if helping starting at my own thread id would help? or randomizing my chosen subtree every time i want to help one? possibly help according to a random permutation?
     //printf("tid=%d myRNG=%lld\n", tid, (size_t) myRNG);
-    auto ix = myRNG->next(numChildren);
+    assert(init[tid]);
+    auto ix = threadRNGs[tid].next(numChildren); //myRNG->next(numChildren);
     for (int __i=0;__i<numChildren;++__i) {
         auto i = (__i+ix) % numChildren;
         if (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {
@@ -702,6 +702,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
 // note: val is unused if t == Erase
 template <typename K, typename V, class Interpolate, class RecManager>
 V istree<K,V,Interpolate,RecManager>::doUpdate(const int tid, const K& key, const V& val, UpdateType t) {
+    assert(init[tid]);
 //    const double SAMPLING_PROB = 1.;
     const int MAX_PATH_LENGTH = 64; // in practice, the depth is probably less than 10 even for many billions of keys. max is technically nthreads + O(log log n), but this requires an astronomically unlikely event.
     Node<K,V> * path[MAX_PATH_LENGTH]; // stack to save the path
@@ -802,14 +803,14 @@ retryNode:
 //                    // probabilistically increment the changeSums of ancestors
 //                    if (myRNG->next() / (double) std::numeric_limits<uint64_t>::max() < SAMPLING_PROB) {
                         for (int i=0;i<pathLength;++i) {
-                            path[i]->incrementChangeSum(tid, myRNG);
+                            path[i]->incrementChangeSum(tid, &threadRNGs[tid]); // myRNG);
                         }
 //                    }
                     
                     // now, we must determine whether we should rebuild
                     for (int i=0;i<pathLength;++i) {
 //                        if ((path[i]->changeSum + (NUM_PROCESSES-1)) / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
-                        if (path[i]->readChangeSum(tid, myRNG) >= REBUILD_FRACTION * path[i]->initSize) {
+                        if (path[i]->readChangeSum(tid, &threadRNGs[tid] /*myRNG*/) >= REBUILD_FRACTION * path[i]->initSize) {
                             if (i == 0) {
 #ifndef NO_REBUILDING
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, 0);

@@ -48,6 +48,9 @@ public:
     
     void debugPrintStatus(const int tid);
     
+    void initThread(const int tid);
+    void deinitThread(const int tid);
+
     pool_interface(const int numProcesses, Alloc * const _alloc, debugInfo * const _debug)
             : debug(_debug) 
             , NUM_PROCESSES(numProcesses)

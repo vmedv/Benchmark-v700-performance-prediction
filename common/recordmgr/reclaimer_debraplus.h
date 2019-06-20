@@ -318,6 +318,9 @@ public:
         currentBag[tid*PREFETCH_SIZE_WORDS]->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
     }
+    
+    void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
 
     void debugPrintStatus(const int tid) {
 //        assert(tid >= 0);

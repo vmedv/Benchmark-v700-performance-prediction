@@ -75,6 +75,7 @@ public:
     }
     
     void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
     
     allocator_new(const int numProcesses, debugInfo * const _debug)
             : allocator_interface<T>(numProcesses, _debug) {
