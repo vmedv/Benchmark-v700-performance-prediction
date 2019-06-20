@@ -215,8 +215,12 @@ public:
     }
 
     void initThread(const int tid) {
-        threadData[tid].curr = new blockbag<T>(tid, this->pool->blockpools[tid]);
-        threadData[tid].last = new blockbag<T>(tid, this->pool->blockpools[tid]);
+        if (threadData[tid].curr == NULL) {
+            threadData[tid].curr = new blockbag<T>(tid, this->pool->blockpools[tid]);
+        }
+        if (threadData[tid].last == NULL) {
+            threadData[tid].last = new blockbag<T>(tid, this->pool->blockpools[tid]);
+        }
     }
     
     void deinitThread(const int tid) {
@@ -227,10 +231,12 @@ public:
         if (threadData[tid].curr) {
             this->pool->addMoveAll(tid, threadData[tid].curr);
             delete threadData[tid].curr;
+            threadData[tid].curr = NULL;
         }
         if (threadData[tid].last) {
             this->pool->addMoveAll(tid, threadData[tid].last);
             delete threadData[tid].last;
+            threadData[tid].last = NULL;
         }
     }
     

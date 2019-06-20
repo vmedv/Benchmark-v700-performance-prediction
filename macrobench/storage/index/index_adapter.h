@@ -42,11 +42,9 @@ static RandomFNV1A rngs[MAX_THREADS_POW2]; // create per-thread random number ge
  * Create an adapter class for the DBx1000 index interface
  */
 
-#define INDEX_ADAPTER_T ds_adapter<KEY_TYPE, VALUE_TYPE>
-
 class Index : public index_base {
 private:
-    ds_adapter<KEY_TYPE, void *> * index;
+    ds_adapter<KEY_TYPE, VALUE_TYPE> * index;
     
 //    unsigned long alignment[9] = {0}; 
 //    unsigned long sum_nodes_depths = 0;
@@ -75,8 +73,22 @@ private:
 //            CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(curr, 1+depth);
 //        }
 //    }
+    
+private:
+    static void callback_freeItems(KEY_TYPE key, VALUE_TYPE item) {
+        while (item) {
+            VALUE_TYPE nextItem = item->next;
+            free(item);
+            item = nextItem;
+        }
+    }
+    
 public:
+    
     ~Index() {
+#ifdef DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
+        index->iterate(callback_freeItems);
+#endif
         delete index;
     }
     
@@ -96,7 +108,7 @@ public:
         if (g_thread_cnt > MAX_THREADS_POW2) {
             setbench_error("g_thread_cnt > MAX_THREADS_POW2");
         }
-        index = new ds_adapter<KEY_TYPE, void *>(MAX_THREADS_POW2, minKey, maxKey, reservedValue, rngs);
+        index = new ds_adapter<KEY_TYPE, VALUE_TYPE>(MAX_THREADS_POW2, minKey, maxKey, reservedValue, rngs);
         this->table = table;
         
         return RCOK;
@@ -104,7 +116,7 @@ public:
     
     RC index_insert(KEY_TYPE key, VALUE_TYPE newItem, int part_id = -1) {
 #if defined USE_RANGE_QUERIES
-        const void * oldVal = index->insertIfAbsent(tid, key, (void *) newItem);
+        auto oldVal = index->insertIfAbsent(tid, key, newItem);
 //#ifndef NDEBUG
 //        if (oldVal != index->NO_VALUE) {
 //            cout<<"index_insert found element already existed."<<std::endl;
@@ -118,9 +130,8 @@ public:
 #else
         newItem->next = NULL;
         lock_key(key);
-            const void * oldVal = index->insertIfAbsent(tid, key, (void *) newItem);
-            VALUE_TYPE oldItem = (VALUE_TYPE) oldVal;
-            if (oldVal != index->getNoValue()) {
+            auto oldItem = index->insertIfAbsent(tid, key, newItem);
+            if (oldItem != index->getNoValue()) {
                 // adding to existing list
                 newItem->next = oldItem->next;
                 oldItem->next = newItem;
@@ -142,7 +153,7 @@ public:
     // saves the keys themselves in resultKeys[0...N-1],
     // and saves their values in resultValues[0...N-1].
     RC index_range_query(KEY_TYPE low, KEY_TYPE high, KEY_TYPE * resultKeys, VALUE_TYPE * resultValues, int * numResults, int part_id = -1) {
-        *numResults = index->rangeQuery(tid, low, high, resultKeys, (void **) resultValues);
+        *numResults = index->rangeQuery(tid, low, high, resultKeys, (VALUE_TYPE *) resultValues);
         INCREMENT_NUM_RQS(tid);
         return RCOK;
     }

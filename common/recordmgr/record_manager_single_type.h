@@ -84,8 +84,8 @@ public:
 
     void initThread(const int tid) {
         alloc->initThread(tid);
-        reclaim->initThread(tid);
         pool->initThread(tid);
+        reclaim->initThread(tid);
 //        endOp(tid);
     }
     
@@ -165,7 +165,7 @@ public:
         long long allocated = debugInfoRecord.getTotalAllocated();
         long long allocatedBytes = allocated * sizeof(Record);
         long long deallocated = debugInfoRecord.getTotalDeallocated();
-        long long recycled = debugInfoRecord.getTotalFromPool() - allocated;
+        long long getFromPool = debugInfoRecord.getTotalFromPool(); // - allocated;
 
 //        COUTATOMIC("recmgr status for objects of size "<<sizeof(Record)<<" and type "<<typeid(Record).name()<<std::endl);
 //        COUTATOMIC("allocated   : "<<allocated<<" objects totaling "<<allocatedBytes<<" bytes ("<<(allocatedBytes/1000000.)<<"MB)"<<std::endl);
@@ -179,11 +179,11 @@ public:
         COUTATOMIC(typeid(Record).name()<<"_object_size="<<sizeof(Record)<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_allocated_count="<<allocated<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_allocated_size="<<(allocatedBytes/1000000.)<<"MB"<<std::endl);
-        COUTATOMIC(typeid(Record).name()<<"_recycled="<<recycled<<std::endl);
+        COUTATOMIC(typeid(Record).name()<<"_get_from_pool="<<getFromPool<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_deallocated="<<deallocated<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_limbo_count="<<reclaim->getSizeString()<<std::endl);
         COUTATOMIC(typeid(Record).name()<<"_limbo_details="<<reclaim->getDetailsString()<<std::endl);
-        COUTATOMIC(typeid(Record).name()<<"_pool_count="<<pool->getSizeString()<<std::endl);
+        //COUTATOMIC(typeid(Record).name()<<"_pool_count="<<pool->getSizeString()<<std::endl);
         COUTATOMIC(std::endl);
 
         for (int tid=0;tid<NUM_PROCESSES;++tid) {

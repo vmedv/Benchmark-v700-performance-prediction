@@ -252,15 +252,17 @@ public:
     }
 
     void initThread(const int tid) {
+        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
+            if (threadData[tid].epochbags[i] == NULL) {
+                threadData[tid].epochbags[i] = new blockbag<T>(tid, this->pool->blockpools[tid]);
+            }
+        }
         threadData[tid].currentBag = threadData[tid].epochbags[0];
         threadData[tid].opsSinceRead = 0;
         threadData[tid].checked = 0;
         threadData[tid].timesBagTooLargeSinceRotation = 0;
-        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-            threadData[tid].epochbags[i] = new blockbag<T>(tid, this->pool->blockpools[tid]);
-        }
     }
-    
+
     void deinitThread(const int tid) {
         // WARNING: this moves objects to the pool immediately,
         // which is only safe if this thread is deinitializing specifically
@@ -270,6 +272,7 @@ public:
             if (threadData[tid].epochbags[i]) {
                 this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
                 delete threadData[tid].epochbags[i];
+                threadData[tid].epochbags[i] = NULL;
             }
         }
     }

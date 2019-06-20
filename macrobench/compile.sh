@@ -24,7 +24,7 @@ algs=( \
 #    "brown_ext_abtree_rq_lf:" \
 #    "brown_ext_bslack_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
 #    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_ist_lf:" \
+#    "brown_ext_ist_lf:" \
 )
 
 make_workload_dict() {
@@ -47,7 +47,7 @@ make_workload_dict() {
 }
 export -f make_workload_dict
 
-rm -f compiling*.out
+rm -f log.compile.*.txt
 
 # check for gnu parallel
 command -v parallel > /dev/null 2>&1

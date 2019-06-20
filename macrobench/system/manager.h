@@ -9,6 +9,7 @@ class txn_man;
 class Manager {
 public:
 	void 			init();
+        void                    deinit();
 	// returns the next timestamp.
 	ts_t			get_ts(uint64_t thread_id);
 

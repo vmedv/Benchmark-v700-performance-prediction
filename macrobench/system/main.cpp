@@ -189,6 +189,11 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
         
+        /*********************************************************************
+         * CLEANUP DATA TO ENSURE WE HAVEN'T MISSED ANY LEAKS
+         * This was notably missing in DBx1000...
+         ********************************************************************/
+        
         // free indexes
         for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
             printf("deleting index: %s\n", it->first.c_str());
@@ -197,6 +202,11 @@ int main(int argc, char* argv[])
         }
         
         //delete[] rlu_tdata; 
+        glob_manager->deinit();
+        
+	for (uint32_t i = 0; i < thd_cnt; i++)
+            free(m_thds[i]);
+	delete[] m_thds;
         
 	return 0;
 }

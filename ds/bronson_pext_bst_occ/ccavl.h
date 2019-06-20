@@ -221,15 +221,22 @@ public:
         root = rbnode_create(tid, KEY_NEG_INFTY, NULL, NULL);
     }
 
-    void dfsDeallocateBottomUp(node_t<skey_t, sval_t> * const u) {
-        if (u == NULL) return;
-        dfsDeallocateBottomUp(u->left);
-        dfsDeallocateBottomUp(u->right);
-        recmgr->deallocate(0 /* tid */, u);
+private:
+    uint64_t dfsDeallocateBottomUp(node_t<skey_t, sval_t> * const node) {
+        if (node == NULL) {
+            return 0;
+        }
+        uint64_t sumL = dfsDeallocateBottomUp(node->left);
+        uint64_t sumR = dfsDeallocateBottomUp(node->right);
+        recmgr->deallocate(0 /* tid */, node);
+        return 1 + sumL + sumR;
     }
+    
+public:
     ~ccavl() {
         std::cout<<"ccavl destructor"<<std::endl;
-        dfsDeallocateBottomUp(root);
+        int numNodes = dfsDeallocateBottomUp(root);
+        std::cout<<"  deallocated "<<numNodes<<std::endl;
         recmgr->printStatus();
         delete recmgr;
     }
@@ -308,8 +315,8 @@ public:
     
     long long getSizeInNodes() {
         return getSizeInNodes(root);
-    }    
-
+    }
+    
     void printSummary() {
         recmgr->printStatus();
     }    

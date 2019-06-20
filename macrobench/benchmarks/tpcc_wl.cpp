@@ -78,6 +78,7 @@ RC tpcc_wl::init_table() {
     for (uint32_t i = 0; i<g_num_wh /*- 1*/; i++)
         pthread_join(p_thds[i], NULL);
 //    RLU_FINISH();
+    delete[] p_thds;
 
     printf("TPCC Data Initialization Complete!\n");
     return RCOK;

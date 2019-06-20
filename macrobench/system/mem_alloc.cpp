@@ -126,7 +126,7 @@ void mem_alloc::unregister() {
 
 
 void mem_alloc::free(void * ptr, uint64_t size) {
-	if (NO_FREE) {
+	if (NO_FREE_B) {
 //	} else if (THREAD_ALLOC) {
 //		int arena_id = get_arena_id();
 //		FreeBlock * block = (FreeBlock *)((UInt64)ptr - sizeof(FreeBlock));

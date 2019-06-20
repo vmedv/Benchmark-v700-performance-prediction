@@ -3,6 +3,15 @@
 #include "txn.h"
 #include "pthread.h"
 
+void Manager::deinit() {
+    free((void *) _epoch);
+    free((void *) _last_epoch_update_time);
+    for (uint32_t i = 0; i < g_thread_cnt; i++) 
+        free((void *) all_ts[i]);
+    free((void *) all_ts);
+    delete[] _all_txns;
+}
+
 void Manager::init() {
 	timestamp = (uint64_t *) _mm_malloc(sizeof(uint64_t), ALIGNMENT);
 	*timestamp = 1;
@@ -10,8 +19,8 @@ void Manager::init() {
 	_min_ts = 0;
 	_epoch = (uint64_t *) _mm_malloc(sizeof(uint64_t), ALIGNMENT);
 	_last_epoch_update_time = (ts_t *) _mm_malloc(sizeof(uint64_t), ALIGNMENT);
-	_epoch = 0;
-	_last_epoch_update_time = 0;
+//	_epoch = 0;
+//	_last_epoch_update_time = 0;
 	all_ts = (ts_t volatile **) _mm_malloc(sizeof(ts_t *) * g_thread_cnt, ALIGNMENT);
 	for (uint32_t i = 0; i < g_thread_cnt; i++) 
 		all_ts[i] = (ts_t *) _mm_malloc(sizeof(ts_t), ALIGNMENT);

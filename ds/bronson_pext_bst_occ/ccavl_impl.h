@@ -109,7 +109,7 @@ static version_t endShrink(version_t ovl) {
 
 template <typename skey_t, typename sval_t, class RecMgr>
 node_t<skey_t, sval_t>* ccavl<skey_t, sval_t, RecMgr>::get_child(node_t<skey_t, sval_t>* curr, char dir) {
-    return dir == LEFT ? (node_t<skey_t, sval_t>*) curr->left : (node_t<skey_t, sval_t>*) curr->right;
+    return dir == LEFT ? curr->left : curr->right;
 }
 
 
@@ -118,8 +118,10 @@ node_t<skey_t, sval_t>* ccavl<skey_t, sval_t, RecMgr>::get_child(node_t<skey_t, 
 template <typename skey_t, typename sval_t, class RecMgr>
 void ccavl<skey_t, sval_t, RecMgr>::setChild(node_t<skey_t, sval_t>* curr, char dir, node_t<skey_t, sval_t>* new_node) {
     if (dir == LEFT) {
+        assert(curr->left == NULL);
         curr->left = new_node;
     } else {
+        assert(curr->right == NULL);
         curr->right = new_node;
     }
 }
@@ -158,12 +160,12 @@ int ccavl<skey_t, sval_t, RecMgr>::height(volatile node_t<skey_t, sval_t>* curr)
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::decodeNull(sval_t vOpt) {
     assert(vOpt != SpecialRetry);
-    return vOpt == SpecialNull ? NULL : vOpt;
+    return vOpt == (sval_t) SpecialNull ? (sval_t) NULL : vOpt;
 }
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::encodeNull(sval_t v) {
-    return v == NULL ? SpecialNull : v;
+    return v == (sval_t) NULL ? (VALUE_TYPE) SpecialNull : v;
 }
 
 
@@ -230,7 +232,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptGet(skey_t key,
 
         if (child == NULL) {
             if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-                return SpecialRetry;
+                return (sval_t) SpecialRetry;
             }
 
             // Note is not present.  Read of node.child occurred while
@@ -250,18 +252,18 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptGet(skey_t key,
                 waitUntilChangeCompleted(child, childOVL);
 
                 if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-                    return SpecialRetry;
+                    return (sval_t) SpecialRetry;
                 }
                 // else RETRY
             } else if (child != get_child(curr, dirToC)) {
                 // this .child is the one that is protected by childOVL
                 if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-                    return SpecialRetry;
+                    return (sval_t) SpecialRetry;
                 }
                 // else RETRY
             } else {
                 if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-                    return SpecialRetry;
+                    return (sval_t) SpecialRetry;
                 }
 
                 // At this point we know that the traversal our parent took
@@ -272,7 +274,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptGet(skey_t key,
                 // no longer vulnerable to node shrinks, and we don't need
                 // to validate nodeOVL any more.
                 vo = attemptGet(key, child, (key < child->key ? LEFT : RIGHT), childOVL);
-                if (vo != SpecialRetry) {
+                if (vo != (sval_t) SpecialRetry) {
                     return vo;
                 }
                 // else RETRY
@@ -368,7 +370,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptUpdate(
         node_t<skey_t, sval_t>* child = get_child(curr, dirToC);
 
         if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-            return SpecialRetry;
+            return (sval_t) SpecialRetry;
         }
 
         if (child == NULL) {
@@ -389,7 +391,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptUpdate(
                     // rotations can mess with us.
                     if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
                         mutex_unlock(&(curr->lock));
-                        return SpecialRetry;
+                        return (sval_t) SpecialRetry;
                     }
 
                     if (get_child(curr, dirToC) != NULL) {
@@ -435,7 +437,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptUpdate(
             } else {
                 // validate the read that our caller took to get to node
                 if (hasShrunkOrUnlinked(nodeOVL, curr->changeOVL)) {
-                    return SpecialRetry;
+                    return (sval_t) SpecialRetry;
                 }
 
                 // At this point we know that the traversal our parent took
@@ -447,7 +449,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptUpdate(
                 // to validate nodeOVL any more.
                 sval_t vo = attemptUpdate(tid, key, func,
                         expected, newValue, curr, child, childOVL);
-                if (vo != SpecialRetry) {
+                if (vo != (sval_t) SpecialRetry) {
                     return vo;
                 }
                 // else RETRY
@@ -460,7 +462,7 @@ template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::update(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, int func, sval_t expected, sval_t newValue) {
 
     while (1) {
-        node_t<skey_t, sval_t>* right = (node_t<skey_t, sval_t>*) tree->right;
+        node_t<skey_t, sval_t>* right = tree->right;
         if (right == NULL) {
             // key is not present
             if (!shouldUpdate(func, NULL, expected) ||
@@ -479,7 +481,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::update(const int tid, node_t<skey_t, sval_
                 // this is the protected .right
                 sval_t vo = attemptUpdate(tid, key, func,
                         expected, newValue, tree, right, ovl);
-                if (vo != SpecialRetry) {
+                if (vo != (sval_t) SpecialRetry) {
                     return vo;
                 }
                 // else RETRY
@@ -516,7 +518,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptNodeUpdate(
         {
             if (isUnlinked(parent->changeOVL) || curr->parent != parent) {
                 mutex_unlock(&(parent->lock));
-                return SpecialRetry;
+                return (sval_t) SpecialRetry;
             }
 
             mutex_lock(&(curr->lock));
@@ -531,7 +533,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptNodeUpdate(
                 if (!attemptUnlink_nl(tid, parent, curr)) {
                     mutex_unlock(&(curr->lock));
                     mutex_unlock(&(parent->lock));
-                    return SpecialRetry;
+                    return (sval_t) SpecialRetry;
                 }
             }
             mutex_unlock(&(curr->lock));
@@ -549,7 +551,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptNodeUpdate(
             // regular version changes don't bother us
             if (isUnlinked(curr->changeOVL)) {
                 mutex_unlock(&(curr->lock));
-                return SpecialRetry;
+                return (sval_t) SpecialRetry;
             }
 
             prev = curr->value;
@@ -561,7 +563,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::attemptNodeUpdate(
             // retry if we now detect that unlink is possible
             if (newValue == NULL && (curr->left == NULL || curr->right == NULL)) {
                 mutex_unlock(&(curr->lock));
-                return SpecialRetry;
+                return (sval_t) SpecialRetry;
             }
 
             // update in-place
@@ -596,8 +598,8 @@ int ccavl<skey_t, sval_t, RecMgr>::attemptUnlink_nl(const int tid, node_t<skey_t
     assert(!isUnlinked(curr->changeOVL));
     assert(parent == curr->parent);
 
-    left = (node_t<skey_t, sval_t>*) curr->left;
-    right = (node_t<skey_t, sval_t>*) curr->right;
+    left = curr->left;
+    right = curr->right;
     if (left != NULL && right != NULL) {
         // splicing is no longer possible
         return 0;
@@ -611,6 +613,7 @@ int ccavl<skey_t, sval_t, RecMgr>::attemptUnlink_nl(const int tid, node_t<skey_t
     } else {
         parent->right = splice;
     }
+    //std::cout<<"calling retire("<<tid<<", "<<curr<<")"<<std::endl;
     recmgr->retire(tid, curr);
     if (splice != NULL) {
         mutex_lock(&(splice->lock));

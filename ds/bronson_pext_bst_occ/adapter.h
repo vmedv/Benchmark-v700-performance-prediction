@@ -12,6 +12,8 @@
 #ifndef BRONSON_PEXT_BST_OCC_ADAPTER_H
 #define BRONSON_PEXT_BST_OCC_ADAPTER_H
 
+#define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
+
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
@@ -21,7 +23,8 @@
 #endif
 #include "ccavl_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
+#define NODE_T node_t<K,V>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T>
 #define DATA_STRUCTURE_T ccavl<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
@@ -82,14 +85,14 @@ public:
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(node_t<K,V>))
+                 <<(sizeof(NODE_T))
                  <<std::endl;
     }
 
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
-        typedef node_t<K,V> * NodePtrType;
+        typedef NODE_T * NodePtrType;
         K minKey;
         K maxKey;
         
@@ -149,6 +152,26 @@ public:
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), tree->get_root(), true);
     }
 #endif
+
+
+private:
+    template<typename... Arguments>
+    void iterate(void (*callback)(K key, V value, Arguments... args)
+            , NODE_T * const curr, Arguments... args) {
+        if (curr) {
+            iterate(callback, curr->left, args...);
+            callback(curr->key, curr->value, args...);
+            iterate(callback, curr->right, args...);
+        }
+    }
+    
+public:
+    
+    template<typename... Arguments>
+    void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
+        return iterate(callback, tree->get_root(), args...);
+    }
+
 };
 
 #undef RECORD_MANAGER_T
