@@ -29,7 +29,8 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 void 
 row_t::init(int size) 
 {
-	data = (char *) _mm_malloc(size, ALIGNMENT);
+    manager = NULL;
+    data = (char *) _mm_malloc(size, ALIGNMENT);
 }
 
 void row_t::setbench_deinit() {

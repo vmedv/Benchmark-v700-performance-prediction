@@ -46,6 +46,7 @@ void txn_man::setbench_deinit() {
         for (int i=0;i<num_accesses_alloc;++i) {
             if (accesses[i]) {
                 if (accesses[i]->orig_data) {
+                    accesses[i]->orig_data->setbench_deinit();
                     free(accesses[i]->orig_data);
                     accesses[i]->orig_data = NULL;
                 }
@@ -121,10 +122,15 @@ void txn_man::cleanup(RC rc) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC
-			mem_allocator.free(row->manager, 0);
+//			mem_allocator.free(row->manager, 0);
 #endif
-			row->free_row();
-			mem_allocator.free(row, sizeof(row));
+//			row->free_row();
+                        if (row) {
+                            row->setbench_deinit();
+                            free(row);
+                            row = NULL;
+                        }
+//			mem_allocator.free(row, sizeof(row));
 		}
 	}
 	row_cnt = 0;
