@@ -114,9 +114,10 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
                     freeSubtree(tid, ptr, true, false);
                 }
             }
+            freeNode(tid, node, true); // retire the ACTUAL node
         }
     }
-        
+    
 #ifdef USE_GSTATS
     DURATION_END(tid, duration_traverseAndRetire);
     TIMELINE_END(tid, "freeSubtree");
@@ -579,6 +580,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
                 // so, we use retire rather than deallocate.
             }
             // otherwise, someone else reclaimed the NEW subtree
+            assert(op->newRoot == EMPTY_VAL_TO_CASWORD);
         } else {
             assert(result == DCSS_FAILED_ADDR2);
         }

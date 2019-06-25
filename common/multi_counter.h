@@ -36,6 +36,7 @@ public:
         }
     }
     ~MultiCounter() {
+        //printf("called destructor ~MultiCounter\n");
 //        GSTATS_ADD(tid, num_multi_counter_array_reclaimed, 1);
         delete[] counters;
 //        delete[] (counters - 1);                                                // shift by -1 (don't use first entry---to effectively add padding at the start of the array)

@@ -71,8 +71,9 @@ public:
         check_duplicates<First, Rest...>(); // check if first is in {rest...}
     }
     ~RecordManagerSet() {
-        std::cout<<"recordmanager set destructor called for object type "<<typeid(First).name()<<std::endl;
+        std::cout<<"recordmanager set destructor started for object type "<<typeid(First).name()<<std::endl;
         delete mgr;
+        std::cout<<"recordmanager set destructor finished for object type "<<typeid(First).name()<<std::endl;
         // note: should automatically call the parent class' destructor afterwards
     }
     // note: the compiled code for get() should be a single read and return statement
@@ -163,8 +164,8 @@ public:
         rmset = new RecordManagerSetPostPadded<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...>(numProcesses, (RecoveryMgr<void *> *) recoveryMgr);
     }
     ~record_manager() {
-        delete recoveryMgr;
-        delete rmset;
+            delete recoveryMgr;
+            delete rmset;
     }
     void initThread(const int tid) {
         if (init[tid]) return; else init[tid] = !init[tid];

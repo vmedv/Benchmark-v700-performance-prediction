@@ -1,4 +1,5 @@
 #include "global.h"
+#include "row.h"
 #include "helper.h"
 #include "tpcc.h"
 #include "wl.h"
@@ -6,7 +7,6 @@
 #include "table.h"
 #include "all_indexes.h"
 #include "tpcc_helper.h"
-#include "row.h"
 #include "query.h"
 #include "txn.h"
 #include "mem_alloc.h"
@@ -27,6 +27,25 @@ RC tpcc_wl::init() {
     init_table();
     next_tid = 0;
     return RCOK;
+}
+
+void tpcc_wl::setbench_deinit() {
+    workload::setbench_deinit();
+    for (auto name_tableptr_pair : tables) {
+        auto tableptr = name_tableptr_pair.second;
+        tableptr->setbench_deinit();
+        free(tableptr);
+    }
+    if (tpcc_buffer) {
+        for (int i=0;i<g_thread_cnt;++i) {
+            if (tpcc_buffer[i]) {
+                free(tpcc_buffer[i]);
+                tpcc_buffer[i] = NULL;
+            }
+        }
+        delete[] tpcc_buffer;
+        tpcc_buffer = NULL;
+    }
 }
 
 RC tpcc_wl::init_schema(const char * schema_file) {
@@ -350,7 +369,9 @@ void tpcc_wl::init_tab_hist(uint64_t c_id, uint64_t d_id, uint64_t w_id) {
     MakeAlphaString(12, 24, h_data, w_id-1);
     row->set_value(H_DATA, h_data);
 #endif
-
+    // just free the row right away, because it isn't even used in the original dbx implementation...
+    row->setbench_deinit();
+    free(row);
 }
 
 void tpcc_wl::init_tab_order(uint64_t did, uint64_t wid) {
@@ -471,7 +492,7 @@ void * tpcc_wl::threadInitWarehouse(void * This) {
 //    RLU_THREAD_INIT(rlu_self);
     
     uint32_t wid = __tid+1;
-    cout<<"TPCC_WL DEBUG: tpcc_buffer="<<(uintptr_t) tpcc_buffer<<" __tid="<<__tid<<endl;
+//    cout<<"TPCC_WL DEBUG: tpcc_buffer="<<(uintptr_t) tpcc_buffer<<" __tid="<<__tid<<endl;
     tpcc_buffer[__tid] = (drand48_data *) _mm_malloc(sizeof (drand48_data), ALIGNMENT);
     assert((uint64_t) __tid<g_num_wh);
     srand48_r(wid, tpcc_buffer[__tid]);

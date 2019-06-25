@@ -42,6 +42,9 @@
 #include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
+#ifdef _OPENMP
+#   include <omp.h>
+#endif
 #ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
 #   include "multi_counter.h"
 #endif

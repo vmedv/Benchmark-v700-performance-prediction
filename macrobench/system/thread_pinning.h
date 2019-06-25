@@ -39,6 +39,7 @@ namespace thread_pinning {
      * Public functions
      */
     
+    void setbench_deinit(const int numThreads);
     void configurePolicy(const int numThreads, string policy);
     void bindThread(const int tid);
     int getActualBinding(const int tid);

@@ -12,6 +12,10 @@ RC workload::init() {
 	return RCOK;
 }
 
+void workload::setbench_deinit() {
+    
+}
+
 RC workload::init_schema(std::string schema_file) {
     
 //    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);

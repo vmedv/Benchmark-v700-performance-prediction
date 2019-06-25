@@ -65,6 +65,10 @@ typedef unsigned long long version_t;
 #define PAD_SIZE 128
 #endif
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 template <typename skey_t, typename sval_t>
 struct node_t {
 #ifndef BASELINE
@@ -232,11 +236,50 @@ private:
         return 1 + sumL + sumR;
     }
     
+    void dfsDeallocateBottomUp_omp_end(node_t<skey_t, sval_t> * const node/*, volatile int * numNodes*/) {
+        if (node == NULL) return;
+        dfsDeallocateBottomUp_omp_end(node->left/*, numNodes*/);
+        dfsDeallocateBottomUp_omp_end(node->right/*, numNodes*/);
+        int tid = 0;
+#ifdef _OPENMP
+        tid = omp_get_thread_num();
+#endif
+        recmgr->deallocate(tid, node);
+//        __sync_fetch_and_add(numNodes, 1);
+    }
+    
+    void dfsDeallocateBottomUp_omp(node_t<skey_t, sval_t> * const node, int depth/*, volatile int * numNodes*/) {
+        if (node == NULL) return;
+        if (depth == 8) {
+            #pragma omp task
+            dfsDeallocateBottomUp_omp_end(node/*, numNodes*/);
+        } else {
+            dfsDeallocateBottomUp_omp(node->left, 1+depth/*, numNodes*/);
+            dfsDeallocateBottomUp_omp(node->right, 1+depth/*, numNodes*/);
+            int tid = 0;
+#ifdef _OPENMP
+            tid = omp_get_thread_num();
+#endif
+            recmgr->deallocate(tid, node);
+//            __sync_fetch_and_add(numNodes, 1);
+        }
+    }
+    
 public:
     ~ccavl() {
         std::cout<<"ccavl destructor"<<std::endl;
-        int numNodes = dfsDeallocateBottomUp(root);
-        std::cout<<"  deallocated "<<numNodes<<std::endl;
+        
+        //auto numNodes = dfsDeallocateBottomUp(root);
+        
+//        volatile int numNodes = 0;
+//        omp_set_num_threads(20);
+        #pragma omp parallel
+        {
+            #pragma omp single
+            dfsDeallocateBottomUp_omp(root, 0/*, &numNodes*/);
+        }
+        
+//        std::cout<<"  deallocated "<<numNodes<<std::endl;
         recmgr->printStatus();
         delete recmgr;
     }

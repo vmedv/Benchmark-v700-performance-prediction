@@ -6,7 +6,22 @@ namespace thread_pinning {
     cpu_set_t ** cpusets;
     int * customBinding;
     int numCustomBindings;
-
+    
+    void setbench_deinit(const int numThreads) {
+        const int potentialThreads = max(LOGICAL_PROCESSORS, numThreads);
+        if (cpusets) {
+            for (int i=0;i<potentialThreads;++i) {
+                CPU_FREE(cpusets[i]);
+            }
+            delete[] cpusets;
+            cpusets = NULL;
+        }
+        if (customBinding) {
+            delete[] customBinding;
+            customBinding = NULL;
+        }
+    }
+    
     void configurePolicy(const int numThreads, string policy) {
         const int potentialThreads = max(LOGICAL_PROCESSORS, numThreads);
         cpusets = new cpu_set_t * [potentialThreads];

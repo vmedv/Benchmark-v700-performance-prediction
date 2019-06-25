@@ -117,8 +117,11 @@ int main(int argc, char* argv[])
         
 	pthread_t p_thds[thd_cnt /*- 1*/];
 	m_thds = new thread_t * [thd_cnt];
-	for (uint32_t i = 0; i < thd_cnt; i++)
-		m_thds[i] = (thread_t *) _mm_malloc(sizeof(thread_t), ALIGNMENT);
+	for (uint32_t i = 0; i < thd_cnt; i++) {
+            m_thds[i] = (thread_t *) _mm_malloc(sizeof(thread_t), ALIGNMENT);
+
+            stats.init(i); //////////////////////////////////////////////////////
+        }
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	query_queue = (Query_queue *) _mm_malloc(sizeof(Query_queue), ALIGNMENT);
@@ -194,19 +197,46 @@ int main(int argc, char* argv[])
          * This was notably missing in DBx1000...
          ********************************************************************/
         
+	for (uint32_t i = 0; i < thd_cnt; i++) {
+            stats.setbench_deinit(i); //////////////////////////////////////////////////////
+        }
+        
         // free indexes
         for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
-            printf("deleting index: %s\n", it->first.c_str());
+            printf("\n\ndeleting index: %s\n", it->first.c_str());
             it->second->~Index();
             free(it->second);
         }
         
-        //delete[] rlu_tdata; 
-        glob_manager->deinit();
+        if (glob_manager) {
+            glob_manager->setbench_deinit();
+            free(glob_manager);
+            glob_manager = NULL;
+        }
         
-	for (uint32_t i = 0; i < thd_cnt; i++)
-            free(m_thds[i]);
-	delete[] m_thds;
+        if (m_thds) {
+            for (uint32_t i = 0; i < thd_cnt; i++) {
+                m_thds[i]->setbench_deinit();
+                free(m_thds[i]);
+            }
+            delete[] m_thds;
+        }
+        
+        if (WORKLOAD != TEST) {
+            if (query_queue) {
+                query_queue->setbench_deinit();
+                free(query_queue);
+                query_queue = NULL;
+            }
+        }
+        
+        if (m_wl) {
+            m_wl->setbench_deinit();
+            delete m_wl;
+            m_wl = NULL;
+        }
+        
+        thread_pinning::setbench_deinit(g_thread_cnt);
         
 	return 0;
 }

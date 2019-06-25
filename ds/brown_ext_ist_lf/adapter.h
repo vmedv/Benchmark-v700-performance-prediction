@@ -6,6 +6,8 @@
 #ifndef DS_ADAPTER_H
 #define DS_ADAPTER_H
 
+#define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
+
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
@@ -15,10 +17,11 @@
 #   include "tree_stats.h"
 #endif
 
+#define NODE_T Node<K,V>
 #if defined IST_DISABLE_MULTICOUNTER_AT_ROOT
-#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>>
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T, KVPair<K,V>, RebuildOperation<K,V>>
 #else
-#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
 #endif
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
 
@@ -122,19 +125,19 @@ public:
     bool contains(const int tid, const K& key) {
         return ds->contains(tid, key);
     }
-    void * insert(const int tid, const K& key, void * const val) {
+    V insert(const int tid, const K& key, const V& val) {
         return ds->insert(tid, key, val);
     }
-    void * insertIfAbsent(const int tid, const K& key, void * const val) {
+    V insertIfAbsent(const int tid, const K& key, const V& val) {
         return ds->insertIfAbsent(tid, key, val);
     }
-    void * erase(const int tid, const K& key) {
+    V erase(const int tid, const K& key) {
         return ds->erase(tid, key);
     }
-    void * find(const int tid, const K& key) {
+    V find(const int tid, const K& key) {
         return ds->find(tid, key);
     }
-    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
+    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("not implemented");
     }
     void printSummary() {
@@ -148,7 +151,7 @@ public:
         return true;
     }
     void printObjectSizes() {
-        std::cout<<"size_node="<<(sizeof(Node<K,V>))<<std::endl;
+        std::cout<<"size_node="<<(sizeof(NODE_T))<<std::endl;
     }
     
 #ifdef USE_TREE_STATS
@@ -215,6 +218,46 @@ public:
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()), true);
     }
 #endif
+    
+private:
+    template<typename... Arguments>
+    void iterate_omp(int depth, void (*callback)(K key, V value, Arguments... args)
+            , casword_t ptr, Arguments... args) {
+        if (IS_VAL(ptr)) return;
+        if (IS_KVPAIR(ptr)) {
+            auto kvp = CASWORD_TO_KVPAIR(ptr);
+            callback(kvp->k, kvp->v, args...);
+            return;
+        }
+        
+        assert(IS_NODE(ptr));
+        auto curr = CASWORD_TO_NODE(ptr);
+        if (curr == NULL) return;
+
+        for (int i=0;i<curr->degree;++i) {
+            if (depth == 1) { // in interpolation search tree, root is massive... (root is really the child of the root pointer)
+                //printf("got here %d\n", i);
+                #pragma omp task
+                iterate_omp(1+depth, callback, curr->ptr(i), args...);
+            } else {
+                iterate_omp(1+depth, callback, curr->ptr(i), args...);
+            }
+            if (i >= 1 && !IS_EMPTY_VAL(curr->ptr(i)) && IS_VAL(curr->ptr(i))) { // first val-slot cannot be non-empty value
+                callback(curr->key(i-1), CASWORD_TO_VAL(curr->ptr(i)), args...);
+            }
+        }
+    }
+    
+public:
+    template<typename... Arguments>
+    void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
+        #pragma omp parallel
+        {
+            #pragma omp single
+            iterate_omp(0, callback, NODE_TO_CASWORD(ds->debug_getEntryPoint()), args...);
+        }
+    }
+
 };
 
 #endif

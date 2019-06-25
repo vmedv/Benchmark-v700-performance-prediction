@@ -158,10 +158,23 @@ private:
     template<typename... Arguments>
     void iterate(void (*callback)(K key, V value, Arguments... args)
             , NODE_T * const curr, Arguments... args) {
-        if (curr) {
-            iterate(callback, curr->left, args...);
+        if (curr == NULL) return;
+        iterate(callback, curr->left, args...);
+        iterate(callback, curr->right, args...);
+        callback(curr->key, curr->value, args...);
+    }
+    
+    template<typename... Arguments>
+    void iterate_omp(int depth, void (*callback)(K key, V value, Arguments... args)
+            , NODE_T * const curr, Arguments... args) {
+        if (curr == NULL) return;
+        if (depth == 8) {
+            #pragma omp task
+            iterate(callback, curr, args...);
+        } else {
+            iterate_omp(1+depth, callback, curr->left, args...);
+            iterate_omp(1+depth, callback, curr->right, args...);
             callback(curr->key, curr->value, args...);
-            iterate(callback, curr->right, args...);
         }
     }
     
@@ -169,7 +182,11 @@ public:
     
     template<typename... Arguments>
     void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
-        return iterate(callback, tree->get_root(), args...);
+        #pragma omp parallel
+        {
+            #pragma omp single
+            iterate_omp(0, callback, tree->get_root(), args...);
+        }
     }
 
 };

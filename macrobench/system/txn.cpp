@@ -41,6 +41,23 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 
 }
 
+void txn_man::setbench_deinit() {
+    if (accesses) {
+        for (int i=0;i<num_accesses_alloc;++i) {
+            if (accesses[i]) {
+                if (accesses[i]->orig_data) {
+                    free(accesses[i]->orig_data);
+                    accesses[i]->orig_data = NULL;
+                }
+                free(accesses[i]);
+                accesses[i] = NULL;
+            }
+        }
+        free(accesses);
+        accesses = NULL;
+    }
+}
+
 void txn_man::set_txn_id(txnid_t txn_id) {
 	this->txn_id = txn_id;
 }
@@ -80,8 +97,8 @@ void txn_man::cleanup(RC rc) {
 
 #if (CC_ALG == NO_WAIT || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
 		if (type == RD) {
-			accesses[rid]->data = NULL;
-			continue;
+                    accesses[rid]->data = NULL;
+                    continue;
 		}
 #endif
 
