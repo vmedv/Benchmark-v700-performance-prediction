@@ -197,6 +197,8 @@ int main(int argc, char* argv[])
          * This was notably missing in DBx1000...
          ********************************************************************/
         
+#if !defined NO_CLEANUP_AFTER_WORKLOAD
+        
 	for (uint32_t i = 0; i < thd_cnt; i++) {
             stats.setbench_deinit(i); //////////////////////////////////////////////////////
         }
@@ -237,6 +239,8 @@ int main(int argc, char* argv[])
         }
         
         thread_pinning::setbench_deinit(g_thread_cnt);
+        
+#endif
         
 	return 0;
 }

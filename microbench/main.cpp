@@ -564,7 +564,6 @@ void prefillInsertionOnly() {
         
         #pragma omp for schedule(dynamic, 100000)
         for (size_t i=0;i<expectedSize;++i) {
-        retry:
             test_type key = g.rngs[tid].next(MAXKEY) + 1;
             GSTATS_ADD(tid, num_inserts, 1);
             if (g.dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g.dsAdapter->getNoValue()) {
@@ -583,7 +582,8 @@ void prefillInsertionOnly() {
                     fflush(stdout); // for some reason the above is stubborn and doesn't print until too late (to watch progress) if i don't flush explicitly.
                 }
             } else {
-                goto retry;
+                --i;
+                continue; // retry
             }
         }
     }
@@ -1246,7 +1246,7 @@ void printOutput() {
 //    g.dsAdapter->printSummary();
     
     // free ds
-#ifndef NO_DELETE_DS
+#if !defined NO_CLEANUP_AFTER_WORKLOAD
     std::cout<<"begin delete ds..."<<std::endl;
     delete g.dsAdapter;
     std::cout<<"end delete ds."<<std::endl;

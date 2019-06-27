@@ -6,25 +6,20 @@
 # Created on May 28, 2017, 9:56:43 PM
 #
 
-workloads="TPCC"
+workloads="YCSB"
 
 ## format is the following is
 ## data_structure_name:compilation_arguments
-#algs=( \
-#    "hash_chaining:-DIDX_HASH=1" \
-#    "bronson_pext_bst_occ:" \
-#    "brown_ext_ist_lf:" \
-#    "brown_ext_abtree_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-#    "natarajan_ext_bst_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-#)
-
 algs=( \
-#    "hash_chaining:-DIDX_HASH=1" \
     "bronson_pext_bst_occ:" \
+    "brown_ext_ist_lf:" \
+    "brown_ext_abtree_lf:" \
 #    "brown_ext_abtree_rq_lf:" \
+#    "brown_ext_bslack_rq_lf:" \
+#    "hash_chaining:-DIDX_HASH=1" \
+#    "brown_ext_abtree_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
 #    "brown_ext_bslack_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
 #    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
-    "brown_ext_ist_lf:" \
 )
 
 make_workload_dict() {
@@ -32,7 +27,7 @@ make_workload_dict() {
     workload=$1
     name=`echo $2 | cut -d":" -f1`
     opts=`echo $2 | cut -d":" -f2-`
-    opts_clean=`echo $opts | tr " " "."`
+    opts_clean=`echo $opts | tr " " "." | tr "=" "-"`
     fname=log.compile.temp.$workload.$name.${opts_clean}.out
     #echo "arg1=$1 arg2=$2 workload=$workload name=$name opts=$opts"
     make -j clean workload="$workload" data_structure_name="$name" data_structure_opts="$opts"

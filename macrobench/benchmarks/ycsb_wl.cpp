@@ -35,6 +35,19 @@ RC ycsb_wl::init() {
     return RCOK;
 }
 
+void ycsb_wl::setbench_deinit() {
+    workload::setbench_deinit();
+    for (auto name_tableptr_pair : tables) {
+        auto tableptr = name_tableptr_pair.second;
+        tableptr->setbench_deinit();
+        free(tableptr);
+    }
+    if (perm) {
+        free(perm);
+        perm = NULL;
+    }
+}
+
 RC ycsb_wl::init_schema(std::string schema_file) {
     workload::init_schema(schema_file);
     the_table = tables["MAIN_TABLE"];
@@ -149,11 +162,14 @@ void * ycsb_wl::init_table_slice() {
     //	set_affinity(__tid);
 
     tid = __tid;
-    cout<<"YCSB_WL INIT: Assigned thread ID="<<tid<<std::endl;
+//    cout<<"YCSB_WL INIT: Assigned thread ID="<<tid<<std::endl;
     this->initThread(tid);
 
     mem_allocator.register_thread(__tid);
     RC rc;
+    if (g_synth_table_size%g_init_parallelism) {
+        cout<<"g_synth_table_size="<<g_synth_table_size<<" g_init_parallelism="<<g_init_parallelism<<endl;
+    }
     assert(g_synth_table_size%g_init_parallelism==0);
     assert(__tid<g_init_parallelism);
     while ((UInt32) ATOM_FETCH_ADD(next_tid, 0)<g_init_parallelism) {

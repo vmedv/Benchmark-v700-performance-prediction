@@ -221,7 +221,7 @@ public:
     
 private:
     template<typename... Arguments>
-    void iterate_omp(int depth, void (*callback)(K key, V value, Arguments... args)
+    void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
             , casword_t ptr, Arguments... args) {
         if (IS_VAL(ptr)) return;
         if (IS_KVPAIR(ptr)) {
@@ -238,9 +238,9 @@ private:
             if (depth == 1) { // in interpolation search tree, root is massive... (root is really the child of the root pointer)
                 //printf("got here %d\n", i);
                 #pragma omp task
-                iterate_omp(1+depth, callback, curr->ptr(i), args...);
+                iterate_helper_fn(1+depth, callback, curr->ptr(i), args...);
             } else {
-                iterate_omp(1+depth, callback, curr->ptr(i), args...);
+                iterate_helper_fn(1+depth, callback, curr->ptr(i), args...);
             }
             if (i >= 1 && !IS_EMPTY_VAL(curr->ptr(i)) && IS_VAL(curr->ptr(i))) { // first val-slot cannot be non-empty value
                 callback(curr->key(i-1), CASWORD_TO_VAL(curr->ptr(i)), args...);
@@ -254,7 +254,7 @@ public:
         #pragma omp parallel
         {
             #pragma omp single
-            iterate_omp(0, callback, NODE_TO_CASWORD(ds->debug_getEntryPoint()), args...);
+            iterate_helper_fn(0, callback, NODE_TO_CASWORD(ds->debug_getEntryPoint()), args...);
         }
     }
 

@@ -93,7 +93,7 @@ RC workload::init_schema(std::string schema_file) {
             
 
             string tname(items[0]);
-            cout<<"tname="<<tname<<" iname="<<iname<<" sizeof(Index)="<<sizeof(Index)<<std::endl;
+//            cout<<"tname="<<tname<<" iname="<<iname<<" sizeof(Index)="<<sizeof(Index)<<std::endl;
             Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT); // IS THIS BIG ENOUGH??????
             new(index) Index();
             int part_cnt = (CENTRAL_INDEX) ? 1 : g_part_cnt;

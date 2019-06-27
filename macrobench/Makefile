@@ -3,7 +3,7 @@ LDFLAGS =
 CC=g++
 
 include ../plaf.inc
-LDFLAGS += -fsanitize=address -static-libasan
+#LDFLAGS += -fsanitize=address -static-libasan
 CFLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 CFLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 CFLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
@@ -11,6 +11,8 @@ CFLAGS += -g -std=c++14 -O3
 CFLAGS += -fopenmp
 CFLAGS += $(xargs)
 CFLAGS += -Wno-format
+CFLAGS += -DNDEBUG
+CFLAGS += -DNO_CLEANUP_AFTER_WORKLOAD
 
 ### if you do not have PAPI, comment out these two lines
 #CFLAGS += -DUSE_PAPI
@@ -32,7 +34,7 @@ CFLAGS += -I../ $(patsubst %,-I%,$(SRC_DIRS)) `find ../common -type d | sed s/^/
 
 #CFLAGS += -DSKIP_PERMUTATIONS
 CFLAGS += -DNOGRAPHITE=1 -DWORKLOAD=$(workload)
-CFLAGS += -DHASH_PRIMARY_KEYS
+#CFLAGS += -DHASH_PRIMARY_KEYS
 CFLAGS += -DALIGNED_ALLOCATIONS
 CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -I$(data_structure_path) $(data_structure_opts)

@@ -23,7 +23,7 @@ FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -std=c++11 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
-FLAGS += -DNO_DELETE_DS ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
+FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
 #FLAGS += -DRAPID_RECLAMATION
 FLAGS += -DPREFILL_INSERTION_ONLY
 #FLAGS += -DMEASURE_REBUILDING_TIME
@@ -34,6 +34,7 @@ FLAGS += -DNDEBUG
 FLAGS += -Wno-format
 FLAGS += $(xargs)
 
+#LDFLAGS += -fsanitize=address -static-libasan
 LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread

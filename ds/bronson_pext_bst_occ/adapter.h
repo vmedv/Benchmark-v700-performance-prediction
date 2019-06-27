@@ -12,8 +12,6 @@
 #ifndef BRONSON_PEXT_BST_OCC_ADAPTER_H
 #define BRONSON_PEXT_BST_OCC_ADAPTER_H
 
-#define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
-
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
@@ -156,36 +154,29 @@ public:
 
 private:
     template<typename... Arguments>
-    void iterate(void (*callback)(K key, V value, Arguments... args)
+    void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
             , NODE_T * const curr, Arguments... args) {
         if (curr == NULL) return;
-        iterate(callback, curr->left, args...);
-        iterate(callback, curr->right, args...);
+        if (depth == 10) {
+            #pragma omp task
+            iterate_helper_fn(1+depth, callback, curr->left, args...);
+            #pragma omp task
+            iterate_helper_fn(1+depth, callback, curr->right, args...);
+        } else {
+            iterate_helper_fn(1+depth, callback, curr->left, args...);
+            iterate_helper_fn(1+depth, callback, curr->right, args...);
+        }
         callback(curr->key, curr->value, args...);
     }
     
-    template<typename... Arguments>
-    void iterate_omp(int depth, void (*callback)(K key, V value, Arguments... args)
-            , NODE_T * const curr, Arguments... args) {
-        if (curr == NULL) return;
-        if (depth == 8) {
-            #pragma omp task
-            iterate(callback, curr, args...);
-        } else {
-            iterate_omp(1+depth, callback, curr->left, args...);
-            iterate_omp(1+depth, callback, curr->right, args...);
-            callback(curr->key, curr->value, args...);
-        }
-    }
-    
 public:
-    
+    #define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
     template<typename... Arguments>
     void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
         #pragma omp parallel
         {
             #pragma omp single
-            iterate_omp(0, callback, tree->get_root(), args...);
+            iterate_helper_fn(0, callback, tree->get_root(), args...);
         }
     }
 
