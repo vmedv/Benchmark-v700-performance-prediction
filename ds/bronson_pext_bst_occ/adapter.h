@@ -16,11 +16,13 @@
 #include "errors.h"
 #include "random_fnv1a.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 #include "ccavl_impl.h"
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
+#define NODE_T node_t<K,V>
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T>
 #define DATA_STRUCTURE_T ccavl<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
@@ -81,14 +83,14 @@ public:
     }
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(node_t<K,V>))
+                 <<(sizeof(NODE_T))
                  <<std::endl;
     }
 
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
-        typedef node_t<K,V> * NodePtrType;
+        typedef NODE_T * NodePtrType;
         K minKey;
         K maxKey;
         
@@ -142,11 +144,42 @@ public:
         ChildIterator getChildIterator(NodePtrType node) {
             return ChildIterator(node);
         }
+        static size_t getSizeInBytes(NodePtrType node) { return sizeof(*node); }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), tree->get_root(), true);
     }
 #endif
+
+
+private:
+    template<typename... Arguments>
+    void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
+            , NODE_T * const curr, Arguments... args) {
+        if (curr == NULL) return;
+        if (depth == 10) {
+            #pragma omp task
+            iterate_helper_fn(1+depth, callback, curr->left, args...);
+            #pragma omp task
+            iterate_helper_fn(1+depth, callback, curr->right, args...);
+        } else {
+            iterate_helper_fn(1+depth, callback, curr->left, args...);
+            iterate_helper_fn(1+depth, callback, curr->right, args...);
+        }
+        callback(curr->key, curr->value, args...);
+    }
+    
+public:
+    #define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
+    template<typename... Arguments>
+    void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
+        #pragma omp parallel
+        {
+            #pragma omp single
+            iterate_helper_fn(0, callback, tree->get_root(), args...);
+        }
+    }
+
 };
 
 #undef RECORD_MANAGER_T

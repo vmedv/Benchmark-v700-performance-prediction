@@ -12,11 +12,15 @@ RC workload::init() {
 	return RCOK;
 }
 
+void workload::setbench_deinit() {
+    
+}
+
 RC workload::init_schema(std::string schema_file) {
     
-    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
-    rlu_self = &rlu_tdata[tid];
-    RLU_THREAD_INIT(rlu_self);
+//    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//    rlu_self = &rlu_tdata[tid];
+//    RLU_THREAD_INIT(rlu_self);
     
     assert(sizeof(uint64_t) == 8);
     assert(sizeof(double) == 8);	
@@ -89,7 +93,8 @@ RC workload::init_schema(std::string schema_file) {
             
 
             string tname(items[0]);
-            Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT);
+//            cout<<"tname="<<tname<<" iname="<<iname<<" sizeof(Index)="<<sizeof(Index)<<std::endl;
+            Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT); // IS THIS BIG ENOUGH??????
             new(index) Index();
             int part_cnt = (CENTRAL_INDEX) ? 1 : g_part_cnt;
             if (tname=="ITEM")
@@ -104,7 +109,6 @@ RC workload::init_schema(std::string schema_file) {
 #else
             index->init(part_cnt, tables[tname]);
 #endif
-            cout<<"tname="<<tname<<" iname="<<iname<<std::endl;
             indexes[iname] = index;
             index->index_id = indexesCreated;
             index->index_name = iname;
@@ -113,8 +117,8 @@ RC workload::init_schema(std::string schema_file) {
     }
     fin.close();
     
-    RLU_THREAD_FINISH(rlu_self);
-    RLU_FINISH();
+//    RLU_THREAD_FINISH(rlu_self);
+//    RLU_FINISH();
     
     return RCOK;
 }

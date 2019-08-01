@@ -86,6 +86,7 @@ public:
 //        }
 //        VERBOSE COUTATOMICTID(" finished touching each page."<<std::endl);
     }
+    void deinitThread(const int tid) {}
 
     allocator_once(const int numProcesses, debugInfo * const _debug)
             : allocator_interface<T>(numProcesses, _debug)

@@ -19,6 +19,7 @@ public:
 	void 		set_cur_cid(uint64_t cid);
 
 	void 		init(uint64_t thd_id, workload * workload);
+        void            setbench_deinit();
 	// the following function must be in the form void* (*)(void*)
 	// to run with pthread.
 	// conversion is done within the function.

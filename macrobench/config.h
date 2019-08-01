@@ -37,7 +37,7 @@
 // [PART_ALLOC] 
 #define PART_ALLOC 					false
 #define MEM_SIZE					(1UL << 30) 
-#define NO_FREE						false
+#define NO_FREE_B						false
 
 /***********************************************/
 // Concurrency Control
@@ -118,7 +118,7 @@
 #define MAX_TUPLE_SIZE				1024 // in bytes
 // ==== [YCSB] ====
 #define INIT_PARALLELISM			40
-#define SYNTH_TABLE_SIZE 			(1024 * 1024 * 10)
+#define SYNTH_TABLE_SIZE 			(1024 * 1024 * 24)
 #define ZIPF_THETA 					0.6
 #define READ_PERC 					0.9
 #define WRITE_PERC 					0.1

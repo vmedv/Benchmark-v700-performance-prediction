@@ -22,6 +22,8 @@
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debraplus : public reclaimer_interface<T, Pool> {
 private:
+#define DEBRA_DISABLE_READONLY_OPT
+
 #define EPOCH_INCREMENT 2
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)
@@ -316,6 +318,9 @@ public:
         currentBag[tid*PREFETCH_SIZE_WORDS]->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
     }
+    
+    void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
 
     void debugPrintStatus(const int tid) {
 //        assert(tid >= 0);

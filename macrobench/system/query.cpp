@@ -24,24 +24,46 @@ Query_queue::init(workload * h_wl) {
 #elif WORKLOAD == TPCC
 	assert(tpcc_buffer != NULL);
 #endif
-        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 	int64_t begin = get_server_clock();
-	pthread_t p_thds[g_thread_cnt - 1];
-	for (UInt32 i = 0; i < g_thread_cnt - 1; i++) {
+	pthread_t p_thds[g_thread_cnt /*- 1*/];
+	for (UInt32 i = 0; i < g_thread_cnt /*- 1*/; i++) {
 		pthread_create(&p_thds[i], NULL, threadInitQuery, this);
 	}
-	threadInitQuery(this);
-	for (uint32_t i = 0; i < g_thread_cnt - 1; i++) 
+	//threadInitQuery(this); /* because of removing "- 1" */
+	for (uint32_t i = 0; i < g_thread_cnt /*- 1*/; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t end = get_server_clock();
-        RLU_FINISH();
+//        RLU_FINISH();
 	printf("Query Queue Init Time %f\n", 1.0 * (end - begin) / 1000000000UL);
+}
+
+void Query_queue::setbench_deinit() {
+//    printf("called destructor Query_queue::setbench_deinit()\n");
+
+    if (all_queries) {
+        for (int i=0;i<g_thread_cnt;++i) {
+            deinit_per_thread(i);
+        }
+        delete[] all_queries;
+        all_queries = NULL;
+    }
 }
 
 void 
 Query_queue::init_per_thread(int thread_id) {	
-	all_queries[thread_id] = (Query_thd *) _mm_malloc(sizeof(Query_thd), ALIGNMENT);
-	all_queries[thread_id]->init(_wl, thread_id);
+    all_queries[thread_id] = (Query_thd *) _mm_malloc(sizeof(Query_thd), ALIGNMENT);
+    all_queries[thread_id]->init(_wl, thread_id);
+}
+
+void Query_queue::deinit_per_thread(int thread_id) {
+//    printf("called destructor Query_queue::deinit_per_thread()\n");
+
+    if (all_queries[thread_id]) {
+        all_queries[thread_id]->setbench_deinit();
+        free(all_queries[thread_id]);
+        all_queries[thread_id] = NULL;
+    }
 }
 
 base_query * 
@@ -54,16 +76,16 @@ void *
 Query_queue::threadInitQuery(void * This) {
 	Query_queue * query_queue = (Query_queue *)This;
 	uint32_t tid = ATOM_FETCH_ADD(_next_tid, 1);
-	urcu::registerThread(tid);
-        rlu_self = &rlu_tdata[tid];
-        RLU_THREAD_INIT(rlu_self);
+//	urcu::registerThread(tid);
+//        rlu_self = &rlu_tdata[tid];
+//        RLU_THREAD_INIT(rlu_self);
         thread_pinning::bindThread(tid);
 //	// set cpu affinity
 //	set_affinity(tid);
 
 	query_queue->init_per_thread(tid);
-        RLU_THREAD_FINISH(rlu_self);
-        urcu::unregisterThread();
+//        RLU_THREAD_FINISH(rlu_self);
+//        urcu::unregisterThread();
 	return NULL;
 }
 
@@ -71,11 +93,12 @@ Query_queue::threadInitQuery(void * This) {
 //     class Query_thd
 /*************************************************/
 
+#define CALC_REQUEST_COUNT (WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4)
+
 void 
 Query_thd::init(workload * h_wl, int thread_id) {
-	uint64_t request_cnt;
+	uint64_t request_cnt = CALC_REQUEST_COUNT;
 	q_idx = 0;
-	request_cnt = WARMUP / g_thread_cnt + MAX_TXN_PER_PART + 4;
 #if WORKLOAD == YCSB	
 	queries = (ycsb_query *) 
 		mem_allocator.alloc(sizeof(ycsb_query) * request_cnt, thread_id);
@@ -92,6 +115,19 @@ Query_thd::init(workload * h_wl, int thread_id) {
 		queries[qid].init(thread_id, h_wl);
 #endif
 	}
+}
+
+void Query_thd::setbench_deinit() {
+//    printf("called destructor Query_thd::setbench_deinit()\n");
+
+    if (queries) {
+        uint64_t request_cnt = CALC_REQUEST_COUNT;
+        for (UInt32 qid=0;qid<request_cnt;++qid) {
+            queries[qid].setbench_deinit();
+        }
+        free(queries);
+        queries = NULL;
+    }
 }
 
 base_query * 

@@ -41,6 +41,24 @@ void txn_man::init(thread_t * h_thd, workload * h_wl, uint64_t thd_id) {
 
 }
 
+void txn_man::setbench_deinit() {
+    if (accesses) {
+        for (int i=0;i<num_accesses_alloc;++i) {
+            if (accesses[i]) {
+                if (accesses[i]->orig_data) {
+                    accesses[i]->orig_data->setbench_deinit();
+                    free(accesses[i]->orig_data);
+                    accesses[i]->orig_data = NULL;
+                }
+                free(accesses[i]);
+                accesses[i] = NULL;
+            }
+        }
+        free(accesses);
+        accesses = NULL;
+    }
+}
+
 void txn_man::set_txn_id(txnid_t txn_id) {
 	this->txn_id = txn_id;
 }
@@ -80,8 +98,8 @@ void txn_man::cleanup(RC rc) {
 
 #if (CC_ALG == NO_WAIT || CC_ALG == DL_DETECT) && ISOLATION_LEVEL == REPEATABLE_READ
 		if (type == RD) {
-			accesses[rid]->data = NULL;
-			continue;
+                    accesses[rid]->data = NULL;
+                    continue;
 		}
 #endif
 
@@ -104,10 +122,15 @@ void txn_man::cleanup(RC rc) {
 			row_t * row = insert_rows[i];
 			assert(g_part_alloc == false);
 #if CC_ALG != HSTORE && CC_ALG != OCC
-			mem_allocator.free(row->manager, 0);
+//			mem_allocator.free(row->manager, 0);
 #endif
-			row->free_row();
-			mem_allocator.free(row, sizeof(row));
+//			row->free_row();
+                        if (row) {
+                            row->setbench_deinit();
+                            free(row);
+                            row = NULL;
+                        }
+//			mem_allocator.free(row, sizeof(row));
 		}
 	}
 	row_cnt = 0;

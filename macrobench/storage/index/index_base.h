@@ -11,21 +11,6 @@ class table_t;
 #define VALUE_TYPE itemid_t *
 #define __NO_KEY -1
 #define __NO_VALUE NULL
-
-
-
-/**
- * Facilitate automatic thread initialization for index
- */
-
-#define IS_THREAD_INITIALIZED(tid) initializedThreads[(tid)*PREFETCH_SIZE_BYTES]
-#define TRY_INIT_THREAD(tid) \
-    if (!IS_THREAD_INITIALIZED((tid))) { \
-        IS_THREAD_INITIALIZED((tid)) = true; \
-        if ((tid) >= MAX_THREADS_POW2) setbench_error("tid >= MAX_THREADS_POW2. too many threads created. increase MAX_THREADS_POW2."); \
-        index->initThread(tid); \
-    }
-
 #define _TABSZ (1<< 20)
 typedef uintptr_t vwlock;  /* (Version,LOCKBIT) */
 #define TABMSK (_TABSZ-1)
@@ -35,7 +20,7 @@ typedef uintptr_t vwlock;  /* (Version,LOCKBIT) */
 //#define PSLOCK(a) (LockTab + (((UNS(a)+COLOR) >> PSSHIFT) & TABMSK))
 
 #define BIG_CONSTANT(x) (x##LLU)
-#define PSLOCK(v) (LockTab + ((UNS(hash_murmur3((v))) >> PSSHIFT) & TABMSK))
+#define PSLOCK(v) (LockTab + (UNS(hash_murmur3((v))) & TABMSK))
 static inline int32_t hash_murmur3(KEY_TYPE v) {
     // assert: _TABSZ is a power of 2 and KEY_TYPE is 64-bits
     v ^= v >> 33;
@@ -65,21 +50,22 @@ protected:
     #define PRINT_BUCKETS 30
     long long lockHistogram[PRINT_BUCKETS];
     PAD; // needed because locktab might falsely share with some following fields (including index_id, which is read on every stat tracking increment
+    uint64_t debug_init_is_done;
+    PAD;
 public:
     string index_name;
     int index_id;
-
-    virtual RC init() {
-        memset((void *) LockTab, 0, _TABSZ*sizeof(vwlock));
+    
+    index_base() {
+//        std::cout<<"start index_base()"<<std::endl;
+        assert(sizeof(LockTab) == sizeof(vwlock)*_TABSZ);
+        memset((void *) LockTab, 0, sizeof(LockTab));
+        //std::cout<<"    sizeof(LockTab)="<<sizeof(LockTab)<<std::endl;
         memset(numInserts, 0, MAX_THREADS_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
         memset(numReads, 0, MAX_THREADS_POW2*PREFETCH_SIZE_WORDS*sizeof(unsigned long long));
-        for (int tid=0;tid<MAX_THREADS_POW2;++tid) IS_THREAD_INITIALIZED(tid) = false;
-        return RCOK;
-    };
-
-    virtual RC init(uint64_t size) {
-        return init();
-    };
+        debug_init_is_done = 0xCAFEBABE;
+//        std::cout<<"  end index_base()"<<std::endl;
+    }
 
 //    virtual bool index_exist(KEY_TYPE key) = 0; // check if the key exist.
 
@@ -116,6 +102,9 @@ public:
     virtual size_t getDescriptorSize(){return 0;}
 private:
     inline void vwlock_acquire(volatile vwlock * lock) {
+        assert(debug_init_is_done == 0xCAFEBABE);
+        assert(((uint64_t) lock) >= ((uint64_t) LockTab));
+        assert(((uint64_t) lock) <= ((uint64_t) LockTab)+sizeof(LockTab) - sizeof(vwlock));
         while (1) {
             vwlock val;
             while ((val = *lock) & 1); // wait while lock is held

@@ -47,22 +47,22 @@ constexpr std::size_t offset_of()
 
 #define comma ,
 
-__thread long long rcuthrFreesNode = 0;       // for RCU THREADS ONLY
-__thread long long rcuthrFreesDescriptor = 0; // for RCU THREADS ONLY
-/*PAD;*/
-long long freesNode = 0;
-long long freesDescriptor = 0;
-/*PAD;*/
+//__thread long long rcuthrFreesNode = 0;       // for RCU THREADS ONLY
+//__thread long long rcuthrFreesDescriptor = 0; // for RCU THREADS ONLY
+///*PAD;*/
+//long long freesNode = 0;
+//long long freesDescriptor = 0;
+///*PAD;*/
 
 #if defined BST || defined BST_THROWAWAY
     void rcuCallback_Node(struct rcu_head *rcu) {
         Node<test_type, test_type> * n = (Node<test_type, test_type> *)
                 (((char*) rcu) - OFFSET_OF(
                         &Node<test_type comma test_type>::rcuHeadField));
-        if (++rcuthrFreesNode == 1<<10) {
-            __sync_fetch_and_add(&freesNode, rcuthrFreesNode);
-            rcuthrFreesNode = 0;
-        }
+//        if (++rcuthrFreesNode == 1<<10) {
+//            __sync_fetch_and_add(&freesNode, rcuthrFreesNode);
+//            rcuthrFreesNode = 0;
+//        }
         free(n);
     }
     #ifdef BST_THROWAWAY
@@ -70,10 +70,10 @@ long long freesDescriptor = 0;
             SCXRecord<test_type, test_type> * n = (SCXRecord<test_type, test_type> *)
                     (((char*) rcu) - OFFSET_OF(
                             &SCXRecord<test_type comma test_type>::rcuHeadField));
-            if (++rcuthrFreesDescriptor == 1<<10) {
-                __sync_fetch_and_add(&freesDescriptor, rcuthrFreesDescriptor);
-                rcuthrFreesDescriptor = 0;
-            }
+//            if (++rcuthrFreesDescriptor == 1<<10) {
+//                __sync_fetch_and_add(&freesDescriptor, rcuthrFreesDescriptor);
+//                rcuthrFreesDescriptor = 0;
+//            }
             free(n);
         }
     #endif
@@ -82,20 +82,20 @@ long long freesDescriptor = 0;
         kcasdesc_t<KCAS_MAXK, KCAS_MAXTHREADS> * n = (kcasdesc_t<KCAS_MAXK, KCAS_MAXTHREADS> *)
                 (((char*) rcu) - OFFSET_OF(
                         &kcasdesc_t<KCAS_MAXK comma KCAS_MAXTHREADS>::rcuHeadField));
-        if (++rcuthrFreesDescriptor == 1<<10) {
-            __sync_fetch_and_add(&freesDescriptor, rcuthrFreesDescriptor);
-            rcuthrFreesDescriptor = 0;
-        }
+//        if (++rcuthrFreesDescriptor == 1<<10) {
+//            __sync_fetch_and_add(&freesDescriptor, rcuthrFreesDescriptor);
+//            rcuthrFreesDescriptor = 0;
+//        }
         free(n);
     }
     void rcuCallback_rdcssdesc(struct rcu_head *rcu) {
         rdcssdesc_t * n = (rdcssdesc_t *)
                 (((char*) rcu) - OFFSET_OF(
                         &rdcssdesc_t::rcuHeadField));
-        if (++rcuthrFreesNode == 1<<10) {
-            __sync_fetch_and_add(&freesNode, rcuthrFreesNode);
-            rcuthrFreesNode = 0;
-        }
+//        if (++rcuthrFreesNode == 1<<10) {
+//            __sync_fetch_and_add(&freesNode, rcuthrFreesNode);
+//            rcuthrFreesNode = 0;
+//        }
         free(n);
     }
 #endif
@@ -194,8 +194,8 @@ public:
     }
 
     void debugPrintStatus(const int tid) {
-        if (freesNode) std::cout<<"freesNode="<<freesNode<<std::endl;
-        if (freesDescriptor) std::cout<<"freesDescriptor="<<freesDescriptor<<std::endl;
+//        if (freesNode) std::cout<<"freesNode="<<freesNode<<std::endl;
+//        if (freesDescriptor) std::cout<<"freesDescriptor="<<freesDescriptor<<std::endl;
     }
     
     void initThread(const int tid) {

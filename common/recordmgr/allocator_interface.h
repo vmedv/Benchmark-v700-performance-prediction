@@ -30,9 +30,11 @@ public:
     T* allocate(const int tid);
     void deallocate(const int tid, T * const p);
     void deallocateAndClear(const int tid, blockbag<T> * const bag);
-    void initThread(const int tid);
     
     void debugPrintStatus(const int tid);
+
+    void initThread(const int tid);
+    void deinitThread(const int tid);
 
     allocator_interface(const int numProcesses, debugInfo * const _debug)
             : debug(_debug)

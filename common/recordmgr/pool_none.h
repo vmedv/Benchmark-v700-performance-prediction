@@ -72,6 +72,9 @@ public:
 
     }
     
+    void initThread(const int tid) {}
+    void deinitThread(const int tid) {}
+
     pool_none(const int numProcesses, Alloc * const _alloc, debugInfo * const _debug)
             : pool_interface<T, Alloc>(numProcesses, _alloc, _debug) {
         VERBOSE DEBUG std::cout<<"constructor pool_none"<<std::endl;

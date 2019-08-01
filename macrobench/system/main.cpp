@@ -12,7 +12,7 @@
 
 using namespace std;
 
-#include "urcu_impl.h"
+//#include "urcu_impl.h"
 
 void * f_warmup(void *);
 void * f_real(void *);
@@ -28,8 +28,8 @@ int main(int argc, char* argv[])
 
         thread_pinning::configurePolicy(g_thread_cnt, g_thr_pinning_policy);
 	
-        urcu::init(g_thread_cnt);
-        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
+//        urcu::init(g_thread_cnt);
+//        rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2];
         
 //        tree_malloc::init();
 	papi_init_program(g_thread_cnt);
@@ -117,8 +117,11 @@ int main(int argc, char* argv[])
         
 	pthread_t p_thds[thd_cnt /*- 1*/];
 	m_thds = new thread_t * [thd_cnt];
-	for (uint32_t i = 0; i < thd_cnt; i++)
-		m_thds[i] = (thread_t *) _mm_malloc(sizeof(thread_t), ALIGNMENT);
+	for (uint32_t i = 0; i < thd_cnt; i++) {
+            m_thds[i] = (thread_t *) _mm_malloc(sizeof(thread_t), ALIGNMENT);
+
+            stats.init(i); //////////////////////////////////////////////////////
+        }
 	// query_queue should be the last one to be initialized!!!
 	// because it collects txn latency
 	query_queue = (Query_queue *) _mm_malloc(sizeof(Query_queue), ALIGNMENT);
@@ -139,7 +142,7 @@ int main(int argc, char* argv[])
 
 	if (WARMUP > 0){
 		printf("WARMUP start!\n");
-                RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//                RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 		for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) {
 			uint64_t vid = i;
 			pthread_create(&p_thds[i], NULL, f_warmup, (void *)vid);
@@ -147,7 +150,7 @@ int main(int argc, char* argv[])
 		/*f_warmup((void *)(thd_cnt - 1));*/
 		for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++)
 			pthread_join(p_thds[i], NULL);
-                RLU_FINISH();
+//                RLU_FINISH();
 		printf("WARMUP finished!\n");
 	}
 	warmup_finish = true;
@@ -158,7 +161,7 @@ int main(int argc, char* argv[])
 	pthread_barrier_init( &warmup_bar, NULL, g_thread_cnt );
 
 	// spawn and run txns again.
-        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+//        RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 	int64_t starttime = get_server_clock();
 	for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) {
 		uint64_t vid = i;
@@ -168,7 +171,7 @@ int main(int argc, char* argv[])
 	for (uint32_t i = 0; i < thd_cnt /*- 1*/; i++) 
 		pthread_join(p_thds[i], NULL);
 	int64_t endtime = get_server_clock();
-        RLU_FINISH();
+//        RLU_FINISH();
 	
 #ifdef  VERBOSE_1
         for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
@@ -189,44 +192,92 @@ int main(int argc, char* argv[])
 		((TestWorkload *)m_wl)->summarize();
 	}
         
-        delete[] rlu_tdata;        
+        /*********************************************************************
+         * CLEANUP DATA TO ENSURE WE HAVEN'T MISSED ANY LEAKS
+         * This was notably missing in DBx1000...
+         ********************************************************************/
+        
+#if !defined NO_CLEANUP_AFTER_WORKLOAD
+        
+	for (uint32_t i = 0; i < thd_cnt; i++) {
+            stats.setbench_deinit(i); //////////////////////////////////////////////////////
+        }
+        
+        // free indexes
+        for (map<string,Index*>::iterator it = m_wl->indexes.begin(); it!=m_wl->indexes.end(); it++) {
+            printf("\n\ndeleting index: %s\n", it->first.c_str());
+            it->second->~Index();
+            free(it->second);
+        }
+        
+        if (glob_manager) {
+            glob_manager->setbench_deinit();
+            free(glob_manager);
+            glob_manager = NULL;
+        }
+        
+        if (m_thds) {
+            for (uint32_t i = 0; i < thd_cnt; i++) {
+                m_thds[i]->setbench_deinit();
+                free(m_thds[i]);
+            }
+            delete[] m_thds;
+        }
+        
+        if (WORKLOAD != TEST) {
+            if (query_queue) {
+                query_queue->setbench_deinit();
+                free(query_queue);
+                query_queue = NULL;
+            }
+        }
+        
+        if (m_wl) {
+            m_wl->setbench_deinit();
+            delete m_wl;
+            m_wl = NULL;
+        }
+        
+        thread_pinning::setbench_deinit(g_thread_cnt);
+        
+#endif
         
 	return 0;
 }
 
 void * f_warmup(void * id) {
 	uint64_t __tid = (uint64_t)id;
-        urcu::registerThread(__tid);
+//        urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid);
         tid = __tid;
 #ifdef VERBOSE_1
         cout<<"WARMUP: Assigned thread ID="<<tid<<std::endl;
 #endif
-        rlu_self = &rlu_tdata[__tid];
-        RLU_THREAD_INIT(rlu_self);
+//        rlu_self = &rlu_tdata[__tid];
+//        RLU_THREAD_INIT(rlu_self);
         m_thds[__tid]->_wl->initThread(tid);
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
-        RLU_THREAD_FINISH(rlu_self);
-        urcu::unregisterThread();
+//        RLU_THREAD_FINISH(rlu_self);
+//        urcu::unregisterThread();
 	return NULL;
 }
 
 void * f_real(void * id) {
 	uint64_t __tid = (uint64_t)id;
         tid = __tid;
-        urcu::registerThread(__tid);
+//        urcu::registerThread(__tid);
         thread_pinning::bindThread(__tid);
         papi_create_eventset(__tid);
 #ifdef VERBOSE_1
         cout<<"REAL: Assigned thread ID="<<tid<<std::endl;
 #endif
-        rlu_self = &rlu_tdata[__tid];
-        RLU_THREAD_INIT(rlu_self);
+//        rlu_self = &rlu_tdata[__tid];
+//        RLU_THREAD_INIT(rlu_self);
         m_thds[__tid]->_wl->initThread(tid);
 	m_thds[__tid]->run();
         m_thds[__tid]->_wl->deinitThread(tid);
-        RLU_THREAD_FINISH(rlu_self);
-        urcu::unregisterThread();
+//        RLU_THREAD_FINISH(rlu_self);
+//        urcu::unregisterThread();
 	return NULL;
 }

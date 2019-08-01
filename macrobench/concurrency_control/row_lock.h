@@ -1,6 +1,9 @@
 #ifndef ROW_LOCK_H
 #define ROW_LOCK_H
 
+class row_t;
+class txn_man;
+
 struct LockEntry {
     lock_t type;
     txn_man * txn;
@@ -11,6 +14,7 @@ struct LockEntry {
 class Row_lock {
 public:
 	void init(row_t * row);
+        void setbench_deinit();
 	// [DL_DETECT] txnids are the txn_ids that current txn is waiting for.
     RC lock_get(lock_t type, txn_man * txn);
     RC lock_get(lock_t type, txn_man * txn, uint64_t* &txnids, int &txncnt);

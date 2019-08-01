@@ -60,6 +60,7 @@
     #include "natarajan_ext_bst_lf_stage2_impl.h"
 #endif
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 
@@ -157,6 +158,7 @@ public:
         static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : 2; }
         static size_t getNumKeys(NodePtrType node) { return isLeaf(node); }
         static size_t getSumOfKeys(NodePtrType node) { return isLeaf(node) ? (size_t) node->key : 0; }
+        static size_t getSizeInBytes(NodePtrType node) { return sizeof(*node); }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), DATA_STRUCTURE_T::get_left(DATA_STRUCTURE_T::get_left(tree->get_root())), true);

@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef RECLAIM_EPOCH_H
-#define	RECLAIM_EPOCH_H
+#ifndef RECLAIM_DEBRA_H
+#define	RECLAIM_DEBRA_H
 
 #include <atomic>
 #include <cassert>
@@ -17,25 +17,30 @@
 #include "plaf.h"
 #include "allocator_interface.h"
 #include "reclaimer_interface.h"
+#ifdef USE_GSTATS
+#   include "server_clock.h"
+#endif
 
 template <typename T = void, class Pool = pool_interface<T> >
 class reclaimer_debra : public reclaimer_interface<T, Pool> {
 protected:
+#define DEBRA_DISABLE_READONLY_OPT
+
 #define EPOCH_INCREMENT 2
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)
 #define GET_WITH_QUIESCENT(ann) ((ann)|1)
-
+    
 #ifdef RAPID_RECLAMATION
 #define MIN_OPS_BEFORE_READ 1
 //#define MIN_OPS_BEFORE_CAS_EPOCH 1
 #else
-#define MIN_OPS_BEFORE_READ 20
+#define MIN_OPS_BEFORE_READ 10
 //#define MIN_OPS_BEFORE_CAS_EPOCH 100
 #endif
-    
-#define NUMBER_OF_EPOCH_BAGS 9
-#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 3
+
+#define NUMBER_OF_EPOCH_BAGS 3 // 9 for range query support
+#define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0 // 3 for range query support
 
     class ThreadData {
     private:
@@ -80,6 +85,9 @@ public:
     };
     
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
+        if (NUMBER_OF_EPOCH_BAGS < 9 || NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS < 3) {
+            setbench_error("unsupported operation with these parameters (see if-statement above this line)")
+        }
         SOFTWARE_BARRIER;
         int ix = threadData[tid].index;
         bags[0] = threadData[tid].epochbags[ix];
@@ -91,9 +99,12 @@ public:
     
     long long getSizeInNodes() {
         long long sum = 0;
+        //std::cout<<"NUM_PROC="<<this->NUM_PROCESSES<<std::endl;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
             for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
-                sum += threadData[tid].epochbags[j]->computeSize();
+                if (threadData[tid].epochbags[j]) {
+                    sum += threadData[tid].epochbags[j]->computeSize();
+                }
             }
         }
         return sum;
@@ -110,7 +121,9 @@ public:
         for (int j=0;j<NUMBER_OF_EPOCH_BAGS;++j) {
             sum[j] = 0;
             for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-                sum[j] += threadData[tid].epochbags[j]->computeSize();
+                if (threadData[tid].epochbags[j]) {
+                    sum[j] += threadData[tid].epochbags[j]->computeSize();
+                }
             }
             ss<<sum[j]<<" ";
         }
@@ -144,9 +157,20 @@ public:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
+#ifdef USE_GSTATS
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
+        TIMELINE_START(tid);
+        DURATION_START(tid);
+#endif
+
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
+        
+#ifdef USE_GSTATS
+        DURATION_END(tid, duration_rotateAndFree);
+        TIMELINE_END(tid, "rotateEpochBags");
+#endif
+    
         threadData[tid].index = nextIndex;
         threadData[tid].currentBag = threadData[tid].epochbags[nextIndex];
     }
@@ -190,7 +214,11 @@ public:
             // reclaim any objects retired two epochs ago.
             threadData[tid].checked = 0;
             BagRotator<First, Rest...> rotator;
+            //auto time = get_server_clock();
+            //GSTATS_APPEND(tid, thread_reclamation_start, time);
             rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            //auto time2 = get_server_clock();
+            //GSTATS_APPEND(tid, thread_reclamation_end, time);
             //this->template rotateAllEpochBags<First, Rest...>(tid, reclaimers, 0);
             result = true;
         }
@@ -202,6 +230,7 @@ public:
 #if defined USE_GSTATS
         GSTATS_SET(tid, thread_announced_epoch, readEpoch);
 #endif
+        SOFTWARE_BARRIER;
         // note: readEpoch, when written to announcedEpoch[tid],
         //       sets the state to non-quiescent and non-neutralized
 
@@ -218,7 +247,7 @@ public:
                     if (c >= this->NUM_PROCESSES /*&& c > MIN_OPS_BEFORE_CAS_EPOCH*/) {
                         if (__sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT)) {
 #if defined USE_GSTATS
-                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timer_epoch_latency), readEpoch+EPOCH_INCREMENT);
+                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), readEpoch+EPOCH_INCREMENT);
 #endif
                         }
                     }
@@ -247,14 +276,30 @@ public:
     }
 
     void initThread(const int tid) {
+        for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
+            if (threadData[tid].epochbags[i] == NULL) {
+                threadData[tid].epochbags[i] = new blockbag<T>(tid, this->pool->blockpools[tid]);
+            }
+        }
         threadData[tid].currentBag = threadData[tid].epochbags[0];
         threadData[tid].opsSinceRead = 0;
         threadData[tid].checked = 0;
+    }
+
+    void deinitThread(const int tid) {
+        // WARNING: this moves objects to the pool immediately,
+        // which is only safe if this thread is deinitializing specifically
+        // because *ALL THREADS* have already finished accessing
+        // the data structure and are now quiescent!!
         for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-            threadData[tid].epochbags[i] = new blockbag<T>(tid, this->pool->blockpools[tid]);
+            if (threadData[tid].epochbags[i]) {
+                this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
+                delete threadData[tid].epochbags[i];
+                threadData[tid].epochbags[i] = NULL;
+            }
         }
     }
-    
+
     reclaimer_debra(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : reclaimer_interface<T, Pool>(numProcesses, _pool, _debug, _recoveryMgr) {
         VERBOSE std::cout<<"constructor reclaimer_debra helping="<<this->shouldHelp()<<std::endl;// scanThreshold="<<scanThreshold<<std::endl;
@@ -269,16 +314,16 @@ public:
         }
     }
     ~reclaimer_debra() {
-        VERBOSE DEBUG std::cout<<"destructor reclaimer_debra"<<std::endl;
-        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-            // move contents of all bags into pool
-            for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
-                if (threadData[tid].epochbags[i]) {
-                    this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
-                    delete threadData[tid].epochbags[i];
-                }
-            }
-        }
+//        VERBOSE DEBUG std::cout<<"destructor reclaimer_debra"<<std::endl;
+//        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
+//            // move contents of all bags into pool
+//            for (int i=0;i<NUMBER_OF_EPOCH_BAGS;++i) {
+//                if (threadData[tid].epochbags[i]) {
+//                    this->pool->addMoveAll(tid, threadData[tid].epochbags[i]);
+//                    delete threadData[tid].epochbags[i];
+//                }
+//            }
+//        }
     }
 
 };

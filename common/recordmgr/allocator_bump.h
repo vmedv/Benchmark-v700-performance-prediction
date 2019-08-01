@@ -106,6 +106,7 @@ class allocator_bump : public allocator_interface<T> {
         void debugPrintStatus(const int tid) {}
 
         void initThread(const int tid) {}
+        void deinitThread(const int tid) {}
         
         allocator_bump(const int numProcesses, debugInfo * const _debug)
                 : allocator_interface<T>(numProcesses, _debug)

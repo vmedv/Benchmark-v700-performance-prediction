@@ -1,31 +1,46 @@
 /**
  * Implementation of a lock-free interpolation search tree.
- * Trevor Brown, 2018.
+ * Trevor Brown, 2019.
  */
 
 #ifndef DS_ADAPTER_H
 #define DS_ADAPTER_H
+
+#define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
 
 #include <iostream>
 #include "errors.h"
 #include "random_fnv1a.h"
 #include "brown_ext_ist_lf_impl.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
 
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K,V>, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
+#define NODE_T Node<K,V>
+#if defined IST_DISABLE_MULTICOUNTER_AT_ROOT
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T, KVPair<K,V>, RebuildOperation<K,V>>
+#else
+#    define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, NODE_T, KVPair<K,V>, RebuildOperation<K,V>, MultiCounter>
+#endif
 #define DATA_STRUCTURE_T istree<K, V, Interpolator<K>, RECORD_MANAGER_T>
 
 template <typename T>
 struct ValidAllocatorTest { static constexpr bool value = false; };
-
 template <typename T>
 struct ValidAllocatorTest<allocator_new<T>> { static constexpr bool value = true; };
-
 template <typename Alloc>
 static bool isValidAllocator(void) {
     return ValidAllocatorTest<Alloc>::value;
+}
+
+template <typename T>
+struct ValidPoolTest { static constexpr bool value = false; };
+template <typename T>
+struct ValidPoolTest<pool_none<T>> { static constexpr bool value = true; };
+template <typename Pool>
+static bool isValidPool(void) {
+    return ValidPoolTest<Pool>::value;
 }
 
 template <typename K>
@@ -63,6 +78,9 @@ public:
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")
         }
+        if (!isValidPool<Pool>()) {
+            setbench_error("This data structure must be used with pool_none.")
+        }
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
         }
@@ -81,6 +99,9 @@ public:
     {
         if (!isValidAllocator<Alloc>()) {
             setbench_error("This data structure must be used with allocator_new.")
+        }
+        if (!isValidPool<Pool>()) {
+            setbench_error("This data structure must be used with pool_none.")
         }
         if (NUM_THREADS > MAX_THREADS_POW2) {
             setbench_error("NUM_THREADS exceeds MAX_THREADS_POW2");
@@ -104,31 +125,33 @@ public:
     bool contains(const int tid, const K& key) {
         return ds->contains(tid, key);
     }
-    void * insert(const int tid, const K& key, void * const val) {
+    V insert(const int tid, const K& key, const V& val) {
         return ds->insert(tid, key, val);
     }
-    void * insertIfAbsent(const int tid, const K& key, void * const val) {
+    V insertIfAbsent(const int tid, const K& key, const V& val) {
         return ds->insertIfAbsent(tid, key, val);
     }
-    void * erase(const int tid, const K& key) {
+    V erase(const int tid, const K& key) {
         return ds->erase(tid, key);
     }
-    void * find(const int tid, const K& key) {
+    V find(const int tid, const K& key) {
         return ds->find(tid, key);
     }
-    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
+    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("not implemented");
     }
     void printSummary() {
         auto recmgr = ds->debugGetRecMgr();
         recmgr->printStatus();
+//        auto sizeBytes = ds->debugComputeSizeBytes();
+//        std::cout<<"endingSizeBytes="<<sizeBytes<<std::endl;
     }
     bool validateStructure() {
 //        ds->debugGVPrint();
         return true;
     }
     void printObjectSizes() {
-        std::cout<<"size_node="<<(sizeof(Node<K,V>))<<std::endl;
+        std::cout<<"size_node="<<(sizeof(NODE_T))<<std::endl;
     }
     
 #ifdef USE_TREE_STATS
@@ -180,11 +203,61 @@ public:
             }
             return ret;
         }
+        static size_t getSizeInBytes(NodePtrType node) {
+            if (IS_KVPAIR(node)) return sizeof(*CASWORD_TO_KVPAIR(node));
+            if (IS_VAL(node)) return 0;
+            if (IS_NODE(node) && node != NODE_TO_CASWORD(NULL)) {
+                auto child = CASWORD_TO_NODE(node);
+                auto degree = child->degree;
+                return sizeof(*child) + sizeof(K) * (degree - 1) + sizeof(casword_t) * degree;
+            }
+            return 0;
+        }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()), true);
     }
 #endif
+    
+private:
+    template<typename... Arguments>
+    void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
+            , casword_t ptr, Arguments... args) {
+        if (IS_VAL(ptr)) return;
+        if (IS_KVPAIR(ptr)) {
+            auto kvp = CASWORD_TO_KVPAIR(ptr);
+            callback(kvp->k, kvp->v, args...);
+            return;
+        }
+        
+        assert(IS_NODE(ptr));
+        auto curr = CASWORD_TO_NODE(ptr);
+        if (curr == NULL) return;
+
+        for (int i=0;i<curr->degree;++i) {
+            if (depth == 1) { // in interpolation search tree, root is massive... (root is really the child of the root pointer)
+                //printf("got here %d\n", i);
+                #pragma omp task
+                iterate_helper_fn(1+depth, callback, curr->ptr(i), args...);
+            } else {
+                iterate_helper_fn(1+depth, callback, curr->ptr(i), args...);
+            }
+            if (i >= 1 && !IS_EMPTY_VAL(curr->ptr(i)) && IS_VAL(curr->ptr(i))) { // first val-slot cannot be non-empty value
+                callback(curr->key(i-1), CASWORD_TO_VAL(curr->ptr(i)), args...);
+            }
+        }
+    }
+    
+public:
+    template<typename... Arguments>
+    void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {
+        #pragma omp parallel
+        {
+            #pragma omp single
+            iterate_helper_fn(0, callback, NODE_TO_CASWORD(ds->debug_getEntryPoint()), args...);
+        }
+    }
+
 };
 
 #endif

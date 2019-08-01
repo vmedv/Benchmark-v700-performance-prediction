@@ -2,67 +2,68 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-#### if you do not have PAPI, comment out these two lines
-#FLAGS += -DUSE_PAPI
-#LDFLAGS += -lpapi
+### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
+has_libpapi=$(shell ldconfig -p | grep libpapi | wc -l)
+ifneq ($(has_libpapi), 0)
+    FLAGS += -DUSE_PAPI
+    LDFLAGS += -lpapi
+endif
 
-### if you don't want to use jemalloc, comment out these two lines
-#LDFLAGS += -I../include/
-#LDFLAGS += -ljemalloc
-#FLAGS += -DPRINT_JEMALLOC_STATS
+### if you do not want libnuma to be used, invoke make with "has_libnuma=0"
+has_libnuma=$(shell ldconfig -p | grep libnuma | wc -l)
+ifneq ($(has_libnuma), 0)
+    FLAGS += -DUSE_LIBNUMA
+    LDFLAGS += -lnuma
+endif
 
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
-FLAGS += -std=c++11 -mcx16 -O3 -g
+FLAGS += -std=c++11 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
-FLAGS += -DNO_DELETE_DS
+FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
 #FLAGS += -DRAPID_RECLAMATION
-#FLAGS += -DPREFILL_INSERTION_ONLY
-FLAGS += -DMEASURE_REBUILDING_TIME
-FLAGS += -DDEBRA_DISABLE_READONLY_OPT
+FLAGS += -DPREFILL_INSERTION_ONLY
+#FLAGS += -DMEASURE_REBUILDING_TIME
+#FLAGS += -DMEASURE_TIMELINE_STATS
+FLAGS += -DUSE_TREE_STATS
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
-#FLAGS += -DNDEBUG
+FLAGS += -DNDEBUG
 FLAGS += -Wno-format
 FLAGS += $(xargs)
 
+#LDFLAGS += -fsanitize=address -static-libasan
 LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
 
-MINIMAL_CPP=$(wildcard ../ds/*/minimal_example.cpp)
-MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(MINIMAL_CPP))
-
-DATA_STRUCTURE_ADAPTERS_H=$(wildcard ../ds/*/adapter.h)
-
-UBENCH_RNONE_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rnone,$(DATA_STRUCTURE_ADAPTERS_H))
-UBENCH_RDEBRA_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebra,$(DATA_STRUCTURE_ADAPTERS_H))
-UBENCH_RDEBRACAP_BINS=$(patsubst ../ds/%/adapter.h,%.ubench_rdebracap,$(DATA_STRUCTURE_ADAPTERS_H))
-
 bin_dir=bin
-
-all: ubench
-#all: minimal
-
 dir_guard:
 	@mkdir -p $(bin_dir)
 
-ubench: $(UBENCH_RDEBRA_BINS)
-#ubench: $(UBENCH_RNONE_BINS) 
-minimal: $(MINIMAL_BINS)
+MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(wildcard ../ds/*/minimal_example.cpp))
+minimal_%: dir_guard
+	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
 
-%.minimal: dir_guard
-	$(GPP) $(FLAGS) ../ds/$(@:%.minimal=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
+#DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/*/adapter.h))
+RECLAIMERS=debra none
+POOLS=none
+ALLOCATORS=new
 
-%.ubench_rnone: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rnone=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rnone=%) main.cpp -DRECLAIM_TYPE=none $(LDFLAGS)
-%.ubench_rdebra: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebra=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebra=%) main.cpp -DRECLAIM_TYPE=debra $(LDFLAGS)
-%.ubench_rdebracap: dir_guard
-	$(GPP) $(FLAGS) -o $(bin_dir)/$@ -I../ds/$(@:%.ubench_rdebracap=%) -DUSE_TREE_STATS -DDS_TYPENAME=$(@:%.ubench_rdebracap=%) main.cpp -DRECLAIM_TYPE=debracap $(LDFLAGS)
+DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ist*/adapter.h))
+
+#$(info $(DATA_STRUCTURES))
+
+define make-custom-target =
+ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out: dir_guard
+	$(GPP) main.cpp -o $(bin_dir)/ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out -I../ds/$1 -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
+all:: ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out
+endef
+
+$(foreach ds,$(DATA_STRUCTURES),$(foreach alloc,$(ALLOCATORS),$(foreach reclaim,$(RECLAIMERS),$(foreach pool,$(POOLS),$(eval $(call make-custom-target,$(ds),$(alloc),$(reclaim),$(pool)))))))
 
 clean:
-	rm $(bin_dir)/*
+	rm $(bin_dir)/*.out

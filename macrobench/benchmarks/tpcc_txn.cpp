@@ -254,7 +254,13 @@ RC tpcc_txn_man::run_payment(tpcc_query * query) {
 #if !TPCC_SMALL
     r_hist->set_value(H_DATA, h_data);
 #endif
-    insert_row(r_hist, _wl->t_history);
+    
+    /////// in this special case, where there is NO INDEX to contain this row in the orignal dbx,
+    /////// we simply FREE the row (since it will never be touched by any thread, and we want to avoid leaks, and capture memory reclamation costs)
+    // we comment out insert_row because all it does is ensure the row gets freed if we ABORT... we free it now.
+//    insert_row(r_hist, _wl->t_history);
+    r_hist->setbench_deinit();
+    free(r_hist);
 
     assert(rc==RCOK);
     return finish(rc);
@@ -358,7 +364,16 @@ EXEC SQL INSERT INTO NEW_ORDER (no_o_id, no_d_id, no_w_id)
     r_no->set_value(NO_O_ID, o_id);
     r_no->set_value(NO_D_ID, d_id);
     r_no->set_value(NO_W_ID, w_id);
-    insert_row(r_no, _wl->t_neworder);
+    /////// in this special case, where there is NO INDEX to contain this row in the orignal dbx,
+    /////// we simply FREE the row (since it will never be touched by any thread, and we want to avoid leaks, and capture memory reclamation costs)
+    // we comment out insert_row because all it does is ensure the row gets freed if we ABORT... we free it now.
+//    insert_row(r_no, _wl->t_neworder); 
+    if (r_no) {
+        r_no->setbench_deinit();
+        free(r_no);
+        r_no = NULL;
+    }
+    
 #ifndef READ_ONLY        
     row_t*buf[15]; // can hold up to 15 orderline rows, which is the max allowed by tpc-c
     int bufsize = 0;

@@ -18,11 +18,13 @@
 
 #define DCSS_TAGBIT 0x1
 
-inline static bool isDcss(casword_t val) {
+inline static
+bool isDcss(casword_t val) {
     return (val & DCSS_TAGBIT);
 }
 
-dcssresult_t dcssProvider::dcssHelp(const int tid, dcsstagptr_t tagptr, dcssptr_t snapshot, bool helpingOther) {
+template <typename Unused>
+dcssresult_t dcssProvider<Unused>::dcssHelp(const int tid, dcsstagptr_t tagptr, dcssptr_t snapshot, bool helpingOther) {
     // figure out what the state should be
     casword_t state = DCSS_STATE_FAILED;
 
@@ -36,7 +38,7 @@ dcssresult_t dcssProvider::dcssHelp(const int tid, dcsstagptr_t tagptr, dcssptr_
     }
     
     // try to cas the state to the appropriate value
-    dcssptr_t ptr = TAGPTR_UNPACK_PTR(dcssDescriptors,tagptr);
+    dcssptr_t ptr = TAGPTR_UNPACK_PTR(dcssDescriptors, tagptr);
     casword_t retval;
     bool failedBit;
     MUTABLES_VAL_CAS_FIELD(failedBit, retval, ptr->mutables, snapshot->mutables, DCSS_STATE_UNDECIDED, state, DCSS_MUTABLES_MASK_STATE, DCSS_MUTABLES_OFFSET_STATE); 
@@ -61,7 +63,8 @@ dcssresult_t dcssProvider::dcssHelp(const int tid, dcsstagptr_t tagptr, dcssptr_
     }
 }
 
-void dcssProvider::dcssHelpOther(const int tid, dcsstagptr_t tagptr) {
+template <typename Unused>
+void dcssProvider<Unused>::dcssHelpOther(const int tid, dcsstagptr_t tagptr) {
     const int otherTid = TAGPTR_UNPACK_TID(tagptr);
 #ifndef NDEBUG
     if (!(otherTid >= 0 && otherTid < NUM_PROCESSES)) {
@@ -79,8 +82,9 @@ void dcssProvider::dcssHelpOther(const int tid, dcsstagptr_t tagptr) {
     }
 }
 
+template <typename Unused>
 inline
-tagptr_t dcssProvider::getDescriptorTagptr(const int otherTid) {
+tagptr_t dcssProvider<Unused>::getDescriptorTagptr(const int otherTid) {
     dcssptr_t ptr = &dcssDescriptors[otherTid];
     tagptr_t tagptr = TAGPTR_NEW(otherTid, ptr->mutables, DCSS_TAGBIT);
     if ((UNPACK_SEQ(tagptr) & 1) == 0) {
@@ -92,28 +96,33 @@ tagptr_t dcssProvider::getDescriptorTagptr(const int otherTid) {
     return tagptr;
 }
 
+template <typename Unused>
 inline
-dcssptr_t dcssProvider::getDescriptorPtr(tagptr_t tagptr) {
+dcssptr_t dcssProvider<Unused>::getDescriptorPtr(tagptr_t tagptr) {
     return TAGPTR_UNPACK_PTR(dcssDescriptors, tagptr);
 }
 
+template <typename Unused>
 inline
-bool dcssProvider::getDescriptorSnapshot(tagptr_t tagptr, dcssptr_t const dest) {
+bool dcssProvider<Unused>::getDescriptorSnapshot(tagptr_t tagptr, dcssptr_t const dest) {
     if (tagptr == (tagptr_t) NULL) return false;
     return DESC_SNAPSHOT(dcssdesc_t, dcssDescriptors, dest, tagptr, dcssdesc_t::size);
 }
 
+template <typename Unused>
 inline
-void dcssProvider::helpProcess(const int tid, const int otherTid) {
+void dcssProvider<Unused>::helpProcess(const int tid, const int otherTid) {
     tagptr_t tagptr = getDescriptorTagptr(otherTid);
     if (tagptr != (tagptr_t) NULL) dcssHelpOther(tid, tagptr);
 }
 
-dcssresult_t dcssProvider::dcssVal(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2) {
+template <typename Unused>
+dcssresult_t dcssProvider<Unused>::dcssVal(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2) {
     return dcssPtr(tid, addr1, old1, addr2, old2 << DCSS_LEFTSHIFT , new2 << DCSS_LEFTSHIFT);
 }
 
-dcssresult_t dcssProvider::dcssPtr(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2) {
+template <typename Unused>
+dcssresult_t dcssProvider<Unused>::dcssPtr(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2) {
     // create dcss descriptor
     dcssptr_t ptr = DESC_NEW(dcssDescriptors, DCSS_MUTABLES_NEW, tid);
     assert((((dcssDescriptors[tid].mutables & MASK_SEQ) >> OFFSET_SEQ) & 1) == 0);
@@ -149,7 +158,9 @@ dcssresult_t dcssProvider::dcssPtr(const int tid, casword_t * addr1, casword_t o
     return {DCSS_FAILED_ADDR2,r};//DCSS_FAILED_ADDR2;
 }
 
-inline casword_t dcssProvider::dcssRead(const int tid, casword_t volatile * addr) {
+template <typename Unused>
+inline
+casword_t dcssProvider<Unused>::dcssRead(const int tid, casword_t volatile * addr) {
     casword_t r;
     while (1) {
         r = *addr;
@@ -165,7 +176,8 @@ inline casword_t dcssProvider::dcssRead(const int tid, casword_t volatile * addr
     }
 }
 
-dcssProvider::dcssProvider(const int numProcesses) : NUM_PROCESSES(numProcesses) {
+template <typename Unused>
+dcssProvider<Unused>::dcssProvider(const int numProcesses) : NUM_PROCESSES(numProcesses) {
 #ifdef USE_DEBUGCOUNTERS
     dcssHelpCounter = new debugCounter(NUM_PROCESSES);
 #endif
@@ -179,37 +191,46 @@ dcssProvider::dcssProvider(const int numProcesses) : NUM_PROCESSES(numProcesses)
     }
 }
 
-dcssProvider::~dcssProvider() {
+template <typename Unused>
+dcssProvider<Unused>::~dcssProvider() {
 #ifdef USE_DEBUGCOUNTERS
     delete dcssHelpCounter;
 #endif
 }
 
-inline casword_t dcssProvider::readPtr(const int tid, casword_t volatile * addr) {
+template <typename Unused>
+inline
+casword_t dcssProvider<Unused>::readPtr(const int tid, casword_t volatile * addr) {
     casword_t r;
     r = dcssRead(tid, addr);
     return r;
 }
 
-casword_t dcssProvider::readVal(const int tid, casword_t volatile * addr) {
+template <typename Unused>
+casword_t dcssProvider<Unused>::readVal(const int tid, casword_t volatile * addr) {
     return ((casword_t) readPtr(tid, addr))>>DCSS_LEFTSHIFT;
 }
 
-void dcssProvider::writePtr(casword_t volatile * addr, casword_t ptr) {
+template <typename Unused>
+void dcssProvider<Unused>::writePtr(casword_t volatile * addr, casword_t ptr) {
     //assert((*addr & DCSS_TAGBIT) == 0);
     assert((ptr & DCSS_TAGBIT) == 0);
     *addr = ptr;
 }
 
-void dcssProvider::writeVal(casword_t volatile * addr, casword_t val) {
+template <typename Unused>
+void dcssProvider<Unused>::writeVal(casword_t volatile * addr, casword_t val) {
     writePtr(addr, val<<DCSS_LEFTSHIFT);
 }
 
-void dcssProvider::initThread(const int tid) {}
+template <typename Unused>
+void dcssProvider<Unused>::initThread(const int tid) {}
 
-void dcssProvider::deinitThread(const int tid) {}
+template <typename Unused>
+void dcssProvider<Unused>::deinitThread(const int tid) {}
 
-void dcssProvider::debugPrint() {
+template <typename Unused>
+void dcssProvider<Unused>::debugPrint() {
 #ifdef USE_DEBUGCOUNTERS
     std::cout<<"dcss helping : "<<this->dcssHelpCounter->getTotal()<<std::endl;
 #endif

@@ -25,6 +25,7 @@ public:
     void init(uint64_t thd_id, workload * h_wl) {
         assert(false);
     };
+    void setbench_deinit();
     void init(uint64_t thd_id, workload * h_wl, Query_thd * query_thd);
     static void calculateDenom();
 

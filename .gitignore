@@ -1,2 +1,8 @@
 macrobench/nbproject/
 nbproject/
+
+microbench/experiments/istree_scaling_threads/data/
+
+microbench/experiments/istree_exp1_scaling_threads/images/_private/
+
+macrobench/_private/

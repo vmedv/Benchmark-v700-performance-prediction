@@ -11,17 +11,21 @@ public:
 		this->type = new char[80];
 		this->name = new char[80];
 	}
-	Column(uint64_t size, char * type, char * name, 
-		uint64_t id, uint64_t index) 
-	{
-		this->size = size;
-		this->id = id;
-		this->index = index;
-		this->type = new char[80];
-		this->name = new char[80];
-		strcpy(this->type, type);
-		strcpy(this->name, name);
-	};
+//	Column(uint64_t size, char * type, char * name, 
+//		uint64_t id, uint64_t index) 
+//	{
+//		this->size = size;
+//		this->id = id;
+//		this->index = index;
+//		this->type = new char[80];
+//		this->name = new char[80];
+//		strcpy(this->type, type);
+//		strcpy(this->name, name);
+//	};
+        ~Column() {
+            delete[] type;
+            delete[] name;
+        }
 
 	UInt64 id;
 	UInt32 size;
@@ -36,6 +40,7 @@ public:
 	// abandoned init function
 	// field_size is the size of each each field.
 	void init(const char * table_name, int field_cnt);
+        void setbench_deinit();
 	void add_col(char * col_name, uint64_t size, char * type);
 
 	UInt32 			field_cnt;

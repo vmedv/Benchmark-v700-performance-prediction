@@ -11,14 +11,15 @@ class tpcc_query;
 class tpcc_wl : public workload {
 public:
     RC init();
+    void setbench_deinit();
     RC init_table();
     RC init_schema(const char * schema_file);
     RC get_txn_man(txn_man *& txn_manager, thread_t * h_thd);
     table_t * t_warehouse;
     table_t * t_district;
     table_t * t_customer;
-    table_t * t_history;
-    table_t * t_neworder; // missing index (NO_W_ID, NO_D_ID, NO_O_ID)
+    table_t * t_history; // UNUSED AS OF DBx1000 PUBLICATION TIME (!!)
+    table_t * t_neworder; // missing index (NO_W_ID, NO_D_ID, NO_O_ID) [NOT PRESENT IN ORIGINAL DBx]
     table_t * t_order;
     table_t * t_orderline;
     table_t * t_item;
@@ -29,11 +30,11 @@ public:
     Index * i_warehouse;
     Index * i_district;
     Index * i_customer_id;
-    Index * i_customer_last;
+    Index * i_customer_last;                            // SHARES ROWS WITH i_customer_id !!
     Index * i_stock;
     Index * i_order; // key = (w_id, d_id, o_id)
     Index * i_orderline; // key = (w_id, d_id, o_id)
-    Index * i_orderline_wd; // key = (w_id, d_id). 
+    Index * i_orderline_wd; // key = (w_id, d_id).      // SHARES ROWS WITH i_orderline !!
 
     bool ** delivering;
     uint32_t next_tid;

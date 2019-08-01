@@ -33,9 +33,9 @@ using namespace std;
 //#include "tree_malloc.h"
 #include "thread_pinning.h"
 
-#include "rlu.h"
-extern __thread rlu_thread_data_t * rlu_self;
-extern rlu_thread_data_t * rlu_tdata;
+//#include "rlu.h"
+//extern __thread rlu_thread_data_t * rlu_self;
+//extern rlu_thread_data_t * rlu_tdata;
 
 extern __thread int tid;
 
@@ -99,7 +99,7 @@ extern UInt32 g_ts_batch_num;
 
 extern map<string, string> g_params;
 
-#include "urcu.h" // include after the definition of g_thread_cnt
+//#include "urcu.h" // include after the definition of g_thread_cnt
 #include "papi_util.h"
 
 // YCSB

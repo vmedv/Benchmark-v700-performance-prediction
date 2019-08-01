@@ -25,10 +25,24 @@ row_t::init(table_t * host_table, uint64_t part_id, uint64_t row_id) {
 	data = (char *) _mm_malloc(sizeof(char) * tuple_size, ALIGNMENT);
 	return RCOK;
 }
+
 void 
 row_t::init(int size) 
 {
-	data = (char *) _mm_malloc(size, ALIGNMENT);
+    manager = NULL;
+    data = (char *) _mm_malloc(size, ALIGNMENT);
+}
+
+void row_t::setbench_deinit() {
+    if (manager) {
+        manager->setbench_deinit();
+        free(manager);
+        manager = NULL;
+    }
+    if (data) {
+        free(data);
+        data = NULL;
+    }
 }
 
 RC 
@@ -271,7 +285,13 @@ void row_t::return_row(access_t type, txn_man * txn, row_t * row) {
 #if CC_ALG == WAIT_DIE || CC_ALG == NO_WAIT || CC_ALG == DL_DETECT
 	assert (row == NULL || row == this || type == XP);
 	if (ROLL_BACK && type == XP) {// recover from previous writes.
-		this->copy(row);
+            this->copy(row);
+
+//            if (row) {
+//                row->setbench_deinit();
+//                free(row);
+//                row = NULL;
+//            }
 	}
 	this->manager->lock_release(txn);
 #elif CC_ALG == TIMESTAMP || CC_ALG == MVCC 

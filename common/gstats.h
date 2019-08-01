@@ -204,22 +204,34 @@ private:
 
     #define GSTATS_PRINT_AGG(agg_granularity_str, type, sid, metrics, num_metrics) { \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         if (metrics == NULL) { \
             std::cout<<std::endl; \
             for (int __tid=0;__tid<NUM_PROCESSES;++__tid) { \
-                std::cout<<"thread "<<__tid; \
-                for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
-                    if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
-                        std::cout<<(__ix?" ":"")<<"0"; \
-                    } else { \
-                        std::cout<<(__ix?" ":"")<<get_stat<T>(__tid, sid, __ix); \
+                if (thread_data[__tid].size[sid]) { \
+                    std::cout<<"thread "<<__tid; \
+                    for (int __ix=0;__ix<thread_data[__tid].size[sid];++__ix) { \
+                        if (get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, sid, __ix) == std::numeric_limits<T>::min()) { \
+                            std::cout<<" "<<"0"; \
+                        } else { \
+                            std::cout<<" "<<get_stat<T>(__tid, sid, __ix); \
+                        } \
                     } \
+                    std::cout<<std::endl; \
                 } \
-                std::cout<<std::endl; \
             } \
         } else { \
-            for (int __i=0;__i<num_metrics;++__i) { \
+            /* get last "empty" field so we can avoid printing lots of trailing zeros */ \
+            int __lastEmpty = num_metrics; \
+            for (int __i=num_metrics-1;__i>=0;--__i) { \
+                if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == 0) { \
+                    __lastEmpty = __i; \
+                } else { \
+                    break; \
+                } \
+            } \
+            /* print the fields (metrics) */ \
+            for (int __i=0;__i<__lastEmpty;++__i) { \
                 if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() || metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) { \
                     std::cout<<(__i?" ":"")<<"0"; \
                 } else { \
@@ -240,9 +252,9 @@ private:
             } \
         } \
         if (__first_nonzero == -1) __first_nonzero = 0; \
-        std::cout<<std::endl<<"log histogram of "; \
+        std::cout<<std::endl<<"log_histogram_of_"; \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         for (int __i=0;__i<=__last_nonzero;++__i) std::cout<<(__i?" ":"")<<(1LL<<__i)<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
         for (int __i=__first_nonzero;__i<=__last_nonzero;++__i) { \
@@ -259,9 +271,9 @@ private:
         stat_metrics<long long> * __histogram = __p.first; \
         histogram_lin_dims __dims = __p.second; \
         auto __num_buckets = (__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)) < 1e-6) ? 0 : (num_buckets) - 1; \
-        std::cout<<std::endl<<"linear histogram of "; \
+        std::cout<<std::endl<<"linear_histogram_of_"; \
         GSTATS_PRINT_LOWER(#type); \
-        std::cout<<" "<<id_to_name[sid]<<agg_granularity_str<<"="; \
+        std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
         for (int __i=0;__i<=__num_buckets;++__i) std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
         std::cout<<std::endl; \
         for (int __i=0;__i<=__num_buckets;++__i) { \
@@ -387,7 +399,7 @@ public:
             }
             thread_data[tid].size[id] = 0;
             //if (tid == 0) std::cout<<"stat id="<<id<<" name="<<name<<" tid="<<tid<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<" size="<<thread_data[tid].size[id]<<" stat_ptr_addr="<<(long long) thread_data[tid].get_ptr<void>(id)<<std::endl;
-            if (tid == 0) std::cout<<"stat "<<id<<": "<<name<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<std::endl;
+            //if (tid == 0) std::cout<<"stat "<<id<<": "<<name<<" offset="<<thread_data[tid].offset[id]<<" capacity="<<thread_data[tid].capacity[id]<<std::endl;
         }
 
         num_stats++;
@@ -911,22 +923,22 @@ public:
             case FULL_DATA:
                 metrics = NULL;
                 num_metrics = -1;
-                granularity_str=" full_data";
+                granularity_str="_full_data";
                 break;
             case TOTAL:
                 metrics = (stat_metrics<T> *) computed_gstats_total[id];
                 num_metrics = 1; 
-                granularity_str=" total";
+                granularity_str="_total";
                 break;
             case BY_INDEX:
                 metrics = (stat_metrics<T> *) computed_gstats_by_index[id];
                 num_metrics = num_indices[id];
-                granularity_str=" by_index";
+                granularity_str="_by_index";
                 break;
             case BY_THREAD:
                 metrics = (stat_metrics<T> *) computed_gstats_by_thread[id];
                 num_metrics = NUM_PROCESSES;
-                granularity_str=" by_thread";
+                granularity_str="_by_thread";
                 break;
         }
 

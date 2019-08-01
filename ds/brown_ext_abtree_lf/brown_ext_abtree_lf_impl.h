@@ -37,10 +37,403 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ABTREE_IMPL_H
-#define	ABTREE_IMPL_H
+#ifndef ABTREE_H
+#define	ABTREE_H
 
-#include "brown_ext_abtree_lf.h"
+#include <string>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <set>
+#include <unistd.h>
+#include <sys/types.h>
+#include "record_manager.h"
+#include "prefetching.h"
+#include "scx_provider.h"
+
+namespace abtree_ns {
+    
+    #define MAX_NODE_DEPENDENCIES_PER_SCX 4
+
+    #ifndef TRACE
+    #define TRACE if(0)
+    #endif
+    #ifndef DEBUG
+    #define DEBUG if(0)
+    #endif
+    #ifndef DEBUG1
+    #define DEBUG1 if(0)
+    #endif
+    #ifndef DEBUG2
+    #define DEBUG2 if(0)
+    #endif
+
+    #define ABTREE_ENABLE_DESTRUCTOR
+
+    template <int DEGREE, typename K>
+    struct Node {
+        scx_handle_t volatile scxPtr;
+        int leaf; // 0 or 1
+        volatile int marked; // 0 or 1
+        int weight; // 0 or 1
+        int size; // degree of node
+        K searchKey;
+        K keys[DEGREE];
+        Node<DEGREE,K> * volatile ptrs[DEGREE];
+
+        inline bool isLeaf() {
+            return leaf;
+        }
+        inline int getKeyCount() {
+            return isLeaf() ? size : size-1;
+        }
+        inline int getABDegree() {
+            return size;
+        }
+        template <class Compare>
+        inline int getChildIndex(const K& key, Compare cmp) {
+            int nkeys = getKeyCount();
+            int retval = 0;
+            while (retval < nkeys && !cmp(key, (const K&) keys[retval])) {
+                ++retval;
+            }
+            return retval;
+        }
+        template <class Compare>
+        inline int getKeyIndex(const K& key, Compare cmp) {
+            int nkeys = getKeyCount();
+            int retval = 0;
+            while (retval < nkeys && cmp((const K&) keys[retval], key)) {
+                ++retval;
+            }
+            return retval;
+        }
+    };
+
+    template <int DEGREE, typename K, class Compare, class RecManager>
+    class abtree {
+    private:
+        // the following bool determines whether the optimization to guarantee
+        // amortized constant rebalancing (at the cost of decreasing average degree
+        // by at most one) is used.
+        // if it is false, then an amortized logarithmic number of rebalancing steps
+        // may be performed per operation, but average degree increases slightly.
+        PAD;
+        const bool ALLOW_ONE_EXTRA_SLACK_PER_NODE;
+
+        const int b;
+        const int a;
+
+        RecManager * const recordmgr;
+        SCXProvider<Node<DEGREE,K>, MAX_NODE_DEPENDENCIES_PER_SCX> * const prov;
+        Compare cmp;
+
+        Node<DEGREE,K> * entry;
+
+        #define arraycopy(src, srcStart, dest, destStart, len) \
+            for (int ___i=0;___i<(len);++___i) { \
+                (dest)[(destStart)+___i] = (src)[(srcStart)+___i]; \
+            }
+        #define arraycopy_ptrs(src, srcStart, dest, destStart, len) \
+            arraycopy(src, srcStart, dest, destStart, len)
+
+    private:
+        void * doInsert(const int tid, const K& key, void * const value, const bool replace);
+
+        // returns true if the invocation of this method
+        // (and not another invocation of a method performed by this method)
+        // performed an scx, and false otherwise
+        bool fixWeightViolation(const int tid, Node<DEGREE,K>* viol);
+
+        // returns true if the invocation of this method
+        // (and not another invocation of a method performed by this method)
+        // performed an scx, and false otherwise
+        bool fixDegreeViolation(const int tid, Node<DEGREE,K>* viol);
+
+        Node<DEGREE,K>* allocateNode(const int tid);
+
+        void freeSubtree(Node<DEGREE,K>* node, int* nodes) {
+            const int tid = 0;
+            if (node == NULL) return;
+            if (!node->isLeaf()) {
+                for (int i=0;i<node->getABDegree();++i) {
+                    freeSubtree(node->ptrs[i], nodes);
+                }
+            }
+            ++(*nodes);
+            recordmgr->deallocate(tid, node);
+        }
+
+        int init[MAX_THREADS_POW2] = {0,};
+public:
+        void * const NO_VALUE;
+        const int NUM_PROCESSES;
+        PAD;
+        
+        /**
+         * This function must be called once by each thread that will
+         * invoke any functions on this class.
+         * 
+         * It must be okay that we do this with the main thread and later with another thread!
+         */
+        void initThread(const int tid) {
+            if (init[tid]) return; else init[tid] = !init[tid];
+            
+            recordmgr->initThread(tid);
+        }
+        void deinitThread(const int tid) {
+            if (!init[tid]) return; else init[tid] = !init[tid];
+
+            recordmgr->deinitThread(tid);
+        }
+
+        /**
+         * Creates a new relaxed (a,b)-tree wherein: <br>
+         *      each internal node has up to <code>DEGREE</code> child pointers, and <br>
+         *      each leaf has up to <code>DEGREE</code> key/value pairs, and <br>
+         *      keys are ordered according to the provided comparator.
+         */
+        abtree(const int numProcesses, 
+                const K anyKey,
+                int suspectedCrashSignal = SIGQUIT)
+        : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
+        , b(DEGREE)
+        , a(std::max(DEGREE/4, 2))
+        , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
+        , prov(new SCXProvider<Node<DEGREE,K>, MAX_NODE_DEPENDENCIES_PER_SCX>(numProcesses))
+        , NO_VALUE((void *) -1LL)
+        , NUM_PROCESSES(numProcesses) 
+        {
+            cmp = Compare();
+            
+            const int tid = 0;
+            initThread(tid);
+
+            // initial tree: entry is a sentinel node (with one pointer and no keys)
+            //               that points to an empty node (no pointers and no keys)
+            Node<DEGREE,K>* _entryLeft = allocateNode(tid);
+            _entryLeft->leaf = true;
+            _entryLeft->weight = true;
+            _entryLeft->size = 0;
+            _entryLeft->searchKey = anyKey;
+
+            Node<DEGREE,K>* _entry = allocateNode(tid);
+            _entry->leaf = false;
+            _entry->weight = true;
+            _entry->size = 1;
+            _entry->searchKey = anyKey;
+            _entry->ptrs[0] = _entryLeft;
+            
+            entry = _entry;
+        }
+    
+    #ifdef ABTREE_ENABLE_DESTRUCTOR    
+        ~abtree() {
+            int nodes = 0;
+            freeSubtree(entry, &nodes);
+//            COUTATOMIC("main thread: deleted tree containing "<<nodes<<" nodes"<<std::endl);
+            delete prov;
+//            recordmgr->printStatus();
+            delete recordmgr;
+        }
+    #endif
+
+        Node<DEGREE,K> * debug_getEntryPoint() { return entry; }
+
+    private:
+        /*******************************************************************
+         * Utility functions for integration with the test harness
+         *******************************************************************/
+
+        int sequentialSize(Node<DEGREE,K>* node) {
+            if (node->isLeaf()) {
+                return node->getKeyCount();
+            }
+            int retval = 0;
+            for (int i=0;i<node->getABDegree();++i) {
+                Node<DEGREE,K>* child = node->ptrs[i];
+                retval += sequentialSize(child);
+            }
+            return retval;
+        }
+        int sequentialSize() {
+            return sequentialSize(entry->ptrs[0]);
+        }
+
+        int getNumberOfLeaves(Node<DEGREE,K>* node) {
+            if (node == NULL) return 0;
+            if (node->isLeaf()) return 1;
+            int result = 0;
+            for (int i=0;i<node->getABDegree();++i) {
+                result += getNumberOfLeaves(node->ptrs[i]);
+            }
+            return result;
+        }
+        const int getNumberOfLeaves() {
+            return getNumberOfLeaves(entry->ptrs[0]);
+        }
+        int getNumberOfInternals(Node<DEGREE,K>* node) {
+            if (node == NULL) return 0;
+            if (node->isLeaf()) return 0;
+            int result = 1;
+            for (int i=0;i<node->getABDegree();++i) {
+                result += getNumberOfInternals(node->ptrs[i]);
+            }
+            return result;
+        }
+        const int getNumberOfInternals() {
+            return getNumberOfInternals(entry->ptrs[0]);
+        }
+        const int getNumberOfNodes() {
+            return getNumberOfLeaves() + getNumberOfInternals();
+        }
+
+        int getSumOfKeyDepths(Node<DEGREE,K>* node, int depth) {
+            if (node == NULL) return 0;
+            if (node->isLeaf()) return depth * node->getKeyCount();
+            int result = 0;
+            for (int i=0;i<node->getABDegree();i++) {
+                result += getSumOfKeyDepths(node->ptrs[i], 1+depth);
+            }
+            return result;
+        }
+        const int getSumOfKeyDepths() {
+            return getSumOfKeyDepths(entry->ptrs[0], 0);
+        }
+        const double getAverageKeyDepth() {
+            long sz = sequentialSize();
+            return (sz == 0) ? 0 : getSumOfKeyDepths() / sz;
+        }
+
+        int getHeight(Node<DEGREE,K>* node, int depth) {
+            if (node == NULL) return 0;
+            if (node->isLeaf()) return 0;
+            int result = 0;
+            for (int i=0;i<node->getABDegree();i++) {
+                int retval = getHeight(node->ptrs[i], 1+depth);
+                if (retval > result) result = retval;
+            }
+            return result+1;
+        }
+        const int getHeight() {
+            return getHeight(entry->ptrs[0], 0);
+        }
+
+        int getKeyCount(Node<DEGREE,K>* entry) {
+            if (entry == NULL) return 0;
+            if (entry->isLeaf()) return entry->getKeyCount();
+            int sum = 0;
+            for (int i=0;i<entry->getABDegree();++i) {
+                sum += getKeyCount(entry->ptrs[i]);
+            }
+            return sum;
+        }
+        int getTotalDegree(Node<DEGREE,K>* entry) {
+            if (entry == NULL) return 0;
+            int sum = entry->getKeyCount();
+            if (entry->isLeaf()) return sum;
+            for (int i=0;i<entry->getABDegree();++i) {
+                sum += getTotalDegree(entry->ptrs[i]);
+            }
+            return 1+sum; // one more children than keys
+        }
+        int getNodeCount(Node<DEGREE,K>* entry) {
+            if (entry == NULL) return 0;
+            if (entry->isLeaf()) return 1;
+            int sum = 1;
+            for (int i=0;i<entry->getABDegree();++i) {
+                sum += getNodeCount(entry->ptrs[i]);
+            }
+            return sum;
+        }
+        double getAverageDegree() {
+            return getTotalDegree(entry) / (double) getNodeCount(entry);
+        }
+        double getSpacePerKey() {
+            return getNodeCount(entry)*2*b / (double) getKeyCount(entry);
+        }
+
+        long long getSumOfKeys(Node<DEGREE,K>* node) {
+            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): isLeaf="<<node->isLeaf()<<std::endl);
+            long long sum = 0;
+            if (node->isLeaf()) {
+                TRACE COUTATOMIC("      leaf sum +=");
+                for (int i=0;i<node->getKeyCount();++i) {
+                    sum += (long long) node->keys[i];
+                    TRACE COUTATOMIC(node->keys[i]);
+                }
+                TRACE COUTATOMIC(std::endl);
+            } else {
+                for (int i=0;i<node->getABDegree();++i) {
+                    sum += getSumOfKeys(node->ptrs[i]);
+                }
+            }
+            TRACE COUTATOMIC("  getSumOfKeys("<<node<<"): sum="<<sum<<std::endl);
+            return sum;
+        }
+        long long getSumOfKeys() {
+            TRACE COUTATOMIC("getSumOfKeys()"<<std::endl);
+            return getSumOfKeys(entry);
+        }
+
+        void abtree_error(std::string s) {
+            std::cerr<<"ERROR: "<<s<<std::endl;
+            exit(-1);
+        }
+
+        void debugPrint() {
+            std::cout<<"averageDegree="<<getAverageDegree()<<std::endl;
+            std::cout<<"averageDepth="<<getAverageKeyDepth()<<std::endl;
+            std::cout<<"height="<<getHeight()<<std::endl;
+            std::cout<<"internalNodes="<<getNumberOfInternals()<<std::endl;
+            std::cout<<"leafNodes="<<getNumberOfLeaves()<<std::endl;
+        }
+
+    public:
+        void * insert(const int tid, const K& key, void * const val) {
+            return doInsert(tid, key, val, true);
+        }
+        void * insertIfAbsent(const int tid, const K& key, void * const val) {
+            return doInsert(tid, key, val, false);
+        }
+        const std::pair<void*,bool> erase(const int tid, const K& key);
+        const std::pair<void*,bool> find(const int tid, const K& key);
+        bool contains(const int tid, const K& key);
+        int rangeQuery(const int tid, const K& low, const K& hi, K * const resultKeys, void ** const resultValues);
+        bool validate(const long long keysum, const bool checkkeysum) {
+            if (checkkeysum) {
+                long long treekeysum = getSumOfKeys();
+                if (treekeysum != keysum) {
+                    std::cerr<<"ERROR: tree keysum "<<treekeysum<<" did not match thread keysum "<<keysum<<std::endl;
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        long long getSizeInNodes() {
+            return getNumberOfNodes();
+        }
+        std::string getSizeString() {
+            std::stringstream ss;
+            ss<<getSizeInNodes()<<" nodes in tree";
+            return ss.str();
+        }
+        long long getSize(Node<DEGREE,K> * node) {
+            return sequentialSize(node);
+        }
+        long long getSize() {
+            return sequentialSize();
+        }
+        RecManager * const debugGetRecMgr() {
+            return recordmgr;
+        }
+        long long debugKeySum() {
+            return getSumOfKeys();
+        }
+    };
+} // namespace
 
 template <int DEGREE, typename K, class Compare, class RecManager>
 abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allocateNode(const int tid) {
@@ -145,6 +538,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 fixDegreeViolation(tid, n);
                 return oldValue;
             }
+            guard.end();
             this->recordmgr->deallocate(tid, n);
 
         } else {
@@ -184,6 +578,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixDegreeViolation(tid, n);
                     return NO_VALUE;
                 }
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 
             } else { // assert: l->getKeyCount() == DEGREE == b)
@@ -247,6 +642,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                     fixWeightViolation(tid, n);
                     return NO_VALUE;
                 }
+                guard.end();
                 this->recordmgr->deallocate(tid, n);
                 this->recordmgr->deallocate(tid, left);
                 this->recordmgr->deallocate(tid, right);
@@ -318,6 +714,7 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
                 fixDegreeViolation(tid, n);
                 return std::pair<void*,bool>(oldValue, true);
             }
+            guard.end();
             this->recordmgr->deallocate(tid, n);
         }
     }
@@ -817,4 +1214,4 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
     }
 }
 
-#endif	/* ABTREE_IMPL_H */
+#endif

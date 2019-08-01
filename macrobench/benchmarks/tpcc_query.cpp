@@ -16,6 +16,18 @@ void tpcc_query::init(uint64_t thd_id, workload * h_wl) {
         gen_new_order(thd_id);
 }
 
+void tpcc_query::setbench_deinit() {
+//    printf("called destructor tpcc_query::setbench_deinit()\n");
+    if (items) {
+        free(items);
+        items = NULL;
+    }
+    if (part_to_access) {
+        free(part_to_access);
+        part_to_access = NULL;
+    }
+}
+
 void tpcc_query::gen_payment(uint64_t thd_id) {
     type = TPCC_PAYMENT;
     if (FIRST_PART_LOCAL)

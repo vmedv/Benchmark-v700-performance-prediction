@@ -53,6 +53,7 @@ public:
     char padding[PREFETCH_SIZE_BYTES+(((64<<10)-size%64)%64)]; // add padding to prevent false sharing
 } __attribute__ ((aligned(64)));
 
+template <typename Unused>
 class dcssProvider {
     /**
      * Data definitions

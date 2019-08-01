@@ -2,7 +2,8 @@
 
 drand48_data ** tpcc_buffer;
 
-#define ZERO_MSB_64B_MASK 0x7FFFFFFFFFFFFFFF
+#define ZERO_MSB_64B_MASK 0x0FFFFFFFFFFFFFFF /* claim 4 MSBs for indexes to use as reserved bits */
+//#define ZERO_MSB_64B_MASK 0x7FFFFFFFFFFFFFFF
 
 #ifdef HASH_PRIMARY_KEYS
 
@@ -164,7 +165,7 @@ uint64_t MakeAlphaString(int min, int max, char* str, uint64_t thd_id) {
     uint64_t cnt = URand(min, max, thd_id);
     for (uint32_t i = 0; i<cnt; i++)
         str[i] = char_list[URand(0L, 60L, thd_id)];
-    for (int i = cnt; i<max; i++)
+    for (int i = cnt; i<=max; i++) // made less-EQUAL to fix a problem with non-terminated strings in the original dbx1000 implementation
         str[i] = '\0';
 
     return cnt;
