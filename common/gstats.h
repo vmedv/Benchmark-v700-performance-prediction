@@ -83,6 +83,7 @@
 #include <algorithm>
 #include "errors.h"
 #include "locks_impl.h"
+#include "plaf.h"
 
 #ifndef VERBOSE
     #define VERBOSE if(0)
