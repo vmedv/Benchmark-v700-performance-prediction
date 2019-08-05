@@ -105,6 +105,6 @@ void parser(int argc, char * argv[]) {
             assert(false);
         }
     }
-    if (g_thread_cnt<g_init_parallelism)
+//    if (g_thread_cnt<g_init_parallelism)
         g_init_parallelism = g_thread_cnt;
 }
