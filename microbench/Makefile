@@ -20,7 +20,7 @@ include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
-FLAGS += -std=c++11 -mcx16 -O3 -gdwarf
+FLAGS += -std=c++14 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
 #FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
