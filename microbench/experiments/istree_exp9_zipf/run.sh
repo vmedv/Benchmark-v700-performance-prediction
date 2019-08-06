@@ -8,7 +8,7 @@
 
 t=30000
 num_trials=1
-halved_update_rates="0.5 5"
+halved_update_rates="0 0.5 5"
 key_range_sizes="200000000"
 prefill_sizes="10000000"
 algorithms="brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ natarajan_ext_bst_lf"
