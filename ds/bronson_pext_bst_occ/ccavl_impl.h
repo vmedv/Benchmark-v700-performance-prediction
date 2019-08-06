@@ -503,7 +503,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::decodeNull(sval_t vOpt) {
 
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::encodeNull(sval_t v) {
-    return v == (sval_t) NULL ? (VALUE_TYPE) SpecialNull : v;
+    return v == (sval_t) NULL ? (sval_t) SpecialNull : v;
 }
 
 

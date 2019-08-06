@@ -23,7 +23,7 @@ FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -std=c++11 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
 FLAGS += -fopenmp
-FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
+#FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
 #FLAGS += -DRAPID_RECLAMATION
 FLAGS += -DPREFILL_INSERTION_ONLY
 #FLAGS += -DMEASURE_REBUILDING_TIME
@@ -54,6 +54,8 @@ POOLS=none
 ALLOCATORS=new
 
 DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ist*/adapter.h))
+DATA_STRUCTURES+=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/bronson*/adapter.h))
+DATA_STRUCTURES+=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/natarajan*/adapter.h))
 
 #$(info $(DATA_STRUCTURES))
 
