@@ -15,7 +15,6 @@
 #include <iomanip>
 #include <string>
 
-#include "bst.h"
 #include "descriptors.h"
 
 namespace bst_ns {
