@@ -736,11 +736,11 @@ void trial(GlobalsT * g) {
     // start all threads
     std::thread * threads[MAX_THREADS_POW2];
     for (int i=0;i<TOTAL_THREADS;++i) {
-//        if (i < WORK_THREADS) {
+        if (i < WORK_THREADS) {
             threads[i] = new std::thread(thread_timed<GlobalsT>, g, i);
-//        } else {
-//            threads[i] = new std::thread(thread_rq, g, i);
-//        }
+        } else {
+            threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);
+        }
     }
     
     while (g->running < TOTAL_THREADS) {

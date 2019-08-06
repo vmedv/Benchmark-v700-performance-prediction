@@ -16,6 +16,16 @@ ifneq ($(has_libnuma), 0)
     LDFLAGS += -lnuma
 endif
 
+use_asan=0
+ifneq ($(use_asan), 0)
+    LDFLAGS += -fsanitize=address -static-libasan
+endif
+
+use_asserts=0
+ifeq ($(use_asserts), 0)
+    FLAGS += -DNDEBUG
+endif
+
 include ../plaf.inc
 FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
 FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
@@ -30,11 +40,9 @@ FLAGS += -DPREFILL_INSERTION_ONLY
 #FLAGS += -DMEASURE_TIMELINE_STATS
 FLAGS += -DUSE_TREE_STATS
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
-FLAGS += -DNDEBUG
 FLAGS += -Wno-format
 FLAGS += $(xargs)
 
-#LDFLAGS += -fsanitize=address -static-libasan
 LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
