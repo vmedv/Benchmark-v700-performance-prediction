@@ -304,11 +304,12 @@ void prefillWithInserts(auto g, int64_t expectedSize) {
     #pragma omp parallel
     {
         #ifdef _OPENMP
-            g->dsAdapter->initThread(tid);
             const int tid = omp_get_thread_num();
+            g->dsAdapter->initThread(tid);
             binding_bindThread(tid);
         #else
             const int tid = 0;
+            g->dsAdapter->initThread(tid);
         #endif
         
         #pragma omp for schedule(dynamic, 100000)
@@ -1097,6 +1098,8 @@ int main(int argc, char** argv) {
     PRINTS(RECLAIM);
     PRINTS(ALLOC);
     PRINTS(POOL);
+    PRINTS(MAX_THREADS_POW2);
+    PRINTS(CPU_FREQ_GHZ);
     PRINTI(MILLIS_TO_RUN);
     PRINTI(INS);
     PRINTI(DEL);

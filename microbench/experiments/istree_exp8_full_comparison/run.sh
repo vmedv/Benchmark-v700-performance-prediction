@@ -32,6 +32,12 @@ pinning_policy=`cd .. ; ./get_pinning_cluster.sh`
 #### Run trials
 #########################################################################
 
+## if user provides any argument, then we are running in TESTING mode, with 1ms runs and no prefilling
+if [ "$1" != "" ]; then
+    echo "*** WARNING *** running in TESTING mode (1ms runs; no prefill; max threads only)"
+    thread_counts=`cd .. ; ./get_thread_count_max.sh`
+fi
+
 started=`date`
 for counting in 1 0 ; do
     for ((trial=0;trial<num_trials;++trial)) ; do
@@ -43,14 +49,21 @@ for counting in 1 0 ; do
                             maxstep=$((maxstep+1))
                         else
                             step=$((step+1))
-                            if [ "$#" -eq "1" ]; then ## check if user wants to just replay one precise trial
-                                if [ "$1" -ne "$step" ]; then
-                                    continue
-                                fi
+#                            if [ "$#" -eq "1" ]; then ## check if user wants to just replay one precise trial
+#                                if [ "$1" -ne "$step" ]; then
+#                                    continue
+#                                fi
+#                            fi
+
+                            ## if user provides any argument, then we are running in TESTING mode, with 1ms runs and no prefilling
+                            if [ "$1" != "" ]; then
+                                addon="-nprefill 0 -t 1"
+                            else
+                                addon="-nprefill $n -t $t"
                             fi
+                            args="$addon -nwork $n -i $uhalf -d $uhalf -rq 0 -rqsize 1 -k $k -nrq 0 -pin $pinning_policy"
 
                             f="$exp/step$step.txt"
-                            args="-nwork $n -nprefill $n -i $uhalf -d $uhalf -rq 0 -rqsize 1 -k $k -nrq 0 -t $t -pin $pinning_policy"
                             cmd="LD_PRELOAD=../../../lib/libjemalloc.so timeout $timeout_s numactl --interleave=all time ../../bin/ubench_${alg}.alloc_new.reclaim_debra.pool_none.out $args"
                             echo "cmd=$cmd" > $f
                             echo "step=$step" >> $f

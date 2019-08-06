@@ -6,7 +6,12 @@
 # Created on Jul 18, 2017, 10:56:28 PM
 #
 
-source ../plaf.inc
+## Thread counts to run in the experiments.
+thread_counts="1 18 36 72 108 144"
+
+## Configure the thread pinning/binding policy.
+## Blank means no thread pinning. (Threads can run wherever they want.)
+pinning_policy="-pin 0-17.72-89.18-35.90-107.36-53.108-125.54-71.126-143"
 
 ntrials=5
 warehouses=36
@@ -23,8 +28,6 @@ cnt2=10000
 
 ## fix any \r line endings, which mess up the DBMS schema in TPC-C
 dos2unix benchmarks/*.txt
-
-source ../sys_config_checks.inc
 
 for counting in 1 0 ; do
     if (($counting==0)); then

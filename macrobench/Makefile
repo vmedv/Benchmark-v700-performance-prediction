@@ -2,11 +2,10 @@ CFLAGS =
 LDFLAGS =
 CC=g++
 
-include ../plaf.inc
 #LDFLAGS += -fsanitize=address -static-libasan
 CFLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
-CFLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
-CFLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
+CFLAGS += -DMAX_THREADS_POW2=256
+FLAGS += -DCPU_FREQ_GHZ=$(shell ./microbench/experiments/get_cpu_ghz.sh)
 CFLAGS += -g -std=c++14 -O3
 CFLAGS += -fopenmp
 CFLAGS += $(xargs)

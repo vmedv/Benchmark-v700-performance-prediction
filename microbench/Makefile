@@ -26,9 +26,8 @@ ifeq ($(use_asserts), 0)
     FLAGS += -DNDEBUG
 endif
 
-include ../plaf.inc
-FLAGS += -DMAX_THREADS_POW2=$(thread_count_upper_bound_pow2)
-FLAGS += -DCPU_FREQ_GHZ=$(cpu_freq_ghz) -DCPU_FREQ=$(cpu_freq_ghz)
+FLAGS += -DMAX_THREADS_POW2=256
+FLAGS += -DCPU_FREQ_GHZ=$(shell ./microbench/experiments/get_cpu_ghz.sh)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -std=c++14 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer

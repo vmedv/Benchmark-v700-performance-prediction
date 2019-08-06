@@ -6,9 +6,7 @@
 # Created on Aug 17, 2017, 6:26:03 PM
 #
 
-source ../plaf.inc
-
-nwork=$valgrind_thread_count
+nwork=16
 args="-i 10 -d 10 -k 1000 -rq 0 -rqsize 100 -t 1000 -nrq 0 -nwork $nwork"
 valgrind_args="--fair-sched=yes --tool=memcheck --leak-check=yes --read-inline-info=yes --read-var-info=yes"
 outdir=data_valgrind

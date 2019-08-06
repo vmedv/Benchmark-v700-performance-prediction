@@ -10,8 +10,8 @@
 #define VIRTUAL_PART_CNT			1
 #define PAGE_SIZE					4096 
 #define CL_SIZE						64
-// CPU_FREQ is used to get accurate timing info 
-//#define CPU_FREQ 					2.410426 	// in GHz/s
+// CPU_FREQ_GHZ is used to get accurate timing info 
+//#define CPU_FREQ_GHZ 					2.410426 	// in GHz/s
 
 // # of transactions to run for warmup
 #define WARMUP						0
