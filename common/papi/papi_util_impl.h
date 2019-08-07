@@ -7,7 +7,7 @@
 
 int all_cpu_counters[] = {
 #ifdef USE_PAPI
-    PAPI_L1_DCM,
+//    PAPI_L1_DCM,
     PAPI_L2_TCM,
     PAPI_L3_TCM,
     PAPI_TOT_CYC,
@@ -18,7 +18,7 @@ int all_cpu_counters[] = {
 };
 std::string all_cpu_counters_strings[] = {
 #ifdef USE_PAPI
-    "PAPI_L1_DCM",
+//    "PAPI_L1_DCM",
     "PAPI_L2_TCM",
     "PAPI_L3_TCM",
     "PAPI_TOT_CYC",
