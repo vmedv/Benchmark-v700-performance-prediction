@@ -185,6 +185,7 @@ struct globals_t {
     , KEY_MAX(std::numeric_limits<test_type>::max()-1)
     , PREFILL_INTERVAL_MILLIS(200)
     {
+        keygenZipfData = NULL;
         srand(time(0));
         for (int i=0;i<MAX_THREADS_POW2;++i) {
             rngs[i].setSeed(rand());
@@ -218,9 +219,9 @@ struct globals_t {
     }
     ~globals_t() {
         for (int i=0;i<MAX_THREADS_POW2;++i) {
-            delete keygens[i];
+            if (keygens[i]) delete keygens[i];
         }
-        delete keygenZipfData;
+        if (keygenZipfData) delete keygenZipfData;
     }
 };
 

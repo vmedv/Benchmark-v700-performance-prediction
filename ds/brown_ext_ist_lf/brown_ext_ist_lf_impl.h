@@ -64,6 +64,7 @@ public:
 #include <cmath>
 #include <unistd.h>
 #include <sys/types.h>
+#include "server_clock.h"
 #include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
@@ -1375,7 +1376,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 //#endif
     
 #ifdef USE_GSTATS
-    TIMELINE_END_C("helpRebuild", tid, (op->depth < 1));
+    TIMELINE_END_C(tid, "helpRebuild", (op->depth < 1));
 #endif
     
     // collaboratively free the old subtree, if appropriate (if it was actually replaced)
@@ -1522,7 +1523,7 @@ retryNode:
                 foundVal = pair->v;
             }
             if (foundVal != NO_VALUE && (((((size_t) foundVal) << 3) >> 3) != (size_t) foundVal)) {
-                printf("foundVal=%lld\n", foundVal);
+                printf("foundVal=%lu\n", (uint64_t) foundVal);
             }
             assert(foundVal == NO_VALUE || (((uint64_t) foundVal & 0xE000000000000000ULL) == 0));
             assert(foundVal == NO_VALUE || (((((size_t) foundVal) << 3) >> 3) == (size_t) foundVal)); // value must have top 3 bits empty so we can shift it // foundVal > 0 && foundVal < INF_KEY/8);

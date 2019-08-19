@@ -75,7 +75,7 @@ inline uint64_t get_server_clock() {
             uint64_t ___endTime = get_server_clock(); \
             auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
             if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
-                printf("timeline_%s tid=%d start=%lld end=%lld duration_ms=%lld\n", (name), (tid), ___startTime, ___endTime, ___duration_ms); \
+                printf("timeline_%s tid=%d start=%lu end=%lu duration_ms=%lu\n", (name), (tid), ___startTime, ___endTime, ___duration_ms); \
             } \
         } \
     } 
