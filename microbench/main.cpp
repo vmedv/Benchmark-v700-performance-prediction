@@ -353,7 +353,8 @@ void prefillWithInserts(auto g, int64_t expectedSize) {
     GSTATS_CLEAR_ALL;
 }
 
-void prefillWithUpdates(auto g, int64_t expectedSize) {
+template<class GlobalsT>
+void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using UPDATES (ins & del)."<<std::endl;
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
@@ -371,7 +372,7 @@ void prefillWithUpdates(auto g, int64_t expectedSize) {
         
         // start all threads
         for (int i=0;i<PREFILL_THREADS;++i) {
-            threads[i] = new std::thread(thread_prefill_with_updates, g, i);
+            threads[i] = new std::thread(thread_prefill_with_updates<GlobalsT>, g, i);
         }
 
         TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<g->running<<std::endl);
@@ -844,7 +845,7 @@ void printExecutionTime(auto g) {
 
 void printOutput(auto g) {
     std::cout<<"PRODUCING OUTPUT"<<std::endl;
-
+#ifdef USE_TREE_STATS
     auto timeBeforeTreeStats = std::chrono::high_resolution_clock::now();
     auto treeStats = g->dsAdapter->createTreeStats(g->KEY_MIN, g->KEY_MAX);
     auto timeAfterTreeStats = std::chrono::high_resolution_clock::now();
@@ -854,7 +855,7 @@ void printOutput(auto g) {
     std::cout<<std::endl;
     //std::cout<<"size_nodes="<<
     std::cout<<treeStats->toString()<<std::endl;
-    
+#endif    
     g->dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
 
 #ifdef USE_GSTATS
@@ -879,10 +880,13 @@ void printOutput(auto g) {
     {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->prefillKeySum;
         threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
+#ifdef USE_TREE_STATS        
         long long dsKeySum = treeStats->getSumOfKeys();
         long long dsSize = treeStats->getKeys();
+#endif
         std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
         std::cout<<"threads_final_size="<<threadsSize<<std::endl;
+#ifdef USE_TREE_STATS                
         std::cout<<"final_keysum="<<dsKeySum<<std::endl;
         std::cout<<"final_size="<<dsSize<<std::endl;
         if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
@@ -896,6 +900,7 @@ void printOutput(auto g) {
             
             exit(-1);
         }
+#endif        
     }
 #endif
     
@@ -976,7 +981,9 @@ void printOutput(auto g) {
 #endif
 
     papi_print_counters(totalAll);
+#ifdef USE_TREE_STATS                   
     delete treeStats;
+#endif
     
 #if !defined NDEBUG
     std::cout<<"WARNING: NDEBUG is not defined, so experiment results may be affected by assertions and debug code."<<std::endl;
