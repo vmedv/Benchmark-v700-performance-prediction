@@ -46,6 +46,7 @@ LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
 LDFLAGS += -ldl
+LDFLAGS += -mrtm
 
 bin_dir=bin
 dir_guard:
