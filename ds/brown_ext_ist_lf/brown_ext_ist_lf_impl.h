@@ -64,7 +64,9 @@ public:
 #include <cmath>
 #include <unistd.h>
 #include <sys/types.h>
+#ifdef MEASURE_DURATION_STATS
 #include "server_clock.h"
+#endif
 #include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
