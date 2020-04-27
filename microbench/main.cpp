@@ -1,6 +1,6 @@
 /**
  * Setbench test harness for performing rigorous data structure microbenchmarks.
- * 
+ *
  * Copyright (C) 2018 Trevor Brown
  */
 
@@ -26,7 +26,7 @@ typedef long long test_type;
         std::cout<<data;
     }
 #else
-    #define DEBUG_PRINT_ARENA_STATS 
+    #define DEBUG_PRINT_ARENA_STATS
 #endif
 
 // configure global statistics tracking and output using GSTATS (common/gstats/)
@@ -80,8 +80,8 @@ PAD;
     #define RQ_SNAPCOLLECTOR_OBJECT_TYPES , SnapCollector<node_t<test_type, test_type>, test_type>, SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper, ReportItem, CompactReportItem
     #define RQ_SNAPCOLLECTOR_OBJ_SIZES <<" SnapCollector="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>))<<" NodeWrapper="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper))<<" ReportItem="<<(sizeof(ReportItem))<<" CompactReportItem="<<(sizeof(CompactReportItem))
 #else
-    #define RQ_SNAPCOLLECTOR_OBJECT_TYPES 
-    #define RQ_SNAPCOLLECTOR_OBJ_SIZES 
+    #define RQ_SNAPCOLLECTOR_OBJECT_TYPES
+    #define RQ_SNAPCOLLECTOR_OBJ_SIZES
 #endif
 
 #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
@@ -94,10 +94,10 @@ PAD;
     #define __RCU_INIT_ALL urcu::init(TOTAL_THREADS);
     #define __RCU_DEINIT_ALL urcu::deinit(TOTAL_THREADS);
 #else
-    #define __RCU_INIT_THREAD 
-    #define __RCU_DEINIT_THREAD 
-    #define __RCU_INIT_ALL 
-    #define __RCU_DEINIT_ALL 
+    #define __RCU_INIT_THREAD
+    #define __RCU_DEINIT_THREAD
+    #define __RCU_INIT_ALL
+    #define __RCU_DEINIT_ALL
 #endif
 
 #ifdef USE_RLU
@@ -111,10 +111,10 @@ PAD;
     #define __RLU_INIT_ALL rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2]; RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
     #define __RLU_DEINIT_ALL RLU_FINISH(); delete[] rlu_tdata;
 #else
-    #define __RLU_INIT_THREAD 
-    #define __RLU_DEINIT_THREAD 
-    #define __RLU_INIT_ALL 
-    #define __RLU_DEINIT_ALL 
+    #define __RLU_INIT_THREAD
+    #define __RLU_DEINIT_THREAD
+    #define __RLU_INIT_ALL
+    #define __RLU_DEINIT_ALL
 #endif
 
 #define INIT_THREAD(tid) \
@@ -131,11 +131,11 @@ PAD;
 #define DEINIT_ALL \
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
-    
-    
-    
-    
-    
+
+
+
+
+
 enum KeyGeneratorDistribution {
     UNIFORM, ZIPF
 };
@@ -178,7 +178,7 @@ struct globals_t {
     PAD;
     volatile int running; // number of threads that are running
     PAD;
-    
+
     globals_t(size_t maxkeyToGenerate, KeyGeneratorDistribution distribution)
     : NO_VALUE(NULL)
     , KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
@@ -239,7 +239,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
     test_type garbage = 0;
 
     double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
-    
+
     INIT_THREAD(tid);
     __sync_fetch_and_add(&g->running, 1);
     __sync_synchronize();
@@ -255,7 +255,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
                 break;
             }
         }
-        
+
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         test_type key = g->keygens[tid]->next();
         //test_type key = g->rngs[tid].next(MAXKEY) + 1;
@@ -282,7 +282,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
     while (g->running) {
         // wait
     }
-    
+
     DEINIT_THREAD(tid);
     g->garbage += garbage;
     __sync_bool_compare_and_swap(&g->prefillIntervalElapsedMillis, 0, std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count());
@@ -292,7 +292,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
 void prefillWithInserts(auto g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using INSERTION ONLY."<<std::endl;
     auto prefillStartTime = std::chrono::high_resolution_clock::now();
-    
+
     const int tid = 0;
     #ifdef _OPENMP
         omp_set_num_threads(PREFILL_THREADS);
@@ -312,7 +312,7 @@ void prefillWithInserts(auto g, int64_t expectedSize) {
             const int tid = 0;
             g->dsAdapter->initThread(tid);
         #endif
-        
+
         #pragma omp for schedule(dynamic, 100000)
         for (size_t i=0;i<expectedSize;++i) {
             test_type key = g->keygens[tid]->next();
@@ -321,7 +321,7 @@ void prefillWithInserts(auto g, int64_t expectedSize) {
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, prefill_size, 1);
-                
+
                 // monitor prefilling progress (completely optional!!)
                 if ((tid == 0) && (GSTATS_GET(tid, prefill_size) % 1000000) == 0) {
                     double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count();
@@ -340,7 +340,7 @@ void prefillWithInserts(auto g, int64_t expectedSize) {
         }
     }
     TIMING_STOP;
-    
+
     auto prefillEndTime = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
     GSTATS_PRINT;
@@ -362,14 +362,14 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
     const int MAX_ATTEMPTS = 10000;
 
     long long totalThreadsPrefillElapsedMillis = 0;
-    
+
     std::thread * threads[MAX_THREADS_POW2];
 
     int sz = 0;
     int attempts;
     for (attempts=0;attempts<MAX_ATTEMPTS;++attempts) {
         INIT_ALL;
-        
+
         // start all threads
         for (int i=0;i<PREFILL_THREADS;++i) {
             threads[i] = new std::thread(thread_prefill_with_updates<GlobalsT>, g, i);
@@ -379,11 +379,11 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         while (g->running < PREFILL_THREADS) {}
         TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
         g->startTime = std::chrono::high_resolution_clock::now();
-        
+
         g->prefillIntervalElapsedMillis = 0;
         __sync_synchronize();
         g->start = true;
-        
+
         /**
          * START INFINITE LOOP DETECTION CODE
          */
@@ -416,7 +416,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         /**
          * END INFINITE LOOP DETECTION CODE
          */
-        
+
         TRACE COUTATOMIC("main thread: waiting for threads to STOP prefilling running="<<g->running<<std::endl);
         while (g->running > 0) {}
 
@@ -424,7 +424,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
             threads[i]->join();
             delete threads[i];
         }
-        
+
         g->start = false;
         g->done = false;
 
@@ -438,15 +438,15 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
             std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz << " total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
             std::cout<<"pref_round_size="<<sz<<std::endl;
         }
-        
+
         DEINIT_ALL;
     }
-    
+
     if (attempts >= MAX_ATTEMPTS) {
         std::cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<std::endl;
         exit(-1);
     }
-    
+
     auto prefillEndTime = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
 
@@ -466,7 +466,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
 size_t * prefillWithArrayConstruction(auto g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using ARRAY CONSTRUCTION to expectedSize="<<expectedSize<<" w/MAXKEY="<<MAXKEY<<"."<<std::endl;
     if (MAXKEY < expectedSize) setbench_error("specified key range must be large enough to accommodate the specified prefill size");
-    
+
     TIMING_START("creating key array");
     size_t sz = MAXKEY+2;
     const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
@@ -505,7 +505,7 @@ size_t * prefillWithArrayConstruction(auto g, int64_t expectedSize) {
         std::sort(present, present+sz);
     #endif
     TIMING_STOP;
-    
+
     return present;
 }
 
@@ -514,15 +514,15 @@ void createAndPrefillDataStructure(auto g, int64_t expectedSize) {
         g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
         return;
     }
-    
+
     if (expectedSize == -1) {
         const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
         expectedSize = (int64_t) (MAXKEY * expectedFullness);
     }
-    
+
     // prefill data structure to mimic its structure in the steady state
     g->prefillStartTime = std::chrono::high_resolution_clock::now();
-    
+
     // PREBUILD VIA PARALLEL ARRAY CONSTRUCTION
     #ifdef PREFILL_BUILD_FROM_ARRAY
         auto present = prefillWithArrayConstruction(g, expectedSize);
@@ -532,7 +532,7 @@ void createAndPrefillDataStructure(auto g, int64_t expectedSize) {
                 (test_type const *) present, (VALUE_TYPE const *) present, expectedSize, rand());
         TIMING_STOP;
         delete[] present;
-        
+
     // PREBUILD VIA REPEATED CONCURRENT INSERT-ONLY TRIALS
     #elif defined PREFILL_INSERTION_ONLY
         g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
@@ -543,7 +543,7 @@ void createAndPrefillDataStructure(auto g, int64_t expectedSize) {
         g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
         prefillWithUpdates(g, expectedSize);
     #endif
-        
+
     // print total prefilling time
     std::cout<<"prefill_elapsed_ms="<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count()<<std::endl;
 }
@@ -557,7 +557,7 @@ void thread_timed(GlobalsT * g, int __tid) {
 
     test_type * rqResultKeys = new test_type[RQSIZE+MAX_KEYS_PER_NODE];
     VALUE_TYPE * rqResultValues = new VALUE_TYPE[RQSIZE+MAX_KEYS_PER_NODE];
-    
+
     //std::cout<<"tid="<<tid<<std::endl;
     INIT_THREAD(tid);
     papi_create_eventset(tid);
@@ -569,9 +569,9 @@ void thread_timed(GlobalsT * g, int __tid) {
     papi_start_counters(tid);
     int cnt = 0;
     int rq_cnt = 0;
-    
+
     DURATION_START(tid);
-    
+
     while (!g->done) {
         if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
             auto __endTime = std::chrono::high_resolution_clock::now();
@@ -582,7 +582,7 @@ void thread_timed(GlobalsT * g, int __tid) {
                 break;
             }
         }
-        
+
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         test_type key = g->keygens[tid]->next();
         //test_type key = g->rngs[tid].next(MAXKEY) + 1;
@@ -612,7 +612,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             assert(_key <= std::max(1, MAXKEY - RQSIZE));
             assert(MAXKEY > RQSIZE || _key == 0);
             key = (test_type) _key;
-            
+
             ++rq_cnt;
             size_t rqcnt;
             GSTATS_TIMER_RESET(tid, timer_latency);
@@ -634,13 +634,13 @@ void thread_timed(GlobalsT * g, int __tid) {
 //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g->startClockTicks);
 
     DURATION_END(tid, duration_all_ops);
-    
+
     GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
 
     SOFTWARE_BARRIER;
     papi_stop_counters(tid);
     SOFTWARE_BARRIER;
-    
+
     while (g->running) { sched_yield(); __sync_synchronize(); }
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
@@ -651,13 +651,13 @@ void thread_timed(GlobalsT * g, int __tid) {
 template <class GlobalsT>
 void thread_rq(GlobalsT * g, int __tid) {
     tid = __tid;
-    
+
     binding_bindThread(tid);
     test_type garbage = 0;
 
     test_type * rqResultKeys = new test_type[RQSIZE+MAX_KEYS_PER_NODE];
     VALUE_TYPE * rqResultValues = new VALUE_TYPE[RQSIZE+MAX_KEYS_PER_NODE];
-    
+
     INIT_THREAD(tid);
     papi_create_eventset(tid);
     __sync_fetch_and_add(&g->running, 1);
@@ -677,7 +677,7 @@ void thread_rq(GlobalsT * g, int __tid) {
                 break;
             }
         }
-        
+
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         // TODO: make this respect KeyGenerators for non-uniform distributions
         uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
@@ -685,7 +685,7 @@ void thread_rq(GlobalsT * g, int __tid) {
         assert(_key <= MAXKEY);
         assert(_key <= std::max(1, MAXKEY - RQSIZE));
         assert(MAXKEY > RQSIZE || _key == 0);
-        
+
         test_type key = (test_type) _key;
         size_t rqcnt;
         GSTATS_TIMER_RESET(tid, timer_latency);
@@ -708,7 +708,7 @@ void thread_rq(GlobalsT * g, int __tid) {
     while (g->running) {
         sched_yield(); // wait
     }
-    
+
     DEINIT_THREAD(tid);
     delete[] rqResultKeys;
     delete[] rqResultValues;
@@ -718,15 +718,15 @@ void thread_rq(GlobalsT * g, int __tid) {
 template <class GlobalsT>
 void trial(GlobalsT * g) {
     papi_init_program(TOTAL_THREADS);
-    
+
     // create the actual data structure and prefill it to match the expected steady state
     createAndPrefillDataStructure(g, DESIRED_PREFILL_SIZE);
-    
+
     // setup measured part of the experiment
     INIT_ALL;
-    
+
     // TODO: reclaim all garbage floating in the record manager that was generated during prefilling, so it doesn't get freed at the start of the measured part of the execution? (maybe it's better not to do this, since it's realistic that there is some floating garbage in the steady state. that said, it's probably not realistic that it's all eligible for reclamation, first thing...)
-    
+
     // precompute amount of time for main thread to wait for children threads
     timespec tsExpected;
     tsExpected.tv_sec = MILLIS_TO_RUN / 1000;
@@ -735,7 +735,7 @@ void trial(GlobalsT * g) {
     timespec tsNap;
     tsNap.tv_sec = 0;
     tsNap.tv_nsec = 10000000; // 10ms
-    
+
     // start all threads
     std::thread * threads[MAX_THREADS_POW2];
     for (int i=0;i<TOTAL_THREADS;++i) {
@@ -745,19 +745,19 @@ void trial(GlobalsT * g) {
             threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);
         }
     }
-    
+
     while (g->running < TOTAL_THREADS) {
         TRACE COUTATOMIC("main thread: waiting for threads to START running="<<g->running<<std::endl);
     } // wait for all threads to be ready
     COUTATOMIC("main thread: starting timer..."<<std::endl);
-    
+
     DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC("################################ BEGIN RUNNING ################################"<<std::endl);
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC(std::endl);
-    
+
     SOFTWARE_BARRIER;
     g->startTime = std::chrono::high_resolution_clock::now();
     g->startClockTicks = get_server_clock();
@@ -798,18 +798,18 @@ void trial(GlobalsT * g) {
         COUTATOMIC("Validation FAILURE: "<<g->running<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<std::endl);
         COUTATOMIC(std::endl);
         COUTATOMIC("elapsedMillis="<<g->elapsedMillis<<" elapsedMillisNapping="<<g->elapsedMillisNapping<<std::endl);
-        
+
         if (g->dsAdapter->validateStructure()) {
             std::cout<<"Structural validation OK"<<std::endl;
         } else {
             std::cout<<"Structural validation FAILURE."<<std::endl;
         }
-        
+
         #if defined USE_GSTATS && defined OVERRIDE_PRINT_STATS_ON_ERROR
             GSTATS_PRINT;
             std::cout<<std::endl;
         #endif
-        
+
         g->dsAdapter->printSummary();
 #ifdef RQ_DEBUGGING_H
         DEBUG_VALIDATE_RQ(TOTAL_THREADS);
@@ -824,13 +824,13 @@ void trial(GlobalsT * g) {
         threads[i]->join();
         delete threads[i];
     }
-    
+
     COUTATOMIC(std::endl);
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC("################################# END RUNNING #################################"<<std::endl);
     COUTATOMIC("###############################################################################"<<std::endl);
     COUTATOMIC(std::endl);
-    
+
     COUTATOMIC(((g->elapsedMillis+g->elapsedMillisNapping)/1000.)<<"s"<<std::endl);
     std::cout<<"gstats_timer_elapsed timer_bag_rotation_start="<<GSTATS_TIMER_ELAPSED(0, timer_bag_rotation_start)/1000000000.<<std::endl;
 
@@ -855,13 +855,13 @@ void printOutput(auto g) {
     std::cout<<std::endl;
     //std::cout<<"size_nodes="<<
     std::cout<<treeStats->toString()<<std::endl;
-#endif    
+#endif
     g->dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
 
 #ifdef USE_GSTATS
     GSTATS_PRINT;
     std::cout<<std::endl;
-    
+
 //    for (int threadID = 0; threadID < TOTAL_THREADS; ++threadID) {
 //        for (int index=0;index<10;++index) {
 //            auto startTime = GSTATS_GET_IX(threadID, thread_reclamation_start, index);
@@ -869,24 +869,24 @@ void printOutput(auto g) {
 //            std::cout<<"tid="<<threadID<<" startTime="<<startTime<<" endTime="<<endTime<<std::endl;
 //        }
 //    }
-    
+
     std::cout<<std::endl;
 #endif
-    
+
     long long threadsKeySum = 0;
     long long threadsSize = 0;
-    
+
 #ifdef USE_GSTATS
     {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->prefillKeySum;
         threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
-#ifdef USE_TREE_STATS        
+#ifdef USE_TREE_STATS
         long long dsKeySum = treeStats->getSumOfKeys();
         long long dsSize = treeStats->getKeys();
 #endif
         std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
         std::cout<<"threads_final_size="<<threadsSize<<std::endl;
-#ifdef USE_TREE_STATS                
+#ifdef USE_TREE_STATS
         std::cout<<"final_keysum="<<dsKeySum<<std::endl;
         std::cout<<"final_size="<<dsSize<<std::endl;
         if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
@@ -897,13 +897,13 @@ void printOutput(auto g) {
             std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
             std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime(g);
-            
+
             exit(-1);
         }
-#endif        
+#endif
     }
 #endif
-    
+
     if (g->dsAdapter->validateStructure()) {
         std::cout<<"Structural validation OK."<<std::endl;
     } else {
@@ -911,7 +911,7 @@ void printOutput(auto g) {
         printExecutionTime(g);
         exit(-1);
     }
-    
+
     long long totalAll = 0;
 
 #ifdef USE_GSTATS
@@ -962,13 +962,13 @@ void printOutput(auto g) {
         COUTATOMIC(std::endl);
     }
 #endif
-    
+
     COUTATOMIC("elapsed milliseconds          : "<<g->elapsedMillis<<std::endl);
     COUTATOMIC("napping milliseconds overtime : "<<g->elapsedMillisNapping<<std::endl);
     COUTATOMIC(std::endl);
 
 //    g->dsAdapter->printSummary();
-    
+
     // free ds
 #if !defined NO_CLEANUP_AFTER_WORKLOAD
     std::cout<<"begin delete ds..."<<std::endl;
@@ -981,10 +981,10 @@ void printOutput(auto g) {
 #endif
 
     papi_print_counters(totalAll);
-#ifdef USE_TREE_STATS                   
+#ifdef USE_TREE_STATS
     delete treeStats;
 #endif
-    
+
 #if !defined NDEBUG
     std::cout<<"WARNING: NDEBUG is not defined, so experiment results may be affected by assertions and debug code."<<std::endl;
 #endif
@@ -998,10 +998,10 @@ void main_continued_with_globals(auto g) {
 
     // print object sizes, to help debugging/sanity checking memory layouts
     g->dsAdapter->printObjectSizes();
-    
+
     // setup thread pinning/binding
     binding_configurePolicy(TOTAL_THREADS);
-    
+
     // print actual thread pinning/binding layout
     std::cout<<"ACTUAL_THREAD_BINDINGS=";
     for (int i=0;i<TOTAL_THREADS;++i) {
@@ -1012,12 +1012,12 @@ void main_continued_with_globals(auto g) {
         std::cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<std::endl;
         exit(-1);
     }
-    
+
     // setup per-thread statistics
     std::cout<<std::endl;
     GSTATS_CREATE_ALL;
     std::cout<<std::endl;
-    
+
     // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
     GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
     GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
@@ -1025,7 +1025,7 @@ void main_continued_with_globals(auto g) {
 
     trial(g);
     printOutput(g);
-    
+
     binding_deinit();
     std::cout<<"garbage="<<g->garbage<<std::endl; // to prevent certain steps from being optimized out
     GSTATS_DESTROY;
@@ -1043,9 +1043,9 @@ int main(int argc, char** argv) {
         std::cout<<"This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"<<std::endl;
         return 1;
     }
-    
+
     std::cout<<"binary="<<argv[0]<<std::endl;
-    
+
     // setup default args
     PREFILL_THREADS = 0;
     MILLIS_TO_RUN = 1000;
@@ -1059,7 +1059,7 @@ int main(int argc, char** argv) {
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
                                 // to get NO prefilling, set -nprefill 0
     KeyGeneratorDistribution distribution = KeyGeneratorDistribution::UNIFORM;
-    
+
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
     for (int i=1;i<argc;++i) {
@@ -1096,7 +1096,7 @@ int main(int argc, char** argv) {
         }
     }
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
-    
+
     // print used args
     PRINTS(DS_TYPENAME);
     PRINTS(FIND_FUNC);
@@ -1120,7 +1120,7 @@ int main(int argc, char** argv) {
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
     PRINTI(distribution);
-    
+
     switch (distribution) {
         case UNIFORM: {
             main_continued_with_globals(new globals_t<KeyGeneratorUniform<test_type>>(MAXKEY, distribution));

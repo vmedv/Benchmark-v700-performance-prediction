@@ -44,7 +44,7 @@ public:
     std::string getSizeString() { return ""; }
     std::string getDetailsString() { return ""; }
 
-    inline static bool quiescenceIsPerRecordType() { return true; }
+    inline static bool quiescenceIsPerRecordType() { return false; }
     inline static bool shouldHelp() { return true; } // FOR DEBUGGING PURPOSES
     inline static bool supportsCrashRecovery() { return false; }
     inline bool isProtected(const int tid, T * const obj);
