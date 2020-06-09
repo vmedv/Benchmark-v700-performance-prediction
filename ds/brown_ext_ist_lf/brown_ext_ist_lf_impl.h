@@ -182,7 +182,7 @@ struct Node {
     inline casword_t volatile ptr(const int ix) {
         return *ptrAddr(ix);
     }
-    
+
     inline void incrementChangeSum(const int tid, RandomFNV1A * rng) {
 #ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
         if (likely(externalChangeCounter == NULL)) {
@@ -253,13 +253,13 @@ private:
     Node<K,V> * createLeaf(const int tid, KVPair<K,V> * pairs, int numPairs);
     Node<K,V> * createMultiCounterNode(const int tid, const int degree);
     KVPair<K,V> * createKVPair(const int tid, const K& key, const V& value);
-    
+
     void debugPrintWord(std::ofstream& ofs, casword_t w) {
         //ofs<<(void *) (w&~TOTAL_MASK)<<"("<<(IS_REBUILDOP(w) ? "r" : IS_VAL(w) ? "v" : "n")<<")";
         //ofs<<(IS_REBUILDOP(w) ? "RebuildOp *" : IS_VAL(w) ? "V" : "Node *");
         //ofs<<(IS_REBUILDOP(w) ? "r" : IS_VAL(w) ? "v" : "n");
     }
-    
+
     void debugGVPrint(std::ofstream& ofs, casword_t w, size_t depth, int * numPointers) {
         if (IS_KVPAIR(w)) {
             auto pair = CASWORD_TO_KVPAIR(w);
@@ -279,7 +279,7 @@ private:
             ofs<<"\""<<std::endl;
             ofs<<"shape = \"record\""<<std::endl;
             ofs<<"];"<<std::endl;
-            
+
             ofs<<"\""<<op<<"\":f0 -> \""<<op->rebuildRoot<<"\":f0 ["<<std::endl;
             ofs<<"id = "<<((*numPointers)++)<<std::endl;
             ofs<<"];"<<std::endl;
@@ -333,16 +333,16 @@ private:
                 ofs<<"\""<<std::endl;
                 ofs<<"shape = \"record\""<<std::endl;
                 ofs<<"];"<<std::endl;
-                
+
                 ofs<<"\""<<node<<"\":f3 -> \""<<node->externalChangeCounter<<"\":f0 ["<<std::endl;
                 ofs<<"id = "<<((*numPointers)++)<<std::endl;
                 ofs<<"];"<<std::endl;
             }
-            
+
             for (int i=0;i<node->degree;++i) {
                 casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
                 if (IS_VAL(targetWord)) continue;
-                
+
                 void * target = (void *) (targetWord & ~TOTAL_MASK);
                 ofs<<"\""<<node<<"\":f"<<FIELD_PTR(i)<<" -> \""<<target<<"\":f0 ["<<std::endl;
                 ofs<<"id = "<<((*numPointers)++)<<std::endl;
@@ -352,7 +352,7 @@ private:
             for (int i=0;i<node->degree;++i) {
                 casword_t targetWord = prov->readPtr(tid, node->ptrAddr(i));
                 if (IS_VAL(targetWord)) continue;
-                
+
                 debugGVPrint(ofs, targetWord, 1+depth, numPointers);
             }
         }
@@ -369,7 +369,7 @@ public:
         ofs<<"digraph g {"<<std::endl<<"graph ["<<std::endl<<"rankdir = \"TB\""<<std::endl<<"];"<<std::endl;
         ofs<<"node ["<<std::endl<<"fontsize = \"16\""<<std::endl<<"shape = \"ellipse\""<<std::endl<<"];"<<std::endl;
         ofs<<"edge ["<<std::endl<<"];"<<std::endl;
-        
+
         int numPointers = 0;
         debugGVPrint(ofs, NODE_TO_CASWORD(root), 0, &numPointers);
 
@@ -377,9 +377,9 @@ public:
         ofs.close();
     }
 private:
-    
+
     void helpFreeSubtree(const int tid, Node<K,V> * node);
-    
+
     void freeNode(const int tid, Node<K,V> * node, bool retire) {
         if (retire) {
 #ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
@@ -428,13 +428,13 @@ private:
             }
             freeNode(tid, node, retire);
         }
-        
+
 #ifdef USE_GSTATS
         DURATION_END_C(tid, duration_traverseAndRetire, tryTimingCall);
         TIMELINE_END_C(tid, "freeSubtree", tryTimingCall);
 #endif
     }
-    
+
 //public:
 //    size_t debugComputeSizeBytes(casword_t ptr) {
 //        // note: this can only be run when there are NO threads performing updates on the data structure
@@ -454,13 +454,13 @@ private:
 //        }
 //        return 0;
 //    }
-//    
+//
 //    size_t debugComputeSizeBytes() {
 //        return debugComputeSizeBytes(NODE_TO_CASWORD(root));
 //    }
-    
+
 private:
-    
+
     /**
      * recursive ideal ist construction
      * divide and conquer,
@@ -472,7 +472,7 @@ private:
      * if k is at most 48, there are no recursive calls:
      * the key-value pairs are simply encoded in the node.)
      */
-    
+
     class IdealBuilder {
     private:
         static const int UPPER_LIMIT_DEPTH = 16;
@@ -482,13 +482,13 @@ private:
         KVPair<K,V> * pairs;
         size_t pairsAdded;
         casword_t tree;
-        
+
         Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth, casword_t volatile * constructingSubtree, bool parallelizeWithOMP = false) {
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
                 GSTATS_ADD_IX(tid, num_bail_from_build_at_depth, 1, (currDepth > 9 ? 9 : currDepth));
                 return NODE_TO_CASWORD(NULL); // bail early if tree was already constructed by someone else
             }
-            
+
             if (psetSize <= MAX_ACCEPTABLE_LEAF_SIZE) {
                 return ist->createLeaf(tid, pset, psetSize);
             } else {
@@ -522,7 +522,7 @@ private:
                         auto sub_thread_id = tid; // it will just be this main thread
 #endif
                         ist->initThread(sub_thread_id);
-                        
+
                         #pragma omp for
                         for (int i=0;i<numChildren;++i) {
                             int sz = childSize + (i < remainder);
@@ -580,7 +580,7 @@ private:
             pairs[pairsAdded++] = {key, value};
 #ifndef NDEBUG
             if (pairsAdded > initNumKeys) {
-                printf("tid=%d key=%lld pairsAdded=%lld initNumKeys=%lld\n", tid, key, pairsAdded, initNumKeys);
+                printf("tid=%d key=%lld pairsAdded=%lu initNumKeys=%lu\n", tid, key, pairsAdded, initNumKeys);
                 ist->debugGVPrint(tid);
             }
 #endif
@@ -590,7 +590,7 @@ private:
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) return NODE_TO_CASWORD(NULL);
 #ifndef NDEBUG
             if (pairsAdded != initNumKeys) {
-                printf("tid=%d pairsAdded=%lld initNumKeys=%lld\n", tid, pairsAdded, initNumKeys);
+                printf("tid=%d pairsAdded=%lu initNumKeys=%lu\n", tid, pairsAdded, initNumKeys);
                 if (pairsAdded > 0) printf("tid=%d key[0]=%lld\n", tid, pairs[0].k);
                 ist->debugGVPrint(tid);
             }
@@ -621,12 +621,12 @@ private:
             }
             return tree;
         }
-        
+
         K getMinKey() {
             assert(pairsAdded > 0);
             return pairs[0].k;
         }
-    };    
+    };
 
     void addKVPairs(const int tid, casword_t ptr, IdealBuilder * b);
     void addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, size_t depth, IdealBuilder * b, casword_t volatile * constructingSubtree);
@@ -668,7 +668,7 @@ public:
     , prov(new dcssProvider<void* /* unused */>(numProcesses))
     , INF_KEY(infinity)
     , NO_VALUE(noValue)
-    , NUM_PROCESSES(numProcesses) 
+    , NUM_PROCESSES(numProcesses)
     {
         srand(time(0)); // for seeding per-thread RNGs in initThread
         cmp = Interpolate();
@@ -681,7 +681,7 @@ public:
         _root->minKey = INF_KEY;
         _root->maxKey = INF_KEY;
         *_root->ptrAddr(0) = EMPTY_VAL_TO_CASWORD;
-        
+
         root = _root;
     }
 
@@ -697,11 +697,11 @@ public:
     , prov(new dcssProvider<void* /* unused */>(numProcesses))
     , INF_KEY(infinity)
     , NO_VALUE(noValue)
-    , NUM_PROCESSES(numProcesses) 
+    , NUM_PROCESSES(numProcesses)
     {
-        
+
 #if defined IST_INIT_CONCURRENT_INSERT_THEN_REBUILD
-        
+
         srand(time(0)); // for seeding per-thread RNGs in initThread
         cmp = Interpolate();
 
@@ -713,14 +713,14 @@ public:
         _root->minKey = INF_KEY;
         _root->maxKey = INF_KEY;
         *_root->ptrAddr(0) = EMPTY_VAL_TO_CASWORD;
-        
+
         root = _root;
-        
+
         #pragma omp parallel
         {
             int tid = omp_get_thread_num();
             initThread(tid);
-        
+
             //std::cout<<"parallel for insertion"<<std::endl;
             #pragma omp for
             for (int i=0;i<initNumKeys;++i) {
@@ -738,7 +738,7 @@ public:
         }
 
 #elif defined IST_INIT_PARALLEL_IDEAL_BUILD
-        
+
         // parallelization of sequential ideal builder
         srand(time(0)); // for seeding per-thread RNGs in initThread
         cmp = Interpolate();
@@ -749,7 +749,7 @@ public:
         Node<K,V> * _root = createNode(tid, 1);
         _root->degree = 1;
         root = _root;
-        
+
         IdealBuilder b (this, initNumKeys, 0);
         #pragma omp parallel for
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
@@ -758,9 +758,9 @@ public:
         b.___experimental_setNumPairs(initNumKeys);
         casword_t dummy = NODE_TO_CASWORD(NULL);
         *root->ptrAddr(0) = b.getCASWord(tid, &dummy, true);
-        
+
 #elif defined IST_INIT_SEQUENTIAL
-        
+
         // old sequential tree building method
         srand(time(0)); // for seeding per-thread RNGs in initThread
         cmp = Interpolate();
@@ -771,7 +771,7 @@ public:
         Node<K,V> * _root = createNode(tid, 1);
         _root->degree = 1;
         root = _root;
-        
+
         IdealBuilder b (this, initNumKeys, 0);
         for (size_t keyIx=0;keyIx<initNumKeys;++keyIx) {
             b.addKV(tid, initKeys[keyIx], initValues[keyIx]);
@@ -850,19 +850,19 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
     // then have threads *collaborate* by reserving individual subtrees to free.
     // idea: reserve a subtree before freeing it by CASing it to NULL
     //       we are done when all pointers are NULL.
-    
+
     // conceptually you reserve the right to reclaim everything under a node
     // (including the node) when you set its DIRTY_DIRTY_MARKED_FOR_FREE_MASK bit
     //
     // note: the dirty field doesn't exist for kvpair, value, empty value and rebuildop objects...
     // so to reclaim those if they are children of the root node passed to this function,
     // we claim the entire root node at the end, and go through those with one thread.
-    
+
 #ifdef USE_GSTATS
     TIMELINE_START(tid);
     DURATION_START(tid);
 #endif
-    
+
     // first, claim subtrees rooted at CHILDREN of this node
     // TODO: does this improve if we scatter threads in this iteration?
     for (int i=0;i<node->degree;++i) {
@@ -870,7 +870,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
         if (IS_NODE(ptr)) {
             auto child = CASWORD_TO_NODE(ptr);
             if (child == NULL) continue;
-            
+
             // claim subtree rooted at child
             while (true) {
                 auto old = child->dirty;
@@ -881,7 +881,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
             }
         }
     }
-    
+
     // then try to claim the node itself to handle special object types (kvpair, value, empty value, rebuildop).
     // claim node and its pointers that go to kvpair, value, empty value and rebuildop objects, specifically
     // (since those objects, and their descendents in the case of a rebuildop object,
@@ -900,7 +900,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
             freeNode(tid, node, true); // retire the ACTUAL node
         }
     }
-    
+
 #ifdef USE_GSTATS
     DURATION_END(tid, duration_traverseAndRetire);
     TIMELINE_END(tid, "freeSubtree");
@@ -912,7 +912,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
 #ifdef MEASURE_DURATION_STATS
     TimeThisScope obj (tid, duration_markAndCount, tryTiming);
 #endif
-    
+
     if (unlikely(IS_KVPAIR(ptr))) return 1;
     if (unlikely(IS_VAL(ptr))) return 1 - IS_EMPTY_VAL(ptr);
     if (unlikely(IS_REBUILDOP(ptr))) {
@@ -922,16 +922,16 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         // to effect the rebuilding.
         return markAndCount(tid, NODE_TO_CASWORD(CASWORD_TO_REBUILDOP(ptr)->rebuildRoot), false);
     }
-    
+
     assert(IS_NODE(ptr));
     auto node = CASWORD_TO_NODE(ptr);
-    
+
     // optimize by taking the sum from node->dirty if we run into a finished subtree
     auto result = node->dirty;
     if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
 
     if (!IS_DIRTY_STARTED(result)) __sync_val_compare_and_swap(&node->dirty, 0, DIRTY_STARTED_MASK);
-    
+
     // high level idea: if not at a leaf, try to divide work between any helpers at this node
     //      by using fetch&add to "soft-reserve" a subtree to work on.
     //      (each helper will get a different subtree!)
@@ -947,7 +947,7 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
     // note: could i save a second traversal to build KVPair arrays by having
     //      each thread call addKVPair for each key it sees in THIS traversal?
     //      (maybe avoiding sort order issues by saving per-thread lists and merging)
-    
+
 #if !defined IST_DISABLE_COLLABORATIVE_MARK_AND_COUNT
     // optimize for contention by first claiming a subtree to recurse on
     // THEN after there are no more subtrees to claim, help (any that are still DIRTY_STARTED)
@@ -962,16 +962,16 @@ size_t istree<K,V,Interpolate,RecManager>::markAndCount(const int tid, const cas
         }
     }
 #endif
-    
+
     // recurse over all subtrees
     size_t keyCount = 0;
     for (int i=0;i<node->degree;++i) {
         keyCount += markAndCount(tid, prov->readPtr(tid, node->ptrAddr(i)), false);
-        
+
         auto result = node->dirty;
         if (IS_DIRTY_FINISHED(result)) return DIRTY_FINISHED_TO_SUM(result); // markAndCount has already FINISHED in this subtree, and sum is the count
     }
-    
+
     __sync_bool_compare_and_swap(&node->dirty, DIRTY_STARTED_MASK, SUM_TO_DIRTY_FINISHED(keyCount));
     return keyCount;
 }
@@ -1010,7 +1010,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
             GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, (depth > 9 ? 9 : depth));
             return; // stop early if someone else built the subtree already
         }
-        
+
         assert(*numKeysToAdd > 0);
         assert(*numKeysToSkip >= 0);
         auto childptr = prov->readPtr(tid, node->ptrAddr(i));
@@ -1074,11 +1074,11 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
 #ifdef USE_GSTATS
     DURATION_START(tid);
 #endif
-    
+
     // compute initSize of new subtree
     auto totalSizeSoFar = ix*childSize + (ix < remainder ? ix : remainder);
     auto newChildSize = childSize + (ix < remainder);
-    
+
     // build new subtree
     IdealBuilder b (this, newChildSize, 1+op->depth);
     auto numKeysToSkip = totalSizeSoFar;
@@ -1120,11 +1120,11 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
 template <typename K, typename V, class Interpolate, class RecManager>
 casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int tid, RebuildOperation<K,V> * op, const size_t keyCount) {
     // Note: the following could be encapsulated in a ConcurrentIdealBuilder class
-    
+
     TRACE printf("createIdealConcurrent(tid=%d, rebuild op=%llx, keyCount=%lld)\n", tid, (unsigned long long) op, (long long) keyCount);
 
     if (unlikely(keyCount == 0)) return EMPTY_VAL_TO_CASWORD;
-    
+
     double numChildrenD = std::sqrt((double) keyCount);
     size_t numChildren = (size_t) std::ceil(numChildrenD);
     size_t childSize = keyCount / (size_t) numChildren;
@@ -1132,7 +1132,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     // remainder is the number of children with childSize+1 pair subsets
     // (the other (numChildren - remainder) children have childSize pair subsets)
     TRACE printf("    tid=%d numChildrenD=%f numChildren=%lld childSize=%lld remainder=%lld\n", tid, numChildrenD, (long long) numChildren, (long long) childSize, (long long) remainder);
-    
+
     casword_t word = NODE_TO_CASWORD(NULL);
     casword_t newRoot = op->newRoot;
     if (newRoot == EMPTY_VAL_TO_CASWORD) {
@@ -1142,7 +1142,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         TRACE printf("    tid=%d used existing op->newRoot=%llx\n", tid, (unsigned long long) op->newRoot);
     } else {
         assert(newRoot == NODE_TO_CASWORD(NULL));
-        
+
         if (keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) {
             IdealBuilder b (this, keyCount, op->depth);
             casword_t dummy = NODE_TO_CASWORD(NULL);
@@ -1168,7 +1168,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             }
             CASWORD_TO_NODE(word)->degree = 0; // zero this out so we can have threads synchronize a bit later by atomically incrementing this until it hits node->capacity
         }
-        
+
         // try to CAS node into the RebuildOp
         if (__sync_bool_compare_and_swap(&op->newRoot, NODE_TO_CASWORD(NULL), word)) { // this should (and will) fail if op->newRoot == EMPTY_VAL_TO_CASWORD because helping is done
             TRACE printf("    tid=%d CAS'd op->newRoot successfully\n", tid);
@@ -1177,12 +1177,12 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             // success; node == op->newRoot will be built by us and possibly by helpers
         } else {
             TRACE printf("    tid=%d failed to CAS op->newRoot\n", tid);
-            
+
             // we failed the newRoot CAS, so we lost the consensus race.
             // someone else CAS'd their newRoot in, so ours is NOT the new root.
             // reclaim ours, and help theirs instead.
             freeSubtree(tid, word, false);
-            
+
             // try to help theirs
             word = op->newRoot;
             assert(word != NODE_TO_CASWORD(NULL));
@@ -1192,13 +1192,13 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
                 // and someone else CAS'd the newRoot from non-null to "null" (empty val)
                 // (as part of reclamation) *after* we performed our CAS above.
                 // at any rate, we no longer need to help.
-                
+
                 // TODO: i forget now how this interacts with reclamation?
                 //      need to re-conceptualize the algorithm in its entirety!
                 // IIRC, op->newRoot can only transition from CASWORD(NULL) to CASWORD(node) to CASWORD_EMPTYVAL
                 //      (the final state meaning the new root / subtree(?) was *reclaimed*)
                 // QUESTION: how can this safely be reclaimed while we have a pointer to it? shouldn't EBR stop this?
-                
+
                 assert(IS_DIRTY_STARTED(op->parent->dirty));
                 return NODE_TO_CASWORD(NULL);
             }
@@ -1207,20 +1207,20 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
     assert(word != NODE_TO_CASWORD(NULL));
     assert(op->newRoot != NODE_TO_CASWORD(NULL));
     assert(op->newRoot == word || EMPTY_VAL_TO_CASWORD /* as per above, rebuildop was part of a subtree that was rebuilt, and "word" was reclaimed! */);
-    
+
     // stop here if there is no subtree to build (just one kvpair or node)
     if (IS_KVPAIR(word) || keyCount <= MAX_ACCEPTABLE_LEAF_SIZE) return word;
-    
+
     assert(IS_NODE(word));
     auto node = CASWORD_TO_NODE(word);
-    
+
 #ifndef NDEBUG
     if (node->capacity != numChildren) {
-        printf("keyCount=%lld node->capacity=%lld numChildren=%lld numChildrenD=%f childSize=%lld remainder=%lld op->depth=%lld word=%llx\n", keyCount, node->capacity, numChildren, numChildrenD, childSize, remainder, op->depth, word);
+        printf("keyCount=%lu node->capacity=%lu numChildren=%lu numChildrenD=%f childSize=%lu remainder=%lu op->depth=%lu word=%lx\n", keyCount, node->capacity, numChildren, numChildrenD, childSize, remainder, op->depth, word);
     }
 #endif
     assert(node->capacity == numChildren);
-    
+
     // opportunistically try to build different subtrees from any other concurrent threads
     // by synchronizing via node->degree. concurrent threads increment node->degree using cas
     // to "reserve" a subtree to work on (not truly exclusively---still a lock-free mechanism).
@@ -1233,7 +1233,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
             subtreeBuildAndReplace(tid, op, node, ix, childSize, remainder);
         }
     }
-    
+
     // try to help complete subtree building if necessary
     // (partially for lock-freedom, and partially for performance)
 
@@ -1264,16 +1264,16 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #ifdef USE_GSTATS
     TIMELINE_START_C(tid, (op->depth < 1));
 #endif
-    
+
 #ifdef MEASURE_REBUILDING_TIME
 //    GSTATS_TIMER_RESET(tid, timer_rebuild);
     GSTATS_ADD(tid, num_help_rebuild, 1);
 #endif
-    
+
 //    assert(!recordmgr->isQuiescent(tid));
     auto keyCount = markAndCount(tid, NODE_TO_CASWORD(op->rebuildRoot));
     auto oldWord = REBUILDOP_TO_CASWORD(op);
-    
+
 #ifdef IST_DISABLE_REBUILD_HELPING
     {
 #ifdef USE_GSTATS
@@ -1304,7 +1304,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
     }
 #endif
 
-    
+
 #ifdef USE_GSTATS
     DURATION_START(tid);
 #endif
@@ -1317,7 +1317,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
         op->debug_sync_in_experimental_no_collaboration_version = 2;
 #endif
         return; // someone else already *finished* helping
-        
+
         // TODO: help to free old subtree?
     }
     auto result = prov->dcssPtr(tid, (casword_t *) &op->parent->dirty, 0, (casword_t *) op->parent->ptrAddr(op->index), oldWord, newWord).status;
@@ -1346,14 +1346,14 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             //  then enough operations are performed to make a higher tree eligible for rebuild,
             //  then we finish our own rebuilding and try to DCSS our new subtree in)
             // to test this: let's measure whether this happens...
-            // apparently it does happen... in a 100% update workload for 15sec with 192 threads, we have: sum rebuild_is_subsumed_at_depth by_index=0 210 1887 277 5 
+            // apparently it does happen... in a 100% update workload for 15sec with 192 threads, we have: sum rebuild_is_subsumed_at_depth by_index=0 210 1887 277 5
             //      these numbers represent how many subsumptions happened at each depth (none at depth 0 (impossible), 210 at depth 1, and so on).
             //      regardless, this is not a performance issue for now. (at most 3 of these calls took 10ms+; the rest were below that threshold.)
             //      *if* it becomes an issue then helpFreeSubtree or something like it should fix the problem.
-            
+
             GSTATS_ADD(tid, rebuild_is_subsumed, 1); // if this DOES happen, it will be very expensive (well, *if* it's at the top of the tree...) because ONE thread will do it, and this will delay epoch advancement greatly
             GSTATS_ADD_IX(tid, rebuild_is_subsumed_at_depth, 1, op->depth);
-            
+
             // try to claim the NEW subtree located at op->newWord for reclamation
             if (op->newRoot != NODE_TO_CASWORD(NULL)
                     && __sync_bool_compare_and_swap(&op->newRoot, newWord, EMPTY_VAL_TO_CASWORD)) {
@@ -1371,16 +1371,16 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #ifdef USE_GSTATS
     DURATION_END(tid, duration_buildAndReplace);
 #endif
-    
+
 //#ifdef MEASURE_REBUILDING_TIME
 //    auto cappedDepth = std::min((size_t) 9, op->depth);
 //    GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
 //#endif
-    
+
 #ifdef USE_GSTATS
     TIMELINE_END_C(tid, "helpRebuild", (op->depth < 1));
 #endif
-    
+
     // collaboratively free the old subtree, if appropriate (if it was actually replaced)
     if (op->success) {
         assert(op->rebuildRoot);
@@ -1397,7 +1397,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #endif
         }
     }
-    
+
 #ifdef IST_DISABLE_REBUILD_HELPING
         op->debug_sync_in_experimental_no_collaboration_version = 2;
 #endif
@@ -1425,24 +1425,24 @@ template <typename K, typename V, class Interpolate, class RecManager>
 int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const K& key, Node<K,V> * const node) {
     __builtin_prefetch(&node->minKey, 1);
     __builtin_prefetch(&node->maxKey, 1);
-    
+
     // these next 3 prefetches are shockingly effective... 20% performance boost in some large scale search-only workloads... (reducing L3 cache misses by 2-3 per search...)
     __builtin_prefetch((node->keyAddr(0)), 1);
     __builtin_prefetch((node->keyAddr(0))+(8), 1);
     __builtin_prefetch((node->keyAddr(0))+(16), 1);
 
     auto deg = node->degree;
-    
+
     //assert(node->degree >= 1);
     if (unlikely(deg == 1)) {
 //        GSTATS_APPEND_D(tid, visited_in_isearch, 1);
         return 0;
     }
-    
+
     const int numKeys = deg - 1;
     const K& minKey = node->minKey;
     const K& maxKey = node->maxKey;
-    
+
     if (unlikely(key < minKey)) {
 //        GSTATS_APPEND_D(tid, visited_in_isearch, 1);
         return 0;
@@ -1457,7 +1457,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
     __builtin_prefetch((node->keyAddr(0))+(ix-8), 1);                           // prefetch approximate key location
     __builtin_prefetch((node->keyAddr(0))+(ix), 1);                             // prefetch approximate key location
     __builtin_prefetch((node->keyAddr(0))+(ix+8), 1);                           // prefetch approximate key location
-    
+
     const K& ixKey = node->key(ix);
 //    std::cout<<"key="<<key<<" minKey="<<minKey<<" maxKey="<<maxKey<<" ix="<<ix<<" ixKey="<<ixKey<<std::endl;
     if (key < ixKey) {
@@ -1529,7 +1529,7 @@ retryNode:
             }
             assert(foundVal == NO_VALUE || (((uint64_t) foundVal & 0xE000000000000000ULL) == 0));
             assert(foundVal == NO_VALUE || (((((size_t) foundVal) << 3) >> 3) == (size_t) foundVal)); // value must have top 3 bits empty so we can shift it // foundVal > 0 && foundVal < INF_KEY/8);
-            
+
             if (foundKey == key) {
                 if (t == InsertReplace) {
                     newWord = VAL_TO_CASWORD(val);
@@ -1570,7 +1570,7 @@ retryNode:
             }
             assert(newWord);
             assert((newWord & (~TOTAL_MASK)));
-            
+
             // DCSS that performs the update
             assert(ix >= 0);
             assert(ix < node->degree);
@@ -1589,16 +1589,16 @@ retryNode:
                 case DCSS_SUCCESS:
                     //assert(!recordmgr->isQuiescent(tid));
                     if (pair) recordmgr->retire(tid, pair);
-                    
+
                     if (!affectsChangeSum) break;
-                    
+
 //                    // probabilistically increment the changeSums of ancestors
 //                    if (myRNG->next() / (double) std::numeric_limits<uint64_t>::max() < SAMPLING_PROB) {
                         for (int i=0;i<pathLength;++i) {
                             path[i]->incrementChangeSum(tid, &threadRNGs[tid]); // myRNG);
                         }
 //                    }
-                    
+
                     // now, we must determine whether we should rebuild
                     for (int i=0;i<pathLength;++i) {
 //                        if ((path[i]->changeSum + (NUM_PROCESSES-1)) / (SAMPLING_PROB * (1 - EPS)) >= REBUILD_FRACTION * path[i]->initSize) {
@@ -1646,7 +1646,7 @@ retryNode:
                                 }
 #endif
 #endif
-                                
+
 #ifndef NO_REBUILDING
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, i);
                                 assert(path[i]);
@@ -1717,7 +1717,7 @@ Node<K,V>* istree<K,V,Interpolate,RecManager>::createLeaf(const int tid, KVPair<
     }
     node->minKey = node->key(0);
     node->maxKey = node->key(node->degree-2);
-    return node;    
+    return node;
 }
 
 template <typename K, typename V, class Interpolate, class RecManager>

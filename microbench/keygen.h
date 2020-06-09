@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   keygen.h
  * Author: t35brown
  *
@@ -35,11 +35,11 @@ public:
     double c = 0; // Normalization constant
     double * sum_probs; // Pre-calculated sum of probabilities
     PAD;
-    
+
     KeyGeneratorZipfData(int _maxKey, double _alpha) {
 //        std::cout<<"start KeyGeneratorZipfData"<<std::endl;
         maxKey = _maxKey;
-        
+
         // Compute normalization constant c for implied key range: [1, maxKey]
         int i;
         for (i = 1; i <= _maxKey; i++)
@@ -94,7 +94,7 @@ public:
         } while (low <= high);
 
         // Assert that zipf_value is between 1 and N
-        assert((zipf_value >= 1) && (zipf_value <= maxKey));
+        assert((zipf_value >= 1) && (zipf_value <= data->maxKey));
 
         return (zipf_value);
     }
