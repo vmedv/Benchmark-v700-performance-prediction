@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   server_clock.h
  * Author: trbot
  *
@@ -21,7 +21,7 @@ inline uint64_t get_server_clock() {
     __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
     uint64_t ret = ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
         ret = (uint64_t) ((double)ret / CPU_FREQ_GHZ);
-#else 
+#else
         timespec * tp = new timespec;
     clock_gettime(CLOCK_REALTIME, tp);
     uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;
@@ -32,7 +32,7 @@ inline uint64_t get_server_clock() {
 //class ClockSplitter {
 //private:
 //    uint64_t time;
-//    
+//
 //    inline uint64_t get_server_clock() {
 //#if defined(__i386__)
 //        uint64_t ret;
@@ -42,14 +42,14 @@ inline uint64_t get_server_clock() {
 //        __asm__ __volatile__ ("rdtsc" : "=a"(lo), "=d"(hi));
 //        uint64_t ret = ( (uint64_t)lo)|( ((uint64_t)hi)<<32 );
 //            ret = (uint64_t) ((double)ret / CPU_FREQ_GHZ);
-//#else 
+//#else
 //            timespec * tp = new timespec;
 //        clock_gettime(CLOCK_REALTIME, tp);
 //        uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;
 //#endif
 //        return ret;
 //    }
-//    
+//
 //public:
 //    ClockSplitter() {}
 //    void reset() {
@@ -63,24 +63,51 @@ inline uint64_t get_server_clock() {
 //};
 
 #ifdef MEASURE_TIMELINE_STATS
-    #define ___MIN_INTERVAL_DURATION 10
+    PAD;
+    volatile bool ___timeline_use = 0;
+    PAD;
+    #define ___MIN_INTERVAL_DURATION 0
+    #define TIMELINE_BLIP(tid, name) { \
+        if (___timeline_use) { \
+            uint64_t ___blipTime = get_server_clock(); \
+            printf("timeline_blip_%s tid=%d start=%lu\n", (name), (tid), ___blipTime); \
+        } \
+    }
+    #define TIMELINE_BLIP_LU(tid, name, label_lu) { \
+        if (___timeline_use) { \
+            uint64_t ___blipTime = get_server_clock(); \
+            printf("timeline_blip_%s tid=%d start=%lu label=%lu\n", (name), (tid), ___blipTime, (unsigned long) (label_lu)); \
+        } \
+    }
     #define TIMELINE_START_C(tid, condition) \
         uint64_t ___startTime; \
-        if ((condition)) { \
+        if (___timeline_use && (condition)) { \
             ___startTime = get_server_clock(); \
         }
     #define TIMELINE_START(tid) TIMELINE_START_C((tid), true)
     #define TIMELINE_END_C(tid, name, condition) { \
-        if ((condition)) { \
+        if (___timeline_use && (condition)) { \
             uint64_t ___endTime = get_server_clock(); \
             auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
             if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
-                printf("timeline_%s tid=%d start=%lu end=%lu duration_ms=%lu\n", (name), (tid), ___startTime, ___endTime, ___duration_ms); \
+                printf("timeline_%s tid=%d start=%lu end=%lu\n", (name), (tid), ___startTime, ___endTime); \
             } \
         } \
-    } 
+    }
+    #define TIMELINE_END_C_LU(tid, name, condition, label_lu) { \
+        if (___timeline_use && (condition)) { \
+            uint64_t ___endTime = get_server_clock(); \
+            auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
+            if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
+                printf("timeline_%s tid=%d start=%lu end=%lu label=%lu\n", (name), (tid), ___startTime, ___endTime, (unsigned long) (label_lu)); \
+            } \
+        } \
+    }
     #define TIMELINE_END(tid, name) TIMELINE_END_C((tid), (name), true)
+    #define TIMELINE_END_LU(tid, name, label_lu) TIMELINE_END_C_LU((tid), (name), true, (label_lu))
 #else
+    #define TIMELINE_BLIP(tid, name)
+    #define TIMELINE_BLIP_LU(tid, name, label_lu)
     #define TIMELINE_START_C(tid, condition)
     #define TIMELINE_START(tid)
     #define TIMELINE_END_C(tid, name, condition)

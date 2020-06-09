@@ -6,7 +6,7 @@ class Settings:
     maxThread = 1000        ## max thread for which to render intervals
     windowStart_ms = 0      ## only render intervals starting from x millis
     windowSize_ms = 60000   ## only render intervals for y millis after windowStart_ms
-    minDuration_ms = 20     ## min duration required for an interval to be rendered
+    minDuration_ms = 1      ## min duration required for an interval to be rendered
 
     ## should return the thread number for a given line (interval)
     def getThread(self, line):
@@ -22,7 +22,7 @@ class Settings:
 
     ## should return the color for a given line (interval)
     def getColor(self, line):
-        return "black"
+        return "lightgray"
 
     ## should return True if the line is to be included in the graph
     ## and False otherwise

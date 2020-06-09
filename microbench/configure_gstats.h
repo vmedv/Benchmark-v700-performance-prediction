@@ -273,6 +273,9 @@
     gstats_handle_stat(LONG_LONG, duration_traverseAndRetire, 1, { \
             gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
+    gstats_handle_stat(LONG_LONG, count_rotateAndFree, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
     gstats_handle_stat(LONG_LONG, latency_searches, 1, { \
             /*gstats_output_item(PRINT_HISTOGRAM_LOG, NONE, FULL_DATA) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \

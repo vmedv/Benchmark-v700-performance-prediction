@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -81,11 +81,11 @@ private:
     PAD;
         epoch_node_t * const nodes; // note: nodes[EBRT_ROOT] contains the real epoch number
     PAD;
-    
+
     private:
         void propagateQ(int currIx) {
             // preserve invariant: currIx is quiescent
-            
+
             // get parent
             const int parentIx = EBRT_PARENT(currIx);
 
@@ -95,13 +95,13 @@ private:
                     ? leftIx + 1 /* shortcut for computing right child from left */
                     : leftIx;
             const long siblingVal = nodes[siblingIx].v;
-            
+
             if (QUIESCENT(siblingVal)) {
                 nodes[parentIx].v = GET_WITH_QUIESCENT(0);
                 propagateQ(parentIx);
             }
         }
-    
+
     public:
         epoch_tree(const int numThreads)
         : numThreadsPow2(roundUpPow2(numThreads))
@@ -118,7 +118,7 @@ private:
             for (int ix=EBRT_LEAF(numThreads); ix<numNodes; ++ix) {
                 propagateQ(ix);
             }
-            
+
             nodes[EBRT_ROOT].v = EPOCH_INCREMENT;
         }
         ~epoch_tree() {
@@ -133,11 +133,11 @@ private:
         }
         void tryAdvance(const int tid) {
 //            GSTATS_ADD(tid, num_tryadvance, 1);
-            
+
             /**
              * we propagate announcement values up the tree via a tournament
              * with 2 threads competing at each step.
-             * 
+             *
              * propagate our announcement up the tree as long as is appropriate.
              */
             int currIx = EBRT_LEAF(tid);
@@ -146,7 +146,7 @@ private:
 //                GSTATS_ADD(tid, num_prop_nodes_visited, 1);
                 // get parent
                 const int parentIx = EBRT_PARENT(currIx);
-                
+
                 // get sibling
                 const int leftIx = EBRT_LEFT_CHILD(parentIx);
                 const int siblingIx = (currIx == leftIx)
@@ -194,7 +194,7 @@ private:
                 } else {
                     return; // cannot propagate (sibling's value is stopping us)
                 }
-                
+
                 // move to the parent
                 currIx = parentIx;
             }
@@ -229,13 +229,13 @@ protected:
 //    PAD; // not needed after padding in preceding var
     epoch_tree * epoch;
     PAD;
-    
+
 public:
     template<typename _Tp1>
     struct rebind { typedef reclaimer_ebr_tree<_Tp1, Pool> other; };
     template<typename _Tp1, typename _Tp2>
     struct rebind2 { typedef reclaimer_ebr_tree<_Tp1, _Tp2> other; };
-    
+
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         SOFTWARE_BARRIER;
         int ix = thread_data[tid].index;
@@ -245,7 +245,7 @@ public:
         bags[3] = NULL;
         SOFTWARE_BARRIER;
     }
-    
+
     long long getSizeInNodes() {
         long long sum = 0;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
@@ -261,7 +261,7 @@ public:
         ss<<getSizeInNodes();
         return ss.str();
     }
-    
+
     inline static bool quiescenceIsPerRecordType() { return false; }
     inline bool isQuiescent(const int tid) { return QUIESCENT(epoch->readThread(tid)); }
     inline static bool isProtected(const int tid, T * const obj) { return true; }
@@ -271,7 +271,7 @@ public:
     inline static bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true) { return true; }
     inline static void qUnprotectAll(const int tid) {}
     inline static bool shouldHelp() { return true; }
-    
+
 public:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (thread_data[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
@@ -281,7 +281,7 @@ public:
         thread_data[tid].index = nextIndex;
         thread_data[tid].currentBag = thread_data[tid].epochbags[nextIndex];
     }
-    
+
 private:
     template <typename... Rest>
     class BagRotator {
@@ -308,7 +308,7 @@ public:
 //        GSTATS_TIMER_APPEND_ELAPSED(tid, timersplit_guard, num_prop_guard_split);
         //epoch->announce(tid, GET_WITH_QUIESCENT(epoch->readThread(tid)));
     }
-    
+
     template <typename First, typename... Rest>
     inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers, const bool readOnly = false) {
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
@@ -349,7 +349,7 @@ public:
 #endif
         return result;
     }
-    
+
     inline void retire(const int tid, T* p) {
         thread_data[tid].currentBag->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
@@ -365,7 +365,7 @@ public:
 //
 //            // if our announced epoch is different from the current epoch, skip the following, since we're going to rotate limbo bags on our next operation, anyway
 //            if (readEpoch != BITS_EPOCH(ann)) return;
-//            
+//
 //            // scan all threads (skipping any threads we've already checked) to see if we can advance the epoch (and subsequently reclaim memory)
 //            for (; thread_data[tid].checked < this->NUM_PROCESSES; ++thread_data[tid].checked) {
 //                const int otherTid = thread_data[tid].checked;
@@ -375,14 +375,14 @@ public:
 //            __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
 //        }
     }
-    
+
     void debugPrintStatus(const int tid) {
         if (tid == 0) {
-            std::cout<<"global_epoch_counter="<<epoch->read()<<std::endl;
+            std::cout<<"global_epoch_counter="<<epoch->read()/EPOCH_INCREMENT<<std::endl;
             epoch->debugPrint();
         }
     }
-    
+
     void initThread(const int tid) {}
     void deinitThread(const int tid) {}
 

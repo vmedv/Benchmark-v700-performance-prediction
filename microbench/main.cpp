@@ -260,7 +260,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
         test_type key = g->keygens[tid]->next();
         //test_type key = g->rngs[tid].next(MAXKEY) + 1;
         double op = g->rngs[tid].next(100000000) / 1000000.;
-        GSTATS_TIMER_RESET(tid, timer_latency);
+        // GSTATS_TIMER_RESET(tid, timer_latency);
         if (op < insProbability) {
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
@@ -275,7 +275,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
             GSTATS_ADD(tid, num_deletes, 1);
         }
         GSTATS_ADD(tid, num_operations, 1);
-        GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
+        // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
     }
 
     __sync_fetch_and_add(&g->running, -1);
@@ -546,6 +546,7 @@ void createAndPrefillDataStructure(auto g, int64_t expectedSize) {
 
     // print total prefilling time
     std::cout<<"prefill_elapsed_ms="<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count()<<std::endl;
+    g->dsAdapter->printSummary(); ///////// debug
 }
 
 template <class GlobalsT>
@@ -589,20 +590,20 @@ void thread_timed(GlobalsT * g, int __tid) {
 //        printf("    key=%d\n", key);
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < INS) {
-            GSTATS_TIMER_RESET(tid, timer_latency);
+            // GSTATS_TIMER_RESET(tid, timer_latency);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, size_checksum, 1);
             }
-            GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
+            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_inserts, 1);
         } else if (op < INS+DEL) {
-            GSTATS_TIMER_RESET(tid, timer_latency);
+            // GSTATS_TIMER_RESET(tid, timer_latency);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, size_checksum, -1);
             }
-            GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
+            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS+DEL+RQ) {
             // TODO: make this respect KeyGenerators for non-uniform distributions
@@ -615,11 +616,11 @@ void thread_timed(GlobalsT * g, int __tid) {
 
             ++rq_cnt;
             size_t rqcnt;
-            GSTATS_TIMER_RESET(tid, timer_latency);
+            // GSTATS_TIMER_RESET(tid, timer_latency);
             if (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
                 garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
             }
-            GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
+            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
             GSTATS_ADD(tid, num_rq, 1);
         } else {
         //    GSTATS_TIMER_RESET(tid, timer_latency);
@@ -688,11 +689,17 @@ void thread_rq(GlobalsT * g, int __tid) {
 
         test_type key = (test_type) _key;
         size_t rqcnt;
-        GSTATS_TIMER_RESET(tid, timer_latency);
+        // GSTATS_TIMER_RESET(tid, timer_latency);
+
+        TIMELINE_START(tid);
+
         if (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
             garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
         }
-        GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
+
+        TIMELINE_END(tid, "RQThreadOperation");
+
+        // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
         GSTATS_ADD(tid, num_rq, 1);
         GSTATS_ADD(tid, num_operations, 1);
     }
@@ -762,6 +769,7 @@ void trial(GlobalsT * g) {
     g->startTime = std::chrono::high_resolution_clock::now();
     g->startClockTicks = get_server_clock();
     SOFTWARE_BARRIER;
+    ___timeline_use = 1;
     g->start = true;
     SOFTWARE_BARRIER;
 

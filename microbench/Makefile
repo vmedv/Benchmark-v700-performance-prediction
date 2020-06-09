@@ -26,17 +26,26 @@ ifeq ($(use_asserts), 0)
     FLAGS += -DNDEBUG
 endif
 
+use_fopenmp=1
+ifeq ($(use_fopenmp), 1)
+    FLAGS += -fopenmp
+endif
+
+use_timelines=0
+ifeq ($(use_timelines), 1)
+    FLAGS += -DMEASURE_TIMELINE_STATS
+endif
+
 FLAGS += -DMAX_THREADS_POW2=256
 FLAGS += -DCPU_FREQ_GHZ=2.1 #$(shell ./experiments/get_cpu_ghz.sh)
 FLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 FLAGS += -std=c++14 -mcx16 -O3 -gdwarf
 FLAGS += -fno-omit-frame-pointer
-FLAGS += -fopenmp
 #FLAGS += -DNO_CLEANUP_AFTER_WORKLOAD ### avoid executing data structure destructors, to save teardown time at the end of each trial (useful with massive trees)
 #FLAGS += -DRAPID_RECLAMATION
 FLAGS += -DPREFILL_INSERTION_ONLY
 #FLAGS += -DMEASURE_REBUILDING_TIME
-#FLAGS += -DMEASURE_TIMELINE_STATS
+# FLAGS += -DMEASURE_TIMELINE_STATS
 FLAGS += -DUSE_TREE_STATS
 #FLAGS += -DOVERRIDE_PRINT_STATS_ON_ERROR
 #FLAGS += -Wno-format

@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -99,30 +99,30 @@ private:
         void tryAdvance(const int tid, const bool startingOp) {
             auto cix = EBRT_LEAF(tid);
             auto val = nodes[cix].v;
-            
+
             while (cix > EBRT_ROOT) {
                 // get parent's value
                 auto pix = EBRT_PARENT(cix);
                 auto p = &nodes[pix];
                 auto pval = p->v;
-                
+
                 SOFTWARE_BARRIER;
-                
+
                 // get sibling's value (AFTER PARENT)
                 auto sval = nodes[EBRT_SIBLING(cix)].v;
 
                 // get current node's value (AFTER PARENT)
                 auto cval = nodes[cix].v;
-                
+
                 if (startingOp) {
                     while (true) {
                         // note: we know for a fact that because we are non-Q, we are propagating non-Q to the root
                         // (in the case where we are becoming Q (the !startingOp case), our propagation of Q is dependent not only on the sibling's Q-ness but the CURRENT node's continued Q-ness)
-                        
+
                         // CAN ONLY PROPAGATE MY VALUE BLINDLY IF MY SIBLING IS QUIESCENT (OTHERWISE, MUST PROPAGATE MIN(MY VALUE, SIBLING VALUE))
                         auto newval = QUIESCENT(sval) ? BITS_EPOCH(val) : std::min(BITS_EPOCH(val), BITS_EPOCH(sval));
                         if (pix == EBRT_ROOT) newval += EPOCH_INCREMENT;                                                // TODO: detect epoch overflow
-                        
+
                         if (QUIESCENT(pval)) {                                  // TODO: unlikely ?
                             if (BITS_EPOCH(pval) < newval) {                    // TODO: unlikely
                                 auto retval = CASV(&p->v, pval, newval);
@@ -157,7 +157,7 @@ private:
                             if (QUIESCENT(cval) && QUIESCENT(sval)) {           // TODO: unlikely ?
                                 auto newval = val;
                                 if (pix == EBRT_ROOT) newval += EPOCH_INCREMENT;                                        // TODO: detect epoch overflow
-                                
+
                                 if (BITS_EPOCH(pval) < BITS_EPOCH(newval)) {    // TODO: unlikely
                                     auto retval = CASV(&p->v, pval, newval);
                                     if (retval == pval) break; // continue at parent
@@ -212,13 +212,13 @@ protected:
 //    PAD; // not needed after padding in preceding var
     epoch_tree * epoch;
     PAD;
-    
+
 public:
     template<typename _Tp1>
     struct rebind { typedef reclaimer_ebr_tree_q<_Tp1, Pool> other; };
     template<typename _Tp1, typename _Tp2>
     struct rebind2 { typedef reclaimer_ebr_tree_q<_Tp1, _Tp2> other; };
-    
+
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         SOFTWARE_BARRIER;
         int ix = thread_data[tid].index;
@@ -228,7 +228,7 @@ public:
         bags[3] = NULL;
         SOFTWARE_BARRIER;
     }
-    
+
     size_t getSizeInNodes() {
         size_t sum = 0;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
@@ -244,7 +244,7 @@ public:
         ss<<getSizeInNodes();
         return ss.str();
     }
-    
+
     inline static bool quiescenceIsPerRecordType() { return false; }
     inline bool isQuiescent(const int tid) { return QUIESCENT(epoch->readThread(tid)); }
     inline static bool isProtected(const int tid, T * const obj) { return true; }
@@ -254,7 +254,7 @@ public:
     inline static bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true) { return true; }
     inline static void qUnprotectAll(const int tid) {}
     inline static bool shouldHelp() { return true; }
-    
+
 private:
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (thread_data[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
@@ -273,7 +273,7 @@ public:
         assert(QUIESCENT(ann));
         epoch->tryAdvance(tid, false);
     }
-    
+
     inline bool startOp(const int tid, void * const * const reclaimers, const int numReclaimers) {
         SOFTWARE_BARRIER; // prevent any bookkeeping from being moved after this point by the compiler.
 //        GSTATS_TIMER_RESET(tid, timersplit_guard);
@@ -299,7 +299,7 @@ public:
         epoch->tryAdvance(tid, true);
         return result;
     }
-    
+
     inline void retire(const int tid, T* p) {
         thread_data[tid].currentBag->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
@@ -315,7 +315,7 @@ public:
 //
 //            // if our announced epoch is different from the current epoch, skip the following, since we're going to rotate limbo bags on our next operation, anyway
 //            if (readEpoch != BITS_EPOCH(ann)) return;
-//            
+//
 //            // scan all threads (skipping any threads we've already checked) to see if we can advance the epoch (and subsequently reclaim memory)
 //            for (; thread_data[tid].checked < this->NUM_PROCESSES; ++thread_data[tid].checked) {
 //                const int otherTid = thread_data[tid].checked;
@@ -325,10 +325,10 @@ public:
 //            __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
 //        }
     }
-    
+
     void debugPrintStatus(const int tid) {
         if (tid == 0) {
-            std::cout<<"global_epoch_counter="<<epoch->read()<<std::endl;
+            std::cout<<"global_epoch_counter="<<epoch->read()/EPOCH_INCREMENT<<std::endl;
             epoch->debugPrint();
         }
     }

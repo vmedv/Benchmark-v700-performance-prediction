@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -37,10 +37,10 @@ protected:
 #define MIN_OPS_BEFORE_READ 10
 //#define MIN_OPS_BEFORE_CAS_EPOCH 100
 #endif
-    
+
 #define NUMBER_OF_EPOCH_BAGS 3 // 9 for range query support
 #define NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS 0 // 3 for range query support
-    
+
     class ThreadData {
     private:
         PAD;
@@ -64,16 +64,16 @@ protected:
     private:
         PAD;
     };
-    
+
     PAD;
     ThreadData threadData[MAX_THREADS_POW2];
     PAD;
-    
+
     // for epoch based reclamation
 //    PAD; // not needed after superclass layout
     volatile long epoch;
     PAD;
-    
+
 public:
     template<typename _Tp1>
     struct rebind {
@@ -83,7 +83,7 @@ public:
     struct rebind2 {
         typedef reclaimer_debracap<_Tp1, _Tp2> other;
     };
-        
+
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         if (NUMBER_OF_EPOCH_BAGS < 9 || NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS < 3) {
             setbench_error("unsupported operation with these parameters (see if-statement above this line)")
@@ -96,7 +96,7 @@ public:
         bags[3] = NULL;
         SOFTWARE_BARRIER;
     }
-    
+
     long long getSizeInNodes() {
         long long sum = 0;
         for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
@@ -112,9 +112,9 @@ public:
         ss<<getSizeInNodes(); //<<" in epoch bags";
         return ss.str();
     }
-    
+
     inline static bool quiescenceIsPerRecordType() { return false; }
-    
+
     inline bool isQuiescent(const int tid) {
         return QUIESCENT(threadData[tid].announcedEpoch.load(std::memory_order_relaxed));
     }
@@ -133,9 +133,9 @@ public:
         return true;
     }
     inline static void qUnprotectAll(const int tid) {}
-    
+
     inline static bool shouldHelp() { return true; }
-    
+
     // rotate the epoch bags and reclaim any objects retired two epochs ago.
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
@@ -213,11 +213,11 @@ public:
 #endif
         return result;
     }
-    
+
     inline void endOp(const int tid) {
         threadData[tid].announcedEpoch.store(GET_WITH_QUIESCENT(threadData[tid].localvar_announcedEpoch), std::memory_order_relaxed);
     }
-    
+
     // for all schemes except reference counting
     inline void retire(const int tid, T* p) {
         threadData[tid].currentBag->add(p);
@@ -234,7 +234,7 @@ public:
 
             // if our announced epoch is different from the current epoch, skip the following, since we're going to rotate limbo bags on our next operation, anyway
             if (readEpoch != BITS_EPOCH(ann)) return;
-            
+
             // scan all threads (skipping any threads we've already checked) to see if we can advance the epoch (and subsequently reclaim memory)
             for (; threadData[tid].checked < this->NUM_PROCESSES; ++threadData[tid].checked) {
                 const int otherTid = threadData[tid].checked;
@@ -244,10 +244,10 @@ public:
             __sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT);
         }
     }
-    
+
     void debugPrintStatus(const int tid) {
         if (tid == 0) {
-            std::cout<<"global_epoch_counter="<<epoch<<std::endl;
+            std::cout<<"global_epoch_counter="<<epoch/EPOCH_INCREMENT<<std::endl;
         }
     }
 

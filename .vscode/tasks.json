@@ -3,7 +3,7 @@
         {
             "type": "shell",
             "label": "Build data structures in ubench matching a search string (specified at the end of command)",
-            "command": "(make -j `make -Bnd all | grep prereq | grep ubench | cut -d\"'\" -f2 | grep sigouin`)",
+            "command": "(make -j `make -Bnd all | grep prereq | grep ubench | cut -d\"'\" -f2 | grep ramachandran`)",
             "args": [
             ],
             "options": {

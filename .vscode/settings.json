@@ -2,6 +2,18 @@
     "files.associations": {
         "iostream": "cpp",
         "cassert": "cpp",
-        "chrono": "cpp"
-    }
+        "chrono": "cpp",
+        "*.tcc": "cpp",
+        "fstream": "cpp",
+        "iosfwd": "cpp",
+        "istream": "cpp",
+        "limits": "cpp",
+        "sstream": "cpp",
+        "stop_token": "cpp",
+        "streambuf": "cpp",
+        "__tree": "cpp",
+        "iomanip": "cpp",
+        "locale": "cpp"
+    },
+    "svg.preview.background": "black"
 }

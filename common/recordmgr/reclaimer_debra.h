@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -30,7 +30,7 @@ protected:
 #define BITS_EPOCH(ann) ((ann)&~(EPOCH_INCREMENT-1))
 #define QUIESCENT(ann) ((ann)&1)
 #define GET_WITH_QUIESCENT(ann) ((ann)|1)
-    
+
 #ifdef RAPID_RECLAMATION
 #define MIN_OPS_BEFORE_READ 1
 //#define MIN_OPS_BEFORE_CAS_EPOCH 1
@@ -64,16 +64,16 @@ protected:
     private:
         PAD;
     };
-    
+
     PAD;
     ThreadData threadData[MAX_THREADS_POW2];
     PAD;
-    
+
     // for epoch based reclamation
 //    PAD; // not needed after superclass layout
     volatile long epoch;
     PAD;
-    
+
 public:
     template<typename _Tp1>
     struct rebind {
@@ -83,7 +83,7 @@ public:
     struct rebind2 {
         typedef reclaimer_debra<_Tp1, _Tp2> other;
     };
-    
+
     inline void getSafeBlockbags(const int tid, blockbag<T> ** bags) {
         if (NUMBER_OF_EPOCH_BAGS < 9 || NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS < 3) {
             setbench_error("unsupported operation with these parameters (see if-statement above this line)")
@@ -96,7 +96,7 @@ public:
         bags[3] = NULL;
         SOFTWARE_BARRIER;
     }
-    
+
     long long getSizeInNodes() {
         long long sum = 0;
         //std::cout<<"NUM_PROC="<<this->NUM_PROCESSES<<std::endl;
@@ -114,7 +114,7 @@ public:
         ss<<getSizeInNodes(); //<<" in epoch bags";
         return ss.str();
     }
-    
+
     std::string getDetailsString() {
         std::stringstream ss;
         long long sum[NUMBER_OF_EPOCH_BAGS];
@@ -129,9 +129,9 @@ public:
         }
         return ss.str();
     }
-    
+
     inline static bool quiescenceIsPerRecordType() { return false; }
-    
+
     inline bool isQuiescent(const int tid) {
         return QUIESCENT(threadData[tid].announcedEpoch.load(std::memory_order_relaxed));
     }
@@ -150,27 +150,28 @@ public:
         return true;
     }
     inline static void qUnprotectAll(const int tid) {}
-    
+
     inline static bool shouldHelp() { return true; }
-    
+
     // rotate the epoch bags and reclaim any objects retired two epochs ago.
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
         blockbag<T> * const freeable = threadData[tid].epochbags[(nextIndex+NUMBER_OF_ALWAYS_EMPTY_EPOCH_BAGS) % NUMBER_OF_EPOCH_BAGS];
 #ifdef USE_GSTATS
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
+        GSTATS_ADD(tid, count_rotateAndFree, 1);
         TIMELINE_START(tid);
         DURATION_START(tid);
 #endif
 
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
         SOFTWARE_BARRIER;
-        
+
 #ifdef USE_GSTATS
         DURATION_END(tid, duration_rotateAndFree);
-        TIMELINE_END(tid, "rotateEpochBags");
+        TIMELINE_END_LU(tid, "rotateEpochBags", threadData[tid].localvar_announcedEpoch);
 #endif
-    
+
         threadData[tid].index = nextIndex;
         threadData[tid].currentBag = threadData[tid].epochbags[nextIndex];
     }
@@ -247,7 +248,8 @@ public:
                     if (c >= this->NUM_PROCESSES /*&& c > MIN_OPS_BEFORE_CAS_EPOCH*/) {
                         if (__sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT)) {
 #if defined USE_GSTATS
-                            GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), readEpoch+EPOCH_INCREMENT);
+                            // GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), readEpoch+EPOCH_INCREMENT);
+                            TIMELINE_BLIP_LU(tid, "advanceEpoch", readEpoch);
 #endif
                         }
                     }
@@ -258,20 +260,20 @@ public:
 #endif
         return result;
     }
-    
+
     inline void endOp(const int tid) {
         threadData[tid].announcedEpoch.store(GET_WITH_QUIESCENT(threadData[tid].localvar_announcedEpoch), std::memory_order_relaxed);
     }
-    
+
     // for all schemes except reference counting
     inline void retire(const int tid, T* p) {
         threadData[tid].currentBag->add(p);
         DEBUG2 this->debug->addRetired(tid, 1);
     }
-    
+
     void debugPrintStatus(const int tid) {
         if (tid == 0) {
-            std::cout<<"global_epoch_counter="<<epoch<<std::endl;
+            std::cout<<"global_epoch_counter="<<epoch/EPOCH_INCREMENT<<std::endl;
         }
     }
 
