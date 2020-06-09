@@ -15,6 +15,46 @@ compile_microbench:
         paths:
             - microbench/bin
 
+compile_microbench_option_coverage:
+    stage: build
+    script:
+        - cd microbench
+        - echo
+        - echo "#########################################################"
+        - echo "## make -j all"
+        - echo "#########################################################"
+        - make -j all || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## use_asserts=1"
+        - echo "#########################################################"
+        - make -j all use_asserts=1 || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## use_asserts=1 use_timelines=1"
+        - echo "#########################################################"
+        - make -j all use_asserts=1 use_timelines=1 || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## has_libpapi=0"
+        - echo "#########################################################"
+        - make -j all has_libpapi=0 || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## has_libpapi=0 has_libnuma=0"
+        - echo "#########################################################"
+        - make -j all has_libnuma=0 has_libpapi=0 || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## has_libpapi=0 has_libnuma=0 use_openmp=0"
+        - echo "#########################################################"
+        - make -j all has_libnuma=0 has_libpapi=0 use_openmp=0 || exit 1
+        - echo
+        - echo "#########################################################"
+        - echo "## has_libpapi=0 has_libnuma=0 use_openmp=0"
+        - echo "#########################################################"
+        - make -j all has_libnuma=0 has_libpapi=0 use_openmp=0 || exit 1
+
 test_microbench_istree_throughput:
     stage: test
     script:
@@ -33,7 +73,7 @@ test_microbench_istree_throughput:
 # dos2unix          sudo apt install dos2unix
 # numactl           sudo apt install numactl
 # libnuma           sudo apt install libnuma-dev
-# papi              
+# papi
 # timeout, time
 
 ### next up: figure out how to parse things.... or just offload this kind of results validation to .sh files???
