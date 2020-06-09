@@ -112,6 +112,7 @@ inline uint64_t get_server_clock() {
     #define TIMELINE_START(tid)
     #define TIMELINE_END_C(tid, name, condition)
     #define TIMELINE_END(tid, name)
+    #define TIMELINE_END_LU(tid, name, label_lu)
 #endif
 
 #ifdef MEASURE_DURATION_STATS

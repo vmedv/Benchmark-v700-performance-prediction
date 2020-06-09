@@ -769,7 +769,9 @@ void trial(GlobalsT * g) {
     g->startTime = std::chrono::high_resolution_clock::now();
     g->startClockTicks = get_server_clock();
     SOFTWARE_BARRIER;
+#ifdef MEASURE_TIMELINE_STATS
     ___timeline_use = 1;
+#endif
     g->start = true;
     SOFTWARE_BARRIER;
 
