@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -56,13 +56,13 @@ protected:
     typedef typename Alloc::template    rebind<Record>::other              classAlloc;
     typedef typename Pool::template     rebind2<Record, classAlloc>::other classPool;
     typedef typename Reclaim::template  rebind2<Record, classPool>::other  classReclaim;
-    
+
 public:
     PAD;
     classAlloc      *alloc;
     classPool       *pool;
     classReclaim    *reclaim;
-    
+
     const int NUM_PROCESSES;
     debugInfo debugInfoRecord;
     RecoveryMgr<void *> * const recoveryMgr;
@@ -88,13 +88,13 @@ public:
         reclaim->initThread(tid);
 //        endOp(tid);
     }
-    
+
     void deinitThread(const int tid) {
         reclaim->deinitThread(tid);
         pool->deinitThread(tid);
         alloc->deinitThread(tid);
     }
-    
+
     inline void clearCounters() {
         debugInfoRecord.clear();
     }
@@ -123,7 +123,7 @@ public:
     inline bool isQProtected(const int tid, record_pointer obj) {
         return reclaim->isQProtected(tid, obj);
     }
-    
+
     inline static bool supportsCrashRecovery() {
         return Reclaim::supportsCrashRecovery();
     }
@@ -145,12 +145,17 @@ public:
         reclaim->template startOp<First, Rest...>(tid, reclaimers, numReclaimers, readOnly);
     }
 
+    template <typename First, typename... Rest>
+    inline void debugGCSingleThreaded(void * const * const reclaimers, const int numReclaimers) {
+        reclaim->template debugGCSingleThreaded<First, Rest...>(reclaimers, numReclaimers);
+    }
+
     // for all schemes except reference counting
     inline void retire(const int tid, record_pointer p) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
         reclaim->retire(tid, p);
     }
-    
+
     // for all schemes
     inline record_pointer allocate(const int tid) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
@@ -190,11 +195,11 @@ public:
             reclaim->debugPrintStatus(tid);
         }
         COUTATOMIC(std::endl);
-        
+
 //        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
 //            COUTATOMIC("thread "<<tid<<" ");
 //            alloc->debugPrintStatus(tid);
-//            
+//
 //            COUTATOMIC("    ");
 //            //COUTATOMIC("allocated "<<debugInfoRecord.getAllocated(tid)<<" Nodes");
 //            //COUTATOMIC("allocated "<<(debugInfoRecord.getAllocated(tid) / 1000)<<"k Nodes");

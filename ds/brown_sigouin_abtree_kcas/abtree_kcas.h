@@ -21,8 +21,8 @@ using namespace std;
 #define TO_INTERNAL(node) ((NodeInternal<K,V,DEGREE> *) (node))
 #define TO_NODE(node) ((Node<K,V,DEGREE> *) (node))
 
- #define RECLAIM_NODE(node) node->leaf ? recmgr->retire(tid, TO_LEAF((node))) : recmgr->retire(tid, TO_INTERNAL((node))) 
- #define DEALLOCATE_NODE(node) node->leaf ? recmgr->deallocate(tid, TO_LEAF((node))) : recmgr->deallocate(tid, TO_INTERNAL((node))) 
+ #define RECLAIM_NODE(node) node->leaf ? recmgr->retire(tid, TO_LEAF((node))) : recmgr->retire(tid, TO_INTERNAL((node)))
+ #define DEALLOCATE_NODE(node) node->leaf ? recmgr->deallocate(tid, TO_LEAF((node))) : recmgr->deallocate(tid, TO_INTERNAL((node)))
 
 //#ifdef NO_RECLAMATION
 //    #define RECLAIM_NODE(node)
@@ -169,6 +169,10 @@ public:
 
     bool validate();
 
+    RecordManager * const debugGetRecMgr() {
+        return recmgr;
+    }
+
 private:
 
     int getKeyCount(Node<K, V, DEGREE> * node);
@@ -202,7 +206,7 @@ private:
     int fixDegreeViolation(const int tid, Node<K, V, DEGREE> * viol);
 
     int fixWeightViolation(const int tid, Node<K, V, DEGREE> * viol);
-    
+
 };
 
 template<class RecordManager, typename K, typename V, int DEGREE, class Compare>
@@ -284,7 +288,7 @@ NO_VALUE((void *) - 1LL), maxKey(_maxKey) {
     assert(sizeof(V) == sizeof(Node<K, V, DEGREE> *));
     assert(SUCCESS == RetCode::SUCCESS);
     assert(RETRY == RetCode::RETRY);
-    
+
     compare = Compare();
 
     const int tid = 0;
@@ -374,8 +378,8 @@ V ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::searchBasic(const int tid, c
             if (extNode->keys[keyIndex] == key) {
                 return val;
             }
-        }            
-        
+        }
+
         //one of the above conditions (index not in bounds or key is not exact)
         //so we need to check to make sure that it doesn't exist in truth by validating
         else if (validatePath(tid, currSize, path)) {
@@ -386,7 +390,7 @@ V ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::searchBasic(const int tid, c
 }
 
 /* search(const int tid, SearchInfo &info, const K &key)
- * normal search used to search for a specific key, fills a SearchInfo struct so the caller 
+ * normal search used to search for a specific key, fills a SearchInfo struct so the caller
  * can manipulate the nodes around the searched for key
  */
 template<class RecordManager, typename K, typename V, int DEGREE, class Compare>
@@ -428,7 +432,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::search(const int tid, Sear
 
             if (extNode->keys[info.keyIndex] == key) {
                 //sure we found the value and key, but it is possible that
-                //they are not a pair (no longer have certainty that a node 
+                //they are not a pair (no longer have certainty that a node
                 //we are reading will not change with KCAS)...
                 if (extNode->vNumMark != info.oNode.oVNumMark) continue;
 
@@ -466,7 +470,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::search(const int tid, Sear
 /* searchTarget(const int tid, SearchInfo &info, Node<K, V, DEGREE> * target, const K &key)
  * Searches for a key, however halts when a specific target node is reached. Return
  * is dependent on if the node halted at is the target (indicating the key searched for leads, at some point,
- * to this node) 
+ * to this node)
  */
 template<class RecordManager, typename K, typename V, int DEGREE, class Compare>
 int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::searchTarget(const int tid, SearchInfo &info, Node<K, V, DEGREE> * target, const K &key) {
@@ -541,7 +545,7 @@ V ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::tryInsert(const int tid, con
 
 template<class RecordManager, typename K, typename V, int DEGREE, class Compare>
 int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::insert(const int tid, SearchInfo &info, const K &key, const V &value) {
-    
+
     auto node = TO_LEAF(info.oNode.node);
     auto parent = TO_INTERNAL(info.oParent.node);
     assert(node->leaf);
@@ -549,7 +553,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::insert(const int tid, Sear
 
     //TODO: Add case where it is a leaf and simply add the key, unsorted etc..
 
-    // if l already contains key, replace the existing value	 
+    // if l already contains key, replace the existing value
     if (info.keyIndex < getKeyCount((Node<K, V, DEGREE> *)node) && node->keys[info.keyIndex] == key) {
         kcas::start();
 
@@ -696,7 +700,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::erase(const int tid, Searc
     assert(info.oNode.oVNumMark != -1);
 
     /**
-     * if l contains key, replace l by a new copy that does not contain key. This should always be the (observed) case, 
+     * if l contains key, replace l by a new copy that does not contain key. This should always be the (observed) case,
      * search would only get here if so. Could add a fast quit here, but makes more sense to check version numbers if that is the case
      */
     // create new node(s)
@@ -739,7 +743,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixWeightViolation(const i
          * In addition, version number changes do not indicate that the some other thread is responsible
          * Hence, we must loop until the issue is resolved. What is key here is that if you create a violation you will observe it, and will not
          * be able to leave until it is resolved, and since no thread can leave until there is a time *after* their update that the node will be
-         * fixed, so they must fix, or observe the fix, of the invalidation they created. 
+         * fixed, so they must fix, or observe the fix, of the invalidation they created.
          **/
 
         // assert: viol is internal (because leaves always have weight = 1)
@@ -1049,7 +1053,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(left); i++) {
                     newNodeExt->keys[keyCounter++].setInitVal(leftExt->keys[i]);
                 }
-                
+
                 for (int i = 0; i < left->size; i++) {
                     newNodeExt->ptrs[ptrCounter++].setInitVal(leftExt->ptrs[i]);
                 }
@@ -1060,7 +1064,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                     for (int i = 0; i < getKeyCount(right); i++) {
                         newNodeExt->keys[keyCounter++].setInitVal(rightExt->keys[i]);
                     }
-                    
+
                     for (int i = 0; i < right->size; i++) {
                         newNodeExt->ptrs[ptrCounter++].setInitVal(rightExt->ptrs[i]);
                     }
@@ -1070,13 +1074,13 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                     for (int i = 0; i < getKeyCount(right); i++) {
                         newNodeExt->keys[keyCounter++].setInitVal(rightInt->keys[i]);
                     }
-                    
+
                     for (int i = 0; i < right->size; i++) {
                         newNodeExt->ptrs[ptrCounter++].setInitVal(rightInt->ptrs[i]);
                     }
                 }
-                             
-                
+
+
                 newNode = (Node<K, V, DEGREE> *)newNodeExt;
             } else {
 
@@ -1087,9 +1091,9 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(left); i++) {
                     newNodeInt->keys[keyCounter++] = leftInt->keys[i];
                 }
-                               
+
                 newNodeInt->keys[keyCounter++] = parent->keys[leftIndex];
-                
+
                 for (int i = 0; i < left->size; i++) {
                     newNodeInt->ptrs[ptrCounter++].setInitVal(leftInt->ptrs[i]);
                 }
@@ -1100,7 +1104,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                     for (int i = 0; i < getKeyCount(right); i++) {
                         newNodeInt->keys[keyCounter++] = rightExt->keys[i];
                     }
-                    
+
                     for (int i = 0; i < right->size; i++) {
                         newNodeInt->ptrs[ptrCounter++].setInitVal(rightExt->ptrs[i]);
                     }
@@ -1110,12 +1114,12 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                     for (int i = 0; i < getKeyCount(right); i++) {
                         newNodeInt->keys[keyCounter++] = rightInt->keys[i];
                     }
-                    
+
                      for (int i = 0; i < right->size; i++) {
                         newNodeInt->ptrs[ptrCounter++].setInitVal(rightInt->ptrs[i]);
                     }
                 }
-         
+
                 newNode = (Node<K, V, DEGREE> *)newNodeInt;
             }
 
@@ -1216,7 +1220,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(left); i++) {
                     tosort[keyCounter++].key = TO_LEAF(left)->keys[i];
                 }
-                
+
                 for (int i = 0; i < left->size; i++) {
                     tosort[valCounter++].val = TO_LEAF(left)->ptrs[i];
                 }
@@ -1224,13 +1228,13 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(left); i++) {
                     tosort[keyCounter++].key = TO_INTERNAL(left)->keys[i];
                 }
-                
+
                 for (int i = 0; i < left->size; i++) {
                     tosort[valCounter++].val = TO_INTERNAL(left)->ptrs[i];
                 }
             }
 
-           
+
 
             if (!left->leaf) tosort[keyCounter++].key = parent->keys[leftIndex];
 
@@ -1238,7 +1242,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(right); i++) {
                     tosort[keyCounter++].key = TO_LEAF(right)->keys[i];
                 }
-                
+
                 for (int i = 0; i < right->size; i++) {
                     tosort[valCounter++].val = TO_LEAF(right)->ptrs[i];
                 }
@@ -1246,31 +1250,31 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 for (int i = 0; i < getKeyCount(right); i++) {
                     tosort[keyCounter++].key = TO_INTERNAL(right)->keys[i];
                 }
-                
+
                 for (int i = 0; i < right->size; i++) {
                     tosort[valCounter++].val = TO_INTERNAL(right)->ptrs[i];
                 }
             }
 
-      
+
 
             if (left->leaf) qsort(tosort, keyCounter, sizeof (kvpair<K>), kv_compare<K, Compare>);
 
             keyCounter = 0;
             valCounter = 0;
             K pivot;
-            
+
             if (left->leaf) {
                 NodeExternal<K, V, DEGREE> * newLeftExt = createExternalNode(tid, true, leftSize, (K)0x0);
                 for (int i = 0; i < leftSize; i++) {
                     newLeftExt->keys[i].setInitVal(tosort[keyCounter++].key);
                 }
 
-                
+
                 for (int i = 0; i < leftSize; i++) {
                     newLeftExt->ptrs[i].setInitVal((Node<K, V, DEGREE> *)tosort[valCounter++].val);
                 }
-                
+
                 newLeft = (Node<K, V, DEGREE> *)newLeftExt;
                 newLeft->searchKey.setInitVal(newLeftExt->keys[0]);
                 pivot = tosort[keyCounter].key;
@@ -1281,18 +1285,18 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                     newLeftInt->keys[i] = tosort[keyCounter++].key;
                 }
 
-                
+
                 for (int i = 0; i < leftSize; i++) {
                     newLeftInt->ptrs[i].setInitVal((Node<K, V, DEGREE> *)tosort[valCounter++].val);
                 }
-                
+
                 newLeft = (Node<K, V, DEGREE> *)newLeftInt;
                 newLeft->searchKey.setInitVal(newLeftInt->keys[0]);
                 pivot = tosort[keyCounter++].key;
             }
 
 
-     
+
 
             // reserve one key for the parent (to go between newleft and newright))
 
@@ -1303,7 +1307,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 }
                 newRight = (Node<K, V, DEGREE> *)newRightExt;
                 newRight->searchKey.setInitVal(newRightExt->keys[0]);
-                
+
                 for (int i = 0; i < rightSize; i++) {
                     TO_LEAF(newRight)->ptrs[i].setInitVal((Node<K, V, DEGREE> *)tosort[valCounter++].val);
                 }
@@ -1314,15 +1318,15 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
                 }
                 newRight = (Node<K, V, DEGREE> *)newRightInt;
                 newRight->searchKey.setInitVal(newRightInt->keys[0]);
-                
+
                 for (int i = 0; i < rightSize; i++) {
                     TO_INTERNAL(newRight)->ptrs[i].setInitVal((Node<K, V, DEGREE> *)tosort[valCounter++].val);
                 }
             }
 
 
-          
-            
+
+
             //because you make keys not caswords in internal nodes, and you want to change one,
             //in this case you need to replace the parent, despite not having to before
             auto newParent = createInternalNode(tid, parent->weight, parent->size, parent->searchKey);
@@ -1351,7 +1355,7 @@ int ABTreeKCAS<RecordManager, K, V, DEGREE, Compare>::fixDegreeViolation(const i
 
                 return RetCode::SUCCESS;
             }
-            
+
             DEALLOCATE_NODE(newLeft);
             DEALLOCATE_NODE(newRight);
             DEALLOCATE_NODE(newParent);

@@ -110,11 +110,11 @@ public:
     ~ds_adapter() {
         delete ds;
     }
-    
+
     void * getNoValue() {
         return ds->NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -153,14 +153,18 @@ public:
     void printObjectSizes() {
         std::cout<<"size_node="<<(sizeof(NODE_T))<<std::endl;
     }
-    
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef casword_t NodePtrType;
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
@@ -175,7 +179,7 @@ public:
             bool hasNext() { return ix < CASWORD_TO_NODE(node)->degree; }
             NodePtrType next() { return CASWORD_TO_NODE(node)->ptr(ix++); }
         };
-        
+
         static bool isLeaf(NodePtrType node) { return IS_KVPAIR(node) || IS_VAL(node); }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : CASWORD_TO_NODE(node)->degree; }
@@ -218,7 +222,7 @@ public:
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NODE_TO_CASWORD(ds->debug_getEntryPoint()), true);
     }
 #endif
-    
+
 private:
     template<typename... Arguments>
     void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
@@ -229,7 +233,7 @@ private:
             callback(kvp->k, kvp->v, args...);
             return;
         }
-        
+
         assert(IS_NODE(ptr));
         auto curr = CASWORD_TO_NODE(ptr);
         if (curr == NULL) return;
@@ -247,7 +251,7 @@ private:
             }
         }
     }
-    
+
 public:
     template<typename... Arguments>
     void iterate(void (*callback)(K key, V value, Arguments... args), Arguments... args) {

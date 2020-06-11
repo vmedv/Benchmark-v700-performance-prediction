@@ -36,15 +36,15 @@ public:
     : NO_VALUE(VALUE_RESERVED)
     , ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MIN, KEY_MAX))
     { }
-    
+
     ~ds_adapter() {
         delete ds;
     }
-    
+
     V getNoValue() {
         return 0;
     }
-    
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -55,19 +55,19 @@ public:
     V insert(const int tid, const K& key, const V& val) {
         setbench_error("insert-replace functionality not implemented for this data structure");
     }
-    
+
     V insertIfAbsent(const int tid, const K& key, const V& val) {
         return ds->insertIfAbsent(tid, key, val);
     }
-    
+
     V erase(const int tid, const K& key) {
         return ds->erase(tid, key);
     }
-    
+
     V find(const int tid, const K& key) {
         setbench_error("find functionality not implemented for this data structure");
     }
-    
+
     bool contains(const int tid, const K& key) {
         return ds->contains(tid, key);
     }
@@ -80,25 +80,29 @@ public:
     bool validateStructure() {
         return ds->validate();
     }
-    
+
     void printObjectSizes() {
         std::cout<<"sizes: node="
                  <<(sizeof(Node<K, V>))
                  <<std::endl;
     }
-    
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
 class NodeHandler {
     public:
         typedef Node<K, V> * NodePtrType;
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             NodePtrType node; // node being iterated over
@@ -106,16 +110,16 @@ class NodeHandler {
             ChildIterator(NodePtrType _node) {
                 node = _node;
             }
-            
+
             bool hasNext() {
                 return node->next[0] != NULL;
             }
-            
+
             NodePtrType next() {
                return node->next[0];
             }
         };
-        
+
         bool isLeaf(NodePtrType node) {
             return node->next[0] == NULL ? true : false;
         }
@@ -125,7 +129,7 @@ class NodeHandler {
         size_t getNumKeys(NodePtrType node) {
             return node == NULL ? 0 : 1;
         }
-        
+
         size_t getSumOfKeys(NodePtrType node) {
             return (size_t) node->key;
         }

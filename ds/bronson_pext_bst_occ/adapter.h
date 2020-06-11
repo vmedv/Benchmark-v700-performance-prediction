@@ -1,11 +1,11 @@
 /**
  * Implementation of the relaxed AVL tree of Bronson et al.,
  * which uses optimistic concurrency control and fine grained locking.
- * 
+ *
  * This is based on Philip W. Howard's code
  * (but converted to a class and templated/genericized,
  *  and with proper memory reclamation).
- * 
+ *
  * Trevor Brown, 2018.
  */
 
@@ -45,11 +45,11 @@ public:
     ~ds_adapter() {
         delete tree;
     }
-    
+
     V getNoValue() {
         return NULL;
     }
-    
+
     void initThread(const int tid) {
         tree->initThread(tid);
     }
@@ -86,6 +86,10 @@ public:
                  <<(sizeof(NODE_T))
                  <<std::endl;
     }
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        tree->debugGetRecMgr()->debugGCSingleThreaded();
+    }
 
 #ifdef USE_TREE_STATS
     class NodeHandler {
@@ -93,12 +97,12 @@ public:
         typedef NODE_T * NodePtrType;
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             bool leftDone;
@@ -125,7 +129,7 @@ public:
                 setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
             }
         };
-        
+
         bool isLeaf(NodePtrType node) {
             return (node->left == NULL) && (node->right == NULL);
         }
@@ -168,7 +172,7 @@ private:
         }
         callback(curr->key, curr->value, args...);
     }
-    
+
 public:
     #define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
     template<typename... Arguments>

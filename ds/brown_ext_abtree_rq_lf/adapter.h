@@ -47,11 +47,11 @@ public:
     ~ds_adapter() {
         delete ds;
     }
-    
+
     void * getNoValue() {
         return ds->NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -86,6 +86,11 @@ public:
     void printObjectSizes() {
         std::cout<<"size_node="<<(sizeof(NODE_T))<<std::endl;
     }
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
@@ -93,12 +98,12 @@ public:
 
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             size_t ix;
@@ -108,7 +113,7 @@ public:
             bool hasNext() { return ix < node->size; }
             NodePtrType next() { return node->ptrs[ix++]; }
         };
-        
+
         static bool isLeaf(NodePtrType node) { return node->leaf; }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return node->size; }
@@ -127,13 +132,13 @@ public:
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->debug_getEntryPoint(), true);
     }
 #endif
-    
+
 private:
     template<typename... Arguments>
     void iterate_helper_fn(int depth, void (*callback)(K key, V value, Arguments... args)
             , NODE_T * node, Arguments... args) {
         if (node == NULL) return;
-        
+
         if (node->leaf) {
             for (int i=0;i<node->getABDegree();++i) {
                 K key = node->keys[i];
@@ -142,7 +147,7 @@ private:
             }
             return;
         }
-        
+
         for (int i=0;i<node->getABDegree();++i) {
             if (depth == 4) {
                 #pragma omp task
@@ -152,7 +157,7 @@ private:
             }
         }
     }
-    
+
 public:
     #define DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
     template<typename... Arguments>

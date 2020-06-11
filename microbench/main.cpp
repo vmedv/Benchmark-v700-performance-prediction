@@ -732,6 +732,10 @@ void trial(GlobalsT * g) {
     // setup measured part of the experiment
     INIT_ALL;
 
+#ifdef CALL_DEBUG_GC
+    g->dsAdapter->debugGCSingleThreaded();
+#endif
+
     // TODO: reclaim all garbage floating in the record manager that was generated during prefilling, so it doesn't get freed at the start of the measured part of the execution? (maybe it's better not to do this, since it's realistic that there is some floating garbage in the steady state. that said, it's probably not realistic that it's all eligible for reclamation, first thing...)
 
     // precompute amount of time for main thread to wait for children threads
@@ -769,6 +773,7 @@ void trial(GlobalsT * g) {
     g->startTime = std::chrono::high_resolution_clock::now();
     g->startClockTicks = get_server_clock();
     SOFTWARE_BARRIER;
+    printUptimeStampForPERF("START");
 #ifdef MEASURE_TIMELINE_STATS
     ___timeline_use = 1;
 #endif
@@ -786,6 +791,7 @@ void trial(GlobalsT * g) {
         SOFTWARE_BARRIER;
         g->done = true;
         __sync_synchronize();
+        printUptimeStampForPERF("END");
     }
 
     DEBUG_PRINT_ARENA_STATS;
@@ -1045,6 +1051,7 @@ void main_continued_with_globals(auto g) {
 }
 
 int main(int argc, char** argv) {
+    printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
         std::cout<<std::endl;
         std::cout<<"Example usage:"<<std::endl;
@@ -1142,5 +1149,6 @@ int main(int argc, char** argv) {
             setbench_error("invalid case");
         } break;
     }
+    printUptimeStampForPERF("MAIN_END");
     return 0;
 }

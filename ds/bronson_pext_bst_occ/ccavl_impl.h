@@ -18,7 +18,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-/* 
+/*
  * File:   ccavl.h
  * Author: Trevor Brown
  *
@@ -32,11 +32,11 @@
 
 #include "record_manager.h"
 
-//#if  (INDEX_STRUCT == IDX_CCAVL_SPIN) 
+//#if  (INDEX_STRUCT == IDX_CCAVL_SPIN)
 //#define SPIN_LOCK
 //#elif   (INDEX_STRUCT == IDX_CCAVL_BASELINE)
 //#define BASELINE
-////uses pthread mutex 
+////uses pthread mutex
 //#else
 //#error
 //#endif
@@ -100,7 +100,7 @@ struct node_t {
     ptlock_t lock;
     volatile int height;
     volatile version_t changeOVL;
-#endif 
+#endif
 };
 
 /** This is a special value that indicates the presence of a null value,
@@ -166,7 +166,7 @@ private:
     sval_t put(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, sval_t value);
     sval_t putIfAbsent(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, sval_t value);
     sval_t attemptNodeUpdate(
-            const int tid, 
+            const int tid,
             int func,
             sval_t expected,
             sval_t newValue,
@@ -176,7 +176,7 @@ private:
     sval_t remove_node(const int tid, node_t<skey_t, sval_t>* tree, skey_t key);
     int attemptInsertIntoEmpty(const int tid, node_t<skey_t, sval_t>* tree, skey_t key, sval_t vOpt);
     sval_t attemptUpdate(
-            const int tid, 
+            const int tid,
             skey_t key,
             int func,
             sval_t expected,
@@ -199,7 +199,7 @@ private:
         node_t<skey_t, sval_t>* curr,
         char dirToC,
         version_t nodeOVL);
-    
+
     int shouldUpdate(int func, sval_t prev, sval_t expected);
     int nodeCondition(node_t<skey_t, sval_t>* curr);
     node_t<skey_t, sval_t>* fixHeight_nl(node_t<skey_t, sval_t>* curr);
@@ -210,23 +210,27 @@ private:
     node_t<skey_t, sval_t>* rotateLeft_nl(node_t<skey_t, sval_t>* nParent, node_t<skey_t, sval_t>* n, node_t<skey_t, sval_t>* nR, node_t<skey_t, sval_t>* nRL, int hL, int hRL, int hRR);
     node_t<skey_t, sval_t>* rotateLeftOverRight_nl(node_t<skey_t, sval_t>* nParent, node_t<skey_t, sval_t>* n, node_t<skey_t, sval_t>* nR, node_t<skey_t, sval_t>* nRL, int hL, int hRR, int hRLR);
     node_t<skey_t, sval_t>* rotateRightOverLeft_nl(node_t<skey_t, sval_t>* nParent, node_t<skey_t, sval_t>* n, node_t<skey_t, sval_t>* nL, node_t<skey_t, sval_t>* nLR, int hR, int hLL, int hLRL);
-    
+
 public:
 //    PAD;
     const int NUM_PROCESSES;
     skey_t KEY_NEG_INFTY;
     PAD;
-    
+
     ccavl(const int numProcesses, const skey_t& _KEY_NEG_INFTY)
     : recmgr(new RecMgr(numProcesses, SIGQUIT))
     , NUM_PROCESSES(numProcesses)
     , KEY_NEG_INFTY(_KEY_NEG_INFTY) {
         const int tid = 0;
         initThread(tid);
-        
+
         recmgr->endOp(tid);
 
         root = rbnode_create(tid, KEY_NEG_INFTY, NULL, NULL);
+    }
+
+    RecMgr * debugGetRecMgr() {
+        return recmgr;
     }
 
 private:
@@ -239,7 +243,7 @@ private:
         recmgr->deallocate(0 /* tid */, node);
         return 1 + sumL + sumR;
     }
-    
+
     void dfsDeallocateBottomUp_omp_end(node_t<skey_t, sval_t> * const node/*, volatile int * numNodes*/) {
         if (node == NULL) return;
         dfsDeallocateBottomUp_omp_end(node->left/*, numNodes*/);
@@ -251,7 +255,7 @@ private:
         recmgr->deallocate(tid, node);
 //        __sync_fetch_and_add(numNodes, 1);
     }
-    
+
     void dfsDeallocateBottomUp_omp(node_t<skey_t, sval_t> * const node, int depth/*, volatile int * numNodes*/) {
         if (node == NULL) return;
         if (depth == 8) {
@@ -268,13 +272,13 @@ private:
 //            __sync_fetch_and_add(numNodes, 1);
         }
     }
-    
+
 public:
     ~ccavl() {
         std::cout<<"ccavl destructor"<<std::endl;
-        
+
         //auto numNodes = dfsDeallocateBottomUp(root);
-        
+
 //        volatile int numNodes = 0;
 //        omp_set_num_threads(20);
         #pragma omp parallel
@@ -282,7 +286,7 @@ public:
             #pragma omp single
             dfsDeallocateBottomUp_omp(root, 0/*, &numNodes*/);
         }
-        
+
 //        std::cout<<"  deallocated "<<numNodes<<std::endl;
         recmgr->printStatus();
         delete recmgr;
@@ -311,7 +315,7 @@ public:
     sval_t find(const int tid, skey_t key) {
         return get(tid, root, key);
     }
-    
+
     sval_t erase(const int tid, skey_t key) {
         return remove_node(tid, root, key);
     }
@@ -327,7 +331,7 @@ public:
     node_t<skey_t, sval_t> * get_right(node_t<skey_t, sval_t> * curr) {
         return curr->right;
     }
-    
+
     long long getKeyChecksum(node_t<skey_t, sval_t> * curr) {
         if (curr == NULL) return 0;
         node_t<skey_t, sval_t> * left = get_left(curr);
@@ -335,38 +339,38 @@ public:
         return ((long long) ((curr->value != NULL) ? curr->key : 0))
                 + getKeyChecksum(left) + getKeyChecksum(right);
     }
-    
+
     long long getKeyChecksum() {
         return getKeyChecksum(get_right(root));
     }
-    
+
     long long getSize(node_t<skey_t, sval_t> * curr) {
         if (curr == NULL) return 0;
         node_t<skey_t, sval_t> * left = get_left(curr);
         node_t<skey_t, sval_t> * right = get_right(curr);
         return (curr->value != NULL) + getSize(left) + getSize(right);
     }
-    
+
     bool validateStructure() {
         return true;
     }
-    
+
     long long getSize() {
         return getSize(get_right(root));
     }
-    
+
     long long getSizeInNodes(node_t<skey_t, sval_t> * const curr) {
         if (curr == NULL) return 0;
         return 1 + getSizeInNodes(get_left(curr)) + getSizeInNodes(get_right(curr));
     }
-    
+
     long long getSizeInNodes() {
         return getSizeInNodes(root);
     }
-    
+
     void printSummary() {
         recmgr->printStatus();
-    }    
+    }
 };
 
 template <typename skey_t, typename sval_t, class RecMgr>
@@ -674,7 +678,7 @@ int ccavl<skey_t, sval_t, RecMgr>::attemptInsertIntoEmpty(const int tid, node_t<
  */
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::attemptUpdate(
-        const int tid,        
+        const int tid,
         skey_t key,
         int func,
         sval_t expected,
@@ -833,7 +837,7 @@ sval_t ccavl<skey_t, sval_t, RecMgr>::update(const int tid, node_t<skey_t, sval_
  */
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t ccavl<skey_t, sval_t, RecMgr>::attemptNodeUpdate(
-        const int tid, 
+        const int tid,
         int func,
         sval_t expected,
         sval_t newValue,

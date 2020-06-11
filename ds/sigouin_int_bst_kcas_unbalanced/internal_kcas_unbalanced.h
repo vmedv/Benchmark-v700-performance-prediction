@@ -56,7 +56,7 @@ private:
 	ObservedNode path[MAX_PATH_SIZE];
 	volatile char padding[PADDING_BYTES];
     };
-    
+
 
     volatile char padding0[PADDING_BYTES];
     //Debugging, used to validate that no thread's parent can't be NULL, save for the root
@@ -94,6 +94,10 @@ public:
     void initThread(const int tid);
 
     void deinitThread(const int tid);
+
+    RecordManager * const debugGetRecMgr() {
+        return recmgr;
+    }
 
 private:
     Node<K, V> * createNode(const int tid, K key, V value);
@@ -180,16 +184,16 @@ inline int InternalKCAS<RecordManager, K, V>::getSuccessor(const int tid, Node<K
             currSize++;
             succ = succ->left;
         }
-	
+
 	if(currSize < 2){
 	    return RetCode::RETRY;
 	}
-	
-	oSuccParent = path[currSize - 2];	    
-	oSucc = path[currSize - 1];	    
+
+	oSuccParent = path[currSize - 2];
+	oSucc = path[currSize - 1];
         if (IS_MARKED(oSuccParent.oVNumMark) || IS_MARKED(oSucc.oVNumMark)) {
             return RetCode::RETRY;
-        } else {	    
+        } else {
 	    return RetCode::SUCCESS;
         }
     }
@@ -258,11 +262,11 @@ int InternalKCAS<RecordManager, K, V>::search(const int tid, ObservedNode &oPred
         nodeVNumMark = node->vNumMark;
 
         currKey = node->key;
-	
+
 	path[currSize].node = node;
 	path[currSize].oVNumMark = nodeVNumMark;
 	currSize++;
-	
+
 
 	if(key > currKey){
 	    node = node->right;
@@ -277,7 +281,7 @@ int InternalKCAS<RecordManager, K, V>::search(const int tid, ObservedNode &oPred
 	    if(oPredPtr != NULL){
 		oPred = *oPredPtr;
 	    }
-	    
+
 	    oParent = path[currSize - 2];
 	    oNode = path[currSize - 1];
 	    return RetCode::SUCCESS;
@@ -323,9 +327,9 @@ inline V InternalKCAS<RecordManager, K, V>::insertIfAbsent(const int tid, const 
         }
 
         assert(res == RetCode::FAILURE);
-        if (internalInsert(tid, oPred, oParent, key, value)) {	    
+        if (internalInsert(tid, oPred, oParent, key, value)) {
             return 0;
-        }	
+        }
     }
 }
 
@@ -354,19 +358,19 @@ int InternalKCAS<RecordManager, K, V>::internalInsert(const int tid, ObservedNod
 
     Node<K, V> * newNode = createNode(tid, key, value);
 
-    if (key > parent->key) {	
+    if (key > parent->key) {
 	kcas::add(&parent->right, (Node<K, V> *)NULL, newNode);
     } else if(key < parent->key) {
 	kcas::add(&parent->left, (Node<K, V> *)NULL, newNode);
     } else {
 	return RetCode::RETRY;
     }
-    
+
     kcas::add(&parent->vNumMark, oParent.oVNumMark, oParent.oVNumMark + 2);
 
     if (kcas::execute()) {
         return RetCode::SUCCESS;
-    }    
+    }
 
     recmgr->retire(tid, newNode);
 
@@ -392,7 +396,7 @@ inline V InternalKCAS<RecordManager, K, V>::erase(const int tid, const K &key) {
         if ((res = internalErase(tid, oParent, oNode, key))) {
             return (V)oNode.node->value;
         }
-	
+
     }
 }
 
@@ -404,7 +408,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
     int numChildren = countChildren(tid, node);
 
     kcas::start();
-    
+
     if(IS_MARKED(oParent.oVNumMark) || IS_MARKED(oNode.oVNumMark)){
 	return RetCode::RETRY;
     }
@@ -424,7 +428,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         } else {
             return RetCode::RETRY;
 	}
-		
+
         kcas::add(
 	    &parent->vNumMark, oParent.oVNumMark, oParent.oVNumMark + 2,
 	    &node->vNumMark, oNode.oVNumMark, oNode.oVNumMark + 3
@@ -433,10 +437,10 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         if (kcas::execute()) {
 	    assert(IS_MARKED(node->vNumMark));
 	    recmgr->retire(tid, node);
-	    
+
             return RetCode::SUCCESS;
         }
-	
+
         return RetCode::RETRY;
     } else if (numChildren == 1) {
 	/* ERASE KCAS - 1 CHILD (K = 6)
@@ -462,7 +466,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
 
         casword_t rerouteVNum = reroute->vNumMark;
 
-        if (IS_MARKED(rerouteVNum)) {	    
+        if (IS_MARKED(rerouteVNum)) {
             return RetCode::RETRY;
         }
 
@@ -471,7 +475,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         } else if(key < parent->key) {
             kcas::add(&parent->left, node, reroute);
         }
-	else {	    
+	else {
             return RetCode::RETRY;
 	}
 
@@ -484,10 +488,10 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         if (kcas::execute()) {
 	    assert(IS_MARKED(node->vNumMark));
 	    recmgr->retire(tid, node);
-	    
+
             return RetCode::SUCCESS;
         }
-	
+
         return RetCode::RETRY;
     } else if (numChildren == 2) {
 	/* ERASE KCAS - 2 CHILD (K = 6 or 8)
@@ -517,7 +521,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         Node<K, V> * succ = oSucc.node;
         Node<K, V> * succParent = oSuccParent.node;
 
-	if (oSuccParent.node == NULL) {	    
+	if (oSuccParent.node == NULL) {
             return RetCode::RETRY;
         }
 
@@ -547,20 +551,20 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
             kcas::add(&succParent->right, succ, succRight);
         } else if (succParent->left == succ) {
             kcas::add(&succParent->left, succ, succRight);
-        } else {	    
+        } else {
             return RetCode::RETRY;
 	}
-	
+
 	V nodeVal = node->value;
 	V succVal = succ->value;
 
         kcas::add(
-	    &node->value, nodeVal, succVal, 
+	    &node->value, nodeVal, succVal,
 	    &node->key, key, succKey,
 	    &succ->vNumMark,oSucc.oVNumMark, oSucc.oVNumMark + 3,
 	    &succParent->vNumMark, oSuccParent.oVNumMark, oSuccParent.oVNumMark + 2
 	);
-	
+
 	if(succParent != node){
 	    kcas::add(
 		&node->vNumMark, oNode.oVNumMark, oNode.oVNumMark + 2
@@ -572,7 +576,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
 	    recmgr->retire(tid, succ);
             return RetCode::SUCCESS;
         }
-	
+
         return RetCode::RETRY;
     }
     assert(false);

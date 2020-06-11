@@ -1,23 +1,23 @@
 /**
  * Implementation of the lock-free external BST of Natarajan and Mittal.
  * Trevor Brown, 2017. (Based on Natarajan's original code.)
- * 
+ *
  * I made several changes/fixes to the data structure,
  * and there are four different versions: baseline, stage 0, stage 1, stage 1.
- * 
+ *
  * Baseline is functionally the same as the original implementation by Natarajan
  * (but converted to a class, and with templates/generics).
  *
  * Stage 0:
  *  - Fixed a concurrency bug (missing volatiles)
- * 
+ *
  * Delta from stage 0 to stage 1:
  *  - Added proper node allocation
  *    (The original implementation explicitly allocated arrays of 2 nodes at a time,
  *     which effectively prevents any real memory reclamation.
  *     [You can't free the nodes individually. Rather, you must free the arrays,
  *      and only after BOTH nodes are safe to free. This is hard to solve.])
- * 
+ *
  * Delta from stage 1 to stage 2:
  *  - Added proper memory reclamation
  *    (The original implementation leaked all memory.
@@ -29,17 +29,17 @@
  *     after you delete a single key, you may have to reclaim many nodes.)
  *    To my knowledge, this is the only correct, existing implementation
  *    of this algorithm (as of Mar 2018).
- * 
+ *
  * To compile baseline, add compilation arguments:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
  *  -DBASELINE
- * 
+ *
  * To compile stage 0, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
- * 
+ *
  * To compile stage 1, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage1_impl.h
- * 
+ *
  * To compile stage 2, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage2_impl.h
  */
@@ -64,16 +64,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
 
-Please cite our PPoPP 2014 paper - Fast Concurrent Lock-Free Binary Search Trees by Aravind Natarajan and Neeraj Mittal if you use our code in your experiments	
+Please cite our PPoPP 2014 paper - Fast Concurrent Lock-Free Binary Search Trees by Aravind Natarajan and Neeraj Mittal if you use our code in your experiments
 
 Features:
-1. Insert operations directly install their window without injecting the operation into the tree. They help any conflicting operation at the injection point, 
+1. Insert operations directly install their window without injecting the operation into the tree. They help any conflicting operation at the injection point,
 before executing their window txn.
 2. Delete operations are the same as that of the original algorithm.
- 
+
  */
 
-/* 
+/*
  * File:   wfrbt.h
  * Author: Maya Arbel-Raviv
  *
@@ -86,9 +86,9 @@ before executing their window txn.
 #include "record_manager.h"
 #include "atomic_ops.h"
 
-#if     (INDEX_STRUCT == IDX_NATARAJAN_EXT_BST_LF) 
+#if     (INDEX_STRUCT == IDX_NATARAJAN_EXT_BST_LF)
 #elif   (INDEX_STRUCT == IDX_NATARAJAN_EXT_BST_LF_BASELINE)
-#error cannot support baseline with int keys and no value.  
+#error cannot support baseline with int keys and no value.
 #else
 #error
 #endif
@@ -180,7 +180,7 @@ private:
     int perform_one_insert_window_operation(thread_data_t<skey_t, sval_t>* data, seekRecord_t<skey_t, sval_t>* R, skey_t newKey, sval_t value);
 
     void retireDeletedNodes(thread_data_t<skey_t, sval_t>* data, node_t<skey_t, sval_t> * node, node_t<skey_t, sval_t> * targetNode, bool pointerFlagged);
-    
+
     int init[MAX_THREADS_POW2] = {0,};
 public:
     const skey_t MAX_KEY;
@@ -195,7 +195,7 @@ public:
     , recmgr(new RecMgr(numProcesses, SIGQUIT)) {
         const int tid = 0;
         initThread(tid);
-        
+
         cmp = Compare();
 
         recmgr->endOp(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
@@ -236,23 +236,23 @@ public:
         recmgr->deinitThread(tid);
     }
 
-    sval_t insertIfAbsent(const int tid, skey_t key, sval_t item) { 
+    sval_t insertIfAbsent(const int tid, skey_t key, sval_t item) {
         assert(cmp(key, MAX_KEY-1));
-        thread_data_t<skey_t, sval_t> data; 
-        seekRecord_t<skey_t, sval_t> sr; 
-        seekRecord_t<skey_t, sval_t> ssr; 
+        thread_data_t<skey_t, sval_t> data;
+        seekRecord_t<skey_t, sval_t> sr;
+        seekRecord_t<skey_t, sval_t> ssr;
         data.id = tid;
         data.sr = &sr;
         data.ssr = &ssr;
-        data.rootOfTree = root; 
+        data.rootOfTree = root;
         return insertIfAbsent(&data,key,item);
     }
 
-    sval_t erase(const int tid, skey_t key) { 
+    sval_t erase(const int tid, skey_t key) {
         assert(cmp(key, MAX_KEY-1));
-        thread_data_t<skey_t, sval_t> data; 
-        seekRecord_t<skey_t, sval_t> sr; 
-        seekRecord_t<skey_t, sval_t> ssr; 
+        thread_data_t<skey_t, sval_t> data;
+        seekRecord_t<skey_t, sval_t> sr;
+        seekRecord_t<skey_t, sval_t> ssr;
         data.id = tid;
         data.sr = &sr;
         data.ssr = &ssr;
@@ -261,9 +261,9 @@ public:
     }
 
     sval_t find(const int tid, skey_t key) {
-        thread_data_t<skey_t, sval_t> data; 
-        seekRecord_t<skey_t, sval_t> sr; 
-        seekRecord_t<skey_t, sval_t> ssr; 
+        thread_data_t<skey_t, sval_t> data;
+        seekRecord_t<skey_t, sval_t> sr;
+        seekRecord_t<skey_t, sval_t> ssr;
         data.id = tid;
         data.sr = &sr;
         data.ssr = &ssr;
@@ -276,13 +276,13 @@ public:
     }
 
     static node_t<skey_t, sval_t> * get_left(node_t<skey_t, sval_t> * curr) {
-        return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val1); 
+        return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val1);
     }
 
     static node_t<skey_t, sval_t> * get_right(node_t<skey_t, sval_t> * curr) {
-        return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val2); 
+        return (node_t<skey_t, sval_t> *)get_addr(curr->child.AO_val2);
     }
-    
+
     long long getKeyChecksum(node_t<skey_t, sval_t> * curr) {
         if (curr == NULL) return 0;
         node_t<skey_t, sval_t> * left = get_left(curr);
@@ -290,11 +290,11 @@ public:
         if (!left && !right) return (long long) curr->key; // leaf
         return getKeyChecksum(left) + getKeyChecksum(right);
     }
-    
+
     long long getKeyChecksum() {
         return getKeyChecksum(get_left(get_left(root)));
     }
-    
+
     long long getSize(node_t<skey_t, sval_t> * curr) {
         if (curr == NULL) return 0;
         node_t<skey_t, sval_t> * left = get_left(curr);
@@ -302,24 +302,24 @@ public:
         if (!left && !right) return 1; // leaf
         return getSize(left) + getSize(right);
     }
-    
+
     bool validateStructure() {
         return true;
     }
-    
+
     long long getSize() {
         return getSize(get_left(get_left(root)));
     }
-    
+
     long long getSizeInNodes(node_t<skey_t, sval_t> * const curr) {
         if (curr == NULL) return 0;
         return 1 + getSizeInNodes(get_left(curr))
                  + getSizeInNodes(get_right(curr));
     }
-    
+
     long long getSizeInNodes() {
         return getSizeInNodes(root);
-    }    
+    }
 
     void printSummary() {
 //        std::stringstream ss;
@@ -327,6 +327,10 @@ public:
 //        std::cout<<ss.str()<<std::endl;
 //
         recmgr->printStatus();
+    }
+
+    RecMgr * debugGetRecMgr() {
+        return recmgr;
     }
 };
 #endif /* NATARAJAN_EXT_BST_LF_H */

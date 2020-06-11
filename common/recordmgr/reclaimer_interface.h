@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -26,7 +26,7 @@ public:
     PAD;
     RecoveryMgr<void *> * recoveryMgr;
     debugInfo * const debug;
-    
+
     const int NUM_PROCESSES;
     Pool *pool;
 //    PAD;
@@ -39,7 +39,7 @@ public:
     struct rebind2 {
         typedef reclaimer_interface<_Tp1, _Tp2> other;
     };
-    
+
     long long getSizeInNodes() { return 0; }
     std::string getSizeString() { return ""; }
     std::string getDetailsString() { return ""; }
@@ -53,13 +53,13 @@ public:
         COUTATOMICTID("reclaimer_interface::isQuiescent(tid) is not implemented!"<<std::endl);
         exit(-1);
     }
-    
+
     // for hazard pointers (and reference counting)
     inline bool protect(const int tid, T* obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true);
     inline void unprotect(const int tid, T* obj);
     inline bool qProtect(const int tid, T* obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool memoryBarrier = true);
     inline void qUnprotectAll(const int tid);
-    
+
     // for epoch based reclamation (or, more generally, any quiescent state based reclamation)
 //    inline long readEpoch();
 //    inline long readAnnouncedEpoch(const int tid);
@@ -75,11 +75,16 @@ public:
 
     // for all schemes except reference counting
     inline void retire(const int tid, T* p);
-    
+
     inline void initThread(const int tid);
     inline void deinitThread(const int tid);
     void debugPrintStatus(const int tid);
-    
+
+    template <typename First, typename... Rest>
+    void debugGCSingleThreaded(void * const * const reclaimers, const int numReclaimers) {
+        // do nothing unless function is replaced
+    }
+
     reclaimer_interface(const int numProcesses, Pool *_pool, debugInfo * const _debug, RecoveryMgr<void *> * const _recoveryMgr = NULL)
             : recoveryMgr(_recoveryMgr)
             , debug(_debug)

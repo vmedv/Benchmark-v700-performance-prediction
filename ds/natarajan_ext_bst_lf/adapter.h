@@ -1,23 +1,23 @@
 /**
  * Implementation of the lock-free external BST of Natarajan and Mittal.
  * Trevor Brown, 2017. (Based on Natarajan's original code.)
- * 
+ *
  * I made several changes/fixes to the data structure,
  * and there are four different versions: baseline, stage 0, stage 1, stage 1.
- * 
+ *
  * Baseline is functionally the same as the original implementation by Natarajan
  * (but converted to a class, and with templates/generics).
  *
  * Stage 0:
  *  - Fixed a concurrency bug (missing volatiles)
- * 
+ *
  * Delta from stage 0 to stage 1:
  *  - Added proper node allocation
  *    (The original implementation explicitly allocated arrays of 2 nodes at a time,
  *     which effectively prevents any real memory reclamation.
  *     [You can't free the nodes individually. Rather, you must free the arrays,
  *      and only after BOTH nodes are safe to free. This is hard to solve.])
- * 
+ *
  * Delta from stage 1 to stage 2:
  *  - Added proper memory reclamation
  *    (The original implementation leaked all memory.
@@ -29,17 +29,17 @@
  *     after you delete a single key, you may have to reclaim many nodes.)
  *    To my knowledge, this is the only correct, existing implementation
  *    of this algorithm (as of Mar 2018).
- * 
+ *
  * To compile baseline, add compilation arguments:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
  *  -DBASELINE
- * 
+ *
  * To compile stage 0, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
- * 
+ *
  * To compile stage 1, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage1_impl.h
- * 
+ *
  * To compile stage 2, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage2_impl.h
  */
@@ -85,11 +85,11 @@ public:
     ~ds_adapter() {
         delete tree;
     }
-    
+
     V getNoValue() {
         return NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         tree->initThread(tid);
     }
@@ -130,14 +130,18 @@ public:
     void printObjectSizes() {
         std::cout<<"sizes: node="<<(sizeof(node_t<K,V>))<<std::endl;
     }
-    
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        tree->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef node_t<K,V> * NodePtrType;
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
@@ -152,7 +156,7 @@ public:
             bool hasNext() { return ix < 2; }
             NodePtrType next() { return (ix++ == 1) ? DATA_STRUCTURE_T::get_left(node) : DATA_STRUCTURE_T::get_right(node); }
         };
-        
+
         static bool isLeaf(NodePtrType node) { return DATA_STRUCTURE_T::get_left(node) == NULL && DATA_STRUCTURE_T::get_right(node) == NULL; }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return isLeaf(node) ? 0 : 2; }

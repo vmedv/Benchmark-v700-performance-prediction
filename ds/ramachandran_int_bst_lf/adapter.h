@@ -39,11 +39,11 @@ public:
     ~ds_adapter() {
         delete ds;
     }
-    
+
     V getNoValue() {
         return NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -81,6 +81,10 @@ public:
                  <<(sizeof(node_t<K,V>))
                  <<std::endl;
     }
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
 
 #ifdef USE_TREE_STATS
     class NodeHandler {
@@ -88,15 +92,15 @@ public:
         typedef node_t<K,V> * NodePtrType;
         K minKey;
         K maxKey;
-        
+
         typedef K skey_t; // for getAddress()
         typedef V sval_t; // for getAddress()
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             bool leftDone;
@@ -123,7 +127,7 @@ public:
                 setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
             }
         };
-        
+
         bool isLeaf(NodePtrType node) {
             return isNull(node->child[LEFT]) && isNull(node->child[RIGHT]);
         }

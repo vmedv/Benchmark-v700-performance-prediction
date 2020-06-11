@@ -12,6 +12,9 @@
 #error "Must define CPU_FREQ_GHZ for server_clock.h"
 #endif
 
+#include <time.h>
+#include <sched.h>
+
 inline uint64_t get_server_clock() {
 #if defined(__i386__)
     uint64_t ret;
@@ -23,10 +26,26 @@ inline uint64_t get_server_clock() {
         ret = (uint64_t) ((double)ret / CPU_FREQ_GHZ);
 #else
         timespec * tp = new timespec;
-    clock_gettime(CLOCK_REALTIME, tp);
+    clock_gettime(CLOCK_MONOTONIC, tp);
     uint64_t ret = tp->tv_sec * 1000000000 + tp->tv_nsec;
 #endif
     return ret;
+}
+
+timespec getUptimeTimespec() {
+    // size_t ___uptime_nanos_at_startTime = sched_clock();
+    // size_t ___start_time_seconds = (int) (sched_clock());
+    //printf("REALTIME_START_PERF_FORMAT=%lu%s%lu\n", std::chrono::duration_cast<std::chrono::seconds>(g->startTime).count(), ".", 0)
+    // auto time_point = std::chrono::system_clock::now();
+    timespec uptime;
+    clock_gettime(CLOCK_MONOTONIC, &uptime);
+    return uptime;
+}
+#define printUptimeStampForPERF(label) { \
+    SOFTWARE_BARRIER; \
+    timespec ___currts = getUptimeTimespec(); \
+    SOFTWARE_BARRIER; \
+    printf("REALTIME_%s_PERF_FORMAT=%ld%s%ld\n", (label), ___currts.tv_sec, ".", ___currts.tv_nsec); \
 }
 
 //class ClockSplitter {

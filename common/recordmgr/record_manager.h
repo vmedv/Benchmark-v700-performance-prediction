@@ -1,6 +1,6 @@
 /**
  * C++ record manager implementation (PODC 2015) by Trevor Brown.
- * 
+ *
  * Copyright (C) 2015 Trevor Brown
  *
  */
@@ -54,6 +54,9 @@ public:
     inline void endOp(const int tid) {}
     inline void leaveQuiescentStateForEach(const int tid, const bool readOnly = false) {}
     inline void startOp(const int tid, const bool callForEach, const bool readOnly = false) {}
+    inline void debugGCSingleThreaded() {
+        printf("DEBUG: record_manager::debugGCSingleThreaded()\n");
+    }
 };
 
 // "recursive" case
@@ -130,6 +133,13 @@ public:
             __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
         }
     }
+    inline void debugGCSingleThreaded() {
+        printf("DEBUG: record_manager::debugGCSingleThreaded() 1+sizeof...(Rest)=%lu\n", 1+sizeof...(Rest));
+        void * reclaimers[1+sizeof...(Rest)];
+        getReclaimers(0, reclaimers, 0);
+        get((First *) NULL)->template debugGCSingleThreaded<First, Rest...>(reclaimers, 1+sizeof...(Rest));
+        __sync_synchronize(); // memory barrier needed (only) for epoch based schemes at the moment...
+    }
 };
 
 template <class Reclaim, class Alloc, class Pool, typename First, typename... Rest>
@@ -147,7 +157,7 @@ protected:
     typedef record_manager<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> SelfType;
     PAD;
     RecordManagerSetPostPadded<Reclaim,Alloc,Pool,RecordTypesFirst,RecordTypesRest...> * rmset;
-    
+
 //    PAD;
     int init[MAX_THREADS_POW2] = {0,};
 
@@ -194,37 +204,37 @@ public:
     inline record_manager_single_type<T, Reclaim, Alloc, Pool> * get(T * const recordType) {
         return rmset->get((T *) NULL);
     }
-    
+
     // for hazard pointers
 
     template <typename T>
     inline bool isProtected(const int tid, T * const obj) {
         return rmset->get((T *) NULL)->isProtected(tid, obj);
     }
-    
+
     template <typename T>
     inline bool protect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool hintMemoryBarrier = true) {
         return rmset->get((T *) NULL)->protect(tid, obj, notRetiredCallback, callbackArg, hintMemoryBarrier);
     }
-    
+
     template <typename T>
     inline void unprotect(const int tid, T * const obj) {
         rmset->get((T *) NULL)->unprotect(tid, obj);
     }
-    
+
     // for DEBRA+
-    
+
     // warning: qProtect must be reentrant and lock-free (i.e., async-signal-safe)
     template <typename T>
     inline bool qProtect(const int tid, T * const obj, CallbackType notRetiredCallback, CallbackArg callbackArg, bool hintMemoryBarrier = true) {
         return rmset->get((T *) NULL)->qProtect(tid, obj, notRetiredCallback, callbackArg, hintMemoryBarrier);
     }
-    
+
     template <typename T>
     inline bool isQProtected(const int tid, T * const obj) {
         return rmset->get((T *) NULL)->isQProtected(tid, obj);
     }
-    
+
     inline void qUnprotectAll(const int tid) {
         assert(!Reclaim::supportsCrashRecovery() || isQuiescent(tid));
         rmset->qUnprotectAll(tid);
@@ -270,7 +280,7 @@ public:
 //        GSTATS_ADD_IX(tid, num_prop_epoch_allocations, 1, GSTATS_GET(tid, thread_announced_epoch));
         return rmset->get((T *) NULL)->allocate(tid);
     }
-    
+
     // optional function which can be used if it is safe to call free()
     template <typename T>
     inline void deallocate(const int tid, T * const p) {
@@ -284,7 +294,7 @@ public:
     inline static bool supportsCrashRecovery() {
         return Reclaim::supportsCrashRecovery();
     }
-    
+
     class MemoryReclamationGuard {
         const int tid;
         record_manager<Reclaim, Alloc, Pool, RecordTypesFirst, RecordTypesRest...> * recmgr;
@@ -300,10 +310,14 @@ public:
             recmgr->endOp(tid);
         }
     };
-    
+
     inline MemoryReclamationGuard getGuard(const int tid, const bool readOnly = false) {
         SOFTWARE_BARRIER;
         return MemoryReclamationGuard(tid, this, readOnly);
+    }
+
+    void debugGCSingleThreaded() {
+        rmset->debugGCSingleThreaded();
     }
 };
 

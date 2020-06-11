@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of chromatic tree using LLX/SCX and DEBRA(+).
- * 
+ *
  * Copyright (C) 2017 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -57,11 +57,11 @@ template <class K, class V, class Compare, class MasterRecordMgr>
 class Chromatic {
 private:
     Compare cmp;
-    
+
     /**
      * Memory management
      */
-    
+
     MasterRecordMgr * const recordmgr;
 
     // allocatedSCXRecord[tid*PREFETCH_SIZE_WORDS] = an allocated scx record
@@ -91,7 +91,7 @@ private:
             Node<K,V> **nodes,
             SCXRecord<K,V> * const * const scxRecordsSeen,
             const int state);
-    
+
     // functions for DEBRA and DEBRA+
     inline bool tryRetireSCXRecord(const int tid, SCXRecord<K,V> * const scx, Node<K,V> * const node);
     bool recoverAnyAttemptedSCX(const int tid, const int location); // DEBRA+
@@ -99,7 +99,7 @@ private:
     /**
      * Implementation of LLX and SCX
      */
-    
+
     /**
      * this is what LLX returns when it is performed on a leaf.
      * the important qualities of this value are:
@@ -127,15 +127,15 @@ private:
     /**
      * Chromatic tree implementation
      */
-    
+
     const int N; // number of violations to allow on a search path before we fix everything on it
     Node<K,V> *root;        // actually const
     SCXRecord<K,V> *dummy;  // actually const
-    
+
     bool updateInsert(const int, const K& key, const V& val, const bool onlyIfAbsent, V *result, bool *shouldRebalance); // last 2 args are output args
     bool updateErase(const int, const K& key, V *result, bool *shouldRebalance); // last 2 args are output args
     bool updateRebalancingStep(const int tid, const K& key);
-    
+
     // rotations
     void fixAllToKey(const int tid, const K& k);
     bool doBlk(const int, Node<K,V> **, void **, bool);
@@ -181,16 +181,16 @@ public:
               const int numProcesses,
               int neutralizeSignal,
               int allowedViolationsPerPath = 6);
-    
+
     /**
      * This function must be called once by each thread that will
      * invoke any functions on this class.
-     * 
+     *
      * It must be okay that we do this with the main thread and later with another thread!!!
      */
     void initThread(const int tid);
     void deinitThread(const int tid);
-    
+
     void dfsDeallocateBottomUp(Node<K,V> * const u, set<void*>& seen, int *numNodes) {
         if (u == NULL) return;
         if ((Node<K,V>*) u->left.load(memory_order_relaxed) != NULL) {
@@ -234,16 +234,16 @@ public:
     const pair<V,bool> find(const int tid, const K& key);
     bool contains(const int tid, const K& key);
     int size(void); /** warning: size is a LINEAR time operation, and does not return consistent results with concurrency **/
-    
+
     /**
      * Debugging functions
      */
-    
+
     long long debugKeySum(Node<K,V> * node);
     long long debugKeySum() {
         return debugKeySum(root);
     }
-    
+
     int computeSize(Node<K,V> * const root);
 
     void debugPrintAllocatorStatus() {

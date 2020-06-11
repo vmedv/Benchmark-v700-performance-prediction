@@ -36,11 +36,11 @@ public:
     ~ds_adapter() {
         delete recmgr;
     }
-    
+
     V getNoValue() {
         return NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         recmgr->initThread(tid);
     }
@@ -83,14 +83,15 @@ public:
                  <<(sizeof(Node<K, V>))
                  <<std::endl;
     }
-    
+    void debugGCSingleThreaded() {}
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef int * NodePtrType;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {}
-        
+
         class ChildIterator {
         public:
             ChildIterator(NodePtrType _node) {}
@@ -101,7 +102,7 @@ public:
                 return NULL;
             }
         };
-        
+
         bool isLeaf(NodePtrType node) {
             return false;
         }
@@ -121,7 +122,7 @@ public:
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), NULL, true);
     }
-#endif    
+#endif
 };
 
 #endif

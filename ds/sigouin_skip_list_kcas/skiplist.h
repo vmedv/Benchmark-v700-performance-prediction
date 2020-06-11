@@ -34,11 +34,11 @@ public:
     PaddedRandom(int seed) {
         this->seed = seed;
     }
-    
+
     void setSeed(int seed) {
         this->seed = seed;
     }
-    
+
     /** returns pseudorandom x satisfying 0 <= x < n. **/
     unsigned int nextNatural() {
         seed ^= seed << 6;
@@ -54,8 +54,8 @@ struct Node {
     K key;
     V value;
     casword<uint64_t> vNumMark;
-    int height;       
-    
+    int height;
+
     casword<Node<K,V> *> next[MAX_TOWER_HEIGHT];
 };
 
@@ -119,13 +119,17 @@ public:
     bool validate();
 
     void printDebuggingDetails();
-    
+
     void initThread(const int tid);
-    
+
     void deinitThread(const int tid);
-    
+
     Node<K, V> * getRoot();
-    
+
+    RecordManager * const debugGetRecMgr() {
+        return recmgr;
+    }
+
 private:
     Node<K, V> * createNode(const int tid, int height, K key, V value);
     bool validatePath(const int tid, const int &size, const K &key, ObservedNode path[]);
@@ -143,7 +147,7 @@ int SkipListKCAS<RecordManager, K, V>::getRandomLevel(const int tid)
       else break;
     }
   //printf("NEW NODE WITH LEVEL %d\n", level);
-  
+
   return level;
 }
 
@@ -197,7 +201,7 @@ inline bool SkipListKCAS<RecordManager, K, V>::contains(const int tid, const K &
 template<class RecordManager, typename K, typename V>
 Node<K, V> * SkipListKCAS<RecordManager, K, V>::search(const int tid, const K &key) {
     auto & path = paths[tid].path;
-    
+
     while(true){
         bool retry = false;
         Node<K, V> * prev = NULL;
@@ -209,20 +213,20 @@ Node<K, V> * SkipListKCAS<RecordManager, K, V>::search(const int tid, const K &k
             while(currNode != NULL && key > currNode->key ){
                 prev = currNode;
                 ver = prev->vNumMark;
-                currNode = prev->next[level];                        
+                currNode = prev->next[level];
             }
 
             if(currNode != NULL && key == currNode->key){
                 found = currNode;
             }
-            
+
             if(IS_MARKED(ver)){
                 retry = true;
                 break;
             }
-            
+
             path[level].node = prev;
-            path[level].oVNumMark = ver; 
+            path[level].oVNumMark = ver;
             currNode = prev;
         }
 
@@ -238,13 +242,13 @@ inline bool SkipListKCAS<RecordManager, K, V>::validatePath(const int tid, const
 template<class RecordManager, typename K, typename V>
 inline V SkipListKCAS<RecordManager, K, V>::insertIfAbsent(const int tid, const K &key, const V &value) {
     auto & path = paths[tid].path;
-    
+
     while (true){
         Node<K, V> * node = search(tid, key);
         if(node == NULL){
             node = createNode(tid, getRandomLevel(tid), key, value);
             kcas::start();
-            
+
             for(int level = node->height - 1; level >= 0; level--){
                 Node<K, V> * next = path[level].node->next[level];
                 node->next[level].setInitVal(next);
@@ -260,7 +264,7 @@ inline V SkipListKCAS<RecordManager, K, V>::insertIfAbsent(const int tid, const 
                 return 0;
             }
             //printf("FAIL INSERT\n");
-           
+
         }
         else {
             return node->value;
@@ -271,14 +275,14 @@ inline V SkipListKCAS<RecordManager, K, V>::insertIfAbsent(const int tid, const 
 template<class RecordManager, typename K, typename V>
 inline V SkipListKCAS<RecordManager, K, V>::erase(const int tid, const K &key) {
     auto & path = paths[tid].path;
-    
+
     while (true){
         Node<K, V> * node = search(tid, key);
         if(node != NULL){
             uint64_t ver = node->vNumMark;
             if(IS_MARKED(ver)) continue;
             kcas::start();
-            
+
             for(int level = node->height - 1; level >= 0; level--){
                 Node<K, V> * next = node->next[level];
                 kcas::add(&path[level].node->next[level], node, next,
@@ -286,8 +290,8 @@ inline V SkipListKCAS<RecordManager, K, V>::erase(const int tid, const K &key) {
                 );
                 //assert(path[level].node->vNumMark == path[level].oVNumMark);
                 //assert(path[level].node->next[level] == node);
-            }            
-            
+            }
+
             kcas::add(&node->vNumMark, ver, ver + 3);
             //assert(node->vNumMark == ver);
 
@@ -312,7 +316,7 @@ bool SkipListKCAS<RecordManager, K, V>::validate() {
     std::unordered_set<K> keys = {};
 
     Node<K, V> * currNode = head->next[0];
-    int64_t total = 0; 
+    int64_t total = 0;
     while(currNode != NULL){
         K key = currNode->key;
         assert(keys.count(key) == 0);
@@ -320,12 +324,12 @@ bool SkipListKCAS<RecordManager, K, V>::validate() {
 
         total += currNode->key;
         currNode = currNode->next[0];
-        
+
     }
-    
+
 //    printf("--------------------------------\n");
 //    printf("CHECKSUM INTERNAL: %lld\n", total);
 //    printf("--------------------------------\n");
-    
+
     return true;
 }

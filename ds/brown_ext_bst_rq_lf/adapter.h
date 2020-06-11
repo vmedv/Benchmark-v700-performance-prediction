@@ -36,11 +36,11 @@ public:
     ~ds_adapter() {
         delete ds;
     }
-    
+
     V getNoValue() {
         return NO_VALUE;
     }
-    
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -79,19 +79,23 @@ public:
                  <<" descriptor="<<(sizeof(bst_ns::SCXRecord<K, V>))
                  <<std::endl;
     }
-    
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
         typedef bst_ns::Node<K,V> * NodePtrType;
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             bool leftDone;
@@ -118,7 +122,7 @@ public:
                 setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
             }
         };
-        
+
         static bool isLeaf(NodePtrType node) {
             return (node->left == NULL) && (node->right == NULL);
         }
@@ -142,7 +146,7 @@ public:
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
         return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->debug_getEntryPoint()->left->left, true);
-    }    
+    }
 #endif
 };
 

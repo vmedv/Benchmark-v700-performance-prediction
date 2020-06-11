@@ -36,15 +36,15 @@ public:
                RandomFNV1A * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY, KEY_MAX))
     { }
-    
+
     ~ds_adapter() {
         delete ds;
     }
-    
+
     void * getNoValue() {
         return ds->NO_VALUE;
-    }    
-    
+    }
+
     void initThread(const int tid) {
         ds->initThread(tid);
     }
@@ -55,23 +55,23 @@ public:
     void * insert(const int tid, const K& key, const V& val) {
         setbench_error("insert-replace functionality not implemented for this data structure");
     }
-    
+
     void * insertIfAbsent(const int tid, const K& key, const V& val) {
         return ds->tryInsert(tid, key, val);
     }
-    
+
     void * erase(const int tid, const K& key) {
         return ds->tryErase(tid, key);
-    }    
-    
+    }
+
     void * find(const int tid, const K& key) {
         return ds->find(tid, key);
     }
-    
+
     bool contains(const int tid, const K& key) {
         return ds->contains(tid, key);
     }
-    
+
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, void ** const resultValues) {
         return -1; //TODO
     }
@@ -81,13 +81,17 @@ public:
     bool validateStructure() {
 	return ds->validate();
     }
-    
+
     void printObjectSizes() {
         std::cout<<"sizes: node="
                  <<(sizeof(Node<K, V, DEGREE>))
                  <<std::endl;
     }
-    
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    void debugGCSingleThreaded() {
+        ds->debugGetRecMgr()->debugGCSingleThreaded();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:
@@ -95,12 +99,12 @@ public:
 
         K minKey;
         K maxKey;
-        
+
         NodeHandler(const K& _minKey, const K& _maxKey) {
             minKey = _minKey;
             maxKey = _maxKey;
         }
-        
+
         class ChildIterator {
         private:
             size_t ix;
@@ -110,7 +114,7 @@ public:
             bool hasNext() { return ix < node->size; }
             NodePtrType next() { return ((NodeInternal<K, V, DEGREE> * )node)->ptrs[ix++]; }
         };
-        
+
         static bool isLeaf(NodePtrType node) { return node->leaf; }
         static ChildIterator getChildIterator(NodePtrType node) { return ChildIterator(node); }
         static size_t getNumChildren(NodePtrType node) { return node->size; }
@@ -125,7 +129,7 @@ public:
 		}
 		else {
 		    result += (size_t) ((NodeInternal<K, V, DEGREE> *) node)->keys[i];
-		}				
+		}
             }
             return result;
         }

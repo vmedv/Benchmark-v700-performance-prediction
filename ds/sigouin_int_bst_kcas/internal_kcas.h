@@ -100,6 +100,10 @@ public:
 
     int getHeight(Node<K, V> * node);
 
+    RecordManager * const debugGetRecMgr() {
+        return recmgr;
+    }
+
 private:
     Node<K, V> * createNode(const int tid, Node<K, V> * parent, K key, V value);
 
@@ -339,7 +343,7 @@ int InternalKCAS<RecordManager, K, V>::internalInsert(const int tid, ObservedNod
     Node<K, V> * parent = oParent.node;
 
     Node<K, V> * newNode = createNode(tid, parent, key, value);
-    
+
     if (key > parent->key) {
         kcas::add(&parent->right, (Node<K, V> *)NULL, newNode);
     } else if (key < parent->key) {
