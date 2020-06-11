@@ -1,4 +1,13 @@
 nbproject
 _private
-ubench_
-*
+ubench_*
+perf.data*
+*.dot
+log.txt
+step*.txt
+out*.svg
+out*.png
+temp*.txt
+compile.txt
+*.pyc
+time*.txt
