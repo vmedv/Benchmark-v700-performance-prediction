@@ -8,8 +8,8 @@
 #ifndef SERVER_CLOCK_H
 #define SERVER_CLOCK_H
 
-#ifndef CPU_FREQ_GHZ
-#error "Must define CPU_FREQ_GHZ for server_clock.h"
+#if defined __x86_64__ && !defined CPU_FREQ_GHZ
+#error "Must define CPU_FREQ_GHZ for server_clock.h on __x86_64__"
 #endif
 
 #include <time.h>
@@ -92,10 +92,16 @@ timespec getUptimeTimespec() {
             printf("timeline_blip_%s tid=%d start=%lu\n", (name), (tid), ___blipTime); \
         } \
     }
-    #define TIMELINE_BLIP_LU(tid, name, label_lu) { \
+    #define TIMELINE_BLIP_Llu(tid, name, label_lu) { \
         if (___timeline_use) { \
             uint64_t ___blipTime = get_server_clock(); \
             printf("timeline_blip_%s tid=%d start=%lu label=%lu\n", (name), (tid), ___blipTime, (unsigned long) (label_lu)); \
+        } \
+    }
+    #define TIMELINE_BLIP_Ls(tid, name, label_s) { \
+        if (___timeline_use) { \
+            uint64_t ___blipTime = get_server_clock(); \
+            printf("timeline_blip_%s tid=%d start=%lu label=%s\n", (name), (tid), ___blipTime, (unsigned long) (label_s)); \
         } \
     }
     #define TIMELINE_START_C(tid, condition) \
@@ -113,7 +119,7 @@ timespec getUptimeTimespec() {
             } \
         } \
     }
-    #define TIMELINE_END_C_LU(tid, name, condition, label_lu) { \
+    #define TIMELINE_END_C_Llu(tid, name, condition, label_lu) { \
         if (___timeline_use && (condition)) { \
             uint64_t ___endTime = get_server_clock(); \
             auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
@@ -122,16 +128,30 @@ timespec getUptimeTimespec() {
             } \
         } \
     }
+    #define TIMELINE_END_C_Ls(tid, name, condition, label_s) { \
+        if (___timeline_use && (condition)) { \
+            uint64_t ___endTime = get_server_clock(); \
+            auto ___duration_ms = (___endTime - ___startTime) / 1000000; \
+            if (___duration_ms >= (___MIN_INTERVAL_DURATION)) { \
+                printf("timeline_%s tid=%d start=%lu end=%lu label=%s\n", (name), (tid), ___startTime, ___endTime, (label_s)); \
+            } \
+        } \
+    }
     #define TIMELINE_END(tid, name) TIMELINE_END_C((tid), (name), true)
-    #define TIMELINE_END_LU(tid, name, label_lu) TIMELINE_END_C_LU((tid), (name), true, (label_lu))
+    #define TIMELINE_END_Llu(tid, name, label_lu) TIMELINE_END_C_Llu((tid), (name), true, (label_lu))
+    #define TIMELINE_END_Ls(tid, name, label_s) TIMELINE_END_C_Ls((tid), (name), true, (label_s))
 #else
     #define TIMELINE_BLIP(tid, name)
-    #define TIMELINE_BLIP_LU(tid, name, label_lu)
-    #define TIMELINE_START_C(tid, condition)
+    #define TIMELINE_BLIP_Llu(tid, name, label_lu)
+    #define TIMELINE_BLIP_Ls(tid, name, label_s)
     #define TIMELINE_START(tid)
+    #define TIMELINE_START_C(tid, condition)
     #define TIMELINE_END_C(tid, name, condition)
+    #define TIMELINE_END_C_Llu(tid, name, condition, label_lu)
+    #define TIMELINE_END_C_Ls(tid, name, condition, label_s)
     #define TIMELINE_END(tid, name)
-    #define TIMELINE_END_LU(tid, name, label_lu)
+    #define TIMELINE_END_Llu(tid, name, label_lu)
+    #define TIMELINE_END_Ls(tid, name, label_s)
 #endif
 
 #ifdef MEASURE_DURATION_STATS

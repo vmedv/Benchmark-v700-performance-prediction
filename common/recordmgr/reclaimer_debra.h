@@ -35,6 +35,8 @@ protected:
     #define DEAMORTIZE_FREE_CALLS
 #endif
 
+// #define DEAMORTIZE_ADAPTIVELY
+
 #ifdef RAPID_RECLAMATION
 #define MIN_OPS_BEFORE_READ 1
 //#define MIN_OPS_BEFORE_CAS_EPOCH 1
@@ -64,6 +66,7 @@ protected:
         blockbag<T> * currentBag;  // pointer to current epoch bag for this process
 #ifdef DEAMORTIZE_FREE_CALLS
         blockbag<T> * deamortizedFreeables;
+        int numFreesPerStartOp;
 #endif
         int checked;               // how far we've come in checking the announced epochs of other threads
         int opsSinceRead;
@@ -160,6 +163,26 @@ public:
 
     inline static bool shouldHelp() { return true; }
 
+    // try to clean up: must only be called by a single thread as part of the test harness!
+    template <typename First, typename... Rest>
+    void debugGCSingleThreaded(void * const * const reclaimers, const int numReclaimers) {
+        BagRotator<First, Rest...> rotator;
+        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
+            printf("tid %3d reclaimer_debra::gc: bags before %6d %6d %6d numReclaimers=%d\n", tid, threadData[tid].epochbags[0]->computeSize(), threadData[tid].epochbags[1]->computeSize(), threadData[tid].epochbags[2]->computeSize(), numReclaimers);
+            rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            rotator.rotateAllEpochBags(tid, reclaimers, 0);
+            printf("tid %3d reclaimer_debra::gc: bags after  %6d %6d %6d numReclaimers=%d\n", tid, threadData[tid].epochbags[0]->computeSize(), threadData[tid].epochbags[1]->computeSize(), threadData[tid].epochbags[2]->computeSize(), numReclaimers);
+
+            /**
+             * want to make sure this is actually happening,
+             * and we want to prove to ourselves that the bags are empty
+             * (or close to empty) when the experiment starts!!!
+             */
+        }
+    }
+
     // rotate the epoch bags and reclaim any objects retired two epochs ago.
     inline void rotateEpochBags(const int tid) {
         int nextIndex = (threadData[tid].index+1) % NUMBER_OF_EPOCH_BAGS;
@@ -167,26 +190,51 @@ public:
 #ifdef USE_GSTATS
         GSTATS_APPEND(tid, limbo_reclamation_event_size, freeable->computeSize());
         GSTATS_ADD(tid, count_rotateAndFree, 1);
-        TIMELINE_START(tid);
-        DURATION_START(tid);
+        TIMELINE_START_C(tid, tid < 96);
+        // DURATION_START(tid);
 #endif
 
-        int numFreed = 0;
+        int numLeftover = 0;
 #ifdef DEAMORTIZE_FREE_CALLS
-        while (!threadData[tid].deamortizedFreeables->isEmpty()) {
-            numFreed += threadData[tid].deamortizedFreeables->getSizeInBlocks()*BLOCK_SIZE;
-            this->pool->addMoveFullBlocks(tid, threadData[tid].deamortizedFreeables);
+        auto freelist = threadData[tid].deamortizedFreeables;
+        if (!freelist->isEmpty()) {
+            numLeftover += (freelist->isEmpty()
+                    ? 0
+                    : (freelist->getSizeInBlocks()-1)*BLOCK_SIZE + freelist->getHeadSize());
+
+            // // "CATCH-UP" bulk free
+            // this->pool->addMoveFullBlocks(tid, freelist);
+
+#   if defined DEAMORTIZE_ADAPTIVELY
+            // adaptive deamortized free count
+            if (numLeftover >= BLOCK_SIZE) {
+                ++threadData[tid].numFreesPerStartOp;
+            } else if (numLeftover == 0) {
+                --threadData[tid].numFreesPerStartOp;
+                if (threadData[tid].numFreesPerStartOp < 1) {
+                    threadData[tid].numFreesPerStartOp = 1;
+                }
+            }
+#   endif
         }
-        threadData[tid].deamortizedFreeables->appendMoveFullBlocks(freeable);
+        // TIMELINE_BLIP_Llu(tid, "numFreesPerStartOp", threadData[tid].numFreesPerStartOp);
+        freelist->appendMoveFullBlocks(freeable);
 #else
-        numFreed += freeable->getSizeInBlocks()*BLOCK_SIZE;
+        numLeftover += (freeable->getSizeInBlocks()-1)*BLOCK_SIZE + freeable->getHeadSize();
         this->pool->addMoveFullBlocks(tid, freeable); // moves any full blocks (may leave a non-full block behind)
 #endif
         SOFTWARE_BARRIER;
 
 #ifdef USE_GSTATS
-        DURATION_END(tid, duration_rotateAndFree);
-        TIMELINE_END_LU(tid, "rotateEpochBags", numFreed); //threadData[tid].localvar_announcedEpoch);
+        // DURATION_END(tid, duration_rotateAndFree);
+        // std::stringstream ss;
+        // ss<<numLeftover;
+        // ss<<numLeftover<<":"<<threadData[tid].numFreesPerStartOp;
+        // TIMELINE_END_Ls(tid, "rotateEpochBags", ss.str().c_str()); //threadData[tid].localvar_announcedEpoch);
+        if (tid < 96) {
+            // TIMELINE_END_Llu(tid, "rotateEpochBags", numLeftover);
+            TIMELINE_BLIP_Llu(tid, "freelistAppend", numLeftover);
+        }
 #endif
 
         threadData[tid].index = nextIndex;
@@ -212,26 +260,6 @@ public:
             ((BagRotator<Rest...> *) this)->rotateAllEpochBags(tid, reclaimers, 1+i);
         }
     };
-
-    // try to clean up: must only be called by a single thread as part of the test harness!
-    template <typename First, typename... Rest>
-    void debugGCSingleThreaded(void * const * const reclaimers, const int numReclaimers) {
-        BagRotator<First, Rest...> rotator;
-        for (int tid=0;tid<this->NUM_PROCESSES;++tid) {
-            printf("tid %3d reclaimer_debra::gc: bags before %6d %6d %6d numReclaimers=%d\n", tid, threadData[tid].epochbags[0]->computeSize(), threadData[tid].epochbags[1]->computeSize(), threadData[tid].epochbags[2]->computeSize(), numReclaimers);
-            rotator.rotateAllEpochBags(tid, reclaimers, 0);
-            rotator.rotateAllEpochBags(tid, reclaimers, 0);
-            rotator.rotateAllEpochBags(tid, reclaimers, 0);
-            rotator.rotateAllEpochBags(tid, reclaimers, 0);
-            printf("tid %3d reclaimer_debra::gc: bags after  %6d %6d %6d numReclaimers=%d\n", tid, threadData[tid].epochbags[0]->computeSize(), threadData[tid].epochbags[1]->computeSize(), threadData[tid].epochbags[2]->computeSize(), numReclaimers);
-
-            /**
-             * want to make sure this is actually happening,
-             * and we want to prove to ourselves that the bags are empty
-             * (or close to empty) when the experiment starts!!!
-             */
-        }
-    }
 
     // objects reclaimed by this epoch manager.
     // returns true if the call rotated the epoch bags for thread tid
@@ -259,13 +287,30 @@ public:
             //GSTATS_APPEND(tid, thread_reclamation_end, time);
             //this->template rotateAllEpochBags<First, Rest...>(tid, reclaimers, 0);
             result = true;
-        } else {
+        }
+
 #ifdef DEAMORTIZE_FREE_CALLS
+        // TODO: make this work for each object type
+#   if defined DEAMORTIZE_ADAPTIVELY
+        for (int i=0;i<threadData[tid].numFreesPerStartOp;++i) {
             if (!threadData[tid].deamortizedFreeables->isEmpty()) {
                 this->pool->add(tid, threadData[tid].deamortizedFreeables->remove());
+            } else {
+                break;
             }
-#endif
         }
+#   else
+        if (!threadData[tid].deamortizedFreeables->isEmpty()) {
+            this->pool->add(tid, threadData[tid].deamortizedFreeables->remove());
+        }
+        // if (!threadData[tid].deamortizedFreeables->isEmpty()) {
+        //     this->pool->add(tid, threadData[tid].deamortizedFreeables->remove());
+        // }
+        // if (!threadData[tid].deamortizedFreeables->isEmpty()) {
+        //     this->pool->add(tid, threadData[tid].deamortizedFreeables->remove());
+        // }
+#   endif
+#endif
 
         // we should announce AFTER rotating bags if we're going to do so!!
         // (very problematic interaction with lazy dirty page purging in jemalloc triggered by bag rotation,
@@ -293,7 +338,7 @@ public:
                         if (__sync_bool_compare_and_swap(&epoch, readEpoch, readEpoch+EPOCH_INCREMENT)) {
 #if defined USE_GSTATS
                             // GSTATS_SET_IX(tid, num_prop_epoch_latency, GSTATS_TIMER_SPLIT(tid, timersplit_epoch), readEpoch+EPOCH_INCREMENT);
-                            TIMELINE_BLIP_LU(tid, "advanceEpoch", readEpoch);
+                            TIMELINE_BLIP_Llu(tid, "advanceEpoch", readEpoch);
 #endif
                         }
                     }
@@ -330,6 +375,7 @@ public:
         threadData[tid].currentBag = threadData[tid].epochbags[0];
 #ifdef DEAMORTIZE_FREE_CALLS
         threadData[tid].deamortizedFreeables = new blockbag<T>(tid, this->pool->blockpools[tid]);
+        threadData[tid].numFreesPerStartOp = 1;
 #endif
         threadData[tid].opsSinceRead = 0;
         threadData[tid].checked = 0;
@@ -348,6 +394,7 @@ public:
             }
         }
 #ifdef DEAMORTIZE_FREE_CALLS
+        this->pool->addMoveAll(tid, threadData[tid].deamortizedFreeables);
         delete threadData[tid].deamortizedFreeables;
 #endif
     }
