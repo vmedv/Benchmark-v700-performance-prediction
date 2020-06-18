@@ -1,0 +1,3 @@
+[submodule "common/recordmgr"]
+	path = common/recordmgr
+	url = git@gitlab.com:trbot86/recordmanager.git
