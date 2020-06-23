@@ -126,6 +126,28 @@ maxstep=$(echo "$num_trials * ${#insert_delete_fractions[@]} * ${#key_range_size
 # echo ${#algorithms[@]}
 # echo ${#thread_counts[@]}
 
+started_sec=$(date +%s)
+
+printTime() {
+    ## takes seconds as arg
+    s=$1
+    if (($s>86400)); then
+        printf "%02dd" $(($s/86400))
+        s=$(($s%86400))
+    fi
+    if (($s>3600)); then
+        printf "%02dh" $(($s/3600))
+        s=$(($s%3600))
+    fi
+    if (($s>60)); then
+        printf "%02dm" $(($s/60))
+        s=$(($s%60))
+    fi
+    if (($s>0)); then
+        printf "%02ds" $s
+    fi
+}
+
 for ((trial=0; trial<num_trials; ++trial)) ; do
     for ins_del_frac in "${insert_delete_fractions[@]}" ; do
         ins_frac=$(echo $ins_del_frac | cut -d" " -f1)
@@ -140,14 +162,17 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
                     f=$(printf "%s%06d%s.txt" "${data_dir}/data" "$step" "_i${ins_frac}d${del_frac}_k${k}_${alg}_n${n}")
                     echo "$step / $maxstep: $f" | tee -a $flog
 
+                    ## build command string
                     prefill_str="" ; if [ "$prefill" -eq "1" ]; then prefill_str="-nprefill $n" ; fi
                     args="-nwork $n $prefill_str -i $ins_frac -d $del_frac -k $k -t $millis_to_run -pin $pinning_policy $other_args"
                     cmd="LD_PRELOAD=${malloc_lib} timeout $timeout_sec numactl --interleave=all time ${bin_dir}/ubench_${alg}.alloc_new.reclaim_debra.pool_none.out $args"
 
+                    ## add command details to file
                     echo "cmd=$cmd" > $f
                     echo "fname=$f" >> $f
                     echo "step=$step" >> $f
 
+                    ## run the command
                     eval $cmd >> $f 2>&1
                     if [ "$?" -ne "0" ]; then
                         echo "ERROR in run $f" >> $ferr
@@ -156,6 +181,31 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
                     ## manually parse the maximum resident size from the output of `time` and add it to the data file
                     maxres=$(echo $(cat $f | grep "maxres" | cut -d" " -f6 | cut -d"m" -f1) / 1000 | bc)
                     echo "maxresident_mb=$maxres" >> $f
+
+                    ## verify throughput measurement is present and positive
+                    throughput=$(cat $f | grep "^total_throughput=" | cut -d"=" -f2)
+                    if [ "$throughput" == "" ] || [ "$throughput" -le "0" ]; then
+                        echo "WARNING: positive throughput NOT found in $f" >> $ferr
+                    fi
+
+                    ## update progress info
+                    curr_sec=$(date +%s)
+                    elapsed_sec=$(echo "scale=0; $curr_sec - $started_sec" | bc)
+                    frac_done=$(echo "scale=3; $step / $maxstep" | bc)
+                    elapsed_sec_per_done=$(echo "scale=3; $elapsed_sec / $step" | bc)
+                    remaining_sec=$(echo "scale=0; ($elapsed_sec_per_done * ($maxstep - $step)) / 1" | bc)
+                    total_est_sec=$(echo "scale=0; $elapsed_sec + $remaining_sec" | bc)
+
+                    echo -n "    (" | tee -a $flog
+                    printTime $elapsed_sec | tee -a $flog
+                    echo -n " elapsed" | tee -a $flog
+                    echo -n ", " | tee -a $flog
+                    printTime $remaining_sec | tee -a $flog
+                    echo -n " est. remaining" | tee -a $flog
+                    echo -n ", " | tee -a $flog
+                    echo -n "out of est. total " | tee -a $flog
+                    printTime $total_est_sec | tee -a $flog
+                    echo ")" | tee -a $flog
 
                 done
             done
@@ -168,9 +218,9 @@ echo "started: $started" | tee -a $flog
 echo "finished: $(date)" | tee -a $flog
 
 echo | tee -a $flog
-echo "## Zipping *.sh and ${data_dir} into ./${host}_data.zip" | tee -a $flog
+echo "## Zipping results into ./${host}_data.zip" | tee -a $flog
 echo | tee -a $flog
-zip -r ./${host}_data.zip *.sh ${data_dir}
+zip -r ./${host}_data.zip *.sh ${compile_dir}/Makefile ${data_dir} >> $flog 2>&1
 
 echo | tee -a $flog
 echo "Log can be viewed at $flog"
