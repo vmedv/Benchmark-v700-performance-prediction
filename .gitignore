@@ -11,3 +11,8 @@ temp*.txt
 compile.txt
 *.pyc
 time*.txt
+*_bin
+*_bin.old
+*_data
+*_data.old
+*.zip
