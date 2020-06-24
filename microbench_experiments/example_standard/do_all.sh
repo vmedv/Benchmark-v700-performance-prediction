@@ -7,13 +7,15 @@ else
 fi
 
 outdir=output
-flog=${outdir}/_log_do_all.txt
+flog=_log_do_all.txt
 ./_run_experiments.sh $testing | tee $flog \
     && ./_create_csv.sh | tee -a $flog \
     && ./_create_plots.sh | tee -a $flog \
-    && cp ../../tools/gen_html/* ${outdir}/ 2>&1 | tee -a $flog \
-    && cd ${outdir} | tee -a $flog \
-    && ./_gen.sh "A simple experiment" "With rather sophisticated automated tooling!" | tee -a $flog
+    && cp ../../tools/gen_html/* ${outdir}/ \
+    && cd ${outdir} \
+    && ./_gen.sh "A simple experiment" "With rather sophisticated automated tooling!" | tee -a ../$flog
+
+## cd .. && ../../tools/deploy_dir.sh ${outdir} setbench
 
 ####################################################################
 #### TODO

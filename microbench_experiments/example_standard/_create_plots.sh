@@ -76,10 +76,17 @@ create_datalog() {      ## arguments:
     ## note: we grep with SPACE/NEWLINE BEFORE/AFTER _filter
     ##       to ensure we are searching for an EXACT match over fields
     ##       (not searching neighbouring fields)
+
     rm ${_fout} 2>/dev/null
     append_title ${_fout} "Table of space-separated values"
-    grep -E "(^| )${_filter}( |$)" ${_fin} >> ${_fout}
-    files=$(awk "{print \$$((1+${_ix_f}))}" ${_fout}) ## grab column containing file from the data we just filtered
+
+    ## add header + filtered rows to outfile
+    ( (head -1 ${_fin} && grep -E "(^| )${_filter}( |$)" ${_fin}) | column -t ) >> ${_fout}
+
+    ## get list of files to include from filtered rows
+    files=$(grep -E "(^| )${_filter}( |$)" ${_fin} | awk "{print \$$((1+${_ix_f}))}")
+
+    ## add some white space
     for ((_i=0;_i<30;++_i)) ; do echo >> ${_fout} ; done
 
     for f in $files ; do
@@ -88,9 +95,11 @@ create_datalog() {      ## arguments:
         dir_escaped=${dir//\//\\/}
         fshort=$(echo $f | sed "s/${dir_escaped}//g")
 
+        # echo "f=$f fshort=$fshort dir=$dir"
+
         ## append raw data file f
         append_title ${_fout} "file: ${fshort}"
-        cat ${fshort} >> ${_fout}
+        cat ${f} >> ${_fout}
         for ((_i=0;_i<30;++_i)) ; do echo >> ${_fout} ; done
     done
 }
