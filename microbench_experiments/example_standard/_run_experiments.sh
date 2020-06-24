@@ -131,6 +131,9 @@ started_sec=$(date +%s)
 printTime() {
     ## takes seconds as arg
     s=$1
+    if (($s==0)); then
+        printf "%02ds" "0"
+    fi
     if (($s>86400)); then
         printf "%02dd" $(($s/86400))
         s=$(($s%86400))
@@ -159,7 +162,7 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
 
                     ## actually run current trial
                     step=$((step+1))
-                    f=$(printf "%s%06d%s.txt" "${data_dir}/data" "$step" "_i${ins_frac}d${del_frac}_k${k}_${alg}_n${n}")
+                    f=$(printf "%s%06d%s.txt" "${data_dir}/data" "$step" ".i${ins_frac}d${del_frac}.k${k}.${alg}.n${n}")
                     echo "$step / $maxstep: $f" | tee -a $flog
 
                     ## build command string
@@ -207,6 +210,9 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
                     printTime $total_est_sec | tee -a $flog
                     echo ")" | tee -a $flog
 
+                    ## add host info to f
+                    echo "hostname=${host}" >> $f
+
                 done
             done
         done
@@ -232,3 +238,5 @@ if [ -e "$ferr" ] && [ "0$(cat $ferr | wc -l)" -ne "0" ]; then
     echo "#########################################################################"
     echo
 fi
+
+echo "As your next step, you may want to create graphs by running ./create_graphs.py"
