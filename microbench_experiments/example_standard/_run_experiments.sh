@@ -173,7 +173,7 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
                     ## add command details to file
                     echo "cmd=$cmd" > $f
                     echo "fname=$f" >> $f
-                    echo "step=$step" >> $f
+                    printf "step=%06d\n" "$step" >> $f
 
                     ## run the command
                     eval $cmd >> $f 2>&1

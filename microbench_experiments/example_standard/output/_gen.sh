@@ -10,20 +10,23 @@ subtitle=$2
 
 ftemplate="template_exp.txt"
 
+flog="_log_gen.txt"
+rm $flog 2>/dev/null
+
 navrows="\n    <a href='index.htm'>home<\/a>"
 
-sections=`ls *.png | rev | cut -d"-" -f3- | rev | sort | uniq`
+sections=$(ls *.png | rev | cut -d"-" -f3- | rev | sort | uniq)
 for sec in $sections ; do
 
     # get uniq/sorted rows and adjust the sort by shortest length first
-    rows=`ls ${sec}*.png | rev | cut -d"-" -f1 | cut -d"." -f2 | rev | sort | uniq | tr "\n" " "`
-    rows=`for x in $rows ; do echo -e "${#x}\t$x" ; done | sort -n | cut -f2 | tr "\n" " "`
+    rows=$(ls ${sec}*.png | rev | cut -d"-" -f1 | cut -d"." -f2 | rev | sort | uniq | tr "\n" " ")
+    rows=$(for x in $rows ; do echo -e "${#x}\t$x" ; done | sort -n | cut -f2 | tr "\n" " ")
 
     # get uniq/sorted columns and adjust the sort by shortest length first
-    cols=`ls ${sec}*.png | rev | cut -d"-" -f2 | rev | sort | uniq | tr "\n" " "`
-    cols=`for x in $cols ; do echo -e "${#x}\t$x" ; done | sort -n | cut -f2 | tr "\n" " "`
+    cols=$(ls ${sec}*.png | rev | cut -d"-" -f2 | rev | sort | uniq | tr "\n" " ")
+    cols=$(for x in $cols ; do echo -e "${#x}\t$x" ; done | sort -n | cut -f2 | tr "\n" " ")
 
-    echo "sec=\"$sec\" rows=\"$rows\" cols=\"$cols\""
+    echo "sec=\"$sec\" rows=\"$rows\" cols=\"$cols\"" | tee -a $flog
 
     ## create section
     f=$sec.htm
@@ -32,16 +35,17 @@ for sec in $sections ; do
 
     sec_pretty=$(echo $sec | tr "-" " ")
     navrows=$"${navrows}\n    <a href='${f_escaped}'>${sec_pretty}<\/a>"
-    # echo "adding \"\n    <a href='${f_escaped}'>${sec_pretty}<\/a>\" to {navrows}"
+    echo "adding \"\n    <a href='${f_escaped}'>${sec_pretty}<\/a>\" to {navrows}" >> $flog
 
     ## build table header
     thcols=""
     for col in $cols ; do
         thcols="${thcols}<th>$col<\/th>"
     done
-    cmd="sed -i \"s/{thcols}/${thcols}/g\" $f" #; echo "$cmd"
+    cmd="sed -i \"s/{thcols}/${thcols}/g\" $f >> $flog"
+    echo "$cmd" >> $flog
     eval "$cmd"
-    echo "sed replaced {thcols} in $f"
+    echo "    sed replaced {thcols} in $f" | tee -a $flog
 
     ## build table rows
     trrows=""
@@ -51,7 +55,7 @@ for sec in $sections ; do
         trrows=$"${trrows}\n    <td>$row<\/td>"
 
         for col in $cols ; do
-            prefix="${sec}_${col}_${row}"
+            prefix="${sec}-${col}-${row}"
             prefix_escaped=${prefix//\//\\/}
 
             if [ -e "${prefix}.gif" ]; then
@@ -65,12 +69,17 @@ for sec in $sections ; do
             fi
 
             if [ -e "${prefix}.txt" ]; then
-                link_html="${prefix}.htm"
-
 				## create htm file for this raw log file
+                link_html="${prefix}.htm"
 				cp template_rawlog.txt ${prefix}.htm
 				cat ${prefix}.txt >> ${prefix}.htm
 				echo "</pre></body></html>" >> ${prefix}.htm
+            elif [ -e "${sec}.txt" ]; then
+				## create htm file for this raw log file
+                link_html="${sec}.htm"
+				cp template_rawlog.txt ${sec}.htm
+				cat ${sec}.txt >> ${sec}.htm
+				echo "</pre></body></html>" >> ${sec}.htm
             else
                 link_html="#"
             fi
@@ -79,24 +88,40 @@ for sec in $sections ; do
         done
         trrows=$"${trrows}\n<\/tr>"
     done
-    cmd="sed -i \"s/{trrows}/${trrows}/g\" $f" #; echo "$cmd"
+    cmd="sed -i \"s/{trrows}/${trrows}/g\" $f >> $flog"
+    echo "$cmd" >> $flog
     eval "$cmd"
-    echo "sed replaced {trrows} in $f"
+    echo "    sed replaced {trrows} in $f" | tee -a $flog
 
-    cmd="sed -i \"s/{preloadtags}/${preloadtags}/g\" $f"
-    echo "$cmd"
-    eval "sed replaced {preloadtags} in $f"
+    cmd="sed -i \"s/{preloadtags}/${preloadtags}/g\" $f >> $flog"
+    echo "$cmd" >> $flog
+    eval "$cmd"
+    echo "    sed replaced {preloadtags} in $f" | tee -a $flog
 done
 
-cp template_index.txt index.htm
-cmd="sed -i \"s/{title}/${title}/g\" index.htm"
-echo "$cmd" ; eval "sed replaced {title} in index.htm"
-cmd="sed -i \"s/{subtitle}/${subtitle}/g\" index.htm"
-echo "$cmd" ; eval "sed replaced {subtitle} in index.htm"
+## prepare index.htm
 
-# echo "navrows=\"${navrows}\""
+echo "sec=\"index\"" | tee -a $flog
+
+cp template_index.txt index.htm >> $flog 2>&1
+
+cmd="sed -i \"s/{title}/${title}/g\" index.htm >> $flog"
+echo "$cmd" >> $flog
+eval "$cmd"
+echo "    sed replaced {title} in index.htm" | tee -a $flog
+
+cmd="sed -i \"s/{subtitle}/${subtitle}/g\" index.htm >> $flog"
+echo "$cmd" >> $flog
+eval "$cmd"
+echo "    sed replaced {subtitle} in index.htm" | tee -a $flog
+
+## add navigation bar to all pages
+
+echo "sec=\"navigation\"" | tee -a $flog
+echo "navrows=\"${navrows}\"" >> $flog
 for f in *.htm ; do
-	cmd="sed -i \"s/{navrows}/${navrows}/g\" $f" #; echo "$cmd"
+	cmd="sed -i \"s/{navrows}/${navrows}/g\" $f >> $flog"
+    echo "$cmd" >> $flog
     eval "$cmd"
-    echo "sed replaced {navrows} in $f"
+    echo "    sed replaced {navrows} in $f" | tee -a $flog
 done

@@ -20,3 +20,5 @@ time*.txt
 *.gif
 *.mp4
 *.htm
+datalog*.txt
+_*.txt
