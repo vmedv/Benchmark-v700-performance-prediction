@@ -1,30 +1,15 @@
 #!/bin/bash
 
-fields+=( step )
-fields+=( hostname )
-fields+=( DS_TYPENAME )
-fields+=( TOTAL_THREADS )
-fields+=( RQ_THREADS )
-fields+=( MAXKEY )
-fields+=( INS )
-fields+=( DEL )
-fields+=( total_throughput )
-fields+=( PAPI_L2_TCM )
-fields+=( PAPI_L3_TCM )
-fields+=( PAPI_TOT_CYC )
-fields+=( PAPI_TOT_INS )
+source _fields.inc
 
-echo "num_steps=$(echo *_data/data*.txt | wc -w)"
+files=$(echo *_data/data*.txt)
+echo "num_steps=$(echo $files | wc -w)"
+eval "parallel \" ../../tools/fields.sh {} ${fields[@]} | tee {}.csv \" ::: $files"
 echo "${fields[@]}" | tee data.csv
-for f in *_data/data*.txt ; do
-    cat $f | ../../tools/fields.sh $f "${fields[@]}" | tee -a data.csv
-done
+cat *_data/data*.txt.csv | sort -n >> data.csv
+rm *_data/data*.txt.csv
 
-## separate fields array into decorative, filtering and values
-## make fields array an include? so it applies identically to this script and _create_graphs.sh?
-## next step... create graphs?
-
-## create unifying script that calls all relevant _*.sh scripts
+## update _create_graphs.sh so it creates txt log files for clickthrough (from step values)
 ## test new gen and deploy_site tool scripts
 
 ## proper throughput line graph options (mostly marker customization?)

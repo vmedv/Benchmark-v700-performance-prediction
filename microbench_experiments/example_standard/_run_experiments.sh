@@ -162,7 +162,7 @@ for ((trial=0; trial<num_trials; ++trial)) ; do
 
                     ## actually run current trial
                     step=$((step+1))
-                    f=$(printf "%s%06d%s.txt" "${data_dir}/data" "$step" ".i${ins_frac}d${del_frac}.k${k}.${alg}.n${n}")
+                    f=$(printf "%s%06d%s.txt" "${data_dir}/data" "$step" "-i${ins_frac}-d${del_frac}-k${k}-${alg}-n${n}")
                     echo "$step / $maxstep: $f" | tee -a $flog
 
                     ## build command string
@@ -238,5 +238,3 @@ if [ -e "$ferr" ] && [ "0$(cat $ferr | wc -l)" -ne "0" ]; then
     echo "#########################################################################"
     echo
 fi
-
-echo "As your next step, you may want to create graphs by running ./create_graphs.py"

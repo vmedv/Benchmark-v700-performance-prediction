@@ -16,3 +16,7 @@ time*.txt
 *_data
 *_data.old
 *.zip
+*.png
+*.gif
+*.mp4
+*.htm
