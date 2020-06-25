@@ -1,0 +1,60 @@
+
+[[ideal interface for running experiments and producing plots]]
+[in one file, specify]:
+
+    compile_dir=...
+    data_dir=data_$(hostname)
+    bin_dir=bin_$(hostname)
+
+    a compilation command
+        compile_cmd="cd ${compile_dir} ; make -j all bin_dir=${bin_dir}"
+
+    assignments of fields that define ALL RUNS. for example:
+        range[INS_DEL_FRAC]=( 0 0.5 20 )
+        range[MAXKEY]=( 2000000 20000000 )
+        range[DS_TYPENAME]=( brown_ext_ist_lf brown_ext_abtree_lf bronson_pext_bst_occ )
+        range[TOTAL_THREADS]=( $(cd ../../tools ; ./get_thread_counts_numa_nodes.sh) )
+        num_trials=3    <-- number of trials is a first order citizen...
+
+        ## assigned_fields="${!range[@]}"     <-- get fields that are used as keys in range[...]
+
+    as well as other fields we would like to fetch from our data
+        other_fields=( throughput PAPI_L3_TCM fname )
+
+        ## all_fields=( "${assigned_fields[@]}" "${other_fields[@]}" )
+
+    a run command with placeholders for above, e.g.,
+        cmd="LD_PRELOAD=../../libjemalloc.so timeout 300 numactl --interleave=all time $(hostname)_bin/ubench_\${value[DS_TYPENAME]}.alloc_new.reclaim_debra.pool_none.out -nwork \${value[TOTAL_THREADS]} -nprefill \${TOTAL_THREADS} -i \${value[INS_DEL_FRAC]} -d \${value[INS_DEL_FRAC]} -k \${value[MAXKEY]} -t 30000 -pin $(cd ../../tools ; ./get_pinning_cluster.sh) -rq 0 -rqsize 1 -nrq 0"
+
+    the plots you would like to see
+        what does a plot definition look like? we want to define a plot type with a set of fields that define experiments, and fields that define a plot's series/x-axis/y-axis, and then produce one plot *per experiment* (with the desired series/x-axis/y-axis).
+
+        high level example:
+            for each filter_values in cross-product(range[INS_DEL_FRAC], range[MAXKEY]): filter data by filter_values, then let series=DS_TYPENAME x=TOTAL_THREADS y=throughput graph=bars and produce a plot (aggregating somehow over trials)
+
+        main parameters are:
+            experiment fields - a set of fields
+                the cross product of the ranges of these fields defines a set of experiments
+                (there are precisely as many experiments as the cardinality of the cross product of all experiment fields)
+            series field
+            x-axis field
+            y-axis field
+            aggregation function (if there is more than one y-value for each data point -- e.g., multiple trials; mean, sum)
+            type (bars, lines, hist2d)
+
+        add_plot "INS_DEL_FRAC MAXKEY" DS_TYPENAME TOTAL_THREADS PAPI_L3_TCM mean bars
+        add_plot "INS_DEL_FRAC MAXKEY" DS_TYPENAME TOTAL_THREADS throughput mean lines
+
+        behind the scenes:
+        plots[0,exp_fields]=INS_DEL_FRAC MAXKEY
+        plots[0,series]=DS_TYPENAME
+        plots[0,x_axis]=TOTAL_THREADS
+        plots[0,y_axis]=throughput
+        plots[0,aggfunc]=mean
+        plots[0,type]=bars
+
+        ## most likely python/pandas is the correct langauge to multi index, pivot, aggregate...
+        ## (does this complicate hist2d?)
+        ## once we know what specific input we need in pandas to do this,
+        ## might want to consider avoiding marshalling in add_plot...
+        ## i.e., just directly add an arg string for the python program to plots[]...

@@ -34,8 +34,8 @@
 #################################
 
 fexp+=( hostname )
-fexp+=( INS )
-fexp+=( DEL )
+fexp+=( INS_FRAC )
+fexp+=( DEL_FRAC )
 fexp+=( MAXKEY )
 
 fseries=DS_TYPENAME
@@ -52,4 +52,4 @@ fnoplot+=( step )
 
 ffile=fname
 
-fexp_short=( "-" "-i" "d" "-k" ) ## example: we are merging INS and DEL into a single field in the tagged experiment string (which will be used to create a filename for any output plots)
+fexp_short=( "-" "-i" "d" "-k" ) ## example: we are merging INS_FRAC and DEL_FRAC into a single field in the tagged experiment string (which will be used to create a filename for any output plots)

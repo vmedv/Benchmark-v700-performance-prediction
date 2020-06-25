@@ -11,7 +11,7 @@ DB_FILENAME = "results.db"
 NUM_PROCESSORS = 4
 PARALLEL_CHUNK_SIZE = 100
 
-#table column as tuples of column name, type, string in the output and delimiter 
+#table column as tuples of column name, type, string in the output and delimiter
 columns = [
             ("step"                     ,"text"     ,"step"                             ,"=")
            ,("machine"                  ,"text"     ,"machine"                          ,"=")
@@ -27,8 +27,8 @@ columns = [
            ,("pool"                     ,"text"     ,"POOL"                             ,"=")
            ,("prefill"                  ,"text"     ,"PREFILL"                          ,"=")
            ,("run_time"                 ,"integer"  ,"MILLIS_TO_RUN"                    ,"=")
-           ,("ins"                      ,"integer"  ,"INS"                              ,"=")
-           ,("del"                      ,"integer"  ,"DEL"                              ,"=")
+           ,("ins"                      ,"integer"  ,"INS_FRAC"                              ,"=")
+           ,("del"                      ,"integer"  ,"DEL_FRAC"                              ,"=")
            ,("rq"                       ,"integer"  ,"RQ"                               ,"=")
            ,("rq_size"                  ,"integer"  ,"RQSIZE"                           ,"=")
            ,("max_key"                  ,"integer"  ,"MAXKEY"                           ,"=")
@@ -50,14 +50,14 @@ columns = [
            ,("stdev_latency_updates"    ,"integer"  ,"stdev latency_updates total"      ,"=")
            ,("min_latency_updates"      ,"integer"  ,"min latency_updates total"        ,"=")
            ,("max_latency_updates"      ,"integer"  ,"max latency_updates total"        ,"=")
-           ,("avg_latency_searches"     ,"integer"  ,"average latency_searches total"   ,"=") 
+           ,("avg_latency_searches"     ,"integer"  ,"average latency_searches total"   ,"=")
            ,("stdev_latency_searches"   ,"integer"  ,"stdev latency_searches total"     ,"=")
            ,("min_latency_searches"     ,"integer"  ,"min latency_searches total"       ,"=")
            ,("max_latency_searches"     ,"integer"  ,"max latency_searches total"       ,"=")
            ,("avg_latency_rqs"          ,"integer"  ,"average latency_rqs total"        ,"=")
            ,("stdev_latency_rqs"        ,"integer"  ,"stdev latency_rqs total"          ,"=")
            ,("min_latency_rqs"          ,"integer"  ,"min latency_rqs total"            ,"=")
-           ,("max_latency_rqs"          ,"integer"  ,"max latency_rqs total"            ,"=")            
+           ,("max_latency_rqs"          ,"integer"  ,"max latency_rqs total"            ,"=")
 ]
 
 ignore_warnings_on = set([""])
@@ -67,7 +67,7 @@ def process_chunk(start_ix):
     global ignore_warnings_on
     global columns
     global PARALLEL_CHUNK_SIZE
-    
+
     #populate the table by going over all files
     warnings = []
     insertion_strings = []
@@ -77,16 +77,16 @@ def process_chunk(start_ix):
         if k < start_ix or k >= start_ix+PARALLEL_CHUNK_SIZE:
             k += 1
             continue
-        
+
         try:
             res = check_output('cat ' + file_name + ' | grep "Validation OK" | wc -l', shell=True)
         except CalledProcessError, e:
             print e
-            exit()    
-        if "0" in res: 
+            exit()
+        if "0" in res:
             print "ERORR: file " +file_name+ " had a validation error"
-            continue #skip files with segfaults or errors 
-            
+            continue #skip files with segfaults or errors
+
 #        if ((k % 100) == 0):
 #            print k,
             #print "processing file #" + repr(k) + " of " + repr(len(files))
@@ -106,7 +106,7 @@ def process_chunk(start_ix):
                 print e
                 exit()
 
-            if not res: 
+            if not res:
                 if not col_string in ignore_warnings_on:
                     warnings.append((file_name, col, col_type, col_string, delim, res, insert_string))
                 if col_type == "text":
@@ -139,7 +139,7 @@ def process_chunk(start_ix):
 if os.path.isfile(DB_FILENAME):
     print "Database file '" + DB_FILENAME + "' already exists!"
     exit()
-    
+
 #print "Removing old database..."
 ##try to remove old database
 #try:
@@ -152,7 +152,7 @@ print "Creating new database '" + DB_FILENAME + "'..."
 conn = sqlite3.connect(DB_FILENAME)
 cursor = conn.cursor()
 
-#add the results table to the database 
+#add the results table to the database
 print "Creating results table..."
 create_table_string = "CREATE TABLE results ("
 first = True
@@ -169,7 +169,7 @@ create_table_string+= ")"
 cursor.execute(create_table_string)
 print "Table created."
 
-#get all files 
+#get all files
 print "Fetching list of data files..."
 try:
     res = check_output("ls data/step*", shell=True)

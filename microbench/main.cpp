@@ -39,8 +39,8 @@ __thread int tid = 0;
 
 #include "plaf.h"
 PAD;
-double INS;
-double DEL;
+double INS_FRAC;
+double DEL_FRAC;
 double RQ;
 int RQSIZE;
 int MAXKEY = 0;
@@ -238,7 +238,7 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
     binding_bindThread(tid);
     test_type garbage = 0;
 
-    double insProbability = (INS > 0 ? 100*INS/(INS+DEL) : 50.);
+    double insProbability = (INS_FRAC > 0 ? 100*INS_FRAC/(INS_FRAC+DEL_FRAC) : 50.);
 
     INIT_THREAD(tid);
     __sync_fetch_and_add(&g->running, 1);
@@ -519,7 +519,7 @@ void createAndPrefillDataStructure(GlobalsT * g, int64_t expectedSize) {
     }
 
     if (expectedSize == -1) {
-        const double expectedFullness = (INS+DEL ? INS / (double)(INS+DEL) : 0.5); // percent full in expectation
+        const double expectedFullness = (INS_FRAC+DEL_FRAC ? INS_FRAC / (double)(INS_FRAC+DEL_FRAC) : 0.5); // percent full in expectation
         expectedSize = (int64_t) (MAXKEY * expectedFullness);
     }
 
@@ -592,7 +592,7 @@ void thread_timed(GlobalsT * g, int __tid) {
         //test_type key = g->rngs[tid].next(MAXKEY) + 1;
 //        printf("    key=%d\n", key);
         double op = g->rngs[tid].next(100000000) / 1000000.;
-        if (op < INS) {
+        if (op < INS_FRAC) {
             // GSTATS_TIMER_RESET(tid, timer_latency);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
@@ -600,7 +600,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             }
             // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_inserts, 1);
-        } else if (op < INS+DEL) {
+        } else if (op < INS_FRAC+DEL_FRAC) {
             // GSTATS_TIMER_RESET(tid, timer_latency);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
@@ -608,7 +608,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             }
             // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_deletes, 1);
-        } else if (op < INS+DEL+RQ) {
+        } else if (op < INS_FRAC+DEL_FRAC+RQ) {
             // TODO: make this respect KeyGenerators for non-uniform distributions
             uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
             assert(_key >= 1);
@@ -1076,8 +1076,8 @@ int main(int argc, char** argv) {
     WORK_THREADS = 4;
     RQSIZE = 0;
     RQ = 0;
-    INS = 10;
-    DEL = 10;
+    INS_FRAC = 10;
+    DEL_FRAC = 10;
     MAXKEY = 100000;
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
                                 // to get NO prefilling, set -nprefill 0
@@ -1087,9 +1087,12 @@ int main(int argc, char** argv) {
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
     for (int i=1;i<argc;++i) {
         if (strcmp(argv[i], "-i") == 0) {
-            INS = atof(argv[++i]);
+            INS_FRAC = atof(argv[++i]);
         } else if (strcmp(argv[i], "-d") == 0) {
-            DEL = atof(argv[++i]);
+            DEL_FRAC = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-insdel") == 0) {
+            INS_FRAC = atof(argv[++i]);
+            DEL_FRAC = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rq") == 0) {
             RQ = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rqsize") == 0) {
@@ -1132,8 +1135,8 @@ int main(int argc, char** argv) {
     PRINTS(MAX_THREADS_POW2);
     PRINTS(CPU_FREQ_GHZ);
     PRINTI(MILLIS_TO_RUN);
-    PRINTI(INS);
-    PRINTI(DEL);
+    PRINTI(INS_FRAC);
+    PRINTI(DEL_FRAC);
     PRINTI(RQ);
     PRINTI(RQSIZE);
     PRINTI(MAXKEY);
@@ -1143,6 +1146,7 @@ int main(int argc, char** argv) {
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
     PRINTI(distribution);
+    printf("INS_DEL_FRAC=%d %d\n", INS_FRAC, DEL_FRAC);
 
     switch (distribution) {
         case UNIFORM: {

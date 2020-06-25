@@ -24,13 +24,12 @@ flog=_log_do_all.txt
 ## make page rows/cols explicit AS OPTIONAL ARGUMENTS IN GEN?
 
 ## proper throughput line plot options (mostly marker customization?)
-## possibly extract something generic from this latest test
 ## test this tooling on a system/LOGIN WITHOUT global "tools" access (would this be true for CI?)
 
 ## maxres plot with baseline adjustment?
 
 ## clean up compile.sh
-## copy direct clone into into README.md
+## copy direct clone info into README.md
 
 ## advplot into tools
 ## better timeline capture

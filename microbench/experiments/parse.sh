@@ -5,7 +5,7 @@ if [ "$#" -le "0" ]; then
 	exit 1
 fi
 
-fields="DS_TYPENAME size_node RECLAIM ALLOC POOL MILLIS_TO_RUN INS DEL RQ RQSIZE MAXKEY"
+fields="DS_TYPENAME size_node RECLAIM ALLOC POOL MILLIS_TO_RUN INS_FRAC DEL_FRAC RQ RQSIZE MAXKEY"
 fields="$fields PREFILL_THREADS TOTAL_THREADS WORK_THREADS RQ_THREADS INSERT_FUNC"
 fields="$fields threads_final_keysum threads_final_size final_keysum final_size validate_result"
 fields="$fields tree_stats_height tree_stats_numInternals tree_stats_numLeaves tree_stats_numNodes"

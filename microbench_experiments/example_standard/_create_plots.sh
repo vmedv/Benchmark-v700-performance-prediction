@@ -22,9 +22,9 @@ get_unique_experiments "$fcsv"
 ####################################################
 
 ##
-## function to create a plot from space-separated input data
+## function to create a grouped bar plot from space-separated input data
 ##
-create_plot() {         ## arguments:
+plot_bars() {         ## arguments:
     local _fin=$1       ## input file containing space-separated data
     local _fout=$2      ## output image filename
     local _filter=$3    ## string to grep to filter data for this experiment
@@ -46,7 +46,7 @@ create_plot() {         ## arguments:
                     --width 12 \
                     --height 8
 }
-export -f create_plot ## make function callable from subprocesses (like gnu parallel)
+export -f plot_bars ## make function callable from subprocesses (like gnu parallel)
 
 ##
 ## function to append a visually distinct looking title to a file
@@ -121,7 +121,7 @@ for ((i=0; i<${#experiments[@]}; ++i)); do
     for ((ix_fy=${ix_fvalues_start}; ix_fy<=${ix_fvalues_end}; ++ix_fy)) ; do
         outfile="${outdir}/${fields[$ix_fy]}${experiments_tagged[$i]}.png"
         title="${fields[$ix_fy]} vs ${fields[$ix_fx]}"
-        cmd="create_plot '$fcsv' '${outfile}' '${experiments[$i]}' '$ix_fseries' '$ix_fx' '$ix_fy' '$title'"
+        cmd="plot_bars '$fcsv' '${outfile}' '${experiments[$i]}' '$ix_fseries' '$ix_fx' '$ix_fy' '$title'"
         cmds+=("$cmd") ; echo "$me: ## $cmd"
     done
 done

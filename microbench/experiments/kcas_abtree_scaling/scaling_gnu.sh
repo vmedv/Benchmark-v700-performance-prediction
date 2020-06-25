@@ -2,8 +2,8 @@
 
 file=abtree_kcas_scaling.csv
 
-ins_loc=$(cat $file | head -n 1 | sed 's/\,INS.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
-del_loc=$(cat $file | head -n 1 | sed 's/\,DEL.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
+ins_loc=$(cat $file | head -n 1 | sed 's/\,INS_FRAC.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
+del_loc=$(cat $file | head -n 1 | sed 's/\,DEL_FRAC.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
 size_loc=$(cat $file | head -n 1 | sed 's/\,MAXKEY.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
 threads_loc=$(cat $file | head -n 1 | sed 's/\,TOTAL_THREADS.*/\,,/' | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
 targ_loc=$(cat $file | head -n 1 | sed "s/\\,$1.*/\\,,/" | sed -e 's/\(.\)/&\n/g' | grep "," | wc -l)
@@ -14,7 +14,7 @@ truncate gnu.txt --size 0
 
 echo DS_TYPENAME $(cat $file | cut -d "," -f"$threads_loc" | sort -g | uniq -d  | tr "\n" " ") >> gnu.txt
 
-for ds in $dses; do 
+for ds in $dses; do
     echo $ds $(cat $file | cut -d "," -f2,"$ins_loc,$del_loc,$size_loc,$threads_loc,$targ_loc" | grep $ds",.*"$2","$3","$4"," | cut -d "," -f6 | tr "\n" " " ) >> gnu.txt
 done
 
