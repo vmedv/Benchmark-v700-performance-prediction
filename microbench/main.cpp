@@ -1146,7 +1146,7 @@ int main(int argc, char** argv) {
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
     PRINTI(distribution);
-    printf("INS_DEL_FRAC=%d %d\n", INS_FRAC, DEL_FRAC);
+    printf("INS_DEL_FRAC=%.1f %.1f\n", INS_FRAC, DEL_FRAC);
 
     switch (distribution) {
         case UNIFORM: {
