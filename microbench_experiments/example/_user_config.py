@@ -11,25 +11,36 @@ set_dir_data    ( os.getcwd() + '/data' )               ## directory for data fi
 ## your program will be run once for each set of values in the CROSS PRODUCT of all parameters.
 ## (i.e., we will run your program with every combination of parameters)
 ##
+## if you want to perform repeated trials of each experimental configuration, add a run_param called "__trial"
+##     and specify a list of trial numbers (as below).
+##
+## (the run_param doesn't *need* to be called __trials exactly, but if it is called __trials exactly,
+##     then extra sanity checks will be performed to verify, for example, that each data point in a graphical plot
+##     represents the average of precisely as many experimental runs as there are entries in the __trials list.)
+##
 
-add_run_param ( '_dist'           , ['uniform', 'zipf'] )
-add_run_param ( '_insdel'         , ['0.0 0.0', '0.5 0.5', '20.0 10.0'] )
-add_run_param ( '_keyrange'       , [2000000, 20000000] )
-add_run_param ( '_alg'            , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
-add_run_param ( '_thread_pinning' , ['-pin ' + shell_to_str('cd ../../tools ; ./get_pinning_cluster.sh', exit_on_error=True)] )
+add_run_param ( 'distribution'    , ['uniform', 'zipf'] )
+add_run_param ( 'INS_DEL_FRAC'    , ['0.0 0.0', '0.5 0.5', '20.0 10.0'] )
+add_run_param ( 'MAXKEY'          , [2000000, 20000000] )
+add_run_param ( 'DS_TYPENAME'     , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
+add_run_param ( 'thread_pinning'  , ['-pin ' + shell_to_str('cd ../../tools ; ./get_pinning_cluster.sh', exit_on_error=True)] )
 
 if args.testing:
-    add_run_param ( '_trial'          , [1] )
-    add_run_param ( '_nthreads'       , [1, shell_to_str('cd ../../tools ; ./get_thread_counts_max.sh', exit_on_error=True)] )
+    add_run_param ( '__trials'        , [1] )
+    add_run_param ( 'TOTAL_THREADS'   , [1, shell_to_str('cd ../../tools ; ./get_thread_counts_max.sh', exit_on_error=True)] )
 else:
-    add_run_param ( '_trial'          , [1, 2, 3] )
-    add_run_param ( '_nthreads'       , shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
+    add_run_param ( '__trials'        , [1, 2, 3] )
+    add_run_param ( 'TOTAL_THREADS'   , shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
+    # add_run_param ( 'TOTAL_THREADS'   , [1] + shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
 
 ##
 ## specify how to compile and run your program.
 ##
 ## you can use any of the parameters you defined above to dynamically replace {_tokens_like_this}.
-## you can also get the directories saved above by using {__dir_compile} {__dir_run} {__dir_data}.
+## you can also get the directories saved above by using:
+##      {__dir_compile}
+##      {__dir_run}
+##      {__dir_data}
 ##
 ## the following replacement token is also defined for you:
 ##      {__step}            the number of runs done so far, padded to six digits with leading zeros
@@ -41,9 +52,9 @@ else:
 set_cmd_compile ( 'make -j all bin_dir={__dir_run}' )
 
 if args.testing:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{_alg}.alloc_new.reclaim_debra.pool_none.out -nwork {_nthreads} -dist-{_dist} -insdel {_insdel} -k {_keyrange} -t 100 {_thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -dist-{distribution} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 else:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{_alg}.alloc_new.reclaim_debra.pool_none.out -nwork {_nthreads} -nprefill {_nthreads} -dist-{_dist} -insdel {_insdel} -k {_keyrange} -t 30000 {_thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -dist-{distribution} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 30000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 
 set_file_run_data ( 'data{__step}.txt' )                ## pattern for output filenames. note: filenames cannot contain spaces.
 
@@ -77,10 +88,10 @@ def get_maxres(file_name, field_name):
 ## note: in the following, defaults are "validator=is_nonempty" and "extractor=grep_line"
 
 add_data_field ( 'distribution'           , coltype='TEXT' )
-add_data_field ( 'INS_DEL_FRAC'           , coltype='TEXT'    , validator=in_param('_insdel') )
-add_data_field ( 'MAXKEY'                 , coltype='INTEGER' , validator=in_param('_keyrange') )
-add_data_field ( 'DS_TYPENAME'            , coltype='TEXT'    , validator=in_param('_alg') )
-add_data_field ( 'TOTAL_THREADS'          , coltype='INTEGER' , validator=in_param('_nthreads') )
+add_data_field ( 'INS_DEL_FRAC'           , coltype='TEXT'    , validator=is_run_param('INS_DEL_FRAC') )
+add_data_field ( 'MAXKEY'                 , coltype='INTEGER' , validator=is_run_param('MAXKEY') )
+add_data_field ( 'DS_TYPENAME'            , coltype='TEXT'    , validator=is_run_param('DS_TYPENAME') )
+add_data_field ( 'TOTAL_THREADS'          , coltype='INTEGER' , validator=is_run_param('TOTAL_THREADS') )
 add_data_field ( 'total_throughput'       , coltype='INTEGER' , validator=is_positive )
 add_data_field ( 'PAPI_L3_TCM'            , coltype='REAL' )
 add_data_field ( 'PAPI_L2_TCM'            , coltype='REAL' )
@@ -94,11 +105,10 @@ add_data_field ( 'validate_result'        , coltype='TEXT'    , validator=is_equ
 add_data_field ( 'MILLIS_TO_RUN'          , coltype='TEXT'    , validator=is_positive )
 add_data_field ( 'RECLAIM'                , coltype='TEXT' )
 add_data_field ( 'POOL'                   , coltype='TEXT' )
-add_data_field ( 'ACTUAL_THREAD_BINDINGS' , coltype='TEXT' )
 add_data_field ( '__hostname'             , coltype='TEXT' )
-add_data_field ( '__cmd_run'              , coltype='TEXT' )
 add_data_field ( '__file_run_data'        , coltype='TEXT' )
 add_data_field ( '__path_run_data'        , coltype='TEXT' )
+add_data_field ( '__cmd_run'              , coltype='TEXT' )
 
 ##
 ## add_plot_set() will cause a SET of plots to be rendered as images in the data directory.

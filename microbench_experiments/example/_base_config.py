@@ -8,6 +8,8 @@ import pprint
 import datetime
 import argparse
 import sqlite3
+import numpy
+import io
 
 ######################################################
 #### parse command line args
@@ -25,6 +27,10 @@ parser.add_argument('--no-createdb', dest='createdb', action='store_false', help
 parser.set_defaults(createdb=True)
 parser.add_argument('--no-plot', dest='plot', action='store_false', help='disable creation of plots')
 parser.set_defaults(plot=True)
+parser.add_argument('--debug-no-plotcmd', dest='debug_exec_plotcmd', action='store_false', help='debug: do not exec the plot cmd')
+parser.set_defaults(debug_exec_plotcmd=True)
+parser.add_argument('--continue-on-warn-agg-row-count', dest='continue_on_warn_agg_row_count', action='store_true', help='allow execution to continue despite any warnings about aggregating a possibly incorrect number of rows into some data point(s) in a plot')
+parser.set_defaults(continue_on_warn_agg_row_count=False)
 args = parser.parse_args()
 if len(sys.argv) < 2:
     parser.print_help()
@@ -41,6 +47,7 @@ g['replacements'] = dict()
 g['data_file_paths'] = []
 g['plots'] = []
 g['log'] = open('log.txt', 'w')
+g['sanity_check_failures'] = []
 
 pp_log = pprint.PrettyPrinter(indent=4, stream=g['log'])
 pp_stdout = pprint.PrettyPrinter(indent=4)
@@ -109,7 +116,7 @@ def is_equal(to_this_value):
 
 ## note: this is not a validator per se, but rather RETURNS a validator (obtained via currying an argument)
 type_failures = []
-def in_param(param_name):
+def is_run_param(param_name):
     global type_failures
     def fn(value):
         # print('param_name={} value={}'.format(param_name, value))
@@ -118,7 +125,7 @@ def in_param(param_name):
             intval = int(value)
             success = (intval in g['run_params'][param_name])
         except ValueError:
-            type_failures.append('in_param tried to cast value "{}" to int and failed'.format(value))
+            type_failures.append('is_run_param tried to cast value "{}" to int and failed'.format(value))
         if success: return True
         return (value in g['run_params'][param_name]) or (str(value) in g['run_params'][param_name])
     return fn
@@ -145,6 +152,10 @@ def grep_line(file_name, field_name):   ## memoize files into data to make grepp
         data[file_name] = newdict
 
     return data[file_name][field_name]
+
+def run_param(file_name, field_name):
+    tee('run_param({}, {}) returns {}'.format(file_name, field_name, g['replacements'][field_name]))
+    return g['replacements'][field_name]
 
 ######################################################
 #### user facing functions
