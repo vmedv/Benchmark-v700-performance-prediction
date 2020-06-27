@@ -16,32 +16,3 @@ flog=_log_do_all.txt
     && ./_gen.sh "A simple experiment" "With rather sophisticated automated tooling!" | tee -a ../$flog
 
 ## cd .. && ../../tools/deploy_dir.sh ${outdir} setbench
-
-####################################################################
-#### TODO
-####################################################################
-
-## make page rows/cols explicit AS OPTIONAL ARGUMENTS IN GEN?
-
-## proper throughput line plot options (mostly marker customization?)
-## test this tooling on a system/LOGIN WITHOUT global "tools" access (would this be true for CI?)
-
-## maxres plot with baseline adjustment?
-
-## clean up compile.sh
-## copy direct clone info into README.md
-
-## advplot into tools
-## better timeline capture
-
-## equivalent of this for macrobench?
-
-## stress test scripts
-## leak checking scripts
-## flamegr script
-## dashboard for performance comparison of DS
-
-## experiment example for comparison of reclamation algs
-## memhook integration with example experiments
-## worked example of DS perf comparison understanding from basic cycles -> instr/cachemiss -> location w/perfrecord -> memhook layout causation
-##      temporal profiling with perf -> temporal flamegr of measured phase

@@ -141,7 +141,8 @@ def run_param_loops(ix, actually_run=True):
             frac_done = step / maxstep
             elapsed_sec_per_done = elapsed_sec / step
             remaining_sec = elapsed_sec_per_done * (maxstep - step)
-            total_est_sec = elapsed_sec - remaining_sec
+            total_est_sec = elapsed_sec + remaining_sec
+            print('step={} maxstep={} maxstep-step={}, elapsed_sec_per_done * (maxstep - step)={}, frac_done={} elapsed_sec_per_done={} elapsed_sec={} remaining_sec={} total_est_sec={}'.format(step, maxstep, maxstep-step, elapsed_sec_per_done * (maxstep - step), frac_done, elapsed_sec_per_done, elapsed_sec, remaining_sec, total_est_sec))
             tee('    (' + print_time(elapsed_sec) + ' elapsed, ' + print_time(remaining_sec) + ' est. remaining, est. total ' + print_time(total_est_sec) + ')')
 
     else:
