@@ -148,7 +148,7 @@ def run_param_loops(ix, actually_run=True):
             elapsed_sec_per_done = elapsed_sec / step
             remaining_sec = elapsed_sec_per_done * (maxstep - step)
             total_est_sec = elapsed_sec + remaining_sec
-            print('step={} maxstep={} maxstep-step={}, elapsed_sec_per_done * (maxstep - step)={}, frac_done={} elapsed_sec_per_done={} elapsed_sec={} remaining_sec={} total_est_sec={}'.format(step, maxstep, maxstep-step, elapsed_sec_per_done * (maxstep - step), frac_done, elapsed_sec_per_done, elapsed_sec, remaining_sec, total_est_sec))
+            # print('step={} maxstep={} maxstep-step={}, elapsed_sec_per_done * (maxstep - step)={}, frac_done={} elapsed_sec_per_done={} elapsed_sec={} remaining_sec={} total_est_sec={}'.format(step, maxstep, maxstep-step, elapsed_sec_per_done * (maxstep - step), frac_done, elapsed_sec_per_done, elapsed_sec, remaining_sec, total_est_sec))
             tee('    (' + print_time(elapsed_sec) + ' elapsed, ' + print_time(remaining_sec) + ' est. remaining, est. total ' + print_time(total_est_sec) + ')')
 
     else:
@@ -300,7 +300,7 @@ def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', c
         for i, col_name in zip(range(len(headers)), headers):
             col_values = [row[i] for row in table]
             include_ix[i] = column_filter(col_name, col_values)
-        log('include_ix={}'.format(include_ix))
+        # log('include_ix={}'.format(include_ix))
 
     if not aligned:
         if headers:
@@ -314,15 +314,14 @@ def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', c
 
         for row in table:
             first = True
-            for row in table:
-                for i, col in zip(range(len(row)), row):
-                    if not headers or include_ix[i]:
-                        if not first: buf.write(sep)
-                        s = str(col)
-                        if headers: s = quoted(headers[i], s)
-                        buf.write( s )
-                        first = False
-                buf.write('\n')
+            for i, col in zip(range(len(row)), row):
+                if not headers or include_ix[i]:
+                    if not first: buf.write(sep)
+                    s = str(col)
+                    if headers: s = quoted(headers[i], s)
+                    buf.write( s )
+                    first = False
+            buf.write('\n')
 
     ## aligned
     else:
@@ -569,15 +568,16 @@ if args.plot:
             ## perform sqlite query to fetch aggregated data
             log('sanity check: counting number of rows being aggregated into each plot data point')
             txn = 'SELECT count({}), {}{} FROM data {} GROUP BY {}{}'.format(plot_set['y_axis'], series, plot_set['x_axis'], where_clause_new, series, plot_set['x_axis'])
-            log('txn={}'.format(txn))
             cur.execute(txn)
             data_records = cur.fetchall()
             row_counts = [row[0] for row in data_records]
-            pp_log.pprint(data_records)
 
             if '__trials' in g['run_params'].keys():
                 num_trials = len(g['run_params']['__trials'])
                 if any([x != num_trials for x in row_counts]):
+                    log('txn={}'.format(txn))
+                    pp_log.pprint(data_records)
+
                     s = '\n'
                     s += ('WARNING: some data point(s) in {}\n'.format(os.path.relpath(plot_txt_filename)))
                     s += ('         aggregate an unexpected number of rows!\n')

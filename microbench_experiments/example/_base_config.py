@@ -157,6 +157,9 @@ def run_param(file_name, field_name):
     tee('run_param({}, {}) returns {}'.format(file_name, field_name, g['replacements'][field_name]))
     return g['replacements'][field_name]
 
+def get_run_param(field_name):
+    return g['run_params'][field_name]
+
 ######################################################
 #### user facing functions
 ######################################################

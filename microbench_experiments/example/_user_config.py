@@ -19,7 +19,6 @@ set_dir_data    ( os.getcwd() + '/data' )               ## directory for data fi
 ##     represents the average of precisely as many experimental runs as there are entries in the __trials list.)
 ##
 
-add_run_param ( 'distribution'    , ['uniform', 'zipf'] )
 add_run_param ( 'INS_DEL_FRAC'    , ['0.0 0.0', '0.5 0.5', '20.0 10.0'] )
 add_run_param ( 'MAXKEY'          , [2000000, 20000000] )
 add_run_param ( 'DS_TYPENAME'     , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
@@ -30,8 +29,7 @@ if args.testing:
     add_run_param ( 'TOTAL_THREADS'   , [1, shell_to_str('cd ../../tools ; ./get_thread_counts_max.sh', exit_on_error=True)] )
 else:
     add_run_param ( '__trials'        , [1, 2, 3] )
-    add_run_param ( 'TOTAL_THREADS'   , shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
-    # add_run_param ( 'TOTAL_THREADS'   , [1] + shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
+    add_run_param ( 'TOTAL_THREADS'   , [1] + shell_to_list('cd ../../tools ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
 
 ##
 ## specify how to compile and run your program.
@@ -52,9 +50,9 @@ else:
 set_cmd_compile ( 'make -j all bin_dir={__dir_run}' )
 
 if args.testing:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -dist-{distribution} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 else:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -dist-{distribution} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 30000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 30000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 
 set_file_run_data ( 'data{__step}.txt' )                ## pattern for output filenames. note: filenames cannot contain spaces.
 
@@ -87,7 +85,6 @@ def get_maxres(file_name, field_name):
 
 ## note: in the following, defaults are "validator=is_nonempty" and "extractor=grep_line"
 
-add_data_field ( 'distribution'           , coltype='TEXT' )
 add_data_field ( 'INS_DEL_FRAC'           , coltype='TEXT'    , validator=is_run_param('INS_DEL_FRAC') )
 add_data_field ( 'MAXKEY'                 , coltype='INTEGER' , validator=is_run_param('MAXKEY') )
 add_data_field ( 'DS_TYPENAME'            , coltype='TEXT'    , validator=is_run_param('DS_TYPENAME') )
@@ -99,8 +96,6 @@ add_data_field ( 'PAPI_TOT_CYC'           , coltype='REAL' )
 add_data_field ( 'PAPI_TOT_INS'           , coltype='REAL' )
 add_data_field ( 'maxresident_mb'         , coltype='REAL'    , validator=is_positive , extractor=get_maxres ) ## note the custom extractor
 add_data_field ( 'tree_stats_height'      , coltype='INTEGER' )
-add_data_field ( 'tree_stats_avgKeyDepth' , coltype='REAL' )
-add_data_field ( 'tree_stats_sizeInBytes' , coltype='INTEGER' )
 add_data_field ( 'validate_result'        , coltype='TEXT'    , validator=is_equal('success') )
 add_data_field ( 'MILLIS_TO_RUN'          , coltype='TEXT'    , validator=is_positive )
 add_data_field ( 'RECLAIM'                , coltype='TEXT' )
@@ -132,28 +127,32 @@ add_plot_set ( filename='plot_cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png'      , title
 add_plot_set ( filename='plot_instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count', varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='PAPI_TOT_INS'    , plot_type='bars', plot_cmd_args=plot_cmd_args )
 
 ##
-## plots with only one series (no series field defined)
+## we can also filter data to a single series before plotting it
+##
+## note that with only a single series, there is no need for a legend (so we update the plot_cmd_args)
+##
+## example: a plot with data filtered to single threaded runs
 ##
 
 plot_cmd_args = '--width 12 --height 8'
-
-add_plot_set ( filename='plot_maxresident-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Max resident size (MB)', varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], x_axis='DS_TYPENAME', y_axis='maxresident_mb'        , plot_type='bars', plot_cmd_args=plot_cmd_args )
-add_plot_set ( filename='plot_avgkeydepth-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Average key depth'     , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], x_axis='DS_TYPENAME', y_axis='tree_stats_avgKeyDepth', plot_type='bars', plot_cmd_args=plot_cmd_args )
-
-##
-## we can also filter data before plotting.
-##
-## example: a plot with data filtered to maximum thread count (only),
-##          where the max thread count for this system is computed by a shell script
-##
-
-max_threads = shell_to_str('cd ../../tools ; ./get_thread_counts_max.sh', exit_on_error=True)
-filter_string = 'TOTAL_THREADS == {}'.format(max_threads)
-
-add_plot_set ( filename='plot_sizebytes-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Data structure size (bytes)', filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], x_axis='DS_TYPENAME', y_axis='tree_stats_sizeInBytes', plot_type='bars', plot_cmd_args=plot_cmd_args )
 
 ##
 ## example: a plot with data filtered to single threaded runs
 ##
 
 add_plot_set ( filename='plot_sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput', filter='TOTAL_THREADS == 1', varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], x_axis='DS_TYPENAME', y_axis='total_throughput', plot_type='bars', plot_cmd_args=plot_cmd_args )
+
+##
+## rather than filtering the thread count to a single value,
+## we could also make it part of the filename, so one plot is produced for each thread count.
+## moreover, supposing we only want plots for the minimum and maximum thread counts,
+##     (where the min/max thread counts are obtained directly from our run_param that we added above)
+##     then we can filter appropriately first...
+##
+
+p = get_run_param('TOTAL_THREADS')
+min_threads = p[0]
+max_threads = p[len(p)-1]
+filter_string = 'TOTAL_THREADS in ({}, {})'.format(min_threads, max_threads)
+
+add_plot_set ( filename='plot_maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png', title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)', filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS'], x_axis='DS_TYPENAME', y_axis='maxresident_mb', plot_type='bars', plot_cmd_args=plot_cmd_args )
