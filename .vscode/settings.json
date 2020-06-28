@@ -80,5 +80,7 @@
         "ios": "cpp",
         "queue": "cpp"
     },
-    "svg.preview.background": "black"
+    "svg.preview.background": "black",
+    "python.pythonPath": "/usr/bin/python3",
+    "python.autoComplete.extraPaths": ["./microbench_experiments/example"]
 }

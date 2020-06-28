@@ -46,7 +46,7 @@ g['data_fields'] = dict()
 g['replacements'] = dict()
 g['data_file_paths'] = []
 g['plots'] = []
-g['log'] = open('log.txt', 'w')
+g['log'] = open('output_log.txt', 'w')
 g['sanity_check_failures'] = []
 
 pp_log = pprint.PrettyPrinter(indent=4, stream=g['log'])
@@ -82,6 +82,12 @@ def replace(str):
 
 def replace_and_run(str, exit_on_error=False):
     return shell_to_str(replace(str), exit_on_error)
+
+def rshell_to_str(str, exit_on_error=False):
+    return shell_to_str(replace(str), exit_on_error)
+
+def rshell_to_list(str, exit_on_error=False):
+    return shell_to_list(replace(str), exit_on_error)
 
 def log(str='', _end='\n'):
     print('{}'.format(str), file=g['log'], end=_end)
@@ -167,6 +173,9 @@ def get_run_param(field_name):
 def set_dir_compile(str):
     g['replacements']['__dir_compile'] = str
 
+def set_dir_tools(str):
+    g['replacements']['__dir_tools'] = str
+
 def set_dir_run(str):
     g['replacements']['__dir_run'] = str
 
@@ -184,6 +193,9 @@ def set_file_run_data(str):
 
 def get_dir_compile():
     return g['replacements']['__dir_compile']
+
+def get_dir_tools():
+    return g['replacements']['__dir_tools']
 
 def get_dir_run():
     return g['replacements']['__dir_run']

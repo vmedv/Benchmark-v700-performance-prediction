@@ -30,3 +30,5 @@ microbench_experiments/example_standard/output/_gen.sh
 data*.txt
 *.sqlite
 plot*.txt
+output_*.txt
+_output_backup
