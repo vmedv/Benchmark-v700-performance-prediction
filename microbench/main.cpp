@@ -162,8 +162,8 @@ PAD;
  * create, e.g., your own data structure specific statistics trackers.
  * They will only be included / printed when your data structure is active.
  *
- * If you add something here, you must also add to a similar code block
- * involving __CREATE_STAT / CREATE_ALL_STATS below...
+ * If you add something here, you must also add to a few similar code blocks
+ * below. Search this file for "GSTATS_" and you'll see where...
  *****************************************************************************/
 GSTATS_DECLARE_ALL_STAT_IDS;
 #ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
@@ -1096,6 +1096,9 @@ void main_continued_with_globals(GlobalsT * g) {
     #endif
     #ifdef GSTATS_HANDLE_STATS_POOL_NUMA
         GSTATS_HANDLE_STATS_POOL_NUMA(__CREATE_STAT)
+    #endif
+    #ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
+        GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__CREATE_STAT);
     #endif
     GSTATS_CREATE_ALL;
     std::cout<<std::endl;
