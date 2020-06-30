@@ -5,7 +5,7 @@
  *
  * Details of the algorithm appear in Trevor's thesis:
  *    Techniques for Constructing Efficient Lock-free Data Structures. 2017.
- * 
+ *
  * The paper leaves it up to the implementer to decide when and how to perform
  * rebalancing steps. In this implementation, we keep track of violations and
  * fix them using a recursive cleanup procedure, which is designed as follows.
@@ -20,7 +20,7 @@
  * off in this manner is not difficult; it simply requires going through each
  * rebalancing step S and determining which nodes involved in S can have
  * violations after S (and then making a recursive call for each violation).
- * 
+ *
  * -----------------------------------------------------------------------------
  *
  * This program is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@
 #include "scx_provider.h"
 
 namespace abtree_ns {
-    
+
     #define MAX_NODE_DEPENDENCIES_PER_SCX 4
 
     #ifndef TRACE
@@ -170,16 +170,16 @@ public:
         void * const NO_VALUE;
         const int NUM_PROCESSES;
         PAD;
-        
+
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!
          */
         void initThread(const int tid) {
             if (init[tid]) return; else init[tid] = !init[tid];
-            
+
             recordmgr->initThread(tid);
         }
         void deinitThread(const int tid) {
@@ -194,7 +194,7 @@ public:
          *      each leaf has up to <code>DEGREE</code> key/value pairs, and <br>
          *      keys are ordered according to the provided comparator.
          */
-        abtree(const int numProcesses, 
+        abtree(const int numProcesses,
                 const K anyKey,
                 int suspectedCrashSignal = SIGQUIT)
         : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
@@ -203,10 +203,10 @@ public:
         , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
         , prov(new SCXProvider<Node<DEGREE,K>, MAX_NODE_DEPENDENCIES_PER_SCX>(numProcesses))
         , NO_VALUE((void *) -1LL)
-        , NUM_PROCESSES(numProcesses) 
+        , NUM_PROCESSES(numProcesses)
         {
             cmp = Compare();
-            
+
             const int tid = 0;
             initThread(tid);
 
@@ -224,11 +224,11 @@ public:
             _entry->size = 1;
             _entry->searchKey = anyKey;
             _entry->ptrs[0] = _entryLeft;
-            
+
             entry = _entry;
         }
-    
-    #ifdef ABTREE_ENABLE_DESTRUCTOR    
+
+    #ifdef ABTREE_ENABLE_DESTRUCTOR
         ~abtree() {
             int nodes = 0;
             freeSubtree(entry, &nodes);
@@ -443,9 +443,9 @@ abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allo
         exit(-1);
     }
     prov->initNode(newnode);
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+// #endif
     return newnode;
 }
 
@@ -512,9 +512,9 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             if (!replace) {
                 return oldValue;
             }
-            
+
             prov->scxInit(tid);
-            
+
             // perform LLXs
             auto llxResult = prov->llx(tid, p);
             if (!prov->isSuccessfulLLXResult(llxResult) || p->ptrs[ixToL] != l) {
@@ -522,7 +522,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             }
             prov->scxAddNode(tid, p, false, llxResult);
             // no need to add l, since it is a leaf, and leaves are IMMUTABLE (so no point freezing or finalizing them)
-            
+
             // create new node(s)
             Node<DEGREE,K> * n = allocateNode(tid);
             arraycopy(l->keys, 0, n->keys, 0, l->getKeyCount());
@@ -532,7 +532,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             n->searchKey = l->searchKey;
             n->size = l->size;
             n->weight = true;
-            
+
             if (prov->scxExecute(tid, (void * volatile *) &p->ptrs[ixToL], l, n)) {
                 this->recordmgr->retire(tid, l);
                 fixDegreeViolation(tid, n);
@@ -554,12 +554,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             }
             prov->scxAddNode(tid, p, false, llxResult);
             // no need to add l, since it is a leaf, and leaves are IMMUTABLE (so no point freezing or finalizing them)
-            
+
             if (l->getKeyCount() < b) {
                 /**
                  * Insert std::pair
                  */
-                
+
                 // create new node(s)
                 Node<DEGREE,K> * n = allocateNode(tid);
                 arraycopy(l->keys, 0, n->keys, 0, keyIndex);
@@ -572,7 +572,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 n->searchKey = l->searchKey;
                 n->size = l->size+1;
                 n->weight = l->weight;
-                
+
                 if (prov->scxExecute(tid, (void * volatile *) &p->ptrs[ixToL], l, n)) {
                     recordmgr->retire(tid, l);
                     fixDegreeViolation(tid, n);
@@ -580,12 +580,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 }
                 guard.end();
                 this->recordmgr->deallocate(tid, n);
-                
+
             } else { // assert: l->getKeyCount() == DEGREE == b)
                 /**
                  * Overflow
                  */
-                
+
                 // first, we create a std::pair of large arrays
                 // containing too many keys and pointers to fit in a single node
                 K keys[DEGREE+1];
@@ -620,7 +620,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 right->searchKey = keys[size1];
                 right->size = size2;
                 right->weight = true;
-                
+
                 Node<DEGREE,K> * n = allocateNode(tid);
                 n->keys[0] = keys[size1];
                 n->ptrs[0] = left;
@@ -629,13 +629,13 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 n->searchKey = keys[size1];
                 n->size = 2;
                 n->weight = p == entry;
-                
+
                 // note: weight of new internal node n will be zero,
                 //       unless it is the root; this is because we test
                 //       p == entry, above; in doing this, we are actually
                 //       performing Root-Zero at the same time as this Overflow
                 //       if n will become the root
-                
+
                 if (prov->scxExecute(tid, (void * volatile *) &p->ptrs[ixToL], l, n)) {
                     recordmgr->retire(tid, l);
                     // after overflow, there may be a weight violation at n
@@ -721,11 +721,11 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
 }
 
 /**
- * 
- * 
+ *
+ *
  * IMPLEMENTATION OF REBALANCING
- * 
- * 
+ *
+ *
  */
 
 template <int DEGREE, typename K, class Compare, class RecManager>
@@ -772,11 +772,11 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             fixWeightViolation(tid, p);
             continue;
         }
-        
+
         prov->scxInit(tid);
         scx_handle_t llxResult;
-        
-        // perform LLXs 
+
+        // perform LLXs
 
         llxResult = prov->llx(tid, gp);
         if (!prov->isSuccessfulLLXResult(llxResult) || gp->ptrs[ixToP] != p) continue;
@@ -814,7 +814,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             n->searchKey = n->keys[0];
             n->size = size;
             n->weight = true;
-            
+
             if (prov->scxExecute(tid, (void * volatile *) &gp->ptrs[ixToP], p, n)) {
                 recordmgr->retire(tid, p);
                 recordmgr->retire(tid, l);
@@ -850,7 +850,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             // which are used to create two new children u and v.
             // we then create a new internal node (whose weight will be zero
             // if it is not the root), with u and v as its children.
-            
+
             // create new node(s)
             const int size1 = size / 2;
             Node<DEGREE,K> * left = allocateNode(tid);
@@ -905,7 +905,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
     if (viol->getABDegree() >= a || viol == entry || viol == entry->ptrs[0]) {
         return false; // no degree violation at viol
     }
-    
+
     // do an optimistic check to see if viol was already removed from the tree
     if (prov->llx(tid, viol) == prov->FINALIZED) {
         // recall that nodes are finalized precisely when
@@ -941,13 +941,13 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             // we hand over responsibility for viol to that update.
             return false;
         }
-        
+
         // assert: gp != NULL (because if AbsorbSibling or Distribute can be applied, then p is not the root)
 
         prov->scxInit(tid);
         scx_handle_t llxResult;
-        
-        // perform LLXs 
+
+        // perform LLXs
 
         llxResult = prov->llx(tid, gp);
         if (!prov->isSuccessfulLLXResult(llxResult) || gp->ptrs[ixToP] != p) continue;
@@ -959,7 +959,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
 
         int ixToS = (ixToL > 0 ? ixToL-1 : 1);
         Node<DEGREE,K> * s = p->ptrs[ixToS];
-        
+
         // we can only apply AbsorbSibling or Distribute if there are no
         // weight violations at p, l or s.
         // so, we first check for any weight violations,
@@ -986,9 +986,9 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
         // assert: there are no weight violations at p, l or s
         // assert: l and s are either both leaves or both internal nodes
         //         (because there are no weight violations at these nodes)
-        
+
         // also note that p->size >= a >= 2
-        
+
         Node<DEGREE,K> * left;
         Node<DEGREE,K> * right;
         int leftindex;
@@ -1017,15 +1017,15 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             if (!prov->isSuccessfulLLXResult(llxResult)) continue;
             prov->scxAddNode(tid, right, true, llxResult);
         }
-        
+
         int sz = left->getABDegree() + right->getABDegree();
         assert(left->weight && right->weight);
-        
+
         if (sz < 2*a) {
             /**
              * AbsorbSibling
              */
-            
+
             // create new node(s))
             Node<DEGREE,K> * newl = allocateNode(tid);
             int k1=0, k2=0;
@@ -1055,7 +1055,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newl->searchKey = l->searchKey;
             newl->size = l->getABDegree() + s->getABDegree();
             newl->weight = true; assert(left->weight && right->weight && p->weight);
-            
+
             // now, we atomically replace p and its children with the new nodes.
             // if appropriate, we perform RootAbsorb at the same time.
             if (gp == entry && p->getABDegree() == 2) {
@@ -1063,15 +1063,15 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                     recordmgr->retire(tid, p);
                     recordmgr->retire(tid, l);
                     recordmgr->retire(tid, s);
-                    
+
                     fixDegreeViolation(tid, newl);
                     return true;
                 }
                 this->recordmgr->deallocate(tid, newl);
-                
+
             } else {
                 assert(gp != entry || p->getABDegree() > 2);
-                
+
                 // create n from p by:
                 // 1. skipping the key for leftindex and child pointer for ixToS
                 // 2. replacing l with newl
@@ -1094,12 +1094,12 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 n->searchKey = p->searchKey;
                 n->size = p->getABDegree()-1;
                 n->weight = true;
-                
+
                 if (prov->scxExecute(tid, (void * volatile *) &gp->ptrs[ixToP], p, n)) {
                     recordmgr->retire(tid, p);
                     recordmgr->retire(tid, l);
                     recordmgr->retire(tid, s);
-                    
+
                     fixDegreeViolation(tid, newl);
                     fixDegreeViolation(tid, n);
                     return true;
@@ -1107,20 +1107,20 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 this->recordmgr->deallocate(tid, newl);
                 this->recordmgr->deallocate(tid, n);
             }
-            
+
         } else {
             /**
              * Distribute
              */
-            
+
             int leftsz = sz/2;
             int rightsz = sz-leftsz;
-            
+
             // create new node(s))
             Node<DEGREE,K> * n = allocateNode(tid);
             Node<DEGREE,K> * newleft = allocateNode(tid);
             Node<DEGREE,K> * newright = allocateNode(tid);
-            
+
             // combine the contents of l and s (and one key from p if l and s are internal)
             K keys[2*DEGREE];
             Node<DEGREE,K> * ptrs[2*DEGREE];
@@ -1146,7 +1146,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                     ptrs[k2++] = right->ptrs[i];
                 }
             }
-            
+
             // distribute contents between newleft and newright
             k1=0;
             k2=0;
@@ -1164,7 +1164,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newleft->searchKey = newleft->keys[0];
             newleft->size = leftsz;
             newleft->weight = true;
-            
+
             // reserve one key for the parent (to go between newleft and newright)
             K keyp = keys[k1];
             if (!left->isLeaf()) ++k1;
@@ -1182,7 +1182,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newright->searchKey = newright->keys[0];
             newright->size = rightsz;
             newright->weight = true;
-            
+
             // create n from p by replacing left with newleft and right with newright,
             // and replacing one key (between these two pointers)
             for (int i=0;i<p->getKeyCount();++i) {
@@ -1198,12 +1198,12 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             n->searchKey = p->searchKey;
             n->size = p->size;
             n->weight = true;
-            
+
             if (prov->scxExecute(tid, (void * volatile *) &gp->ptrs[ixToP], p, n)) {
                 recordmgr->retire(tid, p);
                 recordmgr->retire(tid, l);
                 recordmgr->retire(tid, s);
-                
+
                 fixDegreeViolation(tid, n);
                 return true;
             }

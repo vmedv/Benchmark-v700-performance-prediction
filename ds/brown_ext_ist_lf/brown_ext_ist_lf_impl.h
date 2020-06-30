@@ -18,6 +18,49 @@
 #ifndef BROWN_EXT_IST_LF_IMPL_H
 #define BROWN_EXT_IST_LF_IMPL_H
 
+#ifdef GSTATS_HANDLE_STATS
+#   ifndef __AND
+#      define __AND ,
+#   endif
+#   define GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(gstats_handle_stat) \
+        gstats_handle_stat(LONG_LONG, num_bail_from_addkv_at_depth, 10, { \
+                gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+        }) \
+        gstats_handle_stat(LONG_LONG, num_bail_from_build_at_depth, 10, { \
+                gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+        }) \
+        gstats_handle_stat(LONG_LONG, num_help_subtree, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, num_try_rebuild_at_depth, 100, { \
+                gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+        }) \
+        gstats_handle_stat(LONG_LONG, num_complete_rebuild_at_depth, 100, { \
+                gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+        }) \
+        gstats_handle_stat(LONG_LONG, num_help_rebuild, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, duration_markAndCount, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, duration_wastedWorkBuilding, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, duration_buildAndReplace, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, duration_rotateAndFree, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+        gstats_handle_stat(LONG_LONG, duration_traverseAndRetire, 1, { \
+                gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+        }) \
+
+    // define a variable for each stat above
+    GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__DECLARE_EXTERN_STAT_ID);
+#endif
+
 #ifdef MEASURE_DURATION_STATS
 class TimeThisScope {
 private:
@@ -401,7 +444,7 @@ private:
     }
 
     void freeSubtree(const int tid, casword_t ptr, bool retire, bool tryTimingCall = true) {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         TIMELINE_START_C(tid, tryTimingCall);
         DURATION_START_C(tid, tryTimingCall);
 #endif
@@ -429,7 +472,7 @@ private:
             freeNode(tid, node, retire);
         }
 
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         DURATION_END_C(tid, duration_traverseAndRetire, tryTimingCall);
         TIMELINE_END_C(tid, "freeSubtree", tryTimingCall);
 #endif
@@ -485,7 +528,9 @@ private:
 
         Node<K,V> * build(const int tid, KVPair<K,V> * pset, int psetSize, const size_t currDepth, casword_t volatile * constructingSubtree, bool parallelizeWithOMP = false) {
             if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
+#ifdef GSTATS_HANDLE_STATS
                 GSTATS_ADD_IX(tid, num_bail_from_build_at_depth, 1, (currDepth > 9 ? 9 : currDepth));
+#endif
                 return NODE_TO_CASWORD(NULL); // bail early if tree was already constructed by someone else
             }
 
@@ -858,7 +903,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
     // so to reclaim those if they are children of the root node passed to this function,
     // we claim the entire root node at the end, and go through those with one thread.
 
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     TIMELINE_START(tid);
     DURATION_START(tid);
 #endif
@@ -901,7 +946,7 @@ void istree<K,V,Interpolate,RecManager>::helpFreeSubtree(const int tid, Node<K,V
         }
     }
 
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     DURATION_END(tid, duration_traverseAndRetire);
     TIMELINE_END(tid, "freeSubtree");
 #endif
@@ -1007,7 +1052,9 @@ template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, RebuildOperation<K,V> * op, Node<K,V> * node, size_t * numKeysToSkip, size_t * numKeysToAdd, size_t depth, IdealBuilder * b, casword_t volatile * constructingSubtree) {
     for (int i=0;i<node->degree;++i) {
         if (*constructingSubtree != NODE_TO_CASWORD(NULL)) {
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, (depth > 9 ? 9 : depth));
+#endif
             return; // stop early if someone else built the subtree already
         }
 
@@ -1071,7 +1118,7 @@ void istree<K,V,Interpolate,RecManager>::addKVPairsSubset(const int tid, Rebuild
 
 template<typename K, typename V, class Interpolate, class RecManager>
 void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid, RebuildOperation<K,V>* op, Node<K,V>* parent, size_t ix, size_t childSize, size_t remainder) {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     DURATION_START(tid);
 #endif
 
@@ -1088,15 +1135,15 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
     addKVPairsSubset(tid, op, op->rebuildRoot, &numKeysToSkip, &numKeysToAdd, op->depth, &b, parent->ptrAddr(ix)); // construct the subtree
     TRACE printf("\n");
     if (parent->ptr(ix) != NODE_TO_CASWORD(NULL)) {
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_ADD_IX(tid, num_bail_from_addkv_at_depth, 1, op->depth);
-#ifdef USE_GSTATS
         DURATION_END(tid, duration_wastedWorkBuilding);
 #endif
         return;
     }
     auto ptr = b.getCASWord(tid, parent->ptrAddr(ix));
     if (NODE_TO_CASWORD(NULL) == ptr) {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         DURATION_END(tid, duration_wastedWorkBuilding);
 #endif
         return; // if we didn't build a tree, because someone else already replaced this subtree, then we just stop here (just avoids an unnecessary cas below in this case; apart from this cas, which will fail, the behaviour is no different whether we return here or execute the following...)
@@ -1110,7 +1157,7 @@ void istree<K, V, Interpolate, RecManager>::subtreeBuildAndReplace(const int tid
     } else {
         TRACE printf("    tid=%d fails to CAS newly build subtree\n", tid);
         freeSubtree(tid, ptr, false);
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         DURATION_END(tid, duration_wastedWorkBuilding);
 #endif
     }
@@ -1246,7 +1293,9 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
         auto i = (__i+ix) % numChildren;
         if (prov->readPtr(tid, node->ptrAddr(i)) == NODE_TO_CASWORD(NULL)) {
             subtreeBuildAndReplace(tid, op, node, i, childSize, remainder);
+#ifdef GSTATS_HANDLE_STATS
             GSTATS_ADD(tid, num_help_subtree, 1);
+#endif
         }
     }
 
@@ -1261,7 +1310,7 @@ casword_t istree<K,V,Interpolate,RecManager>::createIdealConcurrent(const int ti
 
 template <typename K, typename V, class Interpolate, class RecManager>
 void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOperation<K,V> * op) {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     TIMELINE_START_C(tid, (op->depth < 1));
 #endif
 
@@ -1276,7 +1325,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 
 #ifdef IST_DISABLE_REBUILD_HELPING
     {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         DURATION_START(tid);
 #endif
         if (__sync_bool_compare_and_swap(&op->debug_sync_in_experimental_no_collaboration_version, 0, 1)) {
@@ -1296,7 +1345,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
                 //  subsequently need to be freed. so, the experiments will simply
                 //  *underestimate* the benefit of our collaborative rebuilding alg.)
             }
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
             DURATION_END(tid, duration_wastedWorkBuilding);
 #endif
             return;
@@ -1305,12 +1354,12 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 #endif
 
 
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     DURATION_START(tid);
 #endif
     casword_t newWord = createIdealConcurrent(tid, op, keyCount);
     if (newWord == NODE_TO_CASWORD(NULL)) {
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
         DURATION_END(tid, duration_buildAndReplace);
 #endif
 #ifdef IST_DISABLE_REBUILD_HELPING
@@ -1326,7 +1375,9 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
         assert(op->success == false);
         op->success = true;
         SOFTWARE_BARRIER;
+#ifdef GSTATS_HANDLE_STATS
         GSTATS_ADD_IX(tid, num_complete_rebuild_at_depth, 1, op->depth);
+#endif
 //        freeSubtree(tid, NODE_TO_CASWORD(op->rebuildRoot), true);
 //        helpFreeSubtree(tid, op->rebuildRoot);
         recordmgr->retire(tid, op); // note: it's okay to retire this before reading op-> fields below!!! (this is because retire means don't deallocate until AFTER our memory guard section)
@@ -1351,8 +1402,10 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             //      regardless, this is not a performance issue for now. (at most 3 of these calls took 10ms+; the rest were below that threshold.)
             //      *if* it becomes an issue then helpFreeSubtree or something like it should fix the problem.
 
-            GSTATS_ADD(tid, rebuild_is_subsumed, 1); // if this DOES happen, it will be very expensive (well, *if* it's at the top of the tree...) because ONE thread will do it, and this will delay epoch advancement greatly
-            GSTATS_ADD_IX(tid, rebuild_is_subsumed_at_depth, 1, op->depth);
+// #ifdef GSTATS_HANDLE_STATS
+//             GSTATS_ADD(tid, rebuild_is_subsumed, 1); // if this DOES happen, it will be very expensive (well, *if* it's at the top of the tree...) because ONE thread will do it, and this will delay epoch advancement greatly
+//             GSTATS_ADD_IX(tid, rebuild_is_subsumed_at_depth, 1, op->depth);
+// #endif
 
             // try to claim the NEW subtree located at op->newWord for reclamation
             if (op->newRoot != NODE_TO_CASWORD(NULL)
@@ -1368,7 +1421,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
             assert(result == DCSS_FAILED_ADDR2);
         }
     }
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     DURATION_END(tid, duration_buildAndReplace);
 #endif
 
@@ -1377,7 +1430,7 @@ void istree<K,V,Interpolate,RecManager>::helpRebuild(const int tid, RebuildOpera
 //    GSTATS_ADD_IX(tid, elapsed_rebuild_depth, GSTATS_TIMER_ELAPSED(tid, timer_rebuild), cappedDepth);
 //#endif
 
-#ifdef USE_GSTATS
+#ifdef GSTATS_HANDLE_STATS
     TIMELINE_END_C(tid, "helpRebuild", (op->depth < 1));
 #endif
 
@@ -1605,7 +1658,9 @@ retryNode:
                         if (path[i]->readChangeSum(tid, &threadRNGs[tid] /*myRNG*/) >= REBUILD_FRACTION * path[i]->initSize) {
                             if (i == 0) {
 #ifndef NO_REBUILDING
+#   ifdef GSTATS_HANDLE_STATS
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, 0);
+#   endif
                                 assert(path[0]);
                                 rebuild(tid, path[0], root, 0, 0);
 #endif
@@ -1648,7 +1703,9 @@ retryNode:
 #endif
 
 #ifndef NO_REBUILDING
+#   ifdef GSTATS_HANDLE_STATS
                                 GSTATS_ADD_IX(tid, num_try_rebuild_at_depth, 1, i);
+#   endif
                                 assert(path[i]);
                                 rebuild(tid, path[i], parent, index, i);
 #endif

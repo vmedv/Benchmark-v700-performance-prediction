@@ -1,6 +1,6 @@
 /**
  * C++ implementation of unbalanced binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2018 Trevor Brown
  */
 
@@ -146,7 +146,7 @@ namespace bst_ns {
         bool validate(Node<K,V> * const node, const int currdepth, const int leafdepth);
 
         const V doInsert(const int tid, const K& key, const V& val, bool onlyIfAbsent);
-        
+
         int init[MAX_THREADS_POW2] = {0,};
 //        PAD;
 
@@ -158,7 +158,7 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!!!
          */
         void initThread(const int tid) {
@@ -207,7 +207,7 @@ public:
             recmgr->endOp(tid); // block crash recovery signal for this thread, and enter an initial quiescent state.
             Node<K,V> *rootleft = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, NULL, NULL);
             Node<K,V> *_root = initializeNode(tid, allocateNode(tid), NO_KEY, NO_VALUE, rootleft, NULL);
-            
+
             // need to simulate real insertion of root and the root's child,
             // since range queries will actually try to add these nodes,
             // and we don't want blocking rq providers to spin forever
@@ -386,7 +386,7 @@ public:
             return debugKeySum((root->left)->left);
         }
     };
-    
+
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -397,9 +397,9 @@ bst_ns::Node<K,V>* bst_ns::bst<K,V,Compare,RecManager>::allocateNode(const int t
         COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
         exit(-1);
     }
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(tid, node_allocated_addresses, (long long) newnode);
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(tid, node_allocated_addresses, (long long) newnode);
+// #endif
     return newnode;
 }
 
@@ -425,7 +425,7 @@ template<class K, class V, class Compare, class RecManager>
 inline int bst_ns::bst<K,V,Compare,RecManager>::size() {
     return computeSize((root->left)->left);
 }
-    
+
 template<class K, class V, class Compare, class RecManager>
 inline int bst_ns::bst<K,V,Compare,RecManager>::computeSize(Node<K,V> * const root) {
     if (root == NULL) return 0;
@@ -449,7 +449,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, 
     block<Node<K,V> > stack (NULL);
     auto guard = recmgr->getGuard(tid, true);
     rqProvider->traversal_start(tid);
-    
+
     // depth first traversal (of interesting subtrees)
     int size = 0;
     stack.push(root);
@@ -457,7 +457,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, 
         Node<K,V> * node = stack.pop();
         assert(node);
         Node<K,V> * left = rqProvider->read_addr(tid, &node->left);
-        
+
         // if internal node, explore its children
         if (left != NULL) {
             if (node->key != this->NO_KEY && !cmp(hi, node->key)) {
@@ -469,7 +469,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::rangeQuery(const int tid, const K& lo, 
                 assert(left);
                 stack.push(left);
             }
-            
+
         // else if leaf node, check if we should add its key to the traversal
         } else {
             rqProvider->traversal_try_add(tid, node, resultKeys, resultValues, &size, lo, hi);
@@ -567,7 +567,7 @@ const std::pair<V,bool> bst_ns::bst<K,V,Compare,RecManager>::erase(const int tid
     V result = NO_VALUE;
     void *input[] = {(void*) &key};
     void *output[] = {(void*) &result};
-    
+
     ReclamationInfo<K,V> info;
     bool finished = 0;
     for (;;) {
@@ -587,9 +587,9 @@ inline bool bst_ns::bst<K,V,Compare,RecManager>::updateInsert_search_llx_scx(
     const V& val = *((const V*) input[1]);
     const bool onlyIfAbsent = *((const bool*) input[2]);
     V *result = (V*) output[0];
-    
+
     TRACE COUTATOMICTID("updateInsert_search_llx_scx(tid="<<tid<<", key="<<key<<")"<<std::endl);
-    
+
     Node<K,V> *p = root, *l;
     l = rqProvider->read_addr(tid, &root->left);
     if (rqProvider->read_addr(tid, &l->left) != NULL) { // the tree contains some node besides sentinels...
@@ -767,20 +767,20 @@ template<class K, class V, class Compare, class RecManager>
 void bst_ns::bst<K,V,Compare,RecManager>::reclaimMemoryAfterSCX(
             const int tid,
             ReclamationInfo<K,V> * info) {
-        
+
     Node<K,V> ** const nodes = info->nodes;
     SCXRecord<K,V> * const * const scxRecordsSeen = (SCXRecord<K,V> * const * const) info->llxResults;
     const int state = info->state;
     const int operationType = info->type;
-    
+
     // NOW, WE ATTEMPT TO RECLAIM ANY RETIRED NODES
-    int highestIndexReached = (state == SCXRecord<K,V>::STATE_COMMITTED 
+    int highestIndexReached = (state == SCXRecord<K,V>::STATE_COMMITTED
             ? info->numberOfNodesToFreeze
             : 0);
     const int maxNodes = MAX_NODES;
     assert(highestIndexReached>=0);
     assert(highestIndexReached<=maxNodes);
-    
+
     const int state_aborted = SCXRecord<K,V>::STATE_ABORTED;
     const int state_inprogress = SCXRecord<K,V>::STATE_INPROGRESS;
     const int state_committed = SCXRecord<K,V>::STATE_COMMITTED;
@@ -816,7 +816,7 @@ bool bst_ns::bst<K,V,Compare,RecManager>::scx(
             Node<K,V> * const * const insertedNodes,
             Node<K,V> * const * const deletedNodes) {
     TRACE COUTATOMICTID("scx(tid="<<tid<<" type="<<info->type<<")"<<std::endl);
-    
+
     SCXRecord<K,V> *newdesc = DESC1_NEW(tid);
     newdesc->c.newNode = newNode;
     for (int i=0;i<info->numberOfNodes;++i) {
@@ -840,7 +840,7 @@ bool bst_ns::bst<K,V,Compare,RecManager>::scx(
     //rec->state.store(SCXRecord<K,V>::STATE_INPROGRESS, std::memory_order_relaxed);
     //rec->allFrozen.store(false, std::memory_order_relaxed);
     DESC1_INITIALIZED(tid); // mark descriptor as being in a consistent state
-    
+
     SOFTWARE_BARRIER;
     int state = help(tid, TAGPTR1_NEW(tid, newdesc->c.mutables), newdesc, false);
     info->state = state; // rec->state.load(std::memory_order_relaxed);
@@ -868,7 +868,7 @@ template <class K, class V, class Compare, class RecManager>
 int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SCXRecord<K,V> *snap, bool helpingOther) {
     TRACE COUTATOMICTID("help "<<tagptrToString(tagptr)<<std::endl);
     SCXRecord<K,V> *ptr = TAGPTR1_UNPACK_PTR(tagptr);
-    
+
     // TODO: make SCX_WRITE_STATE into regular write for the owner of this descriptor
     // (might not work in general, but here we can prove that allfrozen happens
     //  before state changes, and the sequence number does not change until the
@@ -881,7 +881,7 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
             assert(i > 0); // nodes[0] cannot be a leaf...
             continue; // do not freeze leaves
         }
-        
+
         uintptr_t exp = (uintptr_t) snap->c.scxRecordsSeen[i];
         bool successfulCAS = snap->c.nodes[i]->scxRecord.compare_exchange_strong(exp, tagptr); // MEMBAR ON X86/64
         if (successfulCAS || exp == tagptr) continue; // if node is already frozen for our operation
@@ -890,13 +890,13 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
         bool succ;
         bool allFrozen = DESC1_READ_FIELD(succ, ptr->c.mutables, tagptr, MUTABLES_MASK_ALLFROZEN, MUTABLES_OFFSET_ALLFROZEN);
         if (!succ) return SCXRecord<K,V>::STATE_ABORTED;
-        
+
         int newState = (allFrozen) ? SCXRecord<K,V>::STATE_COMMITTED : SCXRecord<K,V>::STATE_ABORTED;
         TRACE COUTATOMICTID("help return state "<<newState<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
         MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, newState, MUTABLES_MASK_STATE, MUTABLES_OFFSET_STATE);
         return newState;
     }
-    
+
     MUTABLES1_WRITE_BIT(ptr->c.mutables, snap->c.mutables, MUTABLES_MASK_ALLFROZEN);
     for (int i=1; i<snap->c.numberOfNodesToFreeze; ++i) {
         if (snap->c.scxRecordsSeen[i] == LLX_RETURN_IS_LEAF) continue; // do not mark leaves
@@ -907,11 +907,11 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
         // could this be done more efficiently with bit-test-and-set?
 #endif
     }
-    
+
     // CAS in the new sub-tree (update CAS)
 //    uintptr_t expected = (uintptr_t) snap->nodes[1];
     rqProvider->linearize_update_at_cas(tid, snap->c.field, snap->c.nodes[1], snap->c.newNode, snap->c.insertedNodes, snap->c.deletedNodes);
-    
+
     // todo: add #ifdef CASing scx record pointers to set an "invalid" bit,
     // and add to llx a test that determines whether a pointer is invalid.
     // if so, the record no longer exists and no longer needs help.
@@ -937,9 +937,9 @@ int bst_ns::bst<K,V,Compare,RecManager>::help(const int tid, tagptr_t tagptr, SC
     //  it sees in the scx record.)
     // the solution here seems to be to ensure scx records can be helped only
     // when they are consistent.
-    
+
     MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, SCXRecord<K comma1 V>::STATE_COMMITTED, MUTABLES_MASK_STATE, MUTABLES_OFFSET_STATE);
-    
+
     TRACE COUTATOMICTID("help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<K,V>::STATE_COMMITTED; // success
 }
@@ -952,19 +952,19 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
             Node<K,V> **retLeft,
             Node<K,V> **retRight) {
     TRACE COUTATOMICTID("llx(tid="<<tid<<", node="<<*node<<")"<<std::endl);
-    
+
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
     tagptr_t tagptr1 = node->scxRecord.load(std::memory_order_relaxed);
 #else
     tagptr_t tagptr1 = node->scxRecord.load(std::memory_order_relaxed) & ~0x1;
 #endif
-    
+
     // read mutable state field of descriptor
     bool succ;
     int state = DESC1_READ_FIELD(succ, TAGPTR1_UNPACK_PTR(tagptr1)->c.mutables, tagptr1, MUTABLES_MASK_STATE, MUTABLES_OFFSET_STATE);
     if (!succ) state = SCXRecord<K,V>::STATE_COMMITTED;
     // note: special treatment for alg in the case where the descriptor has already been reallocated (impossible before the transformation, assuming safe memory reclamation)
-    
+
     SOFTWARE_BARRIER;       // prevent compiler from moving the read of marked before the read of state (no hw barrier needed on x86/64, since there is no read-read reordering)
 #if !defined(BROWN_EXT_BST_LF_COLOCATE_MARKED_BIT)
     bool marked = node->marked.load(std::memory_order_relaxed);
@@ -977,7 +977,7 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
         *retLeft = rqProvider->read_addr(tid, &node->left);
         *retRight = rqProvider->read_addr(tid, &node->right);
         if (*retLeft == NULL) {
-            TRACE COUTATOMICTID("llx return2.a (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<")\n"); 
+            TRACE COUTATOMICTID("llx return2.a (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<")\n");
             return LLX_RETURN_IS_LEAF;
         }
         SOFTWARE_BARRIER; // prevent compiler from moving the read of node->scxRecord before the read of left or right
@@ -987,7 +987,7 @@ void * bst_ns::bst<K,V,Compare,RecManager>::llx(
         tagptr_t tagptr2 = node->scxRecord.load(std::memory_order_relaxed) & ~0x1;
 #endif
         if (tagptr1 == tagptr2) {
-            TRACE COUTATOMICTID("llx return2 (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<" desc1="<<tagptr1<<")\n"); 
+            TRACE COUTATOMICTID("llx return2 (tid="<<tid<<" state="<<state<<" marked="<<marked<<" key="<<node->key<<" desc1="<<tagptr1<<")\n");
             // on x86/64, we do not need any memory barrier here to prevent mutable fields of node from being moved before our read of desc1, because the hardware does not perform read-read reordering. on another platform, we would need to ensure no read from after this point is reordered before this point (technically, before the read that becomes desc1)...
             return (void*) tagptr1;    // success
         } else {

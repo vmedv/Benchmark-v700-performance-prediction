@@ -1,9 +1,9 @@
-/* 
+/*
  * File:   stats_config.h
  * Author: trbot
  *
  * Created on July 12, 2017, 8:06 PM
- * 
+ *
  * Usage:
  *  Define the macro GSTATS_HANDLE_STATS with a new line for each statistic you want
  *      to create BEFORE including this header. See the example below.
@@ -19,7 +19,7 @@
  *       times in an execution, use GSTATS_ADD_IX to add to a specific index)
  *  You can clear all gathered stats by invoking GSTATS_CLEAR_ALL.
  *  Print all stats by invoking GSTATS_PRINT.
- * 
+ *
  * Example GSTATS_HANDLE_STATS definition:
  * #define GSTATS_HANDLE_STATS(gstats_handle_stat) \
  *      gstats_handle_stat(visited_in_bags, 1, {gstats_output_item(PRINT_HISTOGRAM_LOG, SUM, BY_INDEX)}) \
@@ -65,12 +65,10 @@ extern gstats_t& GSTATS_OBJECT_NAME;
 #define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stats_output_items) \
     stat_name_token = GSTATS_OBJECT_NAME.create_stat(data_type, #stat_name_token, stat_capacity, stats_output_items);
 
-#define GSTATS_DECLARE_ALL_STAT_IDS \
-    /*PAD;*/ \
-    GSTATS_HANDLE_STATS(__DECLARE_STAT_ID); \
-    /*PAD;*/
+#define GSTATS_DECLARE_ALL_STAT_IDS GSTATS_HANDLE_STATS(__DECLARE_STAT_ID);
 #define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS GSTATS_HANDLE_STATS(__DECLARE_EXTERN_STAT_ID)
 #define GSTATS_CREATE_ALL GSTATS_HANDLE_STATS(__CREATE_STAT)
+
 #define GSTATS_ADD_IX(tid, stat, val, index) GSTATS_OBJECT_NAME.add_stat<long long>(tid, stat, val, index)
 #define GSTATS_ADD_IX_D(tid, stat, val, index) GSTATS_OBJECT_NAME.add_stat<double>(tid, stat, val, index)
 #define GSTATS_ADD(tid, stat, val) GSTATS_ADD_IX(tid, stat, val, 0)
@@ -113,47 +111,47 @@ GSTATS_DECLARE_EXTERN_ALL_STAT_IDS;
 
 #else
 
-#define GSTATS_OBJECT_NAME 
-#define GSTATS_DECLARE_STATS_OBJECT(max_num_processes) 
-#define GSTATS_DESTROY 
+#define GSTATS_OBJECT_NAME
+#define GSTATS_DECLARE_STATS_OBJECT(max_num_processes)
+#define GSTATS_DESTROY
 
 /**
  * DO NOT EDIT BELOW
  */
 
-#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) 
-#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items) 
-#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stats_output_items) 
+#define __DECLARE_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items)
+#define __DECLARE_EXTERN_STAT_ID(data_type, stat_name_token, stat_capacity, stats_output_items)
+#define __CREATE_STAT(data_type, stat_name_token, stat_capacity, stats_output_items)
 
-#define GSTATS_DECLARE_ALL_STAT_IDS 
-#define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS 
-#define GSTATS_CREATE_ALL 
-#define GSTATS_ADD_IX(tid, stat, val, index) 
-#define GSTATS_ADD_IX_D(tid, stat, val, index) 
-#define GSTATS_ADD(tid, stat, val) 
-#define GSTATS_ADD_D(tid, stat, val)  
-#define GSTATS_SET_IX(tid, stat, val, index) 
-#define GSTATS_SET_IX_D(tid, stat, val, index) 
-#define GSTATS_SET(tid, stat, val) 
-#define GSTATS_SET_D(tid, stat, val) 
-#define GSTATS_GET_IX(tid, stat, index) 
-#define GSTATS_GET_IX_D(tid, stat, index) 
-#define GSTATS_GET(tid, stat) 
-#define GSTATS_GET_D(tid, stat) 
-#define GSTATS_APPEND(tid, stat, val) 
-#define GSTATS_APPEND_D(tid, stat, val) 
-#define GSTATS_CLEAR_ALL 
-#define GSTATS_CLEAR_VAL(stat, val) 
-#define GSTATS_PRINT 
+#define GSTATS_DECLARE_ALL_STAT_IDS
+#define GSTATS_DECLARE_EXTERN_ALL_STAT_IDS
+#define GSTATS_CREATE_ALL
+#define GSTATS_ADD_IX(tid, stat, val, index)
+#define GSTATS_ADD_IX_D(tid, stat, val, index)
+#define GSTATS_ADD(tid, stat, val)
+#define GSTATS_ADD_D(tid, stat, val)
+#define GSTATS_SET_IX(tid, stat, val, index)
+#define GSTATS_SET_IX_D(tid, stat, val, index)
+#define GSTATS_SET(tid, stat, val)
+#define GSTATS_SET_D(tid, stat, val)
+#define GSTATS_GET_IX(tid, stat, index)
+#define GSTATS_GET_IX_D(tid, stat, index)
+#define GSTATS_GET(tid, stat)
+#define GSTATS_GET_D(tid, stat)
+#define GSTATS_APPEND(tid, stat, val)
+#define GSTATS_APPEND_D(tid, stat, val)
+#define GSTATS_CLEAR_ALL
+#define GSTATS_CLEAR_VAL(stat, val)
+#define GSTATS_PRINT
 
-#define GSTATS_TIMER_RESET(tid, timer_stat) 
-#define GSTATS_TIMER_ELAPSED(tid, timer_stat) 
+#define GSTATS_TIMER_RESET(tid, timer_stat)
+#define GSTATS_TIMER_ELAPSED(tid, timer_stat)
 /**
  * Warning: this macro uses a non-portable, GCC-specific ({}) enclosure.
  */
-#define GSTATS_TIMER_SPLIT(tid, timer_stat) 
-#define GSTATS_TIMER_APPEND_ELAPSED(tid, timer_stat, target_stat) 
-#define GSTATS_TIMER_APPEND_SPLIT(tid, timer_stat, target_stat) 
+#define GSTATS_TIMER_SPLIT(tid, timer_stat)
+#define GSTATS_TIMER_APPEND_ELAPSED(tid, timer_stat, target_stat)
+#define GSTATS_TIMER_APPEND_SPLIT(tid, timer_stat, target_stat)
 
 #endif
 

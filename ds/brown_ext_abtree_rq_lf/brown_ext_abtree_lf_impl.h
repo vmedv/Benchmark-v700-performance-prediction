@@ -5,7 +5,7 @@
  *
  * Details of the algorithm appear in Trevor's thesis:
  *    Techniques for Constructing Efficient Lock-free Data Structures. 2017.
- * 
+ *
  * The paper leaves it up to the implementer to decide when and how to perform
  * rebalancing steps. In this implementation, we keep track of violations and
  * fix them using a recursive cleanup procedure, which is designed as follows.
@@ -20,7 +20,7 @@
  * off in this manner is not difficult; it simply requires going through each
  * rebalancing step S and determining which nodes involved in S can have
  * violations after S (and then making a recursive call for each violation).
- * 
+ *
  * -----------------------------------------------------------------------------
  *
  * This program is free software: you can redistribute it and/or modify
@@ -74,10 +74,10 @@ namespace abtree_ns {
 
     template <int DEGREE, typename K>
     struct Node;
-    
+
     template <int DEGREE, typename K>
     struct SCXRecord;
-    
+
     template <int DEGREE, typename K>
     class wrapper_info {
     public:
@@ -119,7 +119,7 @@ namespace abtree_ns {
         PAD;
         const static int size = sizeof(c);
     };
-        
+
     template <int DEGREE, typename K>
     struct Node {
         SCXRecord<DEGREE,K> * volatile scxPtr;
@@ -264,12 +264,12 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!
          */
         void initThread(const int tid) {
             if (init[tid]) return; else init[tid] = !init[tid];
-            
+
             recordmgr->initThread(tid);
             rqProvider->initThread(tid);
         }
@@ -286,7 +286,7 @@ public:
          *      each leaf has up to <code>DEGREE</code> key/value pairs, and <br>
          *      keys are ordered according to the provided comparator.
          */
-        abtree(const int numProcesses, 
+        abtree(const int numProcesses,
                 const K anyKey,
                 int suspectedCrashSignal = SIGQUIT)
         : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
@@ -295,15 +295,15 @@ public:
         , recordmgr(new RecManager(numProcesses, suspectedCrashSignal))
         , rqProvider(new RQProvider<K, void *, Node<DEGREE,K>, abtree<DEGREE,K,Compare,RecManager>, RecManager, false, false>(numProcesses, this, recordmgr))
         , NO_VALUE((void *) -1LL)
-        , NUM_PROCESSES(numProcesses) 
+        , NUM_PROCESSES(numProcesses)
         {
             cmp = Compare();
-            
+
             const int tid = 0;
             initThread(tid);
 
 //            recordmgr->endOp(tid);
-            
+
             DESC1_INIT_ALL(numProcesses);
 
             SCXRecord<DEGREE,K> *dummy = TAGPTR1_UNPACK_PTR(DUMMY);
@@ -329,7 +329,7 @@ public:
             _entry->size = 1;
             _entry->searchKey = anyKey;
             _entry->ptrs[0] = _entryLeft;
-            
+
             // need to simulate real insertion of root and the root's child,
             // since range queries will actually try to add these nodes,
             // and we don't want blocking rq providers to spin forever
@@ -339,7 +339,7 @@ public:
             rqProvider->linearize_update_at_write(tid, &entry, _entry, insertedNodes, deletedNodes);
         }
 
-    #ifdef ABTREE_ENABLE_DESTRUCTOR    
+    #ifdef ABTREE_ENABLE_DESTRUCTOR
         ~abtree() {
             int nodes = 0;
             freeSubtree(entry, &nodes);
@@ -579,7 +579,7 @@ public:
 
 template <int DEGREE, typename K, class Compare, class RecManager>
 abtree_ns::SCXRecord<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::createSCXRecord(const int tid, wrapper_info<DEGREE,K> * info) {
-    
+
     SCXRecord<DEGREE,K> * result = DESC1_NEW(tid);
     result->c.newNode = info->newNode;
     for (int i=0;i<info->numberOfNodes;++i) {
@@ -588,13 +588,13 @@ abtree_ns::SCXRecord<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>:
     for (int i=0;i<info->numberOfNodesToFreeze;++i) {
         result->c.scxPtrsSeen[i] = info->scxPtrs[i];
     }
-    
+
     int i;
     for (i=0;info->insertedNodes[i];++i) result->c.insertedNodes[i] = info->insertedNodes[i];
     result->c.insertedNodes[i] = NULL;
     for (i=0;info->deletedNodes[i];++i) result->c.deletedNodes[i] = info->deletedNodes[i];
     result->c.deletedNodes[i] = NULL;
-    
+
     result->c.field = info->field;
     result->c.numberOfNodes = info->numberOfNodes;
     result->c.numberOfNodesToFreeze = info->numberOfNodesToFreeze;
@@ -610,9 +610,9 @@ abtree_ns::Node<DEGREE,K> * abtree_ns::abtree<DEGREE,K,Compare,RecManager>::allo
         exit(-1);
     }
     rqProvider->init_node(tid, newnode);
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+// #endif
     return newnode;
 }
 
@@ -661,11 +661,11 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
         Node<DEGREE,K> * node = stack.pop();
         prefetch_range(node, sizeof(*node));
         assert(node);
-        
+
         // if leaf node, check if we should add its keys to the traversal
         if (node->isLeaf()) {
             rqProvider->traversal_try_add(tid, node, resultKeys, resultValues, &size, lo, hi);
-            
+
         // else if internal node, explore its children
         } else {
             // find right-most sub-tree that could contain a key in [lo, hi]
@@ -686,7 +686,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
 //            }
         }
     }
-    
+
     // success
     rqProvider->traversal_end(tid, resultKeys, resultValues, &size, lo, hi);
     return size;
@@ -730,14 +730,14 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             if (!replace) {
                 return oldValue;
             }
-            
+
             // perform LLXs
             if (!llx(tid, p, NULL, 0, info->scxPtrs, info->nodes)
                      || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) {
                 continue;    // retry the search
             }
             info->nodes[1] = l;
-            
+
             // create new node(s)
             Node<DEGREE,K>* n = allocateNode(tid);
             arraycopy(l->keys, 0, n->keys, 0, l->getKeyCount());
@@ -749,7 +749,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             n->searchKey = l->searchKey;
             n->size = l->size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 2;
             info->numberOfNodesAllocated = 1;
@@ -780,12 +780,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 continue;    // retry the search
             }
             info->nodes[1] = l;
-            
+
             if (l->getKeyCount() < b) {
                 /**
                  * Insert std::pair
                  */
-                
+
                 // create new node(s)
                 Node<DEGREE,K>* n = allocateNode(tid);
                 arraycopy(l->keys, 0, n->keys, 0, keyIndex);
@@ -811,7 +811,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 info->insertedNodes[1] = NULL;
                 info->deletedNodes[0] = l;
                 info->deletedNodes[1] = NULL;
-                
+
                 if (scx(tid, info)) {
                     TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
                     fixDegreeViolation(tid, n);
@@ -820,12 +820,12 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 guard.end();
                 this->recordmgr->deallocate(tid, n);
-                
+
             } else { // assert: l->getKeyCount() == DEGREE == b)
                 /**
                  * Overflow
                  */
-                
+
                 // first, we create a std::pair of large arrays
                 // containing too many keys and pointers to fit in a single node
                 K keys[DEGREE+1];
@@ -864,7 +864,7 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 right->searchKey = keys[size1];
                 right->size = size2;
                 right->weight = true;
-                
+
                 Node<DEGREE,K>* n = allocateNode(tid);
                 n->keys[0] = keys[size1];
                 rqProvider->write_addr(tid, &n->ptrs[0], left);
@@ -875,13 +875,13 @@ void* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 n->searchKey = keys[size1];
                 n->size = 2;
                 n->weight = p == entry;
-                
+
                 // note: weight of new internal node n will be zero,
                 //       unless it is the root; this is because we test
                 //       p == entry, above; in doing this, we are actually
                 //       performing Root-Zero at the same time as this Overflow
                 //       if n will become the root (of the B-slack tree)
-                
+
                 // construct info record to pass to SCX
                 info->numberOfNodes = 2;
                 info->numberOfNodesAllocated = 3;
@@ -1000,11 +1000,11 @@ const std::pair<void*,bool> abtree_ns::abtree<DEGREE,K,Compare,RecManager>::eras
 }
 
 /**
- * 
- * 
+ *
+ *
  * IMPLEMENTATION OF REBALANCING
- * 
- * 
+ *
+ *
  */
 
 template <int DEGREE, typename K, class Compare, class RecManager>
@@ -1058,7 +1058,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             fixWeightViolation(tid, p);
             continue;
         }
-        
+
         // perform LLXs
         if (!llx(tid, gp, NULL, 0, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &gp->ptrs[ixToP]) != p) continue;    // retry the search
         if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) continue;      // retry the search
@@ -1088,7 +1088,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             n->searchKey = n->keys[0];
             n->size = size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 3;
             info->numberOfNodesAllocated = 1;
@@ -1101,7 +1101,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             info->deletedNodes[0] = p;
             info->deletedNodes[1] = l;
             info->deletedNodes[2] = NULL;
-            
+
             if (scx(tid, info)) {
                 TRACE COUTATOMICTID("absorb: SCX succeeded"<<std::endl);
 
@@ -1146,7 +1146,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             // which are used to create two new children u and v.
             // we then create a new internal node (whose weight will be zero
             // if it is not the root), with u and v as its children.
-            
+
             // create new node(s)
             const int size1 = size / 2;
             Node<DEGREE,K>* left = allocateNode(tid);
@@ -1222,7 +1222,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
     if (viol->getABDegree() >= a || viol == entry || viol == rqProvider->read_addr(tid, &entry->ptrs[0])) {
         return false; // no degree violation at viol
     }
-    
+
     // do an optimistic check to see if viol was already removed from the tree
     if (llx(tid, viol, NULL) == FINALIZED) {
         // recall that nodes are finalized precisely when
@@ -1264,18 +1264,18 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             // we hand over responsibility for viol to that update.
             return false;
         }
-        
+
         // assert: gp != NULL (because if AbsorbSibling or Distribute can be applied, then p is not the root)
-        
+
         // perform LLXs
         if (!llx(tid, gp, NULL, 0, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &gp->ptrs[ixToP]) != p) continue;   // retry the search
-        if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes) 
+        if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) continue;     // retry the search
 
         int ixToS = (ixToL > 0 ? ixToL-1 : 1);
         Node<DEGREE,K>* s = rqProvider->read_addr(tid, &p->ptrs[ixToS]);
-        
+
         // we can only apply AbsorbSibling or Distribute if there are no
         // weight violations at p, l or s.
         // so, we first check for any weight violations,
@@ -1302,9 +1302,9 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
         // assert: there are no weight violations at p, l or s
         // assert: l and s are either both leaves or both internal nodes
         //         (because there are no weight violations at these nodes)
-        
+
         // also note that p->size >= a >= 2
-        
+
         Node<DEGREE,K>* left;
         Node<DEGREE,K>* right;
         int leftindex;
@@ -1325,15 +1325,15 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             leftindex = ixToS;
             rightindex = ixToL;
         }
-        
+
         int sz = left->getABDegree() + right->getABDegree();
         assert(left->weight && right->weight);
-        
+
         if (sz < 2*a) {
             /**
              * AbsorbSibling
              */
-            
+
             // create new node(s))
             Node<DEGREE,K>* newl = allocateNode(tid);
             int k1=0, k2=0;
@@ -1365,11 +1365,11 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newl->searchKey = l->searchKey;
             newl->size = l->getABDegree() + s->getABDegree();
             newl->weight = true; assert(left->weight && right->weight && p->weight);
-            
+
             // now, we atomically replace p and its children with the new nodes.
             // if appropriate, we perform RootAbsorb at the same time.
             if (gp == entry && p->getABDegree() == 2) {
-            
+
                 // construct info record to pass to SCX
                 info->numberOfNodes = 4; // gp + p + l + s
                 info->numberOfNodesAllocated = 1; // newl
@@ -1382,7 +1382,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 info->deletedNodes[1] = l;
                 info->deletedNodes[2] = s;
                 info->deletedNodes[3] = NULL;
-                
+
                 if (scx(tid, info)) {
                     TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<std::endl);
 
@@ -1391,10 +1391,10 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 }
                 TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<std::endl);
                 this->recordmgr->deallocate(tid, newl);
-                
+
             } else {
                 assert(gp != entry || p->getABDegree() > 2);
-                
+
                 // create n from p by:
                 // 1. skipping the key for leftindex and child pointer for ixToS
                 // 2. replacing l with newl
@@ -1433,7 +1433,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 info->deletedNodes[1] = l;
                 info->deletedNodes[2] = s;
                 info->deletedNodes[3] = NULL;
-                
+
                 if (scx(tid, info)) {
                     TRACE COUTATOMICTID("absorbsibling: SCX succeeded"<<std::endl);
 
@@ -1445,20 +1445,20 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                 this->recordmgr->deallocate(tid, newl);
                 this->recordmgr->deallocate(tid, n);
             }
-            
+
         } else {
             /**
              * Distribute
              */
-            
+
             int leftsz = sz/2;
             int rightsz = sz-leftsz;
-            
+
             // create new node(s))
             Node<DEGREE,K>* n = allocateNode(tid);
             Node<DEGREE,K>* newleft = allocateNode(tid);
             Node<DEGREE,K>* newright = allocateNode(tid);
-            
+
             // combine the contents of l and s (and one key from p if l and s are internal)
             K keys[2*DEGREE];
             Node<DEGREE,K>* ptrs[2*DEGREE];
@@ -1484,7 +1484,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
                     ptrs[k2++] = rqProvider->read_addr(tid, &right->ptrs[i]);
                 }
             }
-            
+
             // distribute contents between newleft and newright
             k1=0;
             k2=0;
@@ -1504,7 +1504,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newleft->searchKey = newleft->keys[0];
             newleft->size = leftsz;
             newleft->weight = true;
-            
+
             // reserve one key for the parent (to go between newleft and newright)
             K keyp = keys[k1];
             if (!left->isLeaf()) ++k1;
@@ -1524,7 +1524,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             newright->searchKey = newright->keys[0];
             newright->size = rightsz;
             newright->weight = true;
-            
+
             // create n from p by replacing left with newleft and right with newright,
             // and replacing one key (between these two pointers)
             for (int i=0;i<p->getKeyCount();++i) {
@@ -1542,7 +1542,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             n->searchKey = p->searchKey;
             n->size = p->size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 4; // gp + p + l + s
             info->numberOfNodesAllocated = 3; // n + newleft + newright
@@ -1557,7 +1557,7 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
             info->deletedNodes[1] = l;
             info->deletedNodes[2] = s;
             info->deletedNodes[3] = NULL;
-            
+
             if (scx(tid, info)) {
                 TRACE COUTATOMICTID("distribute: SCX succeeded"<<std::endl);
 
@@ -1573,10 +1573,10 @@ bool abtree_ns::abtree<DEGREE,K,Compare,RecManager>::fixDegreeViolation(const in
 }
 
 /**
- * 
+ *
  * IMPLEMENTATION OF LLX AND SCX
- * 
- * 
+ *
+ *
  */
 
 template <int DEGREE, typename K, class Compare, class RecManager>
@@ -1593,7 +1593,7 @@ abtree_ns::SCXRecord<DEGREE,K>* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::
     const bool marked = r->marked;
     SOFTWARE_BARRIER;
     tagptr_t tagptr = (tagptr_t) r->scxPtr;
-    
+
     // read mutable state field of descriptor
     bool succ;
     TRACE COUTATOMICTID("tagged ptr seq="<<UNPACK1_SEQ(tagptr)<<" descriptor seq="<<UNPACK1_SEQ(TAGPTR1_UNPACK_PTR(tagptr)->c.mutables)<<std::endl);
@@ -1602,7 +1602,7 @@ abtree_ns::SCXRecord<DEGREE,K>* abtree_ns::abtree<DEGREE,K,Compare,RecManager>::
     TRACE { mutables_t debugmutables = TAGPTR1_UNPACK_PTR(tagptr)->c.mutables; COUTATOMICTID("llx scxrecord succ="<<succ<<" state="<<state<<" mutables="<<debugmutables<<" desc-seq="<<UNPACK1_SEQ(debugmutables)<<std::endl); }
     // note: special treatment for alg in the case where the descriptor has already been reallocated (impossible before the transformation, assuming safe memory reclamation)
     SOFTWARE_BARRIER;
-    
+
     if (state == SCXRecord<DEGREE,K>::STATE_ABORTED || ((state == SCXRecord<DEGREE,K>::STATE_COMMITTED) && !r->marked)) {
         // read snapshot fields
         if (snapshot != NULL) {
@@ -1658,7 +1658,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
             assert(i > 0); // nodes[0] cannot be a leaf...
             continue; // do not freeze leaves
         }
-        
+
         bool successfulCAS = __sync_bool_compare_and_swap(&snap->c.nodes[i]->scxPtr, snap->c.scxPtrsSeen[i], tagptr);
         SCXRecord<DEGREE,K> *exp = snap->c.nodes[i]->scxPtr;
 //        TRACE if (successfulCAS) COUTATOMICTID((helpingOther?"    ":"")<<"help froze nodes["<<i<<"]@0x"<<((uintptr_t)snap->c.nodes[i])<<" with tagptr="<<tagptrToString((tagptr_t) snap->c.nodes[i]->scxPtr)<<std::endl);
@@ -1668,12 +1668,12 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
         // 1. the state is inprogress, and we just failed a cas, and every helper will fail that cas (or an earlier one), so the scx must abort, or
         // 2. the state is committed or aborted
         // (this suggests that it might be possible to get rid of the allFrozen bit)
-        
+
         // read mutable allFrozen field of descriptor
         bool succ;
         bool allFrozen = DESC1_READ_FIELD(succ, ptr->c.mutables, tagptr, MUTABLES1_MASK_ALLFROZEN, MUTABLES1_OFFSET_ALLFROZEN);
         if (!succ) return SCXRecord<DEGREE,K>::STATE_ABORTED;
-        
+
         if (allFrozen) {
             TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<SCXRecord<DEGREE comma K>::STATE_COMMITTED<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
             return SCXRecord<DEGREE,K>::STATE_COMMITTED;
@@ -1684,7 +1684,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
             return newState;
         }
     }
-    
+
     MUTABLES1_WRITE_BIT(ptr->c.mutables, snap->c.mutables, MUTABLES1_MASK_ALLFROZEN);
     SOFTWARE_BARRIER;
     for (int i=1; i<snap->c.numberOfNodesToFreeze; ++i) {
@@ -1698,7 +1698,7 @@ int abtree_ns::abtree<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
     TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help CAS'ed to newNode@0x"<<((uintptr_t)snap->c.newNode)<<std::endl);
 
     MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, SCXRecord<DEGREE comma K>::STATE_COMMITTED, MUTABLES1_MASK_STATE, MUTABLES1_OFFSET_STATE);
-    
+
     TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<DEGREE,K>::STATE_COMMITTED; // success
 }

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   rq_rwlock.h
  * Author: trbot
  *
@@ -41,7 +41,7 @@ private:
                 void * announcements[MAX_NODES_DELETED_ATOMICALLY+1];
                 int numAnnouncements;
                 PAD; // prevent false sharing between htm debugging stats below and announcements
-                
+
                 // htm debugging stuff
                 int commitWriter;
                 int abortWriter;
@@ -65,7 +65,7 @@ private:
     PAD;
     __rq_thread_data * threadData;
 //    PAD;
-    
+
     DataStructure * ds;
     RecordManager * const recmgr;
 
@@ -165,7 +165,7 @@ public:
         }
         assert(threadData[tid].numAnnouncements >= 0);
     }
-    
+
     // IF DATA STRUCTURE PERFORMS LOGICAL DELETION
     // run AFTER performing announce_physical_deletion,
     // if the cas that was trying to physically delete node succeeded.
@@ -178,15 +178,15 @@ public:
         threadData[tid].numAnnouncements -= i;
         assert(threadData[tid].numAnnouncements >= 0);
     }
-    
+
 private:
-    
+
     inline void set_insertion_timestamps(
             const int tid,
             const long long ts,
             NodeType * const * const insertedNodes,
             NodeType * const * const deletedNodes) {
-        
+
         // set insertion timestamps
         // for each i_node in insertedNodes
         for (int i_nodeix=0;insertedNodes[i_nodeix];++i_nodeix) {
@@ -199,14 +199,14 @@ private:
             const long long ts,
             NodeType * const * const insertedNodes,
             NodeType * const * const deletedNodes) {
-        
+
         // set deletion timestamps
         // for each d_node in deletedNodes
         for (int d_nodeix=0;deletedNodes[d_nodeix];++d_nodeix) {
             deletedNodes[d_nodeix]->dtime = ts;
         }
     }
-    
+
 public:
 
     // replace the linearization point of an update that inserts or deletes nodes
@@ -239,7 +239,7 @@ public:
             } else ++threadData[tid].abortReader;
 
         }
-        
+
         // fallback path
         ++threadData[tid].fallback;
         rwlock.readLock();
@@ -250,18 +250,18 @@ public:
 committed:
         set_insertion_timestamps(tid, ts, insertedNodes, deletedNodes);
         set_deletion_timestamps(tid, ts, insertedNodes, deletedNodes);
-        
+
         if (!logicalDeletion) {
             // physical deletion will happen at the same time as logical deletion
             physical_deletion_succeeded(tid, deletedNodes);
         }
-        
+
 #if defined USE_RQ_DEBUGGING
         DEBUG_RECORD_UPDATE_CHECKSUM<K,V>(tid, ts, insertedNodes, deletedNodes, ds);
 #endif
         return lin_newval;
     }
-    
+
     // replace the linearization point of an update that inserts or deletes nodes
     // with an invocation of this function if the linearization point is a CAS
     template <typename T>
@@ -277,7 +277,7 @@ committed:
             // physical deletion will happen at the same time as logical deletion
             announce_physical_deletion(tid, deletedNodes);
         }
-        
+
         // htm path
         long long ts;
         T res;
@@ -295,24 +295,24 @@ committed:
                 goto committed;
             } else ++threadData[tid].abortReader;
         }
-        
+
         // fallback path
         ++threadData[tid].fallback;
         rwlock.readLock();
         ts = timestamp;
         res = __sync_val_compare_and_swap(lin_addr, lin_oldval, lin_newval);
         rwlock.readUnlock();
-        
+
 committed:
         if (res == lin_oldval){
             set_insertion_timestamps(tid, ts, insertedNodes, deletedNodes);
             set_deletion_timestamps(tid, ts, insertedNodes, deletedNodes);
-            
+
             if (!logicalDeletion) {
                 // physical deletion will happen at the same time as logical deletion
                 physical_deletion_succeeded(tid, deletedNodes);
             }
-            
+
 #if defined USE_RQ_DEBUGGING
             DEBUG_RECORD_UPDATE_CHECKSUM<K,V>(tid, ts, insertedNodes, deletedNodes, ds);
 #endif
@@ -320,7 +320,7 @@ committed:
             if (!logicalDeletion) {
                 // physical deletion will happen at the same time as logical deletion
                 physical_deletion_failed(tid, deletedNodes);
-            }            
+            }
         }
         return res;
     }
@@ -342,7 +342,7 @@ committed:
 //            } else ++threadData[tid].abortWriter;
 //        }
 //committed:
-        
+
         // fallback path
         rwlock.writeLock();
         threadData[tid].rq_lin_time = ++timestamp; // linearization point of range query (at the write to timestamp)
@@ -355,16 +355,16 @@ private:
     inline int __traversal_try_add(const int tid, NodeType * const node, NodeType ** const nodeSource, K * const outputKeys, V * const outputValues, const K& lo, const K& hi, bool foundDuringTraversal) {
 
         // rqResultKeys should have space for MAX_KEYS_PER_NODE keys, AT LEAST
-        
+
         // in the following, rather than having deeply nested if-else blocks,
         // we return asap, and list facts that must be true if we didn't return
         assert(foundDuringTraversal || !logicalDeletion || ds->isLogicallyDeleted(tid, node));
-        
+
         long long itime = TIMESTAMP_NOT_SET;
         while (itime == TIMESTAMP_NOT_SET) { itime = node->itime; }
         if (node->itime >= threadData[tid].rq_lin_time) return 0;               // node was inserted after the range query
         // fact: node was inserted before the range query
-        
+
         bool logicallyDeleted = (logicalDeletion && ds->isLogicallyDeleted(tid, node));
         long long dtime = TIMESTAMP_NOT_SET;
 
@@ -411,17 +411,17 @@ private:
         }
         if (dtime < threadData[tid].rq_lin_time) return 0;                      // node was deleted before the range query
         // fact: node was inserted before the rq and deleted after it
-        
+
         ///////////////////// TRY TO ADD NODE'S KEYS TO RQ /////////////////////
         // note: this way of organizing this decision tree favors trees with fat multi-key nodes, because getKeys is delayed as long as possible.
-        
+
 tryAddToRQ:
         // fetch the node's keys that are in the set
         int cnt = ds->getKeys(tid, node, outputKeys, outputValues);
         assert(cnt < RQ_DEBUGGING_MAX_KEYS_PER_NODE);
         if (cnt == 0) return 0;                                                 // node doesn't contain any keys that are in the set
         // TODO: properly assert that getKeys doesn't run out of bounds on outputKeys[...] (i'm quite certain it doesn't, currently, though.)
-        
+
         // note: in the following loop, we shift keys in the outputKeys array left to eliminate any that ultimately should not be added to the range query
         int numNewKeys = 0;
         for (int i=0;i<cnt;++i) {                                               // decide whether key = outputKeys[i] should be in the range query
@@ -435,7 +435,7 @@ doNotAddToRQ: (0);
         }
         return numNewKeys;
     }
-    
+
     inline void traversal_try_add(const int tid, NodeType * const node, NodeType ** const nodeSource, K * const rqResultKeys, V * const rqResultValues, int * const startIndex, const K& lo, const K& hi, bool foundDuringTraversal) {
 //#if defined MICROBENCH && !defined NDEBUG
 //        assert(*startIndex < 2*RQSIZE); // note: this assert is a hack. it should be *startIndex < size of rqResultKeys
@@ -461,12 +461,12 @@ doNotAddToRQ: (0);
         assert(*startIndex <= RQSIZE);
 #endif
     }
-    
+
 public:
     inline void traversal_try_add(const int tid, NodeType * const node, K * const rqResultKeys, V * const rqResultValues, int * const startIndex, const K& lo, const K& hi) {
         traversal_try_add(tid, node, NULL, rqResultKeys, rqResultValues, startIndex, lo, hi, true);
     }
-    
+
     // invoke at the end of each traversal:
     // any nodes that were deleted during the traversal,
     // and were consequently missed during the traversal,
@@ -477,7 +477,7 @@ public:
         SOFTWARE_BARRIER;
         long long end_timestamp = timestamp;
         SOFTWARE_BARRIER;
-        
+
         // collect nodes announced by other processes
         for (int otherTid=0;otherTid<NUM_PROCESSES;++otherTid) if (otherTid != tid) {
             int sz = threadData[otherTid].numAnnouncements;
@@ -489,7 +489,7 @@ public:
             }
         }
         SOFTWARE_BARRIER;
-        
+
         // collect epoch bags of other processes (MUST be after checking announcements!)
         blockbag<NodeType> * all_bags[NUM_PROCESSES*NUMBER_OF_EPOCH_BAGS+1];
         std::vector<blockbag_iterator<NodeType>> all_iterators;
@@ -503,7 +503,7 @@ public:
                 ++numIterators;
             }
         }
-        
+
         int numSkippedInEpochBags = 0;
         int numVisitedInEpochBags = 0;
         for (int ix = 0; ix < numIterators; ++ix) {
@@ -518,7 +518,7 @@ public:
                 if (dtime != TIMESTAMP_NOT_SET && dtime > end_timestamp) continue;
 
                 --numSkippedInEpochBags;
-                
+
                 if (!(logicalDeletion && canRetireNodesLogicallyDeletedByOtherProcesses)) {
                     // if we cannot retire nodes that are logically deleted
                     // by other processes, then we always retire nodes in
@@ -545,12 +545,11 @@ public:
             exit(-1);
         }
 #endif
-        
-#ifdef GSTATS_HANDLE_STATS
 
-        GSTATS_ADD_IX(tid, skipped_in_bags, numSkippedInEpochBags, threadData[tid].rq_lin_time);
-        GSTATS_ADD_IX(tid, visited_in_bags, numVisitedInEpochBags, threadData[tid].rq_lin_time);
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_ADD_IX(tid, skipped_in_bags, numSkippedInEpochBags, threadData[tid].rq_lin_time);
+//         GSTATS_ADD_IX(tid, visited_in_bags, numVisitedInEpochBags, threadData[tid].rq_lin_time);
+// #endif
         DEBUG_RECORD_RQ_VISITED(tid, threadData[tid].rq_lin_time, numVisitedInEpochBags);
         DEBUG_RECORD_RQ_SIZE(*startIndex);
         DEBUG_RECORD_RQ_CHECKSUM(tid, threadData[tid].rq_lin_time, rqResultKeys, *startIndex);

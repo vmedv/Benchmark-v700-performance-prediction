@@ -38,9 +38,9 @@ namespace bst_rwlock_ns {
                 COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
                 exit(-1);
             }
-        #ifdef __HANDLE_STATS
-            GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-        #endif
+        // #ifdef GSTATS_HANDLE_STATS
+        //     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+        // #endif
             newnode->key = key;
             newnode->value = value;
             newnode->left = left;
@@ -60,7 +60,7 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!!!
          */
         void initThread(const int tid) {
@@ -124,7 +124,7 @@ public:
         RecManager * debugGetRecMgr() { return recmgr; }
         nodeptr debug_getEntryPoint() { return root; }
     };
-    
+
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -173,7 +173,7 @@ const V bst_rwlock_ns::bst_rwlock<K,V,Compare,RecManager>::doInsert(const int ti
             : createNode(tid, key, val, l, newLeaf);
 
         (l == p->left ? p->left : p->right) = newParent;
-        
+
         lock.writeUnlock();
         return NO_VALUE;
     }

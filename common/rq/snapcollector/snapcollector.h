@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   snapcollector.h
  * Author: trbot
  *
@@ -19,13 +19,13 @@ class SnapCollector {
 public:
     PAD;
     int NUM_THREADS;
-    
+
     class NodeWrapper {
     public:
         NodeType * node;
         NodeWrapper * volatile next;
         K key;
-        
+
         NodeWrapper() {}
         void init(K key) {
             this->node = NULL;
@@ -38,13 +38,13 @@ public:
             this->key = key;
         }
     };
-    
+
 private:
     PAD;
     ReportItem * volatile * reportHeads;
 //    PAD;
     ReportItem * volatile * reportTails;
-    
+
 //    PAD;
     NodeWrapper * volatile head;
     PAD;
@@ -53,7 +53,7 @@ private:
     ReportItem * blocker;
     PAD;
     volatile bool active;
-    
+
     // variables used for aggregating reports after they are collected
     PAD;
     void ** currLocations;
@@ -61,14 +61,14 @@ private:
     int * currRepLocations;
 //    PAD;
     std::vector<CompactReportItem *> * volatile gAllReports;
-    
+
 //    PAD;
     K KEY_MAX;
     K KEY_MIN;
     PAD;
 
 private:
-    
+
     inline bool isBlocker(NodeWrapper const * const wrapper) {
         if (wrapper) {
             K key = wrapper->key;
@@ -78,7 +78,7 @@ private:
         }
         return false;
     }
-    
+
     template <typename RecordManager>
     inline void __retireAllReports(const int tid, std::vector<CompactReportItem *> * v, RecordManager * recmgr) {
         if (v == NULL) return;
@@ -87,7 +87,7 @@ private:
             recmgr->retire(tid, *it);
         }
     }
-    
+
     template <typename RecordManager>
     inline void __deallocateAllReports(const int tid, std::vector<CompactReportItem *> * v, RecordManager * recmgr) {
         if (v == NULL) return;
@@ -97,30 +97,30 @@ private:
         }
         delete v;
     }
-    
+
 public:
-    
+
     template <typename RecordManager>
     void init(const int tid, const int numProcesses, RecordManager * const recmgr, const K _KEY_MIN, const K _KEY_MAX) {
         this->KEY_MIN = _KEY_MIN;
         this->KEY_MAX = _KEY_MAX;
-        
+
         this->NUM_THREADS = numProcesses;
         this->reportHeads = new ReportItem * volatile [NUM_THREADS*PREFETCH_SIZE_WORDS];
         this->reportTails = new ReportItem * volatile [NUM_THREADS*PREFETCH_SIZE_WORDS];
         // head = new NodeWrapper(std::numeric_limits<int>::min())
         this->head = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) head)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) head)%(1<<12));
+// #endif
         this->head->init(this->KEY_MIN);
         this->tail = this->head;
 //        oldTail = NULL;
         // blocker = new ReportItem(NULL, ReportType::Add, -1)
         this->blocker = recmgr->template allocate<ReportItem>(tid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) blocker)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) blocker)%(1<<12));
+// #endif
         this->blocker->init(NULL, ReportType::Add, -1);
         this->active = true;
         this->currLocations = new void * [NUM_THREADS*PREFETCH_SIZE_WORDS];
@@ -128,17 +128,17 @@ public:
         this->gAllReports = NULL;
         for (int i=0;i<NUM_THREADS;++i) {
             this->reportHeads[i*PREFETCH_SIZE_WORDS] = recmgr->template allocate<ReportItem>(tid);
-#ifdef GSTATS_HANDLE_STATS
-            GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) reportHeads[i*PREFETCH_SIZE_WORDS])%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//             GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) reportHeads[i*PREFETCH_SIZE_WORDS])%(1<<12));
+// #endif
             this->reportHeads[i*PREFETCH_SIZE_WORDS]->init(NULL, ReportType::Add, -1); // sentinel head.
             this->reportTails[i*PREFETCH_SIZE_WORDS] = this->reportHeads[i*PREFETCH_SIZE_WORDS];
-            
+
             this->currLocations[i*PREFETCH_SIZE_WORDS] = NULL;
             this->currRepLocations[i*PREFETCH_SIZE_WORDS] = 0;
         }
     }
-    
+
     ~SnapCollector() {
         if (reportHeads) delete[] reportHeads;
         if (reportTails) delete[] reportTails;
@@ -146,7 +146,7 @@ public:
         if (currRepLocations) delete[] currRepLocations;
         if (gAllReports) delete gAllReports;
     }
-    
+
     template <typename RecordManager>
     void retire(const int tid, RecordManager * recmgr) {
         // retire report items
@@ -180,9 +180,9 @@ public:
         // retire snap collector
         recmgr->retire(tid, this);
     }
-    
+
     // TIMNAT: Implemented according to the optimization in A.3:
-    // TIMNAT: Only accept nodes whose key is higher than the last, and return the last node. 
+    // TIMNAT: Only accept nodes whose key is higher than the last, and return the last node.
     template <typename RecordManager>
     NodeType * AddNode(const int tid, NodeType * node, K key, RecordManager * recmgr) {
         NodeWrapper * last = tail;
@@ -194,11 +194,11 @@ public:
             if (last == tail) __sync_bool_compare_and_swap(&tail, last, last->next);
             return tail->node;
         }
-        
+
         NodeWrapper * newNode = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) newNode)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) newNode)%(1<<12));
+// #endif
         newNode->init(node, key);
         if (__sync_bool_compare_and_swap(&last->next, NULL, newNode)) {
             __sync_bool_compare_and_swap(&tail, last, newNode);
@@ -208,14 +208,14 @@ public:
             return tail->node;
         }
     }
-    
+
     template <typename RecordManager>
     void Report(int tid, NodeType * Node, ReportType t, K key, RecordManager * recmgr) {
         ReportItem * reportTail = reportTails[tid*PREFETCH_SIZE_WORDS];
         ReportItem * newItem = recmgr->template allocate<ReportItem>(tid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) newItem)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(tid, extra_type3_allocated_addresses, ((long long) newItem)%(1<<12));
+// #endif
         newItem->init(Node, t, key);
         if (__sync_bool_compare_and_swap(&reportTail->next, NULL, newItem)) {
             reportTails[tid*PREFETCH_SIZE_WORDS] = newItem;
@@ -223,7 +223,7 @@ public:
             recmgr->deallocate(tid, newItem);
         }
     }
-    
+
     bool IsActive() {
 //        __sync_synchronize();
 //        SOFTWARE_BARRIER;
@@ -231,15 +231,15 @@ public:
 //        SOFTWARE_BARRIER;
         return result;
     }
-    
+
     template <typename RecordManager>
     void BlockFurtherPointers(const int tid, RecordManager * recmgr) {
         NodeWrapper * blocker = recmgr->template allocate<NodeWrapper>(tid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) blocker)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(tid, extra_type2_allocated_addresses, ((long long) blocker)%(1<<12));
+// #endif
         blocker->init(NULL, KEY_MAX);
-        
+
 #if 1
         while (true) {
             NodeWrapper * old = this->tail;
@@ -255,7 +255,7 @@ public:
         tail = blocker;
 #endif
     }
-    
+
     /**
      * note: the parameters are used for the timestamping mechanism of the
      *       test harness. they are NOT inherently needed by the snap collector.
@@ -277,9 +277,9 @@ public:
     void BlockFurtherReports() {
         for (int i = 0; i<NUM_THREADS; i++) {
             ReportItem * reportTail = reportTails[i*PREFETCH_SIZE_WORDS];
-            
+
             // TODO: SAVE OLD TAILS, HERE!!!
-            
+
             if (reportTail->next == NULL)
                 __sync_bool_compare_and_swap(&reportTail->next, NULL, blocker);
             // assert cas succeeded OR reportTail->next == blocker
@@ -287,7 +287,7 @@ public:
     }
 
 private:
-    
+
     // TIMNAT: What follows is functions that are used to work with the snapshot while it is
     // TIMNAT: already taken. These functions are used to iterate over the nodes of the snapshot.
 
@@ -296,9 +296,9 @@ private:
         curr = curr->next;
         while (curr != NULL && curr != blocker) {
             CompactReportItem * newItem = recmgr->template allocate<CompactReportItem>(tid);
-#ifdef GSTATS_HANDLE_STATS
-            GSTATS_APPEND(tid, extra_type4_allocated_addresses, ((long long) newItem)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//             GSTATS_APPEND(tid, extra_type4_allocated_addresses, ((long long) newItem)%(1<<12));
+// #endif
             newItem->init(curr->node, curr->t, curr->key);
             allReports->push_back(newItem);
             curr = curr->next;
@@ -334,7 +334,7 @@ public:
             __deallocateAllReports(tid, allReports, recmgr);
         }
     }
-    
+
     NodeType * GetNext(int tid) {
         NodeWrapper * currLoc = (NodeWrapper *) currLocations[tid*PREFETCH_SIZE_WORDS];
         int currRepLoc = currRepLocations[tid*PREFETCH_SIZE_WORDS];
@@ -360,7 +360,7 @@ public:
                 return next->node;
             }
 
-            // Option 2: node key == rep key 
+            // Option 2: node key == rep key
             if (nodeKey == repKey) {
                 // 2.a - both are infinity - iteration done.
                 if (nodeKey == KEY_MAX) {

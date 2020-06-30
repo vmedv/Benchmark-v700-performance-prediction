@@ -5,7 +5,7 @@
  *
  * Details of the B-slack tree algorithm appear in the paper:
  *    Brown, Trevor. B-slack trees: space efficient B-trees. SWAT 2014.
- * 
+ *
  * The paper leaves it up to the implementer to decide when and how to perform
  * rebalancing steps (i.e., Root-Zero, Root-Replace, Absorb, Split, Compress
  * and One-Child). In this implementation, we keep track of violations and fix
@@ -21,7 +21,7 @@
  * off in this manner is not difficult; it simply requires going through each
  * rebalancing step S and determining which nodes involved in S can have
  * violations after S (and then making a recursive call for each violation).
- * 
+ *
  * -----------------------------------------------------------------------------
  *
  * This program is free software: you can redistribute it and/or modify
@@ -47,7 +47,7 @@
  * rqProvider->linearize_update_at_cas or ->linearize_update_at_write.
  * Consequently, we must access access entries in the ptrs arrays of INTERNAL
  * nodes by performing calls to read_addr and write_addr (and linearize_...).
- * 
+ *
  * However, the ptrs arrays of leaves represent fundamentally different data:
  * specifically values, or pointers to values, and NOT pointers to nodes.
  * Thus, the ptrs arrays of leaves CANNOT be modified by such calls.
@@ -100,10 +100,10 @@ namespace bslack_ns {
 
     template <int DEGREE, typename K>
     struct Node;
-    
+
     template <int DEGREE, typename K>
     struct SCXRecord;
-    
+
     template <int DEGREE, typename K>
     class wrapper_info {
     public:
@@ -148,7 +148,7 @@ namespace bslack_ns {
         const static int size = sizeof(c);
         //const static int size = 2*PREFETCH_SIZE_BYTES; // sizeof(mutables)+sizeof(numberOfNodes)+sizeof(numberOfNodesToFreeze)+sizeof(newNode)+sizeof(field)+sizeof(nodes)+sizeof(scxPtrsSeen);
     } /*__attribute__((aligned (PREFETCH_SIZE_BYTES)))*/;
-        
+
     template <int DEGREE, typename K>
     struct Node {
         SCXRecord<DEGREE,K> * volatile scxPtr;
@@ -228,7 +228,7 @@ namespace bslack_ns {
                     } else {
                         seen->insert(__node);
                         __node->printTreeFile(os, seen);
-                    }                
+                    }
                 }
             }
             os<<")";
@@ -393,12 +393,12 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!
          */
         void initThread(const int tid) {
             if (init[tid]) return; else init[tid] = !init[tid];
-            
+
             recordmgr->initThread(tid);
             rqProvider->initThread(tid);
         }
@@ -415,7 +415,7 @@ public:
          *      each leaf has up to <code>DEGREE</code> key/value pairs, and <br>
          *      keys are ordered according to the provided comparator.
          */
-        bslack(const int numProcesses, 
+        bslack(const int numProcesses,
                 const K anyKey,
                 int suspectedCrashSignal = SIGQUIT)
         : ALLOW_ONE_EXTRA_SLACK_PER_NODE(true)
@@ -427,18 +427,18 @@ public:
         , rqProvider(new RQProvider<K, void *, Node<DEGREE,K>, bslack<DEGREE,K,Compare,RecManager>, RecManager, false, false>(numProcesses, this, recordmgr))
         , SEQUENTIAL_STAT_TRACKING(false)
         , NO_VALUE((void *) -1LL)
-        , NUM_PROCESSES(numProcesses) 
+        , NUM_PROCESSES(numProcesses)
     #ifdef USE_DEBUGCOUNTERS
         , counters(new debugCounters(numProcesses))
     #endif
         {
             cmp = Compare();
-            
+
             const int tid = 0;
             initThread(tid);
 
             recordmgr->endOp(tid);
-            
+
             DESC1_INIT_ALL(numProcesses);
 
             SCXRecord<DEGREE,K> *dummy = TAGPTR1_UNPACK_PTR(DUMMY);
@@ -464,7 +464,7 @@ public:
             _entry->size = 1;
             _entry->searchKey = anyKey;
             _entry->ptrs[0] = _entryLeft;
-            
+
             // need to simulate real insertion of root and the root's child,
             // since range queries will actually try to add these nodes,
             // and we don't want blocking rq providers to spin forever
@@ -495,7 +495,7 @@ public:
     #endif
         }
 
-    #ifdef BSLACK_ENABLE_DESTRUCTOR    
+    #ifdef BSLACK_ENABLE_DESTRUCTOR
         ~bslack() {
             int nodes = 0;
             freeSubtree(entry, &nodes);
@@ -881,7 +881,7 @@ public:
 
 template <int DEGREE, typename K, class Compare, class RecManager>
 bslack_ns::SCXRecord<DEGREE,K> * bslack_ns::bslack<DEGREE,K,Compare,RecManager>::createSCXRecord(const int tid, wrapper_info<DEGREE,K> * info) {
-    
+
     SCXRecord<DEGREE,K> * result = DESC1_NEW(tid);
     result->c.newNode = info->newNode;
     for (int i=0;i<info->numberOfNodes;++i) {
@@ -890,13 +890,13 @@ bslack_ns::SCXRecord<DEGREE,K> * bslack_ns::bslack<DEGREE,K,Compare,RecManager>:
     for (int i=0;i<info->numberOfNodesToFreeze;++i) {
         result->c.scxPtrsSeen[i] = info->scxPtrs[i];
     }
-    
+
     int i;
     for (i=0;info->insertedNodes[i];++i) result->c.insertedNodes[i] = info->insertedNodes[i];
     result->c.insertedNodes[i] = NULL;
     for (i=0;info->deletedNodes[i];++i) result->c.deletedNodes[i] = info->deletedNodes[i];
     result->c.deletedNodes[i] = NULL;
-    
+
     result->c.field = info->field;
     result->c.numberOfNodes = info->numberOfNodes;
     result->c.numberOfNodesToFreeze = info->numberOfNodesToFreeze;
@@ -912,9 +912,9 @@ bslack_ns::Node<DEGREE,K> * bslack_ns::bslack<DEGREE,K,Compare,RecManager>::allo
         exit(-1);
     }
     rqProvider->init_node(tid, newnode);
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+// #endif
     return newnode;
 }
 
@@ -960,11 +960,11 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
     while (!stack.isEmpty()) {
         Node<DEGREE,K> * node = stack.pop();
         assert(node);
-        
+
         // if leaf node, check if we should add its keys to the traversal
         if (node->isLeaf()) {
             rqProvider->traversal_try_add(tid, node, resultKeys, resultValues, &size, lo, hi);
-            
+
         // else if internal node, explore its children
         } else {
             // find right-most sub-tree that could contain a key in [lo, hi]
@@ -985,7 +985,7 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::rangeQuery(const int tid, co
 //            }
         }
     }
-    
+
     // success
     rqProvider->traversal_end(tid, resultKeys, resultValues, &size, lo, hi);
     return size;
@@ -1026,14 +1026,14 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             if (!replace) {
                 return oldValue;
             }
-            
+
             // perform LLXs
             if (!llx(tid, p, NULL, 0, info->scxPtrs, info->nodes)
                      || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) {
                 continue;    // retry the search
             }
             info->nodes[1] = l;
-            
+
             // create new node(s)
             Node<DEGREE,K>* n = allocateNode(tid);
             arraycopy(l->keys, 0, n->keys, 0, l->getKeyCount());
@@ -1045,7 +1045,7 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
             n->searchKey = l->searchKey;
             n->size = l->size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 2;
             info->numberOfNodesAllocated = 1;
@@ -1079,12 +1079,12 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 continue;    // retry the search
             }
             info->nodes[1] = l;
-            
+
             if (l->getKeyCount() < b) {
                 /**
                  * Insert pair
                  */
-                
+
                 // create new node(s)
                 Node<DEGREE,K>* n = allocateNode(tid);
                 arraycopy(l->keys, 0, n->keys, 0, keyIndex);
@@ -1110,7 +1110,7 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 info->insertedNodes[1] = NULL;
                 info->deletedNodes[0] = l;
                 info->deletedNodes[1] = NULL;
-                
+
                 if (scx(tid, info)) {
                     TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX succeeded"<<std::endl);
 #ifndef REBALANCING_NONE
@@ -1122,12 +1122,12 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 }
                 TRACE COUTATOMICTID("insert std::pair ("<<key<<", "<<value<<"): SCX FAILED"<<std::endl);
                 this->recordmgr->deallocate(tid, n);
-                
+
             } else { // assert: l->getKeyCount() == DEGREE == b)
                 /**
                  * Overflow
                  */
-                
+
                 // first, we create a pair of large arrays
                 // containing too many keys and pointers to fit in a single node
                 K keys[DEGREE+1];
@@ -1166,7 +1166,7 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 right->searchKey = keys[size1];
                 right->size = size2;
                 right->weight = true;
-                
+
                 Node<DEGREE,K>* n = allocateNode(tid);
                 n->keys[0] = keys[size1];
                 rqProvider->write_addr(tid, &n->ptrs[0], left);
@@ -1177,13 +1177,13 @@ void* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::doInsert(const int tid, co
                 n->searchKey = keys[size1];
                 n->size = 2;
                 n->weight = p == entry;
-                
+
                 // note: weight of new internal node n will be zero,
                 //       unless it is the root; this is because we test
                 //       p == entry, above; in doing this, we are actually
                 //       performing Root-Zero at the same time as this Overflow
                 //       if n will become the root (of the B-slack tree)
-                
+
                 // construct info record to pass to SCX
                 info->numberOfNodes = 2;
                 info->numberOfNodesAllocated = 3;
@@ -1445,7 +1445,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             fixWeightViolation(tid, p);
             continue;
         }
-        
+
         // perform LLXs
         if (!llx(tid, gp, NULL, 0, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &gp->ptrs[ixToP]) != p) continue;    // retry the search
         if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes) || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) continue;      // retry the search
@@ -1475,7 +1475,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             n->searchKey = n->keys[0];
             n->size = size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 3;
             info->numberOfNodesAllocated = 1;
@@ -1488,7 +1488,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             info->deletedNodes[0] = p;
             info->deletedNodes[1] = l;
             info->deletedNodes[2] = NULL;
-            
+
             if (scx(tid, info)) {
                 TRACE COUTATOMICTID("absorb: SCX succeeded"<<std::endl);
                 if (SEQUENTIAL_STAT_TRACKING) ++weightFixes;
@@ -1535,7 +1535,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixWeightViolation(const in
             // which are used to create two new children u and v.
             // we then create a new internal node (whose weight will be zero
             // if it is not the root), with u and v as its children.
-            
+
             // create new node(s)
             const int size1 = size / 2;
             Node<DEGREE,K>* left = allocateNode(tid);
@@ -1632,7 +1632,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
     if (viol->getABDegree() >= a || viol == entry || viol == rqProvider->read_addr(tid, &entry->ptrs[0])) {
         return false; // no degree violation at viol
     }
-    
+
     // do an optimistic check to see if viol was already removed from the tree
     if (llx(tid, viol, NULL) == FINALIZED) {
         // recall that nodes are finalized precisely when
@@ -1671,18 +1671,18 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             // we hand over responsibility for viol to that update.
             return false;
         }
-        
+
         // assert: gp != NULL (because if AbsorbSibling or Distribute can be applied, then p is not the root)
-        
+
         // perform LLXs
         if (!llx(tid, gp, NULL, 0, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &gp->ptrs[ixToP]) != p) continue;   // retry the search
-        if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes) 
+        if (!llx(tid, p, NULL, 1, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) continue;     // retry the search
 
         int ixToS = (ixToL > 0 ? ixToL-1 : 1);
         Node<DEGREE,K>* s = rqProvider->read_addr(tid, &p->ptrs[ixToS]);
-        
+
         // we can only apply AbsorbSibling or Distribute if there are no
         // weight violations at p, l or s.
         // so, we first check for any weight violations,
@@ -1709,9 +1709,9 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
         // assert: there are no weight violations at p, l or s
         // assert: l and s are either both leaves or both internal nodes
         //         (because there are no weight violations at these nodes)
-        
+
         // also note that p->size >= a >= 2
-        
+
         Node<DEGREE,K>* left;
         Node<DEGREE,K>* right;
         int leftindex;
@@ -1732,15 +1732,15 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             leftindex = ixToS;
             rightindex = ixToL;
         }
-        
+
         int sz = left->getABDegree() + right->getABDegree();
         assert(left->weight && right->weight);
-        
+
         if (sz < 2*a) {
             /**
              * AbsorbSibling
              */
-            
+
             // create new node(s))
             Node<DEGREE,K>* newl = allocateNode(tid);
             int k1=0, k2=0;
@@ -1772,11 +1772,11 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             newl->searchKey = l->searchKey;
             newl->size = l->getABDegree() + s->getABDegree();
             newl->weight = true; assert(left->weight && right->weight && p->weight);
-            
+
             // now, we atomically replace p and its children with the new nodes.
             // if appropriate, we perform RootAbsorb at the same time.
             if (gp == entry && p->getABDegree() == 2) {
-            
+
                 // construct info record to pass to SCX
                 info->numberOfNodes = 4; // gp + p + l + s
                 info->numberOfNodesAllocated = 1; // newl
@@ -1789,7 +1789,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
                 info->deletedNodes[1] = l;
                 info->deletedNodes[2] = s;
                 info->deletedNodes[3] = NULL;
-                
+
                 if (scx(tid, info)) {
                     TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX succeeded"<<std::endl);
                     if (SEQUENTIAL_STAT_TRACKING) ++slackFixes;
@@ -1799,10 +1799,10 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
                 }
                 TRACE COUTATOMICTID("absorbsibling AND rootabsorb: SCX FAILED"<<std::endl);
                 this->recordmgr->deallocate(tid, newl);
-                
+
             } else {
                 assert(gp != entry || p->getABDegree() > 2);
-                
+
                 // create n from p by:
                 // 1. skipping the key for leftindex and child pointer for ixToS
                 // 2. replacing l with newl
@@ -1841,7 +1841,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
                 info->deletedNodes[1] = l;
                 info->deletedNodes[2] = s;
                 info->deletedNodes[3] = NULL;
-                
+
 #ifdef NO_NONROOT_SLACK_VIOLATION_FIXING
 this->recordmgr->deallocate(tid, n);
 this->recordmgr->deallocate(tid, newl);
@@ -1859,20 +1859,20 @@ return false;
                 this->recordmgr->deallocate(tid, newl);
                 this->recordmgr->deallocate(tid, n);
             }
-            
+
         } else {
             /**
              * Distribute
              */
-            
+
             int leftsz = sz/2;
             int rightsz = sz-leftsz;
-            
+
             // create new node(s))
             Node<DEGREE,K>* n = allocateNode(tid);
             Node<DEGREE,K>* newleft = allocateNode(tid);
             Node<DEGREE,K>* newright = allocateNode(tid);
-            
+
             // combine the contents of l and s (and one key from p if l and s are internal)
             K keys[2*DEGREE];
             Node<DEGREE,K>* ptrs[2*DEGREE];
@@ -1898,7 +1898,7 @@ return false;
                     ptrs[k2++] = rqProvider->read_addr(tid, &right->ptrs[i]);
                 }
             }
-            
+
             // distribute contents between newleft and newright
             k1=0;
             k2=0;
@@ -1918,7 +1918,7 @@ return false;
             newleft->searchKey = newleft->keys[0];
             newleft->size = leftsz;
             newleft->weight = true;
-            
+
             // reserve one key for the parent (to go between newleft and newright)
             K keyp = keys[k1];
             if (!left->isLeaf()) ++k1;
@@ -1938,7 +1938,7 @@ return false;
             newright->searchKey = newright->keys[0];
             newright->size = rightsz;
             newright->weight = true;
-            
+
             // create n from p by replacing left with newleft and right with newright,
             // and replacing one key (between these two pointers)
             for (int i=0;i<p->getKeyCount();++i) {
@@ -1956,7 +1956,7 @@ return false;
             n->searchKey = p->searchKey;
             n->size = p->size;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 4; // gp + p + l + s
             info->numberOfNodesAllocated = 3; // n + newleft + newright
@@ -1971,7 +1971,7 @@ return false;
             info->deletedNodes[1] = l;
             info->deletedNodes[2] = s;
             info->deletedNodes[3] = NULL;
-            
+
 #ifdef NO_NONROOT_SLACK_VIOLATION_FIXING
 this->recordmgr->deallocate(tid, n);
 this->recordmgr->deallocate(tid, newleft);
@@ -2127,7 +2127,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             // we hand over responsibility for viol to that update.
             return false;
         }
-        
+
         /**
          * observe that Compress and One-Child can be implemented in
          * exactly the same way.
@@ -2136,7 +2136,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
          * One-child actually has exactly the same effect as Compress.
          * thus, the code for Compress can be used fix both
          * degree and slack violations.
-         * 
+         *
          * the only difference is that, in Compress,
          * the (slack) violation occurs at the topmost node, top,
          * that is replaced by the update, and in One-Child,
@@ -2145,7 +2145,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
          * then the leaf l that we found in our search is top.
          * otherwise, the violation we found was a degree violation,
          * so l is a child of top.
-         * 
+         *
          * to facilitate the use of the same code in both cases,
          * if the violation we found was a slack violation,
          * then we take one extra step in the search,
@@ -2166,14 +2166,14 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
         }
         // note: p is now top
         // assert: gp != NULL (because if Compress or One-Child can be applied, then p is not the root)
-        
+
         // perform LLXs
         Node<DEGREE,K>* pChildren[DEGREE];
         if (!llx(tid, gp, NULL, 0, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &gp->ptrs[ixToP]) != p) continue;    // retry the search
         if (!llx(tid, p, pChildren, 1, info->scxPtrs, info->nodes)
                  || rqProvider->read_addr(tid, &p->ptrs[ixToL]) != l) continue; // retry the search
-        
+
         // we can only apply Compress (or One-Child) if there are no
         // weight violations at p or its children.
         // so, we first check for any weight violations,
@@ -2250,10 +2250,10 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
                 keys[pGrandDegree-1] = p->keys[i];
             }
         }
-        
+
         int numberOfNewChildren;
         Node<DEGREE,K>* newChildren[DEGREE];
-        
+
         // determine how to divide keys&values into new nodes as evenly as possible.
         // specifically, we divide them into nodesWithCeil + nodesWithFloor leaves,
         // containing keysPerNodeCeil and keysPerNodeFloor keys, respectively.
@@ -2266,7 +2266,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
         int degreePerNodeFloor = pGrandDegree / numberOfNewChildren;
         int nodesWithCeil = pGrandDegree % numberOfNewChildren;
         int nodesWithFloor = numberOfNewChildren - nodesWithCeil;
-        
+
         // create new node(s)
         // divide keys&values into new nodes of degree keysPerNodeCeil
         for (int i=0;i<nodesWithCeil;++i) {
@@ -2280,7 +2280,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             child->leaf = pChildrenAreLeaves;
             child->marked = false;
             child->scxPtr = DUMMY;
-            
+
             // note: the following search key exists because, if we enter this loop,
             // then there are at least two new children, which means each
             // contains at least floor(b/2) > 0 keys
@@ -2291,7 +2291,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             child->weight = true;
             newChildren[i] = child;
         }
-        
+
         // create new node(s)
         // divide remaining keys&values into new nodes of degree keysPerNodeFloor
         for (int i=0;i<nodesWithFloor;++i) {
@@ -2305,7 +2305,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             child->leaf = pChildrenAreLeaves;
             child->marked = false;
             child->scxPtr = DUMMY;
-            
+
             // let me explain why the following search key assignment makes sense.
             //
             // if there are two or more new children,
@@ -2319,12 +2319,12 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             // (we use pChildren[0]->searchKey instead of keys[0] because keys
             //  might in fact contain ZERO keys!)
             child->searchKey = (numberOfNewChildren == 1) ? pChildren[0]->searchKey : keys[degreePerNodeCeil*nodesWithCeil+degreePerNodeFloor*i];
-            
+
             child->size = degreePerNodeFloor;
             child->weight = true;
             newChildren[i+nodesWithCeil] = child;
         }
-        
+
         if (SEQUENTIAL_STAT_TRACKING) ++slackFixSCX;
 
         // now, we atomically replace p and its children with the new nodes.
@@ -2333,7 +2333,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             /**
              * Compress/One-Child AND Root-Replace.
              */
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 1+1+p->getABDegree(); // gp + p + children of p
             info->numberOfNodesAllocated = 1; // newChildren[0]
@@ -2398,7 +2398,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             /**
              * Compress/One-Child.
              */
-            
+
             // construct the new parent node n
             Node<DEGREE,K>* n = allocateNode(tid);
             arraycopy_ptrs(newChildren, 0, n->ptrs, 0, numberOfNewChildren);
@@ -2422,7 +2422,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
             n->searchKey = p->searchKey;
             n->size = numberOfNewChildren;
             n->weight = true;
-            
+
             // construct info record to pass to SCX
             info->numberOfNodes = 1+1+p->getABDegree(); // gp + p + children of p
             info->numberOfNodesAllocated = 1+numberOfNewChildren; // n + new children
@@ -2443,7 +2443,7 @@ bool bslack_ns::bslack<DEGREE,K,Compare,RecManager>::fixDegreeOrSlackViolation(c
                 info->deletedNodes[i] = p->ptrs[i-1];
             }
             info->deletedNodes[i] = NULL;
-            
+
 #ifdef NO_NONROOT_SLACK_VIOLATION_FIXING
 this->recordmgr->deallocate(tid, n);
 for (int i=0;i<numberOfNewChildren;++i) {
@@ -2466,7 +2466,7 @@ return false;
                 //        [maybe create slack at any or all children of n]
                 //        [maybe create slack at p]
                 //        [maybe create degree at n]
-                //    
+                //
                 //    one-child [check: slack@children(n)]
                 //        no weight at u
                 //        degree at u -> eliminated
@@ -2515,7 +2515,7 @@ bslack_ns::SCXRecord<DEGREE,K>* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::
     const bool marked = r->marked;
     SOFTWARE_BARRIER;
     tagptr_t tagptr = (tagptr_t) r->scxPtr;
-    
+
     // read mutable state field of descriptor
     bool succ;
     TRACE COUTATOMICTID("tagged ptr seq="<<UNPACK1_SEQ(tagptr)<<" descriptor seq="<<UNPACK1_SEQ(TAGPTR1_UNPACK_PTR(tagptr)->c.mutables)<<std::endl);
@@ -2524,7 +2524,7 @@ bslack_ns::SCXRecord<DEGREE,K>* bslack_ns::bslack<DEGREE,K,Compare,RecManager>::
     TRACE { mutables_t debugmutables = TAGPTR1_UNPACK_PTR(tagptr)->c.mutables; COUTATOMICTID("llx scxrecord succ="<<succ<<" state="<<state<<" mutables="<<debugmutables<<" desc-seq="<<UNPACK1_SEQ(debugmutables)<<std::endl); }
     // note: special treatment for alg in the case where the descriptor has already been reallocated (impossible before the transformation, assuming safe memory reclamation)
     SOFTWARE_BARRIER;
-    
+
     if (state == SCXRecord<DEGREE,K>::STATE_ABORTED || ((state == SCXRecord<DEGREE,K>::STATE_COMMITTED) && !r->marked)) {
         // read snapshot fields
         if (snapshot != NULL) {
@@ -2584,7 +2584,7 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
             assert(i > 0); // nodes[0] cannot be a leaf...
             continue; // do not freeze leaves
         }
-        
+
         bool successfulCAS = __sync_bool_compare_and_swap(&snap->c.nodes[i]->scxPtr, snap->c.scxPtrsSeen[i], tagptr);
         SCXRecord<DEGREE,K> *exp = snap->c.nodes[i]->scxPtr;
         TRACE if (successfulCAS) COUTATOMICTID((helpingOther?"    ":"")<<"help froze nodes["<<i<<"]@0x"<<((uintptr_t)snap->c.nodes[i])<<" with tagptr="<<tagptrToString((tagptr_t) snap->c.nodes[i]->scxPtr)<<std::endl);
@@ -2594,12 +2594,12 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
         // 1. the state is inprogress, and we just failed a cas, and every helper will fail that cas (or an earlier one), so the scx must abort, or
         // 2. the state is committed or aborted
         // (this suggests that it might be possible to get rid of the allFrozen bit)
-        
+
         // read mutable allFrozen field of descriptor
         bool succ;
         bool allFrozen = DESC1_READ_FIELD(succ, ptr->c.mutables, tagptr, MUTABLES1_MASK_ALLFROZEN, MUTABLES1_OFFSET_ALLFROZEN);
         if (!succ) return SCXRecord<DEGREE,K>::STATE_ABORTED;
-        
+
         if (allFrozen) {
             TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return state "<<SCXRecord<DEGREE comma K>::STATE_COMMITTED<<" after failed freezing cas on nodes["<<i<<"]"<<std::endl);
             return SCXRecord<DEGREE,K>::STATE_COMMITTED;
@@ -2610,7 +2610,7 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
             return newState;
         }
     }
-    
+
     MUTABLES1_WRITE_BIT(ptr->c.mutables, snap->c.mutables, MUTABLES1_MASK_ALLFROZEN);
     SOFTWARE_BARRIER;
     for (int i=1; i<snap->c.numberOfNodesToFreeze; ++i) {
@@ -2624,7 +2624,7 @@ int bslack_ns::bslack<DEGREE,K,Compare,RecManager>::help(const int tid, const ta
     TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help CAS'ed to newNode@0x"<<((uintptr_t)snap->c.newNode)<<std::endl);
 
     MUTABLES1_WRITE_FIELD(ptr->c.mutables, snap->c.mutables, SCXRecord<DEGREE comma K>::STATE_COMMITTED, MUTABLES1_MASK_STATE, MUTABLES1_OFFSET_STATE);
-    
+
     TRACE COUTATOMICTID((helpingOther?"    ":"")<<"help return COMMITTED after performing update cas"<<std::endl);
     return SCXRecord<DEGREE,K>::STATE_COMMITTED; // success
 }

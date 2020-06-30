@@ -73,9 +73,9 @@ namespace bst_hohrwlock_ns {
                 COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
                 exit(-1);
             }
-        #ifdef __HANDLE_STATS
-            GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-        #endif
+        // #ifdef GSTATS_HANDLE_STATS
+        //     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+        // #endif
             newnode->key = key;
             newnode->value = value;
             newnode->left = left;
@@ -86,7 +86,7 @@ namespace bst_hohrwlock_ns {
             return newnode;
         }
         const V doInsert(const int tid, const K& key, const V& val, bool onlyIfAbsent);
-        
+
         int init[MAX_THREADS_POW2] = {0,};
     PAD;
 
@@ -98,7 +98,7 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!!!
          */
         void initThread(const int tid) {
@@ -164,7 +164,7 @@ public:
         RecManager * debugGetRecMgr() { return recmgr; }
         nodeptr debug_getEntryPoint() { return root; }
     };
-    
+
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -207,7 +207,7 @@ retry:
         l = (p->key == NO_KEY || cmp(key, p->key)) ? p->left : p->right;
     }
     // now, p and l are read locked
-    
+
     // if we find the key in the tree already
     if (key == l->key) {
         auto result = l->value;
@@ -216,7 +216,7 @@ retry:
             LOCK(l).readUnlock();
             return result;
         }
-        
+
         if (!LOCK(l).upgradeLock()) {
             LOCK(p).readUnlock();
             LOCK(l).readUnlock();
@@ -224,11 +224,11 @@ retry:
         }
         // now l is write locked
         l->value = val;
-        
+
         LOCK(p).readUnlock();
         LOCK(l).writeUnlock();
         return result;
-        
+
     } else {
         if (!LOCK(p).upgradeLock()) {
             LOCK(p).readUnlock();
@@ -243,7 +243,7 @@ retry:
             : createNode(tid, key, val, l, newLeaf);
 
         (l == p->left ? p->left : p->right) = newParent;
-        
+
         LOCK(p).writeUnlock();
         LOCK(l).readUnlock();
         return NO_VALUE;
@@ -265,7 +265,7 @@ retry:
         return std::pair<V,bool>(NO_VALUE, false);
     }
     // now, gp and p are read locked, and l is non-null
-    
+
     while (1) {
         LOCK(l).readLock();
         if (l->left == NULL) break;
@@ -275,7 +275,7 @@ retry:
         l = (p->key == NO_KEY || cmp(key, p->key)) ? p->left : p->right;
     }
     // now, gp, p and l are read locked
-    
+
     // if we fail to find the key in the tree
     if (key != l->key) {
         LOCK(gp).readUnlock();
@@ -290,7 +290,7 @@ retry:
             goto retry;
         }
         // now gp is write locked (and p and l are read locked)
-        
+
         auto result = l->value;
         auto s = (l == p->left ? p->right : p->left);
         (p == gp->left ? gp->left : gp->right) = s;

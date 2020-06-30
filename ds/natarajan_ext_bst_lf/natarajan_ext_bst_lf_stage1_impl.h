@@ -1,23 +1,23 @@
 /**
  * Implementation of the lock-free external BST of Natarajan and Mittal.
  * Trevor Brown, 2017. (Based on Natarajan's original code.)
- * 
+ *
  * I made several changes/fixes to the data structure,
  * and there are four different versions: baseline, stage 0, stage 1, stage 1.
- * 
+ *
  * Baseline is functionally the same as the original implementation by Natarajan
  * (but converted to a class, and with templates/generics).
  *
  * Stage 0:
  *  - Fixed a concurrency bug (missing volatiles)
- * 
+ *
  * Delta from stage 0 to stage 1:
  *  - Added proper node allocation
  *    (The original implementation explicitly allocated arrays of 2 nodes at a time,
  *     which effectively prevents any real memory reclamation.
  *     [You can't free the nodes individually. Rather, you must free the arrays,
  *      and only after BOTH nodes are safe to free. This is hard to solve.])
- * 
+ *
  * Delta from stage 1 to stage 2:
  *  - Added proper memory reclamation
  *    (The original implementation leaked all memory.
@@ -29,17 +29,17 @@
  *     after you delete a single key, you may have to reclaim many nodes.)
  *    To my knowledge, this is the only correct, existing implementation
  *    of this algorithm (as of Mar 2018).
- * 
+ *
  * To compile baseline, add compilation arguments:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
  *  -DBASELINE
- * 
+ *
  * To compile stage 0, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_baseline_impl.h
- * 
+ *
  * To compile stage 1, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage1_impl.h
- * 
+ *
  * To compile stage 2, add compilation argument:
  *  -DDS_H_FILE=ds/natarajan_ext_bst_lf/natarajan_ext_bst_lf_stage2_impl.h
  */
@@ -64,16 +64,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
 
-Please cite our PPoPP 2014 paper - Fast Concurrent Lock-Free Binary Search Trees by Aravind Natarajan and Neeraj Mittal if you use our code in your experiments	
+Please cite our PPoPP 2014 paper - Fast Concurrent Lock-Free Binary Search Trees by Aravind Natarajan and Neeraj Mittal if you use our code in your experiments
 
 Features:
-1. Insert operations directly install their window without injecting the operation into the tree. They help any conflicting operation at the injection point, 
+1. Insert operations directly install their window without injecting the operation into the tree. They help any conflicting operation at the injection point,
 before executing their window txn.
 2. Delete operations are the same as that of the original algorithm.
- 
+
  */
 
-/* 
+/*
  * File:   wfrbt_impl.h
  * Author: Maya Arbel-Raviv
  *
@@ -118,7 +118,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
 
 
     AO_t parentPointerWord = (size_t) NULL; // contents in gpar
-    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys. 
+    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys.
     AO_t leafchildPointerWord; // contents in leaf
 
     bool isparLC = false; // is par the left child of gpar
@@ -170,7 +170,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
     }
 
 //    if (key == leaf->key) {
-//        // key matches that being inserted	
+//        // key matches that being inserted
 //        return NULL;
 //    }
 
@@ -195,7 +195,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
 
 
     AO_t parentPointerWord = (AO_t) NULL; // contents in gpar
-    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys. 
+    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys.
     AO_t leafchildPointerWord; // contents in leaf
 
     bool isparLC = false; // is par the left child of gpar
@@ -279,7 +279,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
 
 
     AO_t parentPointerWord = (AO_t) NULL; // contents in gpar
-    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys. 
+    AO_t leafPointerWord = par->child.AO_val1; // contents in par. Tree has two imaginary keys \inf_{1} and \inf_{2} which are larger than all other keys.
     AO_t leafchildPointerWord; // contents in leaf
 
     bool isparLC = false; // is par the left child of gpar
@@ -353,7 +353,7 @@ seekRecord_t<skey_t, sval_t>* natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compa
 template <typename skey_t, typename sval_t, class RecMgr, class Compare>
 sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::search(thread_data_t<skey_t, sval_t>* data, skey_t key) {
     node_t<skey_t, sval_t> * cur = (node_t<skey_t, sval_t> *)get_addr(data->rootOfTree->child.AO_val1);
-    skey_t lastKey = 0; 
+    skey_t lastKey = 0;
     node_t<skey_t, sval_t> * lastNode = NULL;
     while (cur != NULL) {
         lastKey = cur->key;
@@ -388,8 +388,8 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::help_conflicting_oper
             pS = R->parent->child.AO_val1;
         }
 
-        // 2. Execute cas on the last unmarked node to remove the 
-        // if pS is flagged, propagate it. 
+        // 2. Execute cas on the last unmarked node to remove the
+        // if pS is flagged, propagate it.
         AO_t newWord;
 
         if (is_flagged(pS)) {
@@ -438,8 +438,8 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::help_conflicting_oper
 template <typename skey_t, typename sval_t, class RecMgr, class Compare>
 int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::inject(thread_data_t<skey_t, sval_t>* data, seekRecord_t<skey_t, sval_t>* R, int op) {
 
-    // pL is free		
-    //1. Flag L		
+    // pL is free
+    //1. Flag L
     AO_t newWord = create_child_word((node_t<skey_t, sval_t> *)get_addr(R->pL), UNMARK, FLAG);
     int result;
     if (R->isLeftL) {
@@ -463,14 +463,14 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::insertIfAbsent(thr
             help_conflicting_operation(data, R);
             continue;
         }
-        // key not present in the tree. Insert		
+        // key not present in the tree. Insert
         injectResult = perform_one_insert_window_operation(data, R, key, value);
         if (injectResult == 1) {
-            // Operation injected and executed			
+            // Operation injected and executed
             return NO_VALUE;
         }
     }
-    // execute insert window operation.		
+    // execute insert window operation.
 }
 
 template <typename skey_t, typename sval_t, class RecMgr, class Compare>
@@ -480,7 +480,7 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::delete_node(thread
         if (R == NULL) {
             return NO_VALUE;
         }
-        // key is present in the tree. Inject operation into the tree		
+        // key is present in the tree. Inject operation into the tree
         if (!is_free(R->pL)) {
             help_conflicting_operation(data, R);
             continue;
@@ -488,15 +488,15 @@ sval_t natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::delete_node(thread
         int injectResult = inject(data, R, DELETE);
         if (injectResult == 1) {
             sval_t retval = R->leafValue;
-            // Operation injected 			
-            //data->numActualDelete++;			
+            // Operation injected
+            //data->numActualDelete++;
             int res = perform_one_delete_window_operation(data, R, key);
             if (res == 1) {
                 // operation successfully executed.
                 return retval;
             } else {
                 // window transaction could not be executed.
-                // perform secondary seek.				
+                // perform secondary seek.
                 while (true) {
                     R = secondary_seek(data, key, R);
                     if (R == NULL) {
@@ -518,7 +518,7 @@ template <typename skey_t, typename sval_t, class RecMgr, class Compare>
 int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_window_operation(thread_data_t<skey_t, sval_t>* data, seekRecord_t<skey_t, sval_t>* R, skey_t newKey, sval_t value) {
     node_t<skey_t, sval_t> * newInt;
     node_t<skey_t, sval_t> * newLeaf;
-    //		if(data->recycledNodes.empty()){		
+    //		if(data->recycledNodes.empty()){
 //    node_t<skey_t, sval_t> * allocedNodeArr = (node_t<skey_t, sval_t> *)malloc(2 * sizeof (struct node_t<skey_t, sval_t>)); // new pointerNode_t[2];
 //    newInt = &allocedNodeArr[0];
 //    newLeaf = &allocedNodeArr[1];
@@ -526,22 +526,22 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
     if (newInt == NULL) {
         setbench_error("out of memory");
     }
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newInt);
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newInt);
+// #endif
     newLeaf = recmgr->template allocate<node_t<skey_t, sval_t>>(data->id);
     if (newLeaf == NULL) {
         setbench_error("out of memory");
     }
-#ifdef GSTATS_HANDLE_STATS
-    GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newLeaf);
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//     GSTATS_APPEND(data->id, node_allocated_addresses, (long long) newLeaf);
+// #endif
 
-    /*		}	
+    /*		}
                     else{
                             // reuse memory of previously allocated nodes.
                             newInt = data->recycledNodes.back();
-                            data->recycledNodes.pop_back();			
+                            data->recycledNodes.pop_back();
                             newLeaf = data->recycledNodes.back();
                             data->recycledNodes.pop_back();
                     }
@@ -569,7 +569,7 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
 
     }
 
-    // cas to replace window		
+    // cas to replace window
     AO_t newCasField;
     newCasField = create_child_word(newInt, UNMARK, UNFLAG);
     int result;
@@ -580,11 +580,11 @@ int natarajan_ext_bst_lf<skey_t, sval_t, RecMgr, Compare>::perform_one_insert_wi
         result = atomic_cas_full(&R->parent->child.AO_val2, R->pL, newCasField);
     }
     if (result == 1) {
-        // successfully inserted.			
+        // successfully inserted.
         //data->numInsert++;
         return 1;
     } else {
-        // reuse data and pointer nodes				
+        // reuse data and pointer nodes
         recmgr->deallocate(data->id, newInt);
         recmgr->deallocate(data->id, newLeaf);
         //data->recycledNodes.push_back(newInt);

@@ -1,6 +1,7 @@
 [submodule "common/recordmgr"]
 	path = common/recordmgr
 	url = https://gitlab.com/trbot86/recordmanager.git
+	update = merge
 [submodule "tools"]
 	path = tools
 	url = https://gitlab.com/trbot86/tools.git

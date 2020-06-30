@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   globals_extern.h
  * Author: trbot
  *
@@ -45,7 +45,7 @@ extern std::atomic_bool ___validateops;
 #endif
 
 /**
- * Configure global statistics using gstats_global.h and gstats.h
+ * Enable global statistics access using gstats_global.h
  */
 
 #include "gstats_global.h"
@@ -60,21 +60,34 @@ extern std::atomic_bool ___validateops;
  * Configure record manager: reclaimer, allocator and pool
  */
 
+#ifndef PRINTS
+    #define STR(x) XSTR(x)
+    #define XSTR(x) #x
+    #define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
+    #define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
+#endif
+
 #define _EVAL(a) a
-#define _PASTE2(a, b) a##b
-#define PASTE(a, b) _PASTE2(a, b)
+#define _PASTE2(a,b) a##b
+#define PASTE(a,b) _PASTE2(a,b)
 #ifdef RECLAIM_TYPE
-    #define RECLAIM PASTE(reclaimer_, RECLAIM_TYPE)
+    #define RECLAIM PASTE(reclaimer_,RECLAIM_TYPE)
+    // #define RECLAIM_DOT_H PASTE(RECLAIM,.h)
+    #include STR(RECLAIM.h)
 #else
     #define RECLAIM reclaimer_debra
 #endif
 #ifdef ALLOC_TYPE
-    #define ALLOC PASTE(allocator_, ALLOC_TYPE)
+    #define ALLOC PASTE(allocator_,ALLOC_TYPE)
+    // #define ALLOC_DOT_H PASTE(ALLOC,.h)
+    #include STR(ALLOC.h)
 #else
     #define ALLOC allocator_new
 #endif
 #ifdef POOL_TYPE
-    #define POOL PASTE(pool_, POOL_TYPE)
+    #define POOL PASTE(pool_,POOL_TYPE)
+    // #define POOL_DOT_H PASTE(POOL,.h)
+    #include STR(POOL.h)
 #else
     #define POOL pool_none
 #endif

@@ -29,8 +29,26 @@ typedef long long test_type;
     #define DEBUG_PRINT_ARENA_STATS
 #endif
 
-// configure global statistics tracking and output using GSTATS (common/gstats/)
-#include "configure_gstats.h" // note: it is crucial that this is included before any other of the other headers below
+
+
+
+/******************************************************************************
+ * Configure global statistics tracking & output using GSTATS (common/gstats)
+ * Note: it is crucial that this import occurs before any user headers
+ * (that might use GSTATS) are included.
+ *
+ * This is because it define the macro GSTATS_HANDLE_STATS, which is
+ * (read: should be) used by all user includes to determine whether to perform
+ * any GSTATS_ calls.
+ *
+ * Thus, including this before all other user headers ENABLES GSTATS in them.
+ *****************************************************************************/
+#include "define_global_statistics.h"
+#include "gstats_global.h" // include the GSTATS code and macros (crucial this happens after GSTATS_HANDLE_STATS is defined)
+// Note: any statistics trackers created by headers included below have to be handled separately... we do this below.
+
+
+
 
 // each thread saves its own thread-id (should be used primarily within this file--could be eliminated to improve software engineering)
 __thread int tid = 0;
@@ -60,13 +78,6 @@ PAD;
 #include "papi_util_impl.h"
 #include "rq_provider.h"
 #include "keygen.h"
-
-#ifndef PRINTS
-    #define STR(x) XSTR(x)
-    #define XSTR(x) #x
-    #define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
-    #define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
-#endif
 
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
 #include "tree_stats.h"
@@ -131,6 +142,52 @@ PAD;
 #define DEINIT_ALL \
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
+
+
+
+
+
+/******************************************************************************
+ * Define global variables to store the numerical IDs of all GSTATS global
+ * statistics trackers that have been defined over all files #included.
+ *
+ * It is CRUCIAL that this occurs AFTER ALL user #includes (so we catch ALL
+ * GSTATS statistics trackers/counters/timers defined by those #includes).
+ *
+ * This includes the statistics trackers defined in define_global_statistics.h
+ * as well any that were setup by a particular data structure / allocator /
+ * reclaimer / pool / library that was #included above.
+ *
+ * This is a manually constructed list that you are free to add to if you
+ * create, e.g., your own data structure specific statistics trackers.
+ * They will only be included / printed when your data structure is active.
+ *
+ * If you add something here, you must also add to a similar code block
+ * involving __CREATE_STAT / CREATE_ALL_STATS below...
+ *****************************************************************************/
+GSTATS_DECLARE_ALL_STAT_IDS;
+#ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
+    GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__DECLARE_STAT_ID);
+#endif
+#ifdef GSTATS_HANDLE_STATS_POOL_NUMA
+    GSTATS_HANDLE_STATS_POOL_NUMA(__DECLARE_STAT_ID)
+#endif
+#ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
+    GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__DECLARE_STAT_ID);
+#endif
+// Create storage for the CONTENTS of gstats counters (for MAX_THREADS_POW2 threads)
+GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
+// Create storage for the IDs of all global counters defined in define_global_statistics.h
+
+
+
+#define TIMING_START(s) \
+    std::cout<<"timing_start "<<s<<"..."<<std::endl; \
+    GSTATS_TIMER_RESET(tid, timer_duration);
+#define TIMING_STOP \
+    std::cout<<"timing_elapsed "<<(GSTATS_TIMER_SPLIT(tid, timer_duration)/1000000000.)<<"s"<<std::endl;
+
+
 
 
 
@@ -459,9 +516,6 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
     std::cout<<"pref_size="<<sz<<std::endl;
 //    std::cout<<"pref_millis="<<elapsed<<std::endl;
     GSTATS_CLEAR_ALL;
-    GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
-    GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
-    GSTATS_CLEAR_VAL(timer_bag_rotation_start, get_server_clock());
 }
 
 template <class GlobalsT>
@@ -851,7 +905,6 @@ void trial(GlobalsT * g) {
     COUTATOMIC(std::endl);
 
     COUTATOMIC(((g->elapsedMillis+g->elapsedMillisNapping)/1000.)<<"s"<<std::endl);
-    std::cout<<"gstats_timer_elapsed timer_bag_rotation_start="<<GSTATS_TIMER_ELAPSED(0, timer_bag_rotation_start)/1000000000.<<std::endl;
 
     papi_deinit_program();
     DEINIT_ALL;
@@ -881,16 +934,6 @@ void printOutput(GlobalsT * g) {
 
 #ifdef USE_GSTATS
     GSTATS_PRINT;
-    std::cout<<std::endl;
-
-//    for (int threadID = 0; threadID < TOTAL_THREADS; ++threadID) {
-//        for (int index=0;index<10;++index) {
-//            auto startTime = GSTATS_GET_IX(threadID, thread_reclamation_start, index);
-//            auto endTime = GSTATS_GET_IX(threadID, thread_reclamation_end, index);
-//            std::cout<<"tid="<<threadID<<" startTime="<<startTime<<" endTime="<<endTime<<std::endl;
-//        }
-//    }
-
     std::cout<<std::endl;
 #endif
 
@@ -1035,15 +1078,27 @@ void main_continued_with_globals(GlobalsT * g) {
         exit(-1);
     }
 
-    // setup per-thread statistics
+    /******************************************************************************
+     * Perform the actual creation of all GSTATS global statistics trackers that
+     * have been defined over all files #included.
+     *
+     * This includes the statistics trackers defined in define_global_statistics.h
+     * as well any that were setup by a particular data structure / allocator /
+     * reclaimer / pool / library that was #included above.
+     *
+     * This is a manually constructed list that you are free to add to if you
+     * create, e.g., your own data structure specific statistics trackers.
+     * They will only be included / printed when your data structure is active.
+     *****************************************************************************/
     std::cout<<std::endl;
+    #ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
+        GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__CREATE_STAT);
+    #endif
+    #ifdef GSTATS_HANDLE_STATS_POOL_NUMA
+        GSTATS_HANDLE_STATS_POOL_NUMA(__CREATE_STAT)
+    #endif
     GSTATS_CREATE_ALL;
     std::cout<<std::endl;
-
-    // initialize a few stat timers to the current time (since i split their values, and want a reasonably recent starting time for the first split)
-    GSTATS_CLEAR_VAL(timersplit_epoch, get_server_clock());
-    GSTATS_CLEAR_VAL(timersplit_token_received, get_server_clock());
-    GSTATS_CLEAR_VAL(timer_bag_rotation_start, get_server_clock());
 
     trial(g);
     printOutput(g);

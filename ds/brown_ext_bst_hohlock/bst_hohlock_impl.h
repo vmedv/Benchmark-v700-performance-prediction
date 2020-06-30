@@ -34,9 +34,9 @@ namespace bst_hohlock_ns {
                 COUTATOMICTID("ERROR: could not allocate node"<<std::endl);
                 exit(-1);
             }
-        #ifdef __HANDLE_STATS
-            GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
-        #endif
+        // #ifdef GSTATS_HANDLE_STATS
+        //     GSTATS_APPEND(tid, node_allocated_addresses, ((long long) newnode)%(1<<12));
+        // #endif
             newnode->key = key;
             newnode->value = value;
             newnode->left = left;
@@ -45,7 +45,7 @@ namespace bst_hohlock_ns {
             return newnode;
         }
         const V doInsert(const int tid, const K& key, const V& val, bool onlyIfAbsent);
-        
+
         int init[MAX_THREADS_POW2] = {0,};
     PAD;
 
@@ -57,7 +57,7 @@ public:
         /**
          * This function must be called once by each thread that will
          * invoke any functions on this class.
-         * 
+         *
          * It must be okay that we do this with the main thread and later with another thread!!!
          */
         void initThread(const int tid) {
@@ -122,7 +122,7 @@ public:
         RecManager * debugGetRecMgr() { return recmgr; }
         nodeptr debug_getEntryPoint() { return root; }
     };
-    
+
 }
 
 template<class K, class V, class Compare, class RecManager>
@@ -165,13 +165,13 @@ const V bst_hohlock_ns::bst_hohlock<K,V,Compare,RecManager>::doInsert(const int 
         l = (p->key == NO_KEY || cmp(key, p->key)) ? p->left : p->right;
     }
     // now, p and l are locked
-    
+
     // if we find the key in the tree already
     if (key == l->key) {
         auto result = l->value;
         if (!onlyIfAbsent) {
             l->value = val;
-        }        
+        }
         releaseLock(&p->lock);
         releaseLock(&l->lock);
         return result;
@@ -204,7 +204,7 @@ const std::pair<V,bool> bst_hohlock_ns::bst_hohlock<K,V,Compare,RecManager>::era
         return std::pair<V,bool>(NO_VALUE, false);
     }
     // now, gp and p are locked, and l is non-null
-    
+
     while (1) {
         acquireLock(&l->lock);
         if (l->left == NULL) break;
@@ -214,7 +214,7 @@ const std::pair<V,bool> bst_hohlock_ns::bst_hohlock<K,V,Compare,RecManager>::era
         l = (p->key == NO_KEY || cmp(key, p->key)) ? p->left : p->right;
     }
     // now, gp, p and l are all locked
-    
+
     // if we fail to find the key in the tree
     if (key != l->key) {
         releaseLock(&gp->lock);

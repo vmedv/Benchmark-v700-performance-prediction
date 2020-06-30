@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   rq_dcssp.h
  * Author: trbot
  *
@@ -18,7 +18,7 @@ extern RandomFNV1A rngs[MAX_THREADS_POW2*PREFETCH_SIZE_WORDS];
     } \
 }
 #else
-#define DELAY_UP_TO(n) 
+#define DELAY_UP_TO(n)
 #endif
 
 #ifdef RQ_LOCKFREE_WAITS_FOR_DTIME
@@ -72,12 +72,12 @@ private:
             char bytes[__RQ_THREAD_DATA_SIZE]; // avoid false sharing (note: anon struct above contains around 96 bytes)
         };
     } __attribute__((aligned(__RQ_THREAD_DATA_SIZE)));
-    
+
 #ifdef COUNT_CODE_PATH_EXECUTIONS
     #define COUNT_CODE_PATH(path) { assert((path) < CODE_COVERAGE_MAX_PATHS); (++threadData[tid].codePathExecutions[(path)]); }
     long long codePathExecutions[CODE_COVERAGE_MAX_PATHS];
 #else
-    #define COUNT_CODE_PATH(path) 
+    #define COUNT_CODE_PATH(path)
 #endif
 
     #define TIMESTAMP_NOT_SET 0
@@ -96,7 +96,7 @@ private:
     #define NODE_NOT_DELETED_BY_THREAD -1
     dcsspProvider<void *> * prov;
 //    PAD;
-    
+
     DataStructure * ds;
     RecordManager * const recmgr;
 
@@ -114,7 +114,7 @@ public:
         }
 #endif
     }
-    
+
     ~RQProvider() {
 #ifdef COUNT_CODE_PATH_EXECUTIONS
         std::cout<<"code path executions:";
@@ -132,13 +132,13 @@ public:
 //            threadData[tid].hashlist->destroy();
 //            delete threadData[tid].hashlist;
 //        }
-        
+
         prov->debugPrint();
         delete prov;
         delete[] threadData;
         DEBUG_DEINIT_RQPROVIDER(NUM_PROCESSES);
     }
-    
+
     // invoke before a given thread can invoke any functions on this object
     void initThread(const int tid) {
         if (init[tid]) return; else init[tid] = !init[tid];
@@ -204,7 +204,7 @@ public:
                 ? prov->readPtr(tid, (casword_t *) addr)
                 : prov->readVal(tid, (casword_t *) addr));
     }
-    
+
     // IF DATA STRUCTURE PERFORMS LOGICAL DELETION
     // run some time BEFORE the physical deletion of a node
     // whose key has ALREADY been logically deleted.
@@ -228,7 +228,7 @@ public:
         }
         assert(threadData[tid].numAnnouncements >= 0);
     }
-    
+
     // IF DATA STRUCTURE PERFORMS LOGICAL DELETION
     // run AFTER performing announce_physical_deletion,
     // if the cas that was trying to physically delete node succeeded.
@@ -241,15 +241,15 @@ public:
         threadData[tid].numAnnouncements -= i;
         assert(threadData[tid].numAnnouncements >= 0);
     }
-    
+
 private:
-    
+
     inline void set_insertion_timestamps(
             const int tid,
             const long long ts,
             NodeType * const * const insertedNodes,
             NodeType * const * const deletedNodes) {
-        
+
         // set insertion timestamps
         // for each i_node in insertedNodes
         for (int i_nodeix=0;insertedNodes[i_nodeix];++i_nodeix) {
@@ -262,16 +262,16 @@ private:
             const long long ts,
             NodeType * const * const insertedNodes,
             NodeType * const * const deletedNodes) {
-        
+
         // set deletion timestamps
         // for each d_node in deletedNodes
         for (int d_nodeix=0;deletedNodes[d_nodeix];++d_nodeix) {
             deletedNodes[d_nodeix]->dtime = ts;
         }
     }
-    
+
 public:
-    
+
     // replace the linearization point of an update that inserts or deletes nodes
     // with an invocation of this function if the linearization point is a WRITE
     template <typename T>
@@ -286,7 +286,7 @@ public:
             // physical deletion will happen at the same time as logical deletion
             announce_physical_deletion(tid, deletedNodes);
         }
-        
+
         casword_t old1;
         while (true) {
             old1 = (casword_t) timestamp;
@@ -306,7 +306,7 @@ public:
 
         set_insertion_timestamps(tid, old1 /* timestamp */, insertedNodes, deletedNodes);
         set_deletion_timestamps(tid, old1 /* timestamp */, insertedNodes, deletedNodes);
-        
+
         // discard the payloads (insertedNodes and deletedNodes) in this thread's descriptor
         // so other threads can't access them far in the future if we become QUIESCENT and sleep for a long time
         // (must be performed after setting itimes and dtimes, but before endOp)
@@ -316,7 +316,7 @@ public:
             // physical deletion will happen at the same time as logical deletion
             physical_deletion_succeeded(tid, deletedNodes);
         }
-        
+
 #if defined USE_RQ_DEBUGGING
         DEBUG_RECORD_UPDATE_CHECKSUM<K,V>(tid, old1 /* timestamp */, insertedNodes, deletedNodes, ds);
 #endif
@@ -338,7 +338,7 @@ public:
             // physical deletion will happen at the same time as logical deletion
             announce_physical_deletion(tid, deletedNodes);
         }
-        
+
         casword_t old2 = (casword_t) lin_oldval;
         casword_t new2 = (casword_t) lin_newval;
         dcsspresult_t result;
@@ -358,12 +358,12 @@ public:
                 // so other threads can't access them far in the future if we become QUIESCENT and sleep for a long time
                 // (must be performed after setting itimes and dtimes, but before endOp)
                 prov->discardPayloads(tid);
-                
+
                 if (!logicalDeletion) {
                     // physical deletion will happen at the same time as logical deletion
                     physical_deletion_succeeded(tid, deletedNodes);
-                }             
-                
+                }
+
 #if defined USE_RQ_DEBUGGING
                 DEBUG_RECORD_UPDATE_CHECKSUM<K,V>(tid, old1 /* timestamp */, insertedNodes, deletedNodes, ds);
 #endif
@@ -375,7 +375,7 @@ public:
                     // physical deletion will happen at the same time as logical deletion
                     physical_deletion_failed(tid, deletedNodes);
                 }
-                
+
                 break;
             }
         }
@@ -396,21 +396,21 @@ private:
     inline int __traversal_try_add(const int tid, NodeType * const node, K * const outputKeys, V * const outputValues, const K& lo, const K& hi, bool foundDuringTraversal) {
 
         // rqResultKeys should have space for MAX_KEYS_PER_NODE keys, AT LEAST
-        
+
         // in the following, rather than having deeply nested if-else blocks,
         // we return asap, and list facts that must be true if we didn't return
         assert(foundDuringTraversal || !logicalDeletion || ds->isLogicallyDeleted(tid, node));
 
         // TODO: ensure this makes sense when called with announced nodes
-        
+
         long long itime = node->itime;
         if (itime != TIMESTAMP_NOT_SET & node->itime >= threadData[tid].rq_lin_time) return 0; // node was inserted after the range query
         // fact: either itime was not set above, or node was inserted before rq
-        
+
         ///////////////////////// HANDLE UNKNOWN ITIME /////////////////////////
 
         // TODO: try adding a bit of spinning before falling back to the full lock-free solution
-        
+
         // determine if any other process inserted, or is trying to insert node, and, if so, when
         for (int otherTid=0; (itime = node->itime) == TIMESTAMP_NOT_SET && otherTid<NUM_PROCESSES; ++otherTid) if (otherTid != tid) {
             tagptr_t tagptr = prov->getDescriptorTagptr(otherTid);              // try to get a snapshot of otherTid's dcssp descriptor
@@ -431,7 +431,7 @@ private:
                 break; // process inserted node at time snap.old1, BEFORE the RQ
             }
             // fact: state is UNDECIDED
-            
+
             // now we try to help
             casword_t addr2 = *snap.addr2;
             if (addr2 == tagptr) {                                              // addr2 indeed points to the dcssp descriptor. the linearization point of the dcssp operation occurs after this step, so the dcssp might have been linearized, but not yet had its state set.
@@ -445,7 +445,7 @@ private:
             int state2 = DESC_READ_FIELD(valid, ptr->mutables, tagptr, DCSSP_MUTABLES_MASK_STATE, DCSSP_MUTABLES_OFFSET_STATE);
             if (!valid) continue; // goto check next process                    // the read of the state field was invalid, which means that the dcssp operation has terminated, the next dcssp operation by otherTid has begun. since the next dcssp operation has begun, and each high-level data structure operation performs only one successful dcssp (in a call to linearize_update_at_...), if this dcssp that finished in fact inserted node, then the next dcssp would be part of the next high-level operation. thus, if node->itime was inserted by the finished dcssp, then the high-level operation that performed this dcssp will already have set node->itime.
             // fact: the read of state was valid
-            
+
             if (state2 == DCSSP_STATE_SUCCEEDED) {                              // we are in case (b) described above. the dcssp operation finished, and insert node. to determine WHEN it inserted node, we look at the argument old1 to the dcssp, which contains the timestamp when the dcssp took place. (observe that this is the value process otherTid would write to node->itime)
                 if (snap.old1 >= threadData[tid].rq_lin_time) return 0;         // node was inserted after rq
                 break; // process inserted node at time snap.old1, BEFORE the RQ
@@ -456,7 +456,7 @@ private:
         if (itime != TIMESTAMP_NOT_SET && itime >= threadData[tid].rq_lin_time) return 0; // node was inserted after rq
 
         /////////////// HANDLE LOGICAL DELETION AND CHECK DTIME ////////////////
-        
+
         long long dtime = TIMESTAMP_NOT_SET;
 
         if (!logicalDeletion && foundDuringTraversal) goto tryAddToRQ;          // no logical deletion. since node was inserted before the range query, and the traversal encountered it, it must have been deleted AFTER the traversal encountered it.
@@ -468,9 +468,9 @@ private:
 
         if (logicalDeletion && !ds->isLogicallyDeleted(tid, node)) goto tryAddToRQ; // if logical deletion is used with marking, the fact that node was inserted before the range query, and that the traversal encountered node, is NOT enough to argue that node was in the data structure when the traversal started. why? when the traversal encountered node, it might have already been marked. so, we check if node is marked. if not, then the node has not yet been deleted.
         // fact: logical deletion ==> node has been logically deleted
-        
+
         ///////////////////////// HANDLE UNKNOWN DTIME /////////////////////////
-        
+
         // determine if any other process is trying/tried to delete node
         for (int otherTid=0; (dtime = node->dtime) == TIMESTAMP_NOT_SET && otherTid<NUM_PROCESSES; ++otherTid) if (otherTid != tid) {
             tagptr_t tagptr = prov->getDescriptorTagptr(otherTid);              // try to get a snapshot of otherTid's dcssp descriptor
@@ -519,8 +519,8 @@ private:
                 goto tryAddToRQ; // node was deleted by this process after rq
             }
             // fact: state is UNDECIDED
-            
-            // maya: in logicalDeletion, since the node is marked the DCSS was successful and only the dtime is not yet set. Thus, UNDECIDED means that otherThread did not mark the node, it was some other thread and we can continue. 
+
+            // maya: in logicalDeletion, since the node is marked the DCSS was successful and only the dtime is not yet set. Thus, UNDECIDED means that otherThread did not mark the node, it was some other thread and we can continue.
             if (logicalDeletion) continue; // goto check next process
 
             // now we try to help
@@ -546,7 +546,7 @@ private:
             }
         }
         if(dtime == TIMESTAMP_NOT_SET) {
-            assert(!logicalDeletion); 
+            assert(!logicalDeletion);
             assert(!foundDuringTraversal);
             goto tryAddToRQ; // no process deleted node before the range query
         }
@@ -556,13 +556,13 @@ private:
 
         ///////////////////// TRY TO ADD NODE'S KEYS TO RQ /////////////////////
         // note: this way of organizing this decision tree favors trees with fat multi-key nodes, because getKeys is delayed as long as possible.
-        
+
 tryAddToRQ:
         // fetch the node's keys that are in the set
         int cnt = ds->getKeys(tid, node, outputKeys, outputValues);
         assert(cnt < RQ_DEBUGGING_MAX_KEYS_PER_NODE);
         if (cnt == 0) return 0;                                                 // node doesn't contain any keys that are in the set and in the desired range
-        
+
         // note: in the following loop, we shift keys in the outputKeys array left to eliminate any that ultimately should not be added to the range query
         int numNewKeys = 0;
         for (int i=0;i<cnt;++i) {                                               // decide whether key = outputKeys[i] should be in the range query
@@ -602,12 +602,12 @@ doNotAddToRQ: (0);
         assert(*startIndex <= RQSIZE);
 #endif
     }
-    
+
 public:
     inline void traversal_try_add(const int tid, NodeType * const node, K * const rqResultKeys, V * const rqResultValues, int * const startIndex, const K& lo, const K& hi) {
         traversal_try_add(tid, node, rqResultKeys, rqResultValues, startIndex, lo, hi, true);
     }
-    
+
     // invoke at the end of each traversal:
     // any nodes that were deleted during the traversal,
     // and were consequently missed during the traversal,
@@ -618,10 +618,10 @@ public:
         SOFTWARE_BARRIER;
         long long end_timestamp = timestamp;
         SOFTWARE_BARRIER;
-        
+
 #if 0
         std::vector<NodeType *> nodes;
-        
+
         // collect nodes announced by other processes
         for (int otherTid=0;otherTid<NUM_PROCESSES;++otherTid) if (otherTid != tid) {
             int sz = threadData[otherTid].numAnnouncements;
@@ -634,7 +634,7 @@ public:
             }
         }
         SOFTWARE_BARRIER;
-        
+
         // collect epoch bags of other processes (MUST be after checking announcements!)
         blockbag<NodeType> * all_bags[NUM_PROCESSES*NUMBER_OF_EPOCH_BAGS+1];
         std::vector<blockbag_iterator<NodeType>> all_iterators;
@@ -655,12 +655,12 @@ public:
             for (; all_iterators[ix] != all_bags[ix]->end(); all_iterators[ix]++) {
                 NodeType * node = (*all_iterators[ix]);
                 nodes.push_back(node);
-                
+
                 ++numVisitedInEpochBags;
-                
+
                 long long dtime = node->dtime;
                 if (dtime != TIMESTAMP_NOT_SET && dtime > end_timestamp) continue;
-                
+
                 if (!(logicalDeletion && canRetireNodesLogicallyDeletedByOtherProcesses)) {
                     // if we cannot retire nodes that are logically deleted
                     // by other processes, then we always retire nodes in
@@ -673,7 +673,7 @@ public:
                 }
             }
         }
-        
+
         // visit collected nodes
         for (auto it = nodes.begin(); it != nodes.end(); it++) {
             NodeType * node = *it;
@@ -691,7 +691,7 @@ public:
             }
         }
         SOFTWARE_BARRIER;
-        
+
         // collect epoch bags of other processes (MUST be after checking announcements!)
         blockbag<NodeType> * all_bags[NUM_PROCESSES*NUMBER_OF_EPOCH_BAGS+1];
         std::vector<blockbag_iterator<NodeType>> all_iterators;
@@ -705,7 +705,7 @@ public:
                 ++numIterators;
             }
         }
-        
+
         int numSkippedInEpochBags = 0;
         int numVisitedInEpochBags = 0;
         for (int ix = 0; ix < numIterators; ++ix) {
@@ -718,7 +718,7 @@ public:
 
                 long long dtime = node->dtime;
                 if (dtime != TIMESTAMP_NOT_SET && dtime > end_timestamp) continue;
-                
+
                 --numSkippedInEpochBags;
 
                 if (!(logicalDeletion && canRetireNodesLogicallyDeletedByOtherProcesses)) {
@@ -735,9 +735,9 @@ public:
                 traversal_try_add(tid, node, rqResultKeys, rqResultValues, startIndex, lo, hi, false);
             }
         }
-        
+
 #endif
-        
+
 #if defined MICROBENCH && !defined NDEBUG
         if (*startIndex > RQSIZE) {
             std::cout<<"ERROR: *startIndex="<<(*startIndex)<<" is unexpectedly greater than or equal to RQSIZE="<<RQSIZE<<" (lo="<<lo<<" hi="<<hi<<")"<<std::endl;
@@ -750,11 +750,10 @@ public:
         }
 #endif
 
-#ifdef GSTATS_HANDLE_STATS
-
-        GSTATS_ADD_IX(tid, skipped_in_bags, numSkippedInEpochBags, threadData[tid].rq_lin_time);
-        GSTATS_ADD_IX(tid, visited_in_bags, numVisitedInEpochBags, threadData[tid].rq_lin_time);
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_ADD_IX(tid, skipped_in_bags, numSkippedInEpochBags, threadData[tid].rq_lin_time);
+//         GSTATS_ADD_IX(tid, visited_in_bags, numVisitedInEpochBags, threadData[tid].rq_lin_time);
+// #endif
         DEBUG_RECORD_RQ_VISITED(tid, threadData[tid].rq_lin_time, numVisitedInEpochBags);
         DEBUG_RECORD_RQ_SIZE(*startIndex);
         DEBUG_RECORD_RQ_CHECKSUM(tid, threadData[tid].rq_lin_time, rqResultKeys, *startIndex);

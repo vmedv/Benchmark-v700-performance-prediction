@@ -1,11 +1,11 @@
-/* 
+/*
  * File:   rq_rwlock.h
  * Author: trbot
  *
  * Created on April 20, 2017, 1:03 PM
- * 
+ *
  * Implementation of Shahar Timnat's Iterator algorithm.
- * 
+ *
  * WARNING:
  * 1. Shahar's algorithm ONLY supports data structures with logical deletion.
  * 2. It only supports data structures where each node contains ONE key.
@@ -51,13 +51,13 @@ private:
     PAD;
     __rq_thread_data * threadData;
 //    PAD;
-    
+
     DataStructure * const ds;
     RecordManager * const recmgr;
     PAD;
     SnapCollector<NodeType,K> * volatile snapPointer;
     PAD;
-    
+
     int init[MAX_THREADS_POW2] = {0,};
     PAD;
 
@@ -66,22 +66,22 @@ public:
         assert(logicalDeletion); // Timnat's iterator algorithm REQUIRES logical deletion!
         if (pthread_rwlock_init(&rwlock, NULL)) setbench_error("could not init rwlock");
         threadData = new __rq_thread_data[numProcesses];
-        
+
         const int dummyTid = 0;
-        
+
         recmgr->initThread(dummyTid); // must initialize record manager before allocating!!
         initThread(dummyTid);
-        
+
         // initialize dummy snap collector
         snapPointer = recmgr->template allocate<SnapCollector<NodeType,K> >(dummyTid);
-#ifdef GSTATS_HANDLE_STATS
-        GSTATS_APPEND(dummyTid, extra_type1_allocated_addresses, ((long long) snapPointer)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//         GSTATS_APPEND(dummyTid, extra_type1_allocated_addresses, ((long long) snapPointer)%(1<<12));
+// #endif
         snapPointer->init(dummyTid, numProcesses, recmgr, ds->KEY_MIN, ds->KEY_MAX+1);
         snapPointer->BlockFurtherPointers(dummyTid, recmgr);
         snapPointer->Deactivate(NULL, NULL, NULL);
         snapPointer->BlockFurtherReports();
-        
+
         DEBUG_INIT_RQPROVIDER(numProcesses);
     }
 
@@ -140,7 +140,7 @@ public:
         }
         SOFTWARE_BARRIER;
     }
-    
+
     /**
      * Added function only for Timnat's SnapCollector.
      * This must be invoked just before the return statement of every insertion
@@ -155,7 +155,7 @@ public:
         }
         SOFTWARE_BARRIER;
     }
-    
+
     /**
      * Added function only for Timnat's SnapCollector.
      * This can be invoked to determine if the current SnapCollector is active.
@@ -163,7 +163,7 @@ public:
     inline bool traversal_is_active(const int tid) {
         return threadData[tid].currentSnapCollector->IsActive();
     }
-    
+
 private:
     inline void delete_report_target_key(const int tid, NodeType * const node) {
         if (node) {
@@ -174,9 +174,9 @@ private:
             SOFTWARE_BARRIER;
         }
     }
-    
+
 public:
-    
+
     // IF DATA STRUCTURE PERFORMS LOGICAL DELETION
     // run some time BEFORE the physical deletion of a node
     // whose key has ALREADY been logically deleted.
@@ -189,7 +189,7 @@ public:
     // run AFTER performing announce_physical_deletion,
     // if the cas that was trying to physically delete node failed.
     inline void physical_deletion_failed(const int tid, NodeType * const * const deletedNodes) {}
-    
+
     // IF DATA STRUCTURE PERFORMS LOGICAL DELETION
     // run AFTER performing announce_physical_deletion,
     // if the cas that was trying to physically delete node succeeded.
@@ -199,7 +199,7 @@ public:
             recmgr->retire(tid, deletedNodes[i]);
         }
     }
-    
+
     // replace the linearization point of an update that inserts or deletes nodes
     // with an invocation of this function if the linearization point is a WRITE
     template <typename T>
@@ -209,7 +209,7 @@ public:
             const T& lin_newval,
             NodeType * const * const insertedNodes,
             NodeType * const * const deletedNodes) {
-        
+
         assert((insertedNodes[0] && !deletedNodes[0])
                 || (!insertedNodes[0] && deletedNodes[0]));
 
@@ -224,7 +224,7 @@ public:
 #ifdef RQ_USE_TIMESTAMPS
         if (pthread_rwlock_unlock(&rwlock)) setbench_error("could not read-unlock rwlock");
 #endif
-        
+
         if (insertedNodes[0]) insert_readonly_report_target_key(tid, insertedNodes[0]);
         if (deletedNodes[0]) delete_report_target_key(tid, deletedNodes[0]);
 
@@ -233,7 +233,7 @@ public:
 #endif
         return lin_newval;
     }
-    
+
     // replace the linearization point of an update that inserts or deletes nodes
     // with an invocation of this function if the linearization point is a CAS
     template <typename T>
@@ -254,12 +254,12 @@ public:
 #else
         long long ts = 1;
 #endif
-        
+
         T res = __sync_val_compare_and_swap(lin_addr, lin_oldval, lin_newval);
 #ifdef RQ_USE_TIMESTAMPS
         if (pthread_rwlock_unlock(&rwlock)) setbench_error("could not read-unlock rwlock");
 #endif
-        
+
         if (res == lin_oldval){
             if (insertedNodes[0]) insert_readonly_report_target_key(tid, insertedNodes[0]);
             if (deletedNodes[0]) delete_report_target_key(tid, deletedNodes[0]);
@@ -275,15 +275,15 @@ public:
     inline void traversal_start(const int tid) {
 #if !defined(RQ_USE_TIMESTAMPS)
         threadData[tid].rq_lin_time = 1;
-#endif        
+#endif
 
         threadData[tid].currentSnapCollector = snapPointer;
         SOFTWARE_BARRIER;
         if (!threadData[tid].currentSnapCollector->IsActive()) {
             SnapCollector<NodeType,K> * candidate = recmgr->template allocate<SnapCollector<NodeType,K> >(tid);
-#ifdef GSTATS_HANDLE_STATS
-            GSTATS_APPEND(tid, extra_type1_allocated_addresses, ((long long) candidate)%(1<<12));
-#endif
+// #ifdef GSTATS_HANDLE_STATS
+//             GSTATS_APPEND(tid, extra_type1_allocated_addresses, ((long long) candidate)%(1<<12));
+// #endif
             candidate->init(tid, NUM_PROCESSES, recmgr, ds->KEY_MIN, ds->KEY_MAX+1);
             if (__sync_bool_compare_and_swap(&snapPointer, threadData[tid].currentSnapCollector, candidate)) {
                 // delay retiring until later, because we've started accepting reports,
@@ -303,7 +303,7 @@ public:
         SnapCollector<NodeType,K> * sc = threadData[tid].currentSnapCollector;
         return sc->AddNode(tid, node, node->key, recmgr);
     }
-    
+
     // invoke at the end of each traversal:
     // any nodes that were deleted during the traversal,
     // and were consequently missed during the traversal,
@@ -318,7 +318,7 @@ public:
         SOFTWARE_BARRIER;
 
         sc->Prepare(tid, recmgr);
-        
+
         NodeType * curr = NULL;
         while ((curr = sc->GetNext(tid))) {
             if (curr->key < lo) continue;
@@ -330,14 +330,14 @@ public:
 #if defined MICROBENCH
         assert(*startIndex <= RQSIZE);
 #endif
-        
+
 #ifdef SNAPCOLLECTOR_PRINT_RQS
 //        for (int i=0;i<*startIndex;++i) {
 //            std::cout<<" "<<rqResultKeys[i];
 //        }
 //        std::cout<<std::endl;
 #endif
-        
+
         DEBUG_RECORD_RQ_SIZE(*startIndex);
         DEBUG_RECORD_RQ_CHECKSUM(tid, threadData[tid].rq_lin_time, rqResultKeys, *startIndex);
 
