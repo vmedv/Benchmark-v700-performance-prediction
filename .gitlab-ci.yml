@@ -24,32 +24,32 @@ compile_microbench_option_coverage:
         - cd microbench
         - echo
         - echo "#########################################################"
-        - echo "## make -j all                                         ##"
+        - echo "## make -j all"
         - echo "#########################################################"
         - make -j all || exit 1
         - echo
         - echo "#########################################################"
-        - echo "## use_asserts=1                                       ##"
+        - echo "## use_asserts=1"
         - echo "#########################################################"
         - make -j all use_asserts=1 || exit 1
         - echo
         - echo "#########################################################"
-        - echo "## use_asserts=1 use_timelines=1                       ##"
+        - echo "## use_asserts=1 use_timelines=1"
         - echo "#########################################################"
         - make -j all use_asserts=1 use_timelines=1 || exit 1
         - echo
         - echo "#########################################################"
-        - echo "## has_libpapi=0                                       ##"
+        - echo "## has_libpapi=0"
         - echo "#########################################################"
         - make -j all has_libpapi=0 || exit 1
         - echo
         - echo "#########################################################"
-        - echo "## has_libpapi=0 has_libnuma=0                         ##"
+        - echo "## has_libpapi=0 has_libnuma=0"
         - echo "#########################################################"
         - make -j all has_libnuma=0 has_libpapi=0 || exit 1
         - echo
         - echo "#########################################################"
-        - echo "## has_libpapi=0 has_libnuma=0 use_openmp=0            ##"
+        - echo "## has_libpapi=0 has_libnuma=0 use_openmp=0"
         - echo "#########################################################"
         - make -j all has_libnuma=0 has_libpapi=0 use_openmp=0 || exit 1
 

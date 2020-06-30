@@ -11,7 +11,6 @@
 ## - stacked bar plots
 ##
 ## - "clean" version of example without comments to show that it's still clear, but also way more concise...
-## - default-off optional web page deploy (really it's a single shell call, and i can just do that in my own non-example scripts, with host detection first...)
 ## - test framework on a different user (proper independence from global tools namespace?)
 ##
 ## - parallel plot construction
