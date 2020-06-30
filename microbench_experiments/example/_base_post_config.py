@@ -3,8 +3,8 @@
 ##
 ## Possible improvements
 ##
+## - some mechanism for passing token "replacement" information to user_plot_style.py etc...
 ## - plotting sanity checks: optional fields for user predictions in plot preparation? %min/max range threshold for warning? predicted rows per data point?
-## - web page generation (specify page variables, then specify which plots to include (filenames with replacement)... can either specify row variable w/range and col variable w/range, or specify where individual plots go in a table (r,c) layout) ; also, add per-row raw data links with text file rows: <a href=...>raw data</a><pre>[usual padded columnar data]</pre>
 ## - break relative path dependency on tools
 ##
 ## - line plots with proper markers and styling
@@ -269,7 +269,7 @@ def _cf_and(f, g):
 ## quote_text only works if there are headers
 ## column_filters only work if there are headers (even if they filter solely on the data)
 ## sep has no effect if columns are aligned
-def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', column_filter=_cf_any):
+def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', column_filter=_cf_any, row_header_html_link=''):
     assert(headers or column_filter == _cf_any)
     assert(headers or not quote_text)
     assert(sep == ' ' or not aligned)
@@ -295,6 +295,11 @@ def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', c
     if not aligned:
         if headers:
             first = True
+
+            if headers and row_header_html_link != '' and row_header_html_link in headers:
+                buf.write(row_header_html_link)
+                first = False
+
             for i, col_name in zip(range(len(headers)), headers):
                 if include_ix[i]:
                     if not first: buf.write(sep)
@@ -304,6 +309,11 @@ def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', c
 
         for row in table:
             first = True
+
+            if headers and row_header_html_link != '' and row_header_html_link in headers:
+                buf.write('</pre><a href="{}"><pre>{}</pre></a><pre>'.format(row_header_html_link, row_header_html_link))
+                first = False
+
             for i, col in zip(range(len(row)), row):
                 if not headers or include_ix[i]:
                     if not first: buf.write(sep)
@@ -321,12 +331,24 @@ def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', c
             cols_w = [ max( [len(str(row[i])) for row in table] ) for i in range(len(table[0])) ]
 
         if headers:
+            if headers and row_header_html_link != '' and row_header_html_link in headers:
+                buf.write( row_header_html_link.ljust(3+len(row_header_html_link)) )
+
             for i, col_name in zip(range(len(headers)), headers):
                 if include_ix[i]:
                     buf.write( str(col_name).ljust(3+cols_w[i]) )
             buf.write('\n')
 
         for row in data_records:
+            if headers and row_header_html_link != '' and row_header_html_link in headers:
+                col_of_row_header = list(filter(lambda __i: (headers[__i] == row_header_html_link), range(len(headers))))[0]
+                value_of_row_header = row[col_of_row_header]
+                desired_width = 3+len(row_header_html_link) - 1
+                spaces_to_add = ''
+                if desired_width > len(str(value_of_row_header)):
+                    spaces_to_add = '.' * (desired_width - len(str(value_of_row_header)))
+                buf.write('</pre><a href="{}"><pre>{}</pre></a><pre>{}</pre><pre>'.format( value_of_row_header, '[view raw data]', spaces_to_add ))
+
             for i, col in zip(range(len(row)), row):
                 if not headers or include_ix[i]:
                     s = str(col)
@@ -370,7 +392,7 @@ if args.plot:
             # print(g['run_params'].keys())
             # print([x not in g['run_params'].keys() for x in plot_set['varying_cols_list']])
             # print(list(filter(lambda col: col not in g['run_params'].keys(), plot_set['varying_cols_list'])))
-            s = 'WARNING: plot_set {} list of varying columns {} contains field(s) {} that are NOT run_params! this is most likely a mistake, as the replacement token for such a field will NOT be well defined (since its value would be unique to a single TRIAL, rather than a plot)!'.format( plot_set['filename'], plot_set['varying_cols_list'], list(filter(lambda col: col not in g['run_params'].keys(), plot_set['varying_cols_list'])) )
+            s = 'WARNING: plot_set {} list of varying columns {} contains field(s) {} that are NOT run_params! this is most likely a mistake, as the replacement token for such a field will NOT be well defined (since its value would be unique to a single TRIAL, rather than a plot)!'.format( plot_set['name'], plot_set['varying_cols_list'], list(filter(lambda col: col not in g['run_params'].keys(), plot_set['varying_cols_list'])) )
             tee(s)
             g['sanity_check_failures'].append(s)
             ## note: this is only a fatal error if the user tries to use such a field as a replacement token...
@@ -385,14 +407,14 @@ if args.plot:
 
             if len(varying_cols_records) != expected_plot_count:
                 tee('txn={}'.format(txn))
-                s = 'WARNING: expected plot_set {} to produce {} plots but it produces {}'.format(plot_set['filename'], expected_plot_count, len(varying_cols_records))
+                s = 'WARNING: expected plot_set {} to produce {} plots but it produces {}'.format(plot_set['name'], expected_plot_count, len(varying_cols_records))
                 tee(s)
                 g['sanity_check_failures'].append(s)
 
         ## sanity check: plot_set producing ZERO plots
         if len(varying_cols_records) == 0:
             tee('txn={}'.format(txn))
-            tee('ERROR: plot_set {} produces ZERO plots'.format(plot_set['filename']))
+            tee('ERROR: plot_set {} produces ZERO plots'.format(plot_set['name']))
             exit(1)                                     ## ZERO is definitely a mistake so fail fast
 
         #################################################################
@@ -444,7 +466,7 @@ if args.plot:
             ## write it to a text file (so we can feed it into a plot command)
             pp_log.pprint(data_records)
 
-            plot_filename = g['replacements']['__dir_data'] + '/' + replace(plot_set['filename']).replace(' ', '_')
+            plot_filename = g['replacements']['__dir_data'] + '/' + replace(plot_set['name']).replace(' ', '_')
             plot_txt_filename = plot_filename.replace('.png', '.txt')
 
             g['replacements']['__plot_filename'] = plot_filename
@@ -484,7 +506,7 @@ if args.plot:
                     tee('ERROR: cannot plot {} with y_axis'.format(ptype))
                     exit(1)
 
-            plot_tool_path = '../../tools/' + plot_tool_path
+            plot_tool_path = get_dir_tools() + '/' + plot_tool_path
             g['replacements']['__plot_tool_path'] = plot_tool_path
 
             ## do the actual plot
@@ -498,9 +520,14 @@ if args.plot:
             g['replacements']['__title'] = title
             g['replacements']['__plot_cmd_args'] = plot_set['plot_cmd_args']
 
-            log('running plot_cmd {}'.format(replace('{__plot_tool_path} -i {__plot_txt_filename} -o {__plot_filename} "{__title}" {__plot_cmd_args}')))
+            plot_style_hooks_file = ''
+            if plot_set['plot_style_hooks_file'] != '':
+                plot_style_hooks_file = ' --style-hooks {}'.format(plot_set['plot_style_hooks_file'])
+
+            cmd='{__plot_tool_path} -i {__plot_txt_filename} -o {__plot_filename} "{__title}" {__plot_cmd_args}' + plot_style_hooks_file
+            log('running plot_cmd {}'.format(replace(cmd)))
             if args.debug_exec_plotcmd: ## debug option to disable plot cmd exec
-                log_replace_and_run('{__plot_tool_path} -i {__plot_txt_filename} -o {__plot_filename} "{__title}" {__plot_cmd_args}')
+                log_replace_and_run(cmd, exit_on_error=True)
 
             #############################################################
             ## Dump FULL COLUMN DATA to the text file
@@ -522,12 +549,10 @@ if args.plot:
             data_records = cur.fetchall()
 
             ## dump to disk
-            plot_txt_file = open(plot_txt_filename, 'a')
-            plot_txt_file.write('\n\n')
-            plot_txt_file.write('## full column dataset\n')
-            plot_txt_file.write('\n')
-            plot_txt_file.write(table_to_str(data_records, header_records, aligned=True))
-            plot_txt_file.close()
+            plot_txt_full_filename= plot_filename.replace('.png', '_full.txt')
+            plot_txt_full_filename = open(plot_txt_full_filename, 'w')
+            plot_txt_full_filename.write(table_to_str(data_records, header_records, aligned=True, row_header_html_link='__file_run_data'))
+            plot_txt_full_filename.close()
 
             #############################################################
             ## Sanity checks on PLOT
@@ -603,7 +628,271 @@ if args.plot:
 
 else:
     tee()
-    tee("## Skipping plot creation")
+    tee('## Skipping plot creation')
+
+#########################################################################
+#### Create html pages to show plots
+#########################################################################
+
+from _templates_html import *
+
+def for_all_combinations(ix, to_enumerate, enumerated_values, func, func_arg):
+    if ix == len(to_enumerate):
+        return [func(enumerated_values, func_arg)]
+    else:
+        field = to_enumerate.keys()[ix]
+        retlist = []
+        for value in to_enumerate[field]:
+            enumerated_values[field] = value
+            retlist += for_all_combinations(1+ix, to_enumerate, enumerated_values, func, func_arg)
+        return retlist
+
+# todo:
+# - preload? gif support?
+#   - hover_html="onmouseover=\\\"this.src='${prefix_escaped}.gif'\\\" onmouseout=\\\"this.src='${prefix_escaped}.png'\\\""
+#   - preloadtags="${preloadtags}<link rel=\\\"preload\\\" as=\\\"image\\\" href=\\\"${prefix_escaped}.gif\\\">"
+
+# design sketch:
+#
+# - design build_html_page_set and descendents so they don't produce pages/tables/rows/cols
+#   for data that is FILTERED OUT.
+#   - i think i'll do this by writing a function that looks at the produced image files,
+#     filters them by the plot_set's page_field_list, table_field, row_field, column_field,
+#     and returns the filtered list.
+#   - the filtering will likely be much easier if i DELETE old entries from the replacement
+#     dict that i'm passing around these functions.
+#     (so it doesn't filter too much by accident)
+#   - with this function, i can easily check at each step whether there are *any* plots
+#     that satisfy the given filters, and continue or cut off that path in the call graph.
+#   - and, i can use this function at the bottom level of the call graph to get
+#     a unique image filename to include in the table cell. dual purpose!
+
+def get_filtered_image_paths(replacement_values, page_set):
+    image_file_pattern = page_set['image_files']
+    to_replace_set = set(s.replace('{', '').replace('}', '') for s in re.findall(r'\{[^\}]*\}', image_file_pattern))
+    auto_replace_set = set(k for k in replacement_values.keys())
+    to_manually_replace_set = to_replace_set - auto_replace_set
+    for to_manually_replace in to_manually_replace_set:
+        image_file_pattern = image_file_pattern.replace('{' + to_manually_replace + '}', '*')
+    image_file_pattern = image_file_pattern.format(**replacement_values).replace(' ', '_')
+    paths_found = glob.glob(get_dir_data() + '/' + image_file_pattern)
+
+    # tee('image_file_pattern       ={}'.format(image_file_pattern))
+    # tee('to_replace_set           ={}'.format(to_replace_set))
+    # tee('auto_replace_set         ={}'.format(auto_replace_set))
+    # tee('to_manually_replace_set  ={}'.format(to_manually_replace_set))
+    # tee('get_filtered_image_paths ={}'.format(image_file_pattern))
+    # tee('glob for this pattern    ={}'.format(paths_found)))
+    return paths_found
+
+
+
+filename_to_html = dict()           ## used by all html building functions below
+filenames_in_navigation = list()    ## used by all html building functions below
+
+
+
+## also builds any raw data subpage linked from this cell
+def get_td_contents_html(replacement_values, page_set):
+    tee('get_td_contents_html: replacement_values = {}'.format(replacement_values))
+
+    ## locate image file (and obtain corresponding text and html file names)
+
+    plot_filename = get_filtered_image_paths(replacement_values, page_set)
+    assert(len(plot_filename) == 1)
+    plot_filename = plot_filename[0]
+    plot_filename = os.path.relpath(plot_filename, get_dir_data())
+
+    plot_txt_filename = plot_filename.replace('.png', '.txt')
+    plot_txt_full_filename = plot_filename.replace('.png', '_full.txt')
+    html_filename = plot_filename.replace('.png', '.html')
+
+    ## construct html for the cell
+
+    td_contents_html = '<a href="{}"><img src="{}" border="0"></a>'.format( html_filename, plot_filename )
+
+    ## create html summary and add it to the filename_to_html global dict...
+    ##
+    ## note: this isn't really the "right" place to do this from an engineering perspective,
+    ##       BUT if i did this somewhere else there would be a LOT of repeated code,
+    ##       as this is the only point in the code where we've already determined exactly
+    ##       which pages, tables, rows, cols, images SHOULD exist in the final output...
+
+    with open(get_dir_data() + '/' + plot_txt_filename, 'r') as f:
+        data_txt = f.read()
+    with open(get_dir_data() + '/' + plot_txt_full_filename, 'r') as f:
+        data_txt_full = f.read()
+
+    content_html = '<pre>{}\n\n{}</pre>'.format(data_txt_full, data_txt)
+    filename_to_html[html_filename] = template_html.replace('{template_content}', content_html)
+
+    return td_contents_html
+
+## also builds any raw data subpages linked from this table
+def get_table_html(replacement_values, page_set, table_field, table_field_value):
+    tee()
+    tee('get_table_html: replacement_values = {}'.format(replacement_values))
+
+    ## if this set of replacement_values yields no actual images, prune this TABLE
+    if len(get_filtered_image_paths(replacement_values, page_set)) == 0: return ''
+
+    column_field = page_set['column_field']
+    column_field_values = [''] if (column_field == '') else g['run_params'][column_field]
+    row_field = page_set['row_field']
+    row_field_values = [''] if (row_field == '') else g['run_params'][row_field]
+
+    ## header: replacement for {template_table_th_list}
+    __table_th_list = ''
+    __table_th_list += template_table_th.format(table_th_text=str(row_field)) ## dummy first column so we can have row titles as well
+
+    for cval in column_field_values:
+        __table_th_list += template_table_th.format(table_th_text=(column_field+'='+str(cval)))
+
+    ## rows: replacement for {template_table_tr_list}
+    __table_tr_list = ''
+
+    for rval in row_field_values:
+        replacement_values[row_field] = str(rval)
+
+        ## if this set of replacement_values yields no actual images, prune this ROW
+        if len(get_filtered_image_paths(replacement_values, page_set)) == 0:
+            tee('pruning row {} in table "{}={} in page {} under replacement_values {}"'.format(rval, table_field, table_field_value, page_set['name'], replacement_values))
+
+        else:
+            __table_tr_td_list = ''                             ## all columns in row: replacement for {template_table_tr_td_list}
+            __table_tr_td = str(rval)                           ## row header
+            __table_tr_td_list += template_table_tr_td.format(table_tr_td_text=__table_tr_td)
+
+            for cval in column_field_values:
+                replacement_values[column_field] = str(cval)    ## one table cell: replacement for {template_table_tr_td}
+
+                ## if this set of replacement_values yields no actual images, prune this CELL
+                if len(get_filtered_image_paths(replacement_values, page_set)) == 0:
+                    tee('pruning cell {} in row {} of table "{}={} in page {} under replacement_values {}"'.format(cval, rval, table_field, table_field_value, page_set['name'], replacement_values))
+
+                else:
+                    cell_html = get_td_contents_html(replacement_values, page_set)
+
+                ## cval
+                __table_tr_td_list += template_table_tr_td.format(table_tr_td_text=cell_html)
+                del replacement_values[column_field]
+
+        ## rval
+        __table_tr_list += template_table_tr.format(template_table_tr_td_list=__table_tr_td_list)
+        del replacement_values[row_field]
+
+    return \
+        template_table.format( \
+            template_table_title=('' if (str(table_field) == '') else ('<h3>' + str(table_field) + ' = ' + str(table_field_value) + '</h3><br>')), \
+            template_table_th_list=__table_th_list, \
+            template_table_tr_list=__table_tr_list \
+        )
+
+
+
+## also builds any raw data pages linked from this one...
+def build_html_page(replacement_values, page_set):
+    tee()
+    tee('build_html_page: replacement_values = {}'.format(replacement_values)) #dict( (k,g['replacements'][k]) for k in page_set['fields']) )
+
+    ## if this set of replacement_values yields no actual images, prune this PAGE
+    if len(get_filtered_image_paths(replacement_values, page_set)) == 0: return None
+
+    content_html = ''
+
+    table_field = page_set['table_field']
+    table_field_values = [''] if (table_field == '') else g['run_params'][table_field]
+    for table_field_value in table_field_values:
+        if table_field != '': replacement_values[table_field] = table_field_value
+        content_html += get_table_html(replacement_values, page_set, table_field, table_field_value)
+        if table_field != '': del replacement_values[table_field]
+
+    ## add field replacements to filename as appropriate
+    filename = page_set['name'].format(replacement_values)
+    keys = page_set['page_field_list']
+    values = [g['replacements'][k] for k in keys]
+    if len(values) > 0:
+        assert(len(keys) == len(values))
+        filename += '-' + '-'.join([(str(k).replace(' ', '_')+'_'+str(v).replace(' ', '_')) for k,v in zip(keys, values)])
+    filename += '.html'
+
+    filenames_in_navigation.append(filename)
+    filename_to_html[filename] = template_html.replace('{template_content}', content_html)
+
+
+
+def build_html_page_set(i, page_set):
+    tee()
+    tee('page_set {}'.format(i))
+    pp_stdout.pprint(page_set)
+    pp_log.pprint(page_set)
+
+    to_enumerate = dict((k, g['run_params'][k]) for k in page_set['page_field_list'])
+    enumerated_values = dict()
+    for_all_combinations(0, to_enumerate, enumerated_values, build_html_page, page_set)
+
+
+
+## design:
+##
+## all html pages are first created in memory--stored in global dict filename_to_html.
+## then, they are all dumped to disk.
+
+if args.pages:
+    tee()
+    tee('## Creating html pages to show plots')
+
+    for i, page_set in zip(range(len(g['pages'])), g['pages']):
+        build_html_page_set(i, page_set)
+
+    ## build index.html from template and provided content_index_html string (if any)
+
+    content_index_html = ''
+    if 'content_index_html' in g:
+        content_index_html = g['content_index_html']
+
+    filename_to_html['index.html'] = template_html.replace('{template_content}', content_index_html)
+    filenames_in_navigation.append('index.html')
+
+    ## build navigation sidebar links
+
+    tee()
+    nav_link_list = ''
+    for f in filenames_in_navigation:
+        pretty_name = f.replace('.html', '').replace('_', ' ').replace('-', ' ')
+        tee('adding "{}" a.k.a "{}" to navigation'.format(f, pretty_name))
+        nav_link_list += template_nav_link.format(nav_link_href=f, nav_link_text=pretty_name)
+
+    ## add navigation sidebar to pages
+
+    tee()
+    for i, fname in zip(range(len(filename_to_html.keys())), filename_to_html.keys()):
+        html = filename_to_html[fname]
+        filename_to_html[fname] = html.replace('{template_nav_link_list}', nav_link_list)
+        tee('adding navigation to filename_to_html[{}]={}'.format(i, fname))
+        # tee('html_summary_file = {}, html = {}'.format(fname, html_summary_files[fname]))
+
+    ## dump html files to disk
+
+    tee()
+    for i, fname in zip(range(len(filename_to_html.keys())), filename_to_html.keys()):
+        html = filename_to_html[fname]
+        tee('writing {} to data dir'.format(fname))
+        with open(get_dir_data() + '/' + fname, 'w') as f:
+           f.write(html)
+
+else:
+    tee()
+    tee('## Skipping html page creation')
+
+#########################################################################
+#### Debug: deploy_dir
+#########################################################################
+
+if args.debug_deploy:
+    tee()
+    tee("## Deploying data directory to linux.cs ...")
+    tee(shell_to_str('cd ' + get_dir_tools() + ' ; ./deploy_dir.sh ' + get_dir_data() + ' uharness'))
 
 #########################################################################
 #### Finish

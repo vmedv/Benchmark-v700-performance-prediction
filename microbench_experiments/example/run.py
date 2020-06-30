@@ -23,12 +23,13 @@ set_dir_data    ( os.getcwd() + '/data' )               ## directory for data fi
 ##     represents the average of precisely as many experimental runs as there are entries in the __trials list.)
 ##
 
-add_run_param ( 'INS_DEL_FRAC'    , ['0.0 0.0', '0.5 0.5', '20.0 10.0'] )
-add_run_param ( 'MAXKEY'          , [2000000, 20000000] )
-add_run_param ( 'DS_TYPENAME'     , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
-add_run_param ( 'thread_pinning'  , ['-pin ' + shell_to_str('cd ' + get_dir_tools() + ' ; ./get_pinning_cluster.sh', exit_on_error=True)] )
+add_run_param     ( 'INS_DEL_FRAC'    , ['0.0 0.0', '0.5 0.5', '20.0 10.0'] )
+add_run_param     ( 'MAXKEY'          , [2000000, 20000000] )
+add_run_param     ( 'DS_TYPENAME'     , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
+add_run_param     ( 'thread_pinning'  , ['-pin ' + shell_to_str('cd ' + get_dir_tools() + ' ; ./get_pinning_cluster.sh', exit_on_error=True)] )
 
-## i like to have a testing mode (enabled with argument --testing) that runs for less time, with fewer parameters (to make sure nothing will blow up before i run for 12 hours...)
+## i like to have a testing mode (enabled with argument --testing) that runs for less time,
+##  with fewer parameters (to make sure nothing will blow up before i run for 12 hours...)
 if args.testing:
     add_run_param ( '__trials'        , [1] )
     add_run_param ( 'TOTAL_THREADS'   , [1, shell_to_str('cd ' + get_dir_tools() + ' ; ./get_thread_counts_max.sh', exit_on_error=True)] )
@@ -53,15 +54,15 @@ else:
 ## your run command will be executed in the run directory above.
 ##
 
-set_cmd_compile ( 'make -j all bin_dir={__dir_run}' )
+set_cmd_compile     ( 'make -j all bin_dir={__dir_run}' )
 
 if args.testing:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run     ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 else:
-    set_cmd_run ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 30000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+    set_cmd_run     ( 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 30000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 
 ## pattern for output filenames. note 1: these files will be placed in {__dir_data}/. note 2: filenames cannot contain spaces.
-set_file_run_data ( 'data{__step}.txt' )
+set_file_run_data   ( 'data{__step}.txt' )
 
 ##
 ## add data fields to be fetched from all output files.
@@ -125,13 +126,66 @@ add_data_field ( '__cmd_run'              , coltype='TEXT' )
 ##
 
 ## can do direct passthrough of command line args to the plotting script (see, e.g.,. ../../tools/plotbars.py to see what kind of customization of plots can be done this way)
-plot_cmd_args = '--legend-include --legend-columns 3 --width 12 --height 8'
+plot_cmd_args = '--legend-include --legend-columns 3'
 
-add_plot_set ( filename='plot_throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png'  , title='u={INS_DEL_FRAC} k={MAXKEY}: Throughput vs thread count'     , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='total_throughput', plot_type='bars', plot_cmd_args=plot_cmd_args )
-add_plot_set ( filename='plot_l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png'      , title='u={INS_DEL_FRAC} k={MAXKEY}: L2 misses/op vs thread count'   , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='PAPI_L2_TCM'     , plot_type='bars', plot_cmd_args=plot_cmd_args )
-add_plot_set ( filename='plot_l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png'      , title='u={INS_DEL_FRAC} k={MAXKEY}: L3 misses/op vs thread count'   , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='PAPI_L3_TCM'     , plot_type='bars', plot_cmd_args=plot_cmd_args )
-add_plot_set ( filename='plot_cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png'      , title='u={INS_DEL_FRAC} k={MAXKEY}: Cycles/op vs thread count'      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='PAPI_TOT_CYC'    , plot_type='bars', plot_cmd_args=plot_cmd_args )
-add_plot_set ( filename='plot_instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count', varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], series='DS_TYPENAME', x_axis='TOTAL_THREADS', y_axis='PAPI_TOT_INS'    , plot_type='bars', plot_cmd_args=plot_cmd_args )
+## you can also specify a python file containing hooks for configuring matplotlib's plotting style:
+##    just after importing, and just before and after plotting.
+## (your callback/hook functions will be provided with the mpl, plt, fig and ax variables
+##    for matplotlib's environment, plot, figure and axes, so you can customize as you like.)
+
+set_plot_style_hooks_file(os.getcwd() + '/' + 'user_plot_style.py')
+## if you prefer, you can set this PER-PLOT SET instead of globally, by providing argument plot_style_hooks_file below
+
+add_plot_set( \
+        name='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: Throughput vs thread count' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , series='DS_TYPENAME' \
+      , x_axis='TOTAL_THREADS' \
+      , y_axis='total_throughput' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
+add_plot_set( \
+        name='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: L2 misses/op vs thread count' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , series='DS_TYPENAME' \
+      , x_axis='TOTAL_THREADS' \
+      , y_axis='PAPI_L2_TCM' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
+add_plot_set( \
+        name='l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: L3 misses/op vs thread count' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , series='DS_TYPENAME' \
+      , x_axis='TOTAL_THREADS' \
+      , y_axis='PAPI_L3_TCM' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
+add_plot_set( \
+        name='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: Cycles/op vs thread count' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , series='DS_TYPENAME' \
+      , x_axis='TOTAL_THREADS' \
+      , y_axis='PAPI_TOT_CYC' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
+add_plot_set( \
+        name='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , series='DS_TYPENAME' \
+      , x_axis='TOTAL_THREADS' \
+      , y_axis='PAPI_TOT_INS' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
 
 ##
 ## we can also filter data to a single series before plotting it
@@ -140,13 +194,22 @@ add_plot_set ( filename='plot_instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png', title
 ##
 
 ## note that with only a single series, there is no need for a legend (so we update the plot_cmd_args)
-plot_cmd_args = '--width 12 --height 8'
+plot_cmd_args = ''
 
-add_plot_set ( filename='plot_sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png', title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput', filter='TOTAL_THREADS == 1', varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'], x_axis='DS_TYPENAME', y_axis='total_throughput', plot_type='bars', plot_cmd_args=plot_cmd_args )
+add_plot_set( \
+        name='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput' \
+      , filter='TOTAL_THREADS == 1' \
+      , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
+      , x_axis='DS_TYPENAME' \
+      , y_axis='total_throughput' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
 
 ##
 ## rather than filtering the thread count to a single value,
-## we could also make it part of the filename, so one plot is produced for each thread count.
+## we could also make it part of the name, so one plot is produced for each thread count.
 ## moreover, supposing we only want plots for the minimum and maximum thread counts,
 ##     (where the min/max thread counts are obtained directly from our run_param that we added above)
 ##     then we can filter appropriately first...
@@ -158,7 +221,61 @@ min_threads = p[0]
 max_threads = p[len(p)-1]
 filter_string = 'TOTAL_THREADS in ({}, {})'.format(min_threads, max_threads)
 
-add_plot_set ( filename='plot_maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png', title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)', filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS'], x_axis='DS_TYPENAME', y_axis='maxresident_mb', plot_type='bars', plot_cmd_args=plot_cmd_args )
+add_plot_set( \
+        name='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
+      , title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)' \
+      , filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS'] \
+      , x_axis='DS_TYPENAME' \
+      , y_axis='maxresident_mb' \
+      , plot_type='bars' \
+      , plot_cmd_args=plot_cmd_args \
+)
+
+##
+## we can also generate html web pages to display various layouts of plots
+## more specifically, you can define pages (or sets of pages) that
+##  arrange the plots specified above into html tables, either:
+##  - by specifying explicitly that a particular PLOT belongs in a particular page, table, row, column, or
+##  - by specifying that a PAGE should use particular FIELD to define tables, rows and columns
+##
+
+add_page_set(image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+## note: the above is interpreted the same as:
+##  add_page_set( \
+##          image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+##        , name='throughput' \
+##        , column_field='INS_DEL_FRAC' \
+##        , row_field='MAXKEY' \
+##  )
+## the more verbose expression simply gives you more control over which fields are placed in rows and columns
+##
+## how this interpretation is done:
+## the image_files string has its .png extension removed, then it is tokenized by hypens ('-'), and
+##  - the first token serving becomes the name argument
+##  - the second defines the columns in each table (column_field argument)
+##  - the third defines the rows in each table (row_field argument)
+##  - the fourth, if it exists, defines a SET of tables in the same page (table_field argument)
+##  - any further tokens define a SET of pages (i.e., the cross product of the remaining tokens),
+##    and the filename for each such page is suffixed with a particular assigment of those fields
+##    (page_field_list argument -- a python list)
+
+add_page_set(image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png')
+## note: the above is interpreted the same as:
+##  add_page_set( \
+##          image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
+##        , name='maxresident' \
+##        , table_field='TOTAL_THREADS' \
+##        , column_field='INS_DEL_FRAC' \
+##        , row_field='MAXKEY' \
+##  )
+
+add_page_set(image_files='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+add_page_set(image_files='l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+add_page_set(image_files='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+add_page_set(image_files='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+add_page_set(image_files='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png')
+
+## note: if user filters cols & rows when creating plots (so there aren't as many PNGs as we expect), we can either (1) add filter strings or (2) just use the files in the output directory to test which combinations of row&col exist...
 
 ####################################
 ## END USER CONFIGURATION

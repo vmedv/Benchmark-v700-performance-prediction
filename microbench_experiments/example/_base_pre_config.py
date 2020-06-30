@@ -10,6 +10,8 @@ import argparse
 import sqlite3
 import numpy
 import io
+import re
+import glob
 
 ######################################################
 #### parse command line args
@@ -27,6 +29,10 @@ parser.add_argument('--no-createdb', dest='createdb', action='store_false', help
 parser.set_defaults(createdb=True)
 parser.add_argument('--no-plot', dest='plot', action='store_false', help='disable creation of plots')
 parser.set_defaults(plot=True)
+parser.add_argument('--no-pages', dest='pages', action='store_false', help='disable creation of html pages')
+parser.set_defaults(pages=True)
+parser.add_argument('--debug-deploy', dest='debug_deploy', action='store_true', help='debug: run tools/deploy_dir.sh on the data directory')
+parser.set_defaults(debug_deploy=False)
 parser.add_argument('--debug-no-plotcmd', dest='debug_exec_plotcmd', action='store_false', help='debug: do not exec the plot cmd')
 parser.set_defaults(debug_exec_plotcmd=True)
 parser.add_argument('--continue-on-warn-agg-row-count', dest='continue_on_warn_agg_row_count', action='store_true', help='allow execution to continue despite any warnings about aggregating a possibly incorrect number of rows into some data point(s) in a plot')
@@ -46,6 +52,7 @@ g['data_fields'] = dict()
 g['replacements'] = dict()
 g['data_file_paths'] = []
 g['plots'] = []
+g['pages'] = []
 g['log'] = open('output_log.txt', 'w')
 g['sanity_check_failures'] = []
 
@@ -210,5 +217,46 @@ def add_run_param(name, value_list):
 def add_data_field(name, coltype='TEXT', validator=is_nonempty, extractor=grep_line):
     g['data_fields'][name] = locals()
 
-def add_plot_set(filename, x_axis, y_axis, plot_type, series='', varying_cols_list=[], filter="", title="", plot_cmd_args=""):
+def add_plot_set(name, x_axis, y_axis, plot_type, series='', varying_cols_list=[], filter='', title='', plot_cmd_args='', plot_style_hooks_file=''):
+    if plot_style_hooks_file == '' and 'plot_style_hooks_file' in g:
+        plot_style_hooks_file = g['plot_style_hooks_file']
     g['plots'].append(locals())
+
+def add_page_set(image_files, name='', column_field='', row_field='', table_field='', page_field_list=[], sep='-'):
+    tokens = image_files.split(sep)
+
+    if name == '':
+        assert(len(tokens) > 0)
+        name = tokens[0]
+    if column_field == '':
+        assert(len(tokens) > 1)
+        field_singleton_list = re.findall(r'\{[^\}]*\}', tokens[1])
+        assert(len(field_singleton_list) == 1)
+        column_field = field_singleton_list[0].replace('{', '').replace('}', '')
+    if row_field == '':
+        assert(len(tokens) > 2)
+        field_singleton_list = re.findall(r'\{[^\}]*\}', tokens[2])
+        assert(len(field_singleton_list) == 1)
+        row_field = field_singleton_list[0].replace('{', '').replace('}', '')
+    if table_field == '' and len(tokens) > 3:
+        field_singleton_list = re.findall(r'\{[^\}]*\}', tokens[3])
+        assert(len(field_singleton_list) == 1)
+        table_field = field_singleton_list[0].replace('{', '').replace('}', '')
+    if page_field_list == [] and len(tokens) > 4:
+        page_field_list = re.findall(r'\{[^\}]*\}', sep.join(tokens[4:]))
+        for i, f in zip(len(page_field_list), page_field_list):
+            page_field_list[i] = f.replace('{', '').replace('}', '')
+
+    fields = re.findall(r'\{[^\}]*\}', image_files)
+    for i, f in zip(range(len(fields)), fields):
+        fields[i] = f.replace('{', '').replace('}', '')
+
+    del field_singleton_list
+    del tokens
+    g['pages'].append(locals())
+
+def set_content_index_html(content_html_string):
+    g['content_index_html']=content_html_string
+
+def set_plot_style_hooks_file(path):
+    g['plot_style_hooks_file'] = path
