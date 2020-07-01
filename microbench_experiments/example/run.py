@@ -275,8 +275,6 @@ add_page_set(image_files='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png')
 add_page_set(image_files='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png')
 add_page_set(image_files='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png')
 
-## note: if user filters cols & rows when creating plots (so there aren't as many PNGs as we expect), we can either (1) add filter strings or (2) just use the files in the output directory to test which combinations of row&col exist...
-
 ####################################
 ## END USER CONFIGURATION
 ####################################

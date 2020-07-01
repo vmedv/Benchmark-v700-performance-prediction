@@ -24,7 +24,8 @@
 #   endif
 #   define GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(gstats_handle_stat) \
         gstats_handle_stat(LONG_LONG, num_bail_from_addkv_at_depth, 10, { \
-                gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
+                gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+          __AND gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \
         }) \
         gstats_handle_stat(LONG_LONG, num_bail_from_build_at_depth, 10, { \
                 gstats_output_item(PRINT_RAW, SUM, BY_INDEX) \

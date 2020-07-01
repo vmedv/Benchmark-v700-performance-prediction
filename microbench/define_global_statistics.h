@@ -14,16 +14,20 @@
 #endif
 #define GSTATS_HANDLE_STATS(gstats_handle_stat) \
     gstats_handle_stat(LONG_LONG, num_inserts, 1, { \
-            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_deletes, 1, { \
-            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_searches, 1, { \
-            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_rq, 1, { \
-            gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_operations, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
