@@ -198,7 +198,7 @@ def for_all_combinations(ix, to_enumerate, enumerated_values, func, func_arg):
     if ix == len(to_enumerate):
         return [func(enumerated_values, func_arg)]
     else:
-        field = to_enumerate.keys()[ix]
+        field = list(to_enumerate.keys())[ix]
         retlist = []
         for value in to_enumerate[field]:
             enumerated_values[field] = value
@@ -231,10 +231,12 @@ def do_argparse(cmdline_args_list = None):
     parser.set_defaults(compile=True)
     parser.add_argument('--no-createdb', dest='createdb', action='store_false', help='disable recreation of sqlite database (reuse old database)')
     parser.set_defaults(createdb=True)
-    parser.add_argument('--no-plot', dest='plot', action='store_false', help='disable creation of plots')
-    parser.set_defaults(plot=True)
-    parser.add_argument('--no-pages', dest='pages', action='store_false', help='disable creation of html pages')
-    parser.set_defaults(pages=True)
+    parser.add_argument('--do-plot', dest='plot', action='store_true', help='enable creation of plots')
+    parser.set_defaults(plot=False)
+    parser.add_argument('--do-pages', dest='pages', action='store_true', help='enable creation of html pages')
+    parser.set_defaults(pages=False)
+    parser.add_argument('--do-zip', dest='zip', action='store_true', help='enable creation of zip file containing results')
+    parser.set_defaults(zip=False)
     parser.add_argument('--debug-deploy', dest='debug_deploy', action='store_true', help='debug: run tools/deploy_dir.sh on the data directory')
     parser.set_defaults(debug_deploy=False)
     parser.add_argument('--debug-no-plotcmd', dest='debug_exec_plotcmd', action='store_false', help='debug: do not exec the plot cmd')
@@ -459,30 +461,57 @@ def do_createdb(args):
 #### Produce plots
 #########################################################################
 
-def _cf_any(col_name, col_values):
+def cf_any(col_name, col_values):
     return True
 
-def _cf_not_intrinsic(col_name, col_values):
-    if len(col_name) >= 2 and col_name[0:2] == '__': return False
+def cf_not_intrinsic(col_name, col_values):
+    if len(col_name) >= 2 and col_name[0:2] == '__':
+        # print('cf_not_intrinsic: remove {}'.format(col_name))
+        return False
     return True
 
-def _cf_not_identical(col_name, col_values):
+def cf_not_identical(col_name, col_values):
     first = col_values[0]
     for val in col_values:
         if val != first: return True
+    # print('cf_not_identical: remove {}'.format(col_name))
     return False
 
+def cf_run_param(col_name, col_values):
+    if col_name in g['run_params'].keys(): return True
+    # print('cf_run_param: remove {}'.format(col_name))
+
+def cf_not_in(exclusion_list):
+    def cf_internal(col_name, col_values):
+        return col_name not in exclusion_list
+        # print('cf_not_in: remove {}'.format(col_name))
+    return cf_internal
+
 ## assumes identical args
-def _cf_and(f, g):
+def cf_and(f, g):
     def composed_fn(col_name, col_values):
         return f(col_name, col_values) and g(col_name, col_values)
     return composed_fn
+def cf_andl(list):
+    def composed_fn(col_name, col_values):
+        for f in list:
+            if not f(col_name, col_values): return False
+        return True
+    return composed_fn
+
+# def get_column_filter_bitmap(headers, rows, column_filter=cf_any):
+#     ## compute a bitmap that dictates which columns should be included (not filtered out)
+#     include_ix = [-1 for x in range(len(headers))]
+#     for i, col_name in zip(range(len(headers)), headers):
+#         col_values = [row[i] for row in rows]
+#         include_ix[i] = column_filter(col_name, col_values)
+#     return include_ix
 
 ## quote_text only works if there are headers
 ## column_filters only work if there are headers (even if they filter solely on the data)
 ## sep has no effect if columns are aligned
-def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', column_filter=_cf_any, row_header_html_link=''):
-    assert(headers or column_filter == _cf_any)
+def table_to_str(table, headers=None, aligned=False, quote_text=True, sep=' ', column_filter=cf_any, row_header_html_link=''):
+    assert(headers or column_filter == cf_any)
     assert(headers or not quote_text)
     assert(sep == ' ' or not aligned)
 
@@ -612,10 +641,16 @@ def get_records_plot_from_set(plot_set, where_clause_new):
     # header_records.append([plot_set['y_axis']])
     # return header_records, data_records
 
+_headers = None
+def get_headers():
+    global _headers
+    if _headers == None: ## memoize headers
+        cur.execute('SELECT name FROM PRAGMA_TABLE_INFO("data")')
+        _headers = cur.fetchall()
+    return _headers
+
 def get_records_plot_full(where_clause_new):
-    ## first fetch header info
-    cur.execute('SELECT name FROM PRAGMA_TABLE_INFO("data")')
-    header_records = cur.fetchall()
+    header_records = get_headers()
 
     ## then fetch the data
     txn = 'SELECT * FROM data {}'.format(where_clause_new)
@@ -714,7 +749,7 @@ def sanity_check_plot(args, plot_set, where_clause_new, header_records, plot_txt
             s += '\n'
             s += '## FILTERING TO REMOVE COLUMNS WITH NO DIFFERENCES, AND INTRINSIC COLUMNS...\n'
             s += '##     any problem is likely in one of these columns:\n'
-            s += table_to_str(data_records, header_records, aligned=True, column_filter=_cf_and(_cf_not_intrinsic, _cf_not_identical))
+            s += table_to_str(data_records, header_records, aligned=True, column_filter=cf_and(cf_not_intrinsic, cf_not_identical))
 
             tee(s)
             g['sanity_check_failures'].append(s)
@@ -806,6 +841,9 @@ def get_where(plot_set):
     if plot_set['filter'] != '' and plot_set['filter'] != 'None' and plot_set['filter'] != None:
         where_clause = 'WHERE ({})'.format(plot_set['filter'])
     return where_clause
+
+def get_where_from_dict(values):
+    return get_amended_where(values, '')
 
 def do_plot(args):
     if args.plot:
@@ -1141,21 +1179,23 @@ def do_finish(args):
     ended_sec = int(shell_to_str('date +%s'))
     elapsed_sec = ended_sec - started_sec
 
-    ## Move old ZIP file(s) into backup directory
+    if args.zip:
 
-    log(shell_to_str('if [ ! -e _output_backup ] ; then mkdir _output_backup 2>&1 ; fi'))
-    log(shell_to_str('mv output_*.zip _output_backup/'))
+        ## Move old ZIP file(s) into backup directory
 
-    ## ZIP results
+        log(shell_to_str('if [ ! -e _output_backup ] ; then mkdir _output_backup 2>&1 ; fi'))
+        log(shell_to_str('mv output_*.zip _output_backup/'))
 
-    zip_filename = ended.strftime('output_%yy%mm%dd_%Hh%Mm%Ss.zip')
+        ## ZIP results
 
-    tee()
-    tee('## Zipping results into ./{}'.format(zip_filename))
-    log()
+        zip_filename = ended.strftime('output_%yy%mm%dd_%Hh%Mm%Ss.zip')
 
-    reldir = os.path.relpath(g['replacements']['__dir_data'])
-    log_replace_and_run('zip -r {} {} output_log.txt *.py *.sqlite'.format(zip_filename, reldir))
+        tee()
+        tee('## Zipping results into ./{}'.format(zip_filename))
+        log()
+
+        reldir = os.path.relpath(g['replacements']['__dir_data'])
+        log_replace_and_run('zip -r {} {} output_log.txt *.py *.sqlite'.format(zip_filename, reldir))
 
     tee()
     tee('## Finish at {} (started {}); total {}'.format(ended, started, print_time(elapsed_sec)))
@@ -1208,14 +1248,9 @@ if __name__ == '__main__':
 
 
 
-
-
 #########################################################################
-#### Some special functions to use if this is imported into a jupyter notebook...
+#### Some special functions for use in a jupyter notebook...
 #########################################################################
-
-def get_g():
-    return g
 
 def disable_tee_stdout():
     global DISABLE_TEE_STDOUT
@@ -1229,5 +1264,35 @@ def disable_logfile_close():
     global DISABLE_LOGFILE_CLOSE
     DISABLE_LOGFILE_CLOSE = True
 
-def jupyter_single_plot(args):
-    print('nothing')
+def get_g():
+    return g
+
+def get_connection():
+    return con
+
+def select_distinct_field(field, where = ''):
+    ## perform sqlite query to fetch raw data
+    txn = 'SELECT DISTINCT {} FROM data {}'.format(field, where)
+    log('select_distinct_field: txn={}'.format(txn))
+    cur.execute(txn)
+    data_records = cur.fetchall()
+    return [x[0] for x in data_records]
+
+def select_distinct_field_dict(field, replacement_values):
+    ## perform sqlite query to fetch raw data
+    txn = 'SELECT DISTINCT {} FROM data {}'.format(field, get_where_from_dict(replacement_values))
+    log('select_distinct_field_dict: txn={}'.format(txn))
+    cur.execute(txn)
+    data_records = cur.fetchall()
+    return [x[0] for x in data_records]
+
+def get_num_rows(replacement_values):
+    if len(replacement_values) == 0:
+        txn = 'SELECT count({}) FROM data'.format(get_headers()[0][0])
+    else:
+        where = get_where_from_dict(replacement_values)
+        txn = 'SELECT count({}) FROM data {}'.format(list(replacement_values.keys())[0], where)
+    log('get_num_rows: txn={}'.format(txn))
+    cur.execute(txn)
+    data_records = cur.fetchall()
+    return data_records[0][0]

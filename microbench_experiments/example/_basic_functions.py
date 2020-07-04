@@ -183,6 +183,8 @@ def add_page_set(exp_dict, image_files, name='', column_field='', row_field='', 
     for i, f in zip(range(len(fields)), fields):
         fields[i] = f.replace('{', '').replace('}', '')
 
+    del i
+    del f
     del field_singleton_list
     del tokens
     d = locals()
