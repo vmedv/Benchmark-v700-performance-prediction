@@ -1,6 +1,6 @@
 [submodule "common/recordmgr"]
 	path = common/recordmgr
-	url = ./recordmanager.git
+	url = ../recordmanager.git
 [submodule "tools"]
 	path = tools
-	url = ./tools.git
+	url = ../tools.git
