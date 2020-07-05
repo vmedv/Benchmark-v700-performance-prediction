@@ -33,3 +33,5 @@ plot*.txt
 output_*.txt
 _output_backup
 data
+macrobench/bin
+log.*

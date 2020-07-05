@@ -21,9 +21,6 @@
 ##
 ## More general improvements (mostly to setbench -- written here because I'm lazy, and these are just moving to follow my attention/gaze...)
 ##
-## - clean up compile.sh
-## - copy direct clone info into README.md
-##
 ## - advplot into tools
 ## - equivalent of this for macrobench?
 ##

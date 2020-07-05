@@ -13,7 +13,7 @@ compile_microbench:
     stage: build
     script:
         - cd microbench
-        - ./compile.sh
+        - make -j all
     artifacts:
         paths:
             - microbench/bin
@@ -88,6 +88,3 @@ test_microbench_istree_throughput:
 # libnuma           sudo apt install libnuma-dev
 # papi
 # timeout, time
-
-### next up: figure out how to parse things.... or just offload this kind of results validation to .sh files???
-### add tests folder to artifacts and pass to a validation stage? or leave as part of tests?

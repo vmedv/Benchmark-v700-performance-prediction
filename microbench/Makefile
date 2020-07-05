@@ -5,42 +5,42 @@ GPP = g++
 ### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
 has_libpapi=$(shell ldconfig -p | grep libpapi | wc -l)
 ifneq ($(has_libpapi), 0)
-    FLAGS += -DUSE_PAPI
-    LDFLAGS += -lpapi
+	FLAGS += -DUSE_PAPI
+	LDFLAGS += -lpapi
 endif
 
 ### if you do not want libnuma to be used, invoke make with "has_libnuma=0"
 has_libnuma=$(shell ldconfig -p | grep libnuma | wc -l)
 ifneq ($(has_libnuma), 0)
-    FLAGS += -DUSE_LIBNUMA
-    LDFLAGS += -lnuma
+	FLAGS += -DUSE_LIBNUMA
+	LDFLAGS += -lnuma
 endif
 
 use_asan=0
 ifneq ($(use_asan), 0)
-    LDFLAGS += -fsanitize=address -static-libasan
+	LDFLAGS += -fsanitize=address -static-libasan
 endif
 
 use_asserts=0
 ifeq ($(use_asserts), 0)
-    FLAGS += -DNDEBUG
+	FLAGS += -DNDEBUG
 endif
 
 use_fopenmp=1
 ifeq ($(use_fopenmp), 1)
-    FLAGS += -fopenmp
+	FLAGS += -fopenmp
 endif
 
 use_timelines=0
 ifeq ($(use_timelines), 1)
-    FLAGS += -DMEASURE_TIMELINE_STATS
+	FLAGS += -DMEASURE_TIMELINE_STATS
 endif
 
 no_optimize=0
 ifeq ($(no_optimize), 1)
-    FLAGS += -O0
+	FLAGS += -O0
 else
-    FLAGS += -O3
+	FLAGS += -O3
 endif
 
 FLAGS += -DMAX_THREADS_POW2=512
@@ -68,6 +68,43 @@ LDFLAGS += -mrtm
 bin_dir=bin
 dir_guard:
 	@mkdir -p $(bin_dir)
+
+
+################################################################################
+#### BEGIN check for proper git cloning WITH SUBMODULES
+################################################################################
+define submodules_err_msg=
+
+================================================================================
+==== ERROR: CANNOT FIND SUBMODULES                                          ====
+================================================================================
+==== You most likely used the wrong git clone command...                    ====
+====                                                                        ====
+==== Note that a special argument is needed for cloning:                    ====
+====   git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules   ====
+================================================================================
+endef
+dir_exists_tools=$(shell if [ -d "../tools" ]; then echo 1 ; else echo 0 ; fi )
+dir_exists_recordmgr=$(shell if [ -d "../common/recordmgr" ]; then echo 1 ; else echo 0 ; fi )
+num_files_tools=$(shell ls ../tools | wc -l 2>/dev/null )
+num_files_recordmgr=$(shell ls ../common/recordmgr | wc -l 2>/dev/null )
+ifeq ($(dir_exists_tools),0)
+    $(error $(submodules_err_msg))
+endif
+ifeq ($(dir_exists_recordmgr),0)
+    $(error $(submodules_err_msg))
+endif
+ifeq ($(num_files_tools),0)
+    $(error $(submodules_err_msg))
+endif
+ifeq ($(num_files_recordmgr),0)
+    $(error $(submodules_err_msg))
+endif
+################################################################################
+#### END check for proper git cloning WITH SUBMODULES
+################################################################################
+
+
 
 MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(wildcard ../ds/*/minimal_example.cpp))
 minimal_%: dir_guard

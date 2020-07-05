@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # File:   compile.sh
 # Author: trbot
 #
@@ -41,6 +41,40 @@ make_workload_dict() {
     fi
 }
 export -f make_workload_dict
+
+
+
+################################################################################
+#### BEGIN check for proper git cloning WITH SUBMODULES
+################################################################################
+for dir in "../tools" "../common/recordmgr" ; do
+    error=0
+    if [ ! -d "$dir" ]; then
+        error=1
+    else
+        num_files_in_tools=$(ls "$dir" | wc -l)
+        if [ "$num_files_in_tools" -eq "0" ]; then
+            error=1
+        fi
+    fi
+done
+if [ "$error" -eq "1" ] ; then
+    echo "================================================================================"
+    echo "==== ERROR: CANNOT FIND SUBMODULES                                          ===="
+    echo "================================================================================"
+    echo "==== You most likely used the wrong git clone command...                    ===="
+    echo "====                                                                        ===="
+    echo "==== Note that a special argument is needed for cloning:                    ===="
+    echo "====   git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules   ===="
+    echo "================================================================================"
+    echo
+    exit 1
+fi
+################################################################################
+#### END check for proper git cloning WITH SUBMODULES
+################################################################################
+
+
 
 rm -f log.compile.*.txt
 
