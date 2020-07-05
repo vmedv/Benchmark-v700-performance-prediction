@@ -18,6 +18,56 @@ args = do_all('_user_experiment.py --testing --no-compile --no-run --no-createdb
 def select_to_dataframe(txn):
     return pd.read_sql_query(txn, get_connection())
 
+def add_legend_and_reshape(g, loc='lower center', ncol=5, bottom=0.14, size=(8, 6)):
+    g.add_legend(loc=loc, ncol=ncol)
+    g.fig.subplots_adjust(bottom=bottom, top=1, left=0, right=1)
+    g.fig.set_size_inches(size[0], size[1])
+
+## markers, palette, dashes and sizes define lists of values to be used for the various series
+## (sane defaults are supplied)
+def get_series_styles(series, markers=['^', 'o', 's', '+', 'x', 'v', '*', 'X', '|', '.', 'd'], palette=None, dashes=[''], sizes=[1], plot_func=sns.lineplot):
+    ## construct mappings from each series value to round-robin choices from the above
+    if isinstance(series, str):
+        series_distinct = select_distinct_field(series)
+    if not palette:
+        palette = sns.color_palette("colorblind", len(series_distinct))
+    plot_style_kwargs = dict(palette=dict())
+    for i, series in zip(range(len(series_distinct)), series_distinct):
+        plot_style_kwargs['palette'][series] = palette[i % len(palette)]
+
+    if plot_func == sns.lineplot:
+        plot_style_kwargs['markers'] = dict()
+        plot_style_kwargs['sizes'] = dict()
+        plot_style_kwargs['dashes'] = dict()
+        for i, series in zip(range(len(series_distinct)), series_distinct):
+            plot_style_kwargs['markers'][series] = markers[i % len(markers)]
+            plot_style_kwargs['sizes'][series] = sizes[i % len(sizes)]
+            plot_style_kwargs['dashes'][series] = dashes[i % len(dashes)]
+
+    return plot_style_kwargs
+
+def plot_5d(row, col, series, x, y, data=None, where='', series_styles=None, plot_func=sns.lineplot, facetgrid_kwargs=dict()):
+    txn = 'SELECT {}, {}, {}, {}, {} FROM DATA {}'.format(row, col, series, x, y, where)
+    if data is None: data = select_to_dataframe(txn)
+    #display(df)
+
+    if len(facetgrid_kwargs.keys()) == 0:
+        facetgrid_kwargs['margin_titles'] = True
+
+    g = sns.FacetGrid(data=data, row=row, col=col, **facetgrid_kwargs)
+
+    if not series_styles:
+        series_styles = get_series_styles(series, plot_func=plot_func)
+
+    def plot_5d_facet(x, y, series, **kwargs):
+        if plot_func == sns.lineplot: series_styles['style'] = series
+        #display(x, y, series, series_styles, kwargs)
+        plot_func(x=x, y=y, hue=series, **series_styles, **kwargs)
+
+    g.map(plot_5d_facet, x, y, series)
+
+    add_legend_and_reshape(g)
+
 def filter_df_by_columns(df, column_filter=cf_any):
     ## compute a bitmap that dictates which columns should be included (not filtered out)
     headers = list(df.columns.values)
