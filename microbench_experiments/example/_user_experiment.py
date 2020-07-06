@@ -89,25 +89,25 @@ def define_experiment(exp_dict_init, args):
 
     ## note: in the following, defaults are "validator=is_nonempty" and "extractor=grep_line"
 
-    add_data_field ( exp_dict, 'INS_DEL_FRAC'           , coltype='TEXT'    , validator=is_run_param('INS_DEL_FRAC') )
-    add_data_field ( exp_dict, 'MAXKEY'                 , coltype='INTEGER' , validator=is_run_param('MAXKEY') )
-    add_data_field ( exp_dict, 'DS_TYPENAME'            , coltype='TEXT'    , validator=is_run_param('DS_TYPENAME') )
-    add_data_field ( exp_dict, 'TOTAL_THREADS'          , coltype='INTEGER' , validator=is_run_param('TOTAL_THREADS') )
-    add_data_field ( exp_dict, 'total_throughput'       , coltype='INTEGER' , validator=is_positive )
-    add_data_field ( exp_dict, 'PAPI_L3_TCM'            , coltype='REAL' )
-    add_data_field ( exp_dict, 'PAPI_L2_TCM'            , coltype='REAL' )
-    add_data_field ( exp_dict, 'PAPI_TOT_CYC'           , coltype='REAL' )
-    add_data_field ( exp_dict, 'PAPI_TOT_INS'           , coltype='REAL' )
-    add_data_field ( exp_dict, 'maxresident_mb'         , coltype='REAL'    , validator=is_positive , extractor=get_maxres ) ## note the custom extractor
-    add_data_field ( exp_dict, 'tree_stats_height'      , coltype='INTEGER' )
-    add_data_field ( exp_dict, 'validate_result'        , coltype='TEXT'    , validator=is_equal('success') )
-    add_data_field ( exp_dict, 'MILLIS_TO_RUN'          , coltype='TEXT'    , validator=is_positive )
-    add_data_field ( exp_dict, 'RECLAIM'                , coltype='TEXT' )
-    add_data_field ( exp_dict, 'POOL'                   , coltype='TEXT' )
-    add_data_field ( exp_dict, '__hostname'             , coltype='TEXT' )
-    add_data_field ( exp_dict, '__file_run_data'        , coltype='TEXT' )
-    add_data_field ( exp_dict, '__path_run_data'        , coltype='TEXT' )
-    add_data_field ( exp_dict, '__cmd_run'              , coltype='TEXT' )
+    add_data_field ( exp_dict, 'INS_DEL_FRAC'      , coltype='TEXT'    , validator=is_run_param('INS_DEL_FRAC') )
+    add_data_field ( exp_dict, 'MAXKEY'            , coltype='INTEGER' , validator=is_run_param('MAXKEY') )
+    add_data_field ( exp_dict, 'DS_TYPENAME'       , coltype='TEXT'    , validator=is_run_param('DS_TYPENAME') )
+    add_data_field ( exp_dict, 'TOTAL_THREADS'     , coltype='INTEGER' , validator=is_run_param('TOTAL_THREADS') )
+    add_data_field ( exp_dict, 'total_throughput'  , coltype='INTEGER' , validator=is_positive )
+    add_data_field ( exp_dict, 'PAPI_L3_TCM'       , coltype='REAL' )
+    add_data_field ( exp_dict, 'PAPI_L2_TCM'       , coltype='REAL' )
+    add_data_field ( exp_dict, 'PAPI_TOT_CYC'      , coltype='REAL' )
+    add_data_field ( exp_dict, 'PAPI_TOT_INS'      , coltype='REAL' )
+    add_data_field ( exp_dict, 'maxresident_mb'    , coltype='REAL'    , validator=is_positive , extractor=get_maxres ) ## note the custom extractor
+    add_data_field ( exp_dict, 'tree_stats_height' , coltype='INTEGER' )
+    add_data_field ( exp_dict, 'validate_result'   , coltype='TEXT'    , validator=is_equal('success') )
+    add_data_field ( exp_dict, 'MILLIS_TO_RUN'     , coltype='TEXT'    , validator=is_positive )
+    add_data_field ( exp_dict, 'RECLAIM'           , coltype='TEXT' )
+    add_data_field ( exp_dict, 'POOL'              , coltype='TEXT' )
+    add_data_field ( exp_dict, '__hostname'        , coltype='TEXT' )
+    add_data_field ( exp_dict, '__file_run_data'   , coltype='TEXT' )
+    add_data_field ( exp_dict, '__path_run_data'   , coltype='TEXT' )
+    add_data_field ( exp_dict, '__cmd_run'         , coltype='TEXT' )
 
     ##
     ## add_plot_set() will cause a SET of plots to be rendered as images in the data directory.
@@ -132,7 +132,8 @@ def define_experiment(exp_dict_init, args):
     set_plot_style_hooks_file( exp_dict, os.getcwd() + '/' + '_user_plot_style.py' )
     ## if you prefer, you can set this PER-PLOT SET instead of globally, by providing argument plot_style_hooks_file below
 
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: Throughput vs thread count' \
           , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
@@ -142,7 +143,8 @@ def define_experiment(exp_dict_init, args):
           , plot_type='bars' \
           , plot_cmd_args=plot_cmd_args \
     )
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: L2 misses/op vs thread count' \
           , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
@@ -152,7 +154,8 @@ def define_experiment(exp_dict_init, args):
           , plot_type='bars' \
           , plot_cmd_args=plot_cmd_args \
     )
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: L3 misses/op vs thread count' \
           , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
@@ -162,7 +165,8 @@ def define_experiment(exp_dict_init, args):
           , plot_type='bars' \
           , plot_cmd_args=plot_cmd_args \
     )
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: Cycles/op vs thread count' \
           , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
@@ -172,7 +176,8 @@ def define_experiment(exp_dict_init, args):
           , plot_type='bars' \
           , plot_cmd_args=plot_cmd_args \
     )
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count' \
           , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
@@ -192,7 +197,8 @@ def define_experiment(exp_dict_init, args):
     ## note that with only a single series, there is no need for a legend (so we update the plot_cmd_args)
     plot_cmd_args = ''
 
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput' \
           , filter='TOTAL_THREADS == 1' \
@@ -217,7 +223,8 @@ def define_experiment(exp_dict_init, args):
     max_threads = p[len(p)-1]
     filter_string = 'TOTAL_THREADS in ({}, {})'.format(min_threads, max_threads)
 
-    add_plot_set( exp_dict \
+    add_plot_set( \
+            exp_dict \
           , name='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
           , title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)' \
           , filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS'] \
@@ -238,7 +245,8 @@ def define_experiment(exp_dict_init, args):
     add_page_set( exp_dict, image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
     ## note: the above is interpreted the same as:
     ##  add_page_set( \
-    ##          image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
+    ##          exp_dict, \
+    ##        , image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
     ##        , name='throughput' \
     ##        , column_field='INS_DEL_FRAC' \
     ##        , row_field='MAXKEY' \
@@ -258,7 +266,8 @@ def define_experiment(exp_dict_init, args):
     add_page_set( exp_dict, image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' )
     ## note: the above is interpreted the same as:
     ##  add_page_set( \
-    ##          image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
+    ##          exp_dict, \
+    #$        , image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
     ##        , name='maxresident' \
     ##        , table_field='TOTAL_THREADS' \
     ##        , column_field='INS_DEL_FRAC' \
