@@ -11,13 +11,11 @@
 ## - stacked bar plots
 ##
 ## - "clean" version of example without comments to show that it's still clear, but also way more concise...
-## - test framework on a different user (proper independence from global tools namespace?)
 ##
 ## - parallel plot construction
 ## - animation support? (proper matplotlib animations???) (fractional row plotting with desired frame rate + count? need to specify a time axis...)
 ##
 ## - ability to link run_params so it's not just the plain cross product of all run_params that gets explored... (or perhaps a user-specified predicate that tests and rejects combinations of run_params)
-## - dependencies? (install on a clean ubuntu vm? docket container?)
 ##
 ## More general improvements (mostly to setbench -- written here because I'm lazy, and these are just moving to follow my attention/gaze...)
 ##
