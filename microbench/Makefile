@@ -2,15 +2,15 @@ FLAGS =
 LDFLAGS =
 GPP = g++
 
-### if you do not want PAPI to be used, invoke make with "has_libpapi=0"
-has_libpapi=$(shell ldconfig -p | grep libpapi | wc -l)
+### if libpapi is installed but you do not want to use it, invoke make with extra argument "has_libpapi=0"
+has_libpapi=$(shell ./_check_lib.sh papi)
 ifneq ($(has_libpapi), 0)
 	FLAGS += -DUSE_PAPI
 	LDFLAGS += -lpapi
 endif
 
-### if you do not want libnuma to be used, invoke make with "has_libnuma=0"
-has_libnuma=$(shell ldconfig -p | grep libnuma | wc -l)
+### if libnuma is installed but you do not want to use it, invoke make with extra argument "has_libnuma=0"
+has_libnuma=$(shell ./_check_lib.sh numa)
 ifneq ($(has_libnuma), 0)
 	FLAGS += -DUSE_LIBNUMA
 	LDFLAGS += -lnuma
