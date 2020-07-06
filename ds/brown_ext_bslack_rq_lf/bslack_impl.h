@@ -142,11 +142,10 @@ namespace bslack_ns {
                 // for rqProvider
                 Node<DEGREE,K> * insertedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
                 Node<DEGREE,K> * deletedNodes[wrapper_info<DEGREE,K>::MAX_NODES+1];
-            } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
+            } c;
             char bytes[2*PREFETCH_SIZE_BYTES];
         };
         const static int size = sizeof(c);
-        //const static int size = 2*PREFETCH_SIZE_BYTES; // sizeof(mutables)+sizeof(numberOfNodes)+sizeof(numberOfNodesToFreeze)+sizeof(newNode)+sizeof(field)+sizeof(nodes)+sizeof(scxPtrsSeen);
     } /*__attribute__((aligned (PREFETCH_SIZE_BYTES)))*/;
 
     template <int DEGREE, typename K>

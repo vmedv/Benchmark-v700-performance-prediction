@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -150,15 +150,15 @@ namespace bst_ns {
             // for rqProvider
             Node<K,V> * insertedNodes[MAX_NODES+1];
             Node<K,V> * deletedNodes[MAX_NODES+1];
-        } __attribute__((packed)) c; // WARNING: be careful with atomicity because of packed attribute!!! (this means no atomic vars smaller than word size, and all atomic vars must start on a word boundary when fields are packed tightly)
+        } c;
         PAD; // prevent false sharing
 
-        const static int size = sizeof(c); //sizeof(mutables)+sizeof(newNode)+sizeof(field)+sizeof(numberOfNodes)+sizeof(numberOfNodesToFreeze)+sizeof(nodes)+sizeof(scxRecordsSeen)+sizeof(insertedNodes)+sizeof(deletedNodes);
+        const static int size = sizeof(c);
 
         SCXRecord() { /* left blank for efficiency with custom allocators */ }
         SCXRecord(const SCXRecord<K,V>& op) { /* left blank for efficiency with custom allocators */ }
     };
-    
+
 }
 
 #endif	/* OPERATION_H */

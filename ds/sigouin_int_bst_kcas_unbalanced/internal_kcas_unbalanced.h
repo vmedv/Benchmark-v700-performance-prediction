@@ -52,9 +52,9 @@ private:
         casword_t oVNumMark = -1;
     };
 
-     struct PathContainer {
-	ObservedNode path[MAX_PATH_SIZE];
-	volatile char padding[PADDING_BYTES];
+    struct PathContainer {
+        ObservedNode path[MAX_PATH_SIZE];
+        volatile char padding[PADDING_BYTES];
     };
 
 
@@ -224,7 +224,7 @@ int InternalKCAS<RecordManager, K, V>::search(const int tid, ObservedNode &oPred
     K currKey;
     casword_t nodeVNumMark;
 
-    ObservedNode path[MAX_PATH_SIZE] = paths[tid].path;
+    ObservedNode * path = paths[tid].path;
     path[0].node = root;
     path[0].oVNumMark = root->vNumMark;
 
@@ -580,6 +580,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         return RetCode::RETRY;
     }
     assert(false);
+    return RetCode::RETRY;
 }
 
 template<class RecordManager, typename K, typename V>

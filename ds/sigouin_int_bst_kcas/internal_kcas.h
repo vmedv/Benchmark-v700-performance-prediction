@@ -245,7 +245,7 @@ int InternalKCAS<RecordManager, K, V>::search(const int tid, ObservedNode &oPare
     K currKey;
     casword_t nodeVNumMark;
 
-    ObservedNode path[MAX_PATH_SIZE] = paths[tid].path;
+    ObservedNode * path = paths[tid].path;
     path[0].node = root;
     path[0].oVNumMark = root->vNumMark;
 
@@ -560,6 +560,7 @@ int InternalKCAS<RecordManager, K, V>::internalErase(const int tid, ObservedNode
         return RetCode::RETRY;
     }
     assert(false);
+    return RetCode::RETRY;
 }
 
 template<class RecordManager, typename K, typename V>

@@ -1,6 +1,6 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
  * This preliminary implementation is CONFIDENTIAL and may not be distributed.
  */
@@ -18,7 +18,7 @@
 #include <urcu.h>
 #define RECLAIM_RCU_RCUHEAD_DEFN struct rcu_head rcuHeadField
 #else
-#define RECLAIM_RCU_RCUHEAD_DEFN 
+#define RECLAIM_RCU_RCUHEAD_DEFN
 #endif
 
 namespace bst_ns {
@@ -45,7 +45,7 @@ namespace bst_ns {
         Node() {}
         Node(const Node& node) {}
 
-        friend std::ostream& operator<<(std::ostream& os, const Node<K,V>& obj) {}
+        friend std::ostream& operator<<(std::ostream& os, const Node<K,V>& obj) { return os; }
         void printTreeFile(std::ostream& os) {}
         void printTreeFileWeight(std::ostream& os, std::set< Node<K,V>* > *seen) {}
         void printTreeFileWeight(std::ostream& os) {}

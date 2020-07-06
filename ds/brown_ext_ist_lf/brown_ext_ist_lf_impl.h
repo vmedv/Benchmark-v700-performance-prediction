@@ -1523,7 +1523,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
                 return i+1;
             }
         }
-        assert(false);
+        assert(false); return -1;
     } else if (key > ixKey) {
         int i;
         for (i=ix+1;i<numKeys;++i) { // recall: degree - 1 keys vs degree pointers
@@ -1532,7 +1532,7 @@ int istree<K,V,Interpolate,RecManager>::interpolationSearch(const int tid, const
                 return i;
             }
         }
-        assert(false);
+        assert(false); return -1;
     } else {
 //        GSTATS_APPEND_D(tid, visited_in_isearch, 1);
         return ix+1;
