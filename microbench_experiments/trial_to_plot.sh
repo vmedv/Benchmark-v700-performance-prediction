@@ -12,7 +12,7 @@ fi
 
 if [ "$#" -eq "1" ]; then
     fname=$1
-    grep -E "^(log_hist[^=]*|lin_hist[^=]*|[^=]*_by_thread)=([0-9.:]+[ ]+)*[0-9.:]+$" $fname | cut -d"=" -f1
+    grep -E "^(log_hist[^=]*|lin_hist[^=]*|[^=]*_by_thread|[^=]*_by_index)=([0-9.:]+[ ]+)*[0-9.:]+$" $fname | cut -d"=" -f1
     exit 0
 fi
 
