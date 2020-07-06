@@ -1176,10 +1176,25 @@ def do_finish(args):
 
     if args.zip:
 
+        log()
+        log('## Fetching git status and any unstaged changes for archival purposes')
+        log()
+
+        git_status = shell_to_str('git status')
+        log('git_status:')
+        log(git_status)
+        log()
+        diff_files = shell_to_list('git status -s | awk \'{if ($1 != "D") print $2}\' | grep -v "/$"')
+        log('diff_files={}'.format(diff_files))
+        log()
+        commit_hash = shell_to_str('git log | head -1')
+        log('commit_hash={}'.format(commit_hash))
+
         ## Move old ZIP file(s) into backup directory
 
         log(shell_to_str('if [ ! -e _output_backup ] ; then mkdir _output_backup 2>&1 ; fi'))
         log(shell_to_str('mv output_*.zip _output_backup/'))
+        g['log'].flush()
 
         ## ZIP results
 
@@ -1190,7 +1205,7 @@ def do_finish(args):
         log()
 
         reldir = os.path.relpath(g['replacements']['__dir_data'])
-        log_replace_and_run('zip -r {} {} output_log.txt *.py *.sqlite'.format(zip_filename, reldir))
+        log_replace_and_run('zip -r {} {} {} output_log.txt'.format(zip_filename, reldir, ' '.join(diff_files)))
 
     tee()
     tee('## Finish at {} (started {}); total {}'.format(ended, started, print_time(elapsed_sec)))
