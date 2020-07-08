@@ -4,7 +4,7 @@ https://gitlab.com/trbot86/setbench/wikis/home
 Note that cloning this repo is complicated by the existence of *submodules*:
 
 ```
-git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules
+git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 ```
 
 ## Setting up SetBench on a clean install of Ubuntu 20.04
@@ -30,7 +30,7 @@ sudo ldconfig
 
 Clone and build SetBench:
 ```
-git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules
+git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 cd setbench/microbench
 make -j all
 cd ../macrobench
