@@ -1,11 +1,7 @@
 #!/usr/bin/python3
 from _basic_functions import *
 
-def define_experiment(exp_dict_init, args):
-    # print('define_experiment: exp_dict_init={}'.format(exp_dict_init))
-    exp_dict = dict(exp_dict_init)
-    # print('define_experiment: exp_dict={}'.format(exp_dict))
-
+def define_experiment(exp_dict, args):
     set_dir_compile ( exp_dict, os.getcwd() + '/../../microbench' )   ## working directory where the compilation command should be executed
     set_dir_tools   ( exp_dict, os.getcwd() + '/../../tools' )        ## directory where the prerequisite tools library is located
     set_dir_run     ( exp_dict, os.getcwd() + '/bin' )                ## working directory where your program should be executed
@@ -64,7 +60,7 @@ def define_experiment(exp_dict_init, args):
         set_cmd_run     ( exp_dict, 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 10000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 
     ## pattern for output filenames. note 1: these files will be placed in {__dir_data}/. note 2: filenames cannot contain spaces.
-    set_file_run_data   ( exp_dict, 'data{__step}.txt' )
+    set_file_data   ( exp_dict, 'data{__step}.txt' )
 
     ##
     ## add data fields to be fetched from all output files.
@@ -82,8 +78,8 @@ def define_experiment(exp_dict_init, args):
     ## the following special fields are also defined for you:
     ##      {__step}            the number of runs done so far, padded to six digits with leading zeros
     ##      {__cmd_run}         your cmd_run string with any tokens replaced appropriately for this run
-    ##      {__file_run_data}   the output filename for the current run's data
-    ##      {__path_run_data}   the relative path to the output file for the current run's data
+    ##      {__file_data}       the output filename for the current run's data
+    ##      {__path_data}       the relative path to the output file for the current run's data
     ##      {__hostname}        the result of running the hostname command on the machine
     ##
 
@@ -105,8 +101,8 @@ def define_experiment(exp_dict_init, args):
     add_data_field ( exp_dict, 'RECLAIM'           , coltype='TEXT' )
     add_data_field ( exp_dict, 'POOL'              , coltype='TEXT' )
     add_data_field ( exp_dict, '__hostname'        , coltype='TEXT' )
-    add_data_field ( exp_dict, '__file_run_data'   , coltype='TEXT' )
-    add_data_field ( exp_dict, '__path_run_data'   , coltype='TEXT' )
+    add_data_field ( exp_dict, '__file_data'       , coltype='TEXT' )
+    add_data_field ( exp_dict, '__path_data'       , coltype='TEXT' )
     add_data_field ( exp_dict, '__cmd_run'         , coltype='TEXT' )
 
     ##
@@ -279,8 +275,6 @@ def define_experiment(exp_dict_init, args):
     add_page_set( exp_dict, image_files='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
     add_page_set( exp_dict, image_files='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
     add_page_set( exp_dict, image_files='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
-
-    return exp_dict
 
 ## extractor functions take as arguments: a file to load data from, and a field name
 def get_maxres(exp_dict, file_name, field_name):
