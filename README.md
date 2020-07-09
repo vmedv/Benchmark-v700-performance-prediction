@@ -12,7 +12,7 @@ git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 Installing necessary build tools, libraries and python packages:
 ```
 sudo apt install build-essential make g++ git libnuma-dev numactl python3 python3-pip
-pip3 install numpy matplotlib pandas seaborn ipython jinja2
+pip3 install numpy matplotlib pandas seaborn ipython jinja2 colorama
 ```
 
 Installing LibPAPI (needed for per-operation cache-miss counts, cycle counts, etc.):
