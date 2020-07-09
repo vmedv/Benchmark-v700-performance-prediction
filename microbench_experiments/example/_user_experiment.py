@@ -52,12 +52,12 @@ def define_experiment(exp_dict, args):
     ## your run command will be executed in the run directory above.
     ##
 
-    set_cmd_compile     ( exp_dict, 'make -j all bin_dir={__dir_run}' )
+    set_cmd_compile     ( exp_dict, 'make bin_dir={__dir_run} -j' )
 
     if args.testing:
-        set_cmd_run     ( exp_dict, 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+        set_cmd_run     ( exp_dict, 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./{DS_TYPENAME}.debra -nwork {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 100 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
     else:
-        set_cmd_run     ( exp_dict, 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./ubench_{DS_TYPENAME}.alloc_new.reclaim_debra.pool_none.out -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 10000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
+        set_cmd_run     ( exp_dict, 'LD_PRELOAD=../../../lib/libjemalloc.so timeout 300 numactl --interleave=all time ./{DS_TYPENAME}.debra -nwork {TOTAL_THREADS} -nprefill {TOTAL_THREADS} -insdel {INS_DEL_FRAC} -k {MAXKEY} -t 10000 {thread_pinning} -rq 0 -rqsize 1 -nrq 0' )
 
     ## pattern for output filenames. note 1: these files will be placed in {__dir_data}/. note 2: filenames cannot contain spaces.
     set_file_data   ( exp_dict, 'data{__step}.txt' )
@@ -241,7 +241,7 @@ def define_experiment(exp_dict, args):
     add_page_set( exp_dict, image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
     ## note: the above is interpreted the same as:
     ##  add_page_set( \
-    ##          exp_dict, \
+    ##          exp_dict \
     ##        , image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
     ##        , name='throughput' \
     ##        , column_field='INS_DEL_FRAC' \
@@ -262,7 +262,7 @@ def define_experiment(exp_dict, args):
     add_page_set( exp_dict, image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' )
     ## note: the above is interpreted the same as:
     ##  add_page_set( \
-    ##          exp_dict, \
+    ##          exp_dict \
     #$        , image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
     ##        , name='maxresident' \
     ##        , table_field='TOTAL_THREADS' \

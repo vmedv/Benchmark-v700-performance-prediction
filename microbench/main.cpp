@@ -252,12 +252,12 @@ struct globals_t {
                 double zipfTheta = 0.5;
                 keygenZipfData = new KeyGeneratorZipfData(maxkeyToGenerate, zipfTheta);
                 for (int i=0;i<MAX_THREADS_POW2;++i) {
-                    keygens[i] = (KeyGenT *) new KeyGeneratorZipf<test_type>(keygenZipfData, &rngs[i]);
+                    keygens[i] = (KeyGenT *) (new KeyGeneratorZipf<test_type>(keygenZipfData, &rngs[i]));
                 }
             } break;
             case UNIFORM: {
                 for (int i=0;i<MAX_THREADS_POW2;++i) {
-                    keygens[i] = (KeyGenT *) new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate);
+                    keygens[i] = (KeyGenT *) (new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate));
                 }
             } break;
             default: {

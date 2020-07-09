@@ -36,3 +36,4 @@ data
 macrobench/bin
 log.*
 Makefile.var
+bin

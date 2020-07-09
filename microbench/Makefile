@@ -65,6 +65,31 @@ LDFLAGS += -lpthread
 LDFLAGS += -ldl
 LDFLAGS += -mrtm
 
+.PHONY: default
+default: ds-reclaim
+	@echo
+	@echo "===================================================================="
+	@echo "== Compilation target was:"
+	@echo "===================================================================="
+	@echo "== 'ds-reclaim' which produces binaries for all combinations of"
+	@echo "==              the make variables DATA_STRUCTURES, RECLAIMERS"
+	@echo "=="
+	@echo "== for example, you can specify multiple RECLAIMERS by running, eg."
+	@echo "==              make RECLAIMERS='debra none' -j"
+	@echo "===================================================================="
+	@echo "== Other target options:"
+	@echo "===================================================================="
+	@echo "== 'ds-reclaim-pool' which produces binaries for combinations of"
+	@echo "==                   make vars DATA_STRUCTURES, RECLAIMERS, POOLS"
+	@echo "=="
+	@echo "== 'all' which produces binaries for combinations of"
+	@echo "== 	    make vars DATA_STRUCTURES, RECLAIMERS, POOLS, ALLOCATORS"
+	@echo "=="
+	@echo "==     NOTE: all target is !!DEPRECATED!!"
+	@echo "==           use ds-reclaim going forward."
+	@echo "===================================================================="
+	@echo
+
 bin_dir=bin
 dir_guard:
 	@mkdir -p $(bin_dir)
@@ -106,28 +131,77 @@ endif
 
 
 
-MINIMAL_BINS=$(patsubst ../ds/%/minimal_example.cpp,%.minimal,$(wildcard ../ds/*/minimal_example.cpp))
-minimal_%: dir_guard
-	$(GPP) $(FLAGS) ../ds/$(@:minimal_%=%)/minimal_example.cpp -o $(bin_dir)/$@ $(LDFLAGS)
+################################################################################
+#### DECIDING WHICH COMBINATIONS OF: DATA STRUCTURE, RECLAIMER, POOL, ALLOCATOR
+#### SHOULD BE COMPILED
+################################################################################
 
 DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/*/adapter.h))
-RECLAIMERS=debra none
+RECLAIMERS=debra
 POOLS=none
-ALLOCATORS=new
+ALLOCATORS=new ## allocators are DEPRECATED (using LD_PRELOAD to load allocators instead!)
 
+## statements like the below can be used to compile subsets of the data structures...
 #DATA_STRUCTURES=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/brown_ext_ist*/adapter.h))
 #DATA_STRUCTURES+=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/bronson*/adapter.h))
-#DATA_STRUCTURES+=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/natarajan*/adapter.h))
 
+## preview the set of DATA STRUCTURES
 #$(info $(DATA_STRUCTURES))
 
-define make-custom-target =
-ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out: dir_guard
-	$(GPP) ./main.cpp -o $(bin_dir)/ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out -I../ds/$1 -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
-all:: ubench_$(1).alloc_$(2).reclaim_$(3).pool_$(4).out
+################################################################################
+#### CONSTRUCTING CUSTOM BUILD TARGETS FOR EACH COMBINATION
+#### and adding them to combined targets:
+####    ds-reclaim
+####	ds-reclaim-pool
+####	DEPRECATED-ds-alloc-reclaim-pool
+################################################################################
+
+## create build targets for combinations of DATA_STRUCTURES and RECLAIMERS
+## and add them to a combined target: "ds-reclaim"
+define create-target-ds-reclaim =
+$(1).$(2): dir_guard
+	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) $(LDFLAGS)
+ds-reclaim:: $(1).$(2)
+endef
+$(foreach ds,$(DATA_STRUCTURES), \
+	$(foreach reclaim,$(RECLAIMERS), \
+		$(eval $(call create-target-ds-reclaim,$(ds),$(reclaim))) \
+	) \
+)
+
+## create build targets for combinations of DATA_STRUCTURES, RECLAIMERS and POOLS
+## and add them to a combined target: "ds-reclaim-pool"
+define create-target-ds-reclaim-pool =
+_$(1).$(2).p$(3): dir_guard
+	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).p$(3) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) -DPOOL_TYPE=$(3) $(FLAGS) $(LDFLAGS)
+ds-reclaim-pool:: _$(1).$(2).p$(3)
+endef
+$(foreach ds,$(DATA_STRUCTURES), \
+	$(foreach reclaim,$(RECLAIMERS), \
+		$(foreach pool,$(POOLS), \
+			$(eval $(call create-target-ds-reclaim-pool,$(ds),$(reclaim),$(pool))) \
+		) \
+	) \
+)
+
+## THE FOLLOWING IS DEPRECATED -- USE LD_PRELOAD TO LOAD ALLOCATORS INSTEAD!
+## create build targets for combinations of DATA_STRUCTURES, RECLAIMERS, POOLS and ALLOCATORS
+## and add them to a combined target: "DEPRECATED-ds-alloc-reclaim-pool"
+define create-target-ds-alloc-reclaim-pool =
+_$(1).$(2).$(3).p$(4): dir_guard
+	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).$(3).p$(4) -I../ds/$(1) -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
+all:: _$(1).$(2).$(3).p$(4)
 endef
 
-$(foreach ds,$(DATA_STRUCTURES),$(foreach alloc,$(ALLOCATORS),$(foreach reclaim,$(RECLAIMERS),$(foreach pool,$(POOLS),$(eval $(call make-custom-target,$(ds),$(alloc),$(reclaim),$(pool)))))))
+$(foreach ds,$(DATA_STRUCTURES), \
+	$(foreach alloc,$(ALLOCATORS), \
+		$(foreach reclaim,$(RECLAIMERS), \
+			$(foreach pool,$(POOLS), \
+				$(eval $(call create-target-ds-alloc-reclaim-pool,$(ds),$(alloc),$(reclaim),$(pool))) \
+			) \
+		) \
+	) \
+)
 
 clean:
 	rm $(bin_dir)/*.out
