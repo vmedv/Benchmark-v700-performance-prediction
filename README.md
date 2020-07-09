@@ -22,7 +22,7 @@ cd papi/src
 ./configure
 sudo sh -c "echo 2 > /proc/sys/kernel/perf_event_paranoid"
 ./configure
-make
+make -j
 make test
 sudo make install
 sudo ldconfig
@@ -32,7 +32,7 @@ Clone and build SetBench:
 ```
 git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 cd setbench/microbench
-make -j all
+make -j
 cd ../macrobench
 ./compile.sh
 ```
