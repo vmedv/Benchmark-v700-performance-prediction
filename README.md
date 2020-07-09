@@ -32,7 +32,7 @@ Clone and build SetBench:
 ```
 git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 cd setbench/microbench
-make all -j
+make all -j<NUMBER_OF_CORES>
 cd ../macrobench
 ./compile.sh
 ```
