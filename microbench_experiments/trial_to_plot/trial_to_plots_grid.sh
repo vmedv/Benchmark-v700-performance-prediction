@@ -20,7 +20,7 @@ fname=$1
 ncols=$2
 
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-export PATH=$SCRIPTPATH/../tools:$SCRIPTPATH:$PATH
+export PATH=$SCRIPTPATH/../../tools:$SCRIPTPATH:$PATH
 
 if [ "$#" -eq "2" ]; then
     echo "## recursive shell invocation to easily obtain args..."

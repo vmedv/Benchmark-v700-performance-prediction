@@ -16,7 +16,7 @@ fi
 
 fname=$1
 SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-export PATH=$SCRIPTPATH/../tools:$SCRIPTPATH:$PATH
+export PATH=$SCRIPTPATH/../../tools:$SCRIPTPATH:$PATH
 outfile=out.png
 
 shift

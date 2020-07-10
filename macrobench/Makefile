@@ -1,3 +1,8 @@
+##################################
+## DO NOT USE THIS DIRECTLY.
+## EXECUTE ./compile.sh INSTEAD!
+##################################
+
 CFLAGS =
 LDFLAGS =
 CC=g++
@@ -6,7 +11,7 @@ CC=g++
 CFLAGS += -DMEMORY_STATS=if\(1\) -DMEMORY_STATS2=if\(0\)
 CFLAGS += -DMAX_THREADS_POW2=256
 CFLAGS += -DCPU_FREQ_GHZ=2.1 #$(shell ../microbench/experiments/get_cpu_ghz.sh)
-CFLAGS += -g -std=c++14 -O3
+CFLAGS += -g -std=c++17 -O3 -lstdc++fs
 CFLAGS += -fopenmp
 CFLAGS += $(xargs)
 CFLAGS += -Wno-format
@@ -27,7 +32,7 @@ data_structure_path=../ds/$(data_structure_name)
 .SUFFIXES: .o .cpp .h
 bindir=bin
 odir=$(bindir)/OBJS_$(workload)_$(data_structure_name)/macrobench
-SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./storage/index/ ./system/ 
+SRC_DIRS = ./ ./benchmarks/ ./concurrency_control/ ./storage/ ./storage/index/ ./system/
 #SRC_DIRS += ../common/rlu/
 CFLAGS += -I../ $(patsubst %,-I%,$(SRC_DIRS)) `find ../common -type d | sed s/^/-I/`
 
@@ -58,5 +63,8 @@ $(odir)/%.o: %.cpp
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
-	@rm -f $(bindir)/rundb_$(workload)_$(data_structure_name)
-	@rm -r -f $(odir)
+	@rm -f $(bindir)/rundb_$(workload)_$(data_structure_name) 2>&1 >/dev/null
+	@rm -r -f $(odir) 2>&1 >/dev/null
+
+clean_objs:
+	@rm -r -f $(odir) 2>&1 >/dev/null

@@ -28,17 +28,18 @@ make_workload_dict() {
     name=`echo $2 | cut -d":" -f1`
     opts=`echo $2 | cut -d":" -f2-`
     opts_clean=`echo $opts | tr " " "." | tr "=" "-"`
-    fname=log.compile.temp.$workload.$name.${opts_clean}.out
+    fname=bin/log.compile.temp.$workload.$name.${opts_clean}.out
     #echo "arg1=$1 arg2=$2 workload=$workload name=$name opts=$opts"
-    make -j clean workload="$workload" data_structure_name="$name" data_structure_opts="$opts"
+    make clean workload="$workload" data_structure_name="$name" data_structure_opts="$opts"
     make -j workload="$workload" data_structure_name="$name" data_structure_opts="$opts" > $fname 2>&1
     if [ $? -ne 0 ]; then
         echo "Compilation FAILED for $workload $name $opts"
-        mv $fname log.compile.failure.$workload.$name.${opts_clean}.txt
+        mv $fname bin/log.compile.failure.$workload.$name.${opts_clean}.txt
     else
         echo "Compiled $workload $name $opts"
-        mv $fname log.compile.success.$workload.$name.${opts_clean}.txt
+        mv $fname bin/log.compile.success.$workload.$name.${opts_clean}.txt
     fi
+    make clean_objs workload="$workload" data_structure_name="$name" data_structure_opts="$opts" > $fname 2>&1
 }
 export -f make_workload_dict
 
@@ -65,7 +66,7 @@ if [ "$error" -eq "1" ] ; then
     echo "==== You most likely used the wrong git clone command...                    ===="
     echo "====                                                                        ===="
     echo "==== Note that a special argument is needed for cloning:                    ===="
-    echo "====   git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules   ===="
+    echo "==== git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules ===="
     echo "================================================================================"
     echo
     exit 1
@@ -76,7 +77,7 @@ fi
 
 
 
-rm -f log.compile.*.txt
+rm -f bin/log.compile.*.txt
 
 # check for gnu parallel
 command -v parallel > /dev/null 2>&1
@@ -90,12 +91,13 @@ else
 	done
 fi
 
-errorfiles=`ls log.compile.failure* 2> /dev/null`
-numerrorfiles=`ls log.compile.failure* 2> /dev/null | wc -l`
+errorfiles=`ls bin/log.compile.failure* 2> /dev/null`
+numerrorfiles=`ls bin/log.compile.failure* 2> /dev/null | wc -l`
 if [ "$numerrorfiles" -ne "0" ]; then
-    cat log.compile.failure*
+    cat bin/log.compile.failure*
     echo "ERROR: some compilation command(s) failed. See the following file(s)."
-    for x in $errorfiles ; do echo $x ; done
+    for x in $errorfiles ; do echo $(pwd)/$x ; done
+    exit 1
 else
     echo "Compilation successful."
 fi

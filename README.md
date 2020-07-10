@@ -1,17 +1,18 @@
-# For more information, installation and usage, visit the SetBench Wiki!
-https://gitlab.com/trbot86/setbench/wikis/home
+# Warning: CLONING requires a special command!
 
-Note that cloning this repo is complicated by the existence of *submodules*:
+Cloning this repo is complicated by the existence of *submodules*:
 
 ```
 git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 ```
 
-## Setting up SetBench on a clean install of Ubuntu 20.04
+Note: if you check out a branch, you must run `git submodule update` to pull the correct versions of the submodules for that branch.
+
+# Setting up SetBench on Ubuntu 20.04 or 18.04
 
 Installing necessary build tools, libraries and python packages:
 ```
-sudo apt install build-essential make g++ git libnuma-dev numactl python3 python3-pip
+sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
 pip3 install numpy matplotlib pandas seaborn ipython jinja2 colorama
 ```
 
@@ -32,8 +33,24 @@ Clone and build SetBench:
 ```
 git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 cd setbench/microbench
-make all -j<NUMBER_OF_CORES>
+make -j<NUMBER_OF_CORES>
 cd ../macrobench
 ./compile.sh
 ```
-For more instructions see the SetBench Wiki, as well as `setbench/microbench_experiments/example/instructions_data.ipynb` (a Jupyter notebook tutorial that we recommend opening in VSCode).
+
+## Setting up SetBench on Ubuntu 16.04
+
+Installing necessary build tools, libraries and python packages:
+```
+sudo apt update
+sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
+pip3 install --upgrade pip
+pip3 install numpy matplotlib pandas seaborn ipython jinja2 colorama
+```
+
+*The rest is the same as in Ubuntu 18.04+ (above).*
+
+# For usage instructions visit the SetBench Wiki!
+https://gitlab.com/trbot86/setbench/wikis/home
+
+Also see: `setbench/microbench_experiments/example/instructions_data.ipynb`, a Jupyter notebook tutorial that we recommend opening in the free/open source IDE VSCode (after installing the VSCode Python (Microsoft) extension).

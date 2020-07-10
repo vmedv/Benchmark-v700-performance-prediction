@@ -29,17 +29,21 @@ RC ycsb_txn_man::run_txn(base_query * query) {
 
     for (uint32_t rid = 0; rid<m_query->request_cnt; rid++) {
         ycsb_request * req = &m_query->requests[rid];
-        uint64_t key = req->key+1; //dirty hack to make sure key != 0	
+        uint64_t key = req->key + 1; //dirty hack to make sure key != 0	
         int part_id = wl->key_to_part(key);
         bool finish_req = false;
         UInt32 iteration = 0;
         while (!finish_req) {
             if (iteration==0) {
                 m_item = index_read(_wl->the_index, key, part_id);
+//                if (m_item==NULL) {
+//                    cout<<"item is null, key is "<<key<<std::endl;
+//                }
+//                assert(m_item!=NULL);
                 if (m_item==NULL) {
-                    cout<<"item in null, key is "<<key<<std::endl;
+                    rc = Abort;
+                    goto final;
                 }
-                assert(m_item!=NULL);
             }
 //#ifdef IDX_BTREE
 //            else {

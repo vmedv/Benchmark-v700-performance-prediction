@@ -106,7 +106,7 @@ define submodules_err_msg=
 ==== You most likely used the wrong git clone command...                    ====
 ====                                                                        ====
 ==== Note that a special argument is needed for cloning:                    ====
-====   git clone git@gitlab.com:trbot86/setbench.git --recurse-submodules   ====
+==== git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules ====
 ================================================================================
 endef
 dir_exists_tools=$(shell if [ -d "../tools" ]; then echo 1 ; else echo 0 ; fi )
@@ -146,7 +146,7 @@ ALLOCATORS=new ## allocators are DEPRECATED (using LD_PRELOAD to load allocators
 #DATA_STRUCTURES+=$(patsubst ../ds/%/adapter.h,%,$(wildcard ../ds/bronson*/adapter.h))
 
 ## preview the set of DATA STRUCTURES
-#$(info $(DATA_STRUCTURES))
+$(info $(DATA_STRUCTURES))
 
 ################################################################################
 #### CONSTRUCTING CUSTOM BUILD TARGETS FOR EACH COMBINATION

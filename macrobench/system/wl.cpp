@@ -6,6 +6,7 @@
 #include "all_indexes.h"
 #include "catalog.h"
 #include "mem_alloc.h"
+#include <experimental/filesystem>
 
 RC workload::init() {
 	sim_done = false;
@@ -13,18 +14,30 @@ RC workload::init() {
 }
 
 void workload::setbench_deinit() {
-    
+
 }
 
 RC workload::init_schema(std::string schema_file) {
-    
+
 //    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
 //    rlu_self = &rlu_tdata[tid];
 //    RLU_THREAD_INIT(rlu_self);
-    
+
     assert(sizeof(uint64_t) == 8);
-    assert(sizeof(double) == 8);	
+    assert(sizeof(double) == 8);
 	string line;
+
+    if (!std::experimental::filesystem::exists(schema_file)) {
+        std::cerr<<std::endl;
+        std::cerr<<"#######################################################################"<<std::endl;
+        std::cerr<<"#### ERROR: file "<<schema_file<<" not found."<<std::endl;
+        std::cerr<<"####        You are probably running with the wrong working directory."<<std::endl;
+        std::cerr<<"####        This benchmark must be run from directory: macrobench/."<<std::endl;
+        std::cerr<<"#######################################################################"<<std::endl;
+        std::cerr<<std::endl;
+        exit(-1);
+    }
+
 	ifstream fin(schema_file);
     Catalog * schema;
     int indexesCreated = 0;
@@ -90,11 +103,11 @@ RC workload::init_schema(std::string schema_file) {
                 items.push_back(token);
                 line.erase(0, pos+1);
             }
-            
+
 
             string tname(items[0]);
 //            cout<<"tname="<<tname<<" iname="<<iname<<" sizeof(Index)="<<sizeof(Index)<<std::endl;
-            Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT); // IS THIS BIG ENOUGH??????
+            Index * index = (Index *) _mm_malloc(sizeof (Index), ALIGNMENT);
             new(index) Index();
             int part_cnt = (CENTRAL_INDEX) ? 1 : g_part_cnt;
             if (tname=="ITEM")
@@ -116,10 +129,10 @@ RC workload::init_schema(std::string schema_file) {
         }
     }
     fin.close();
-    
+
 //    RLU_THREAD_FINISH(rlu_self);
 //    RLU_FINISH();
-    
+
     return RCOK;
 }
 
