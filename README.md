@@ -13,7 +13,7 @@ Note: if you check out a branch, you must run `git submodule update` to pull the
 Installing necessary build tools, libraries and python packages:
 ```
 sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
-pip3 install numpy matplotlib pandas seaborn ipython jinja2 colorama
+pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
 ```
 
 Installing LibPAPI (needed for per-operation cache-miss counts, cycle counts, etc.):
@@ -45,7 +45,7 @@ Installing necessary build tools, libraries and python packages:
 sudo apt update
 sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
 pip3 install --upgrade pip
-pip3 install numpy matplotlib pandas seaborn ipython jinja2 colorama
+pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
 ```
 
 *The rest is the same as in Ubuntu 18.04+ (above).*

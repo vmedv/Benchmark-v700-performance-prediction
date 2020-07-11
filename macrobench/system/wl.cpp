@@ -38,6 +38,17 @@ RC workload::init_schema(std::string schema_file) {
         exit(-1);
     }
 
+    if (g_synth_table_size % g_init_parallelism) {
+        std::cerr<<std::endl;
+        std::cerr<<"################################################################################"<<std::endl;
+        std::cerr<<"#### ERROR: init size="<<g_synth_table_size<<" is not divisible by nthreads="<<g_init_parallelism<<std::endl;
+        std::cerr<<"####        however, macrobench requires this to be true!"<<std::endl;
+        std::cerr<<"####        (This is an idiosyncrasy of DBx1000 that we haven't fixed...)"<<std::endl;
+        std::cerr<<"################################################################################"<<std::endl;
+        std::cerr<<std::endl;
+        exit(-1);
+    }
+
 	ifstream fin(schema_file);
     Catalog * schema;
     int indexesCreated = 0;
