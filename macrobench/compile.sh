@@ -22,6 +22,8 @@ algs=( \
 #    "brown_ext_bst_rq_lf:-DUSE_RANGE_QUERIES -DRQ_UNSAFE" \
 )
 
+mkdir bin 2>/dev/null
+
 make_workload_dict() {
     # compile the given workload and algorithm
     workload=$1

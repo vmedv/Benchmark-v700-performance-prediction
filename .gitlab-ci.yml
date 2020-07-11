@@ -91,20 +91,6 @@ test_build_coverage_microbench_recordmanagers:
         - echo "#########################################################"
         - make all DATA_STRUCTURES="brown_ext_abtree_lf" RECLAIMERS="none debra debracap ebr_token ebr_tree hazardptr" POOLS="none numa" -j$(grep processor /proc/cpuinfo | wc -l)
 
-test_microbench_istree_throughput:
-    stage: test
-    script:
-        - mkdir -p tests
-        - maxthr=`cd microbench/experiments ; ./get_thread_count_max.sh`
-        - thread_pinning=`cd microbench/experiments ; ./get_pinning_cluster.sh`
-        - args="-nwork ${maxthr} -nprefill ${maxthr} -i 5 -d 5 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 10000 -pin ${thread_pinning}"
-        - f="tests/test_microbench_istree_throughput.txt"
-        - echo maxthr="$maxthr" thread_pinning="$thread_pinning" f="$f" args="$args"
-        - pwd
-        - LD_PRELOAD=./lib/libjemalloc.so timeout 600 numactl --interleave=all time ./microbench/bin/ubench_brown_ext_ist_lf.alloc_new.reclaim_debra.pool_none.out $args | tee $f 2>&1
-        - tput=`cat $f | grep "total through" | cut -d":" -f2 | tr -d " "`
-        - echo "tput=$tput"
-
 test_microbench_experiments_example:
     stage: test
     script:
