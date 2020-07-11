@@ -27,7 +27,7 @@ compile_macrobench:
         paths:
             - macrobench/bin
 
-build_coverage_microbench_options:
+test_build_coverage_microbench_options:
     stage: test
     script:
         - cd microbench
@@ -62,8 +62,8 @@ build_coverage_microbench_options:
         - echo "#########################################################"
         - make has_libnuma=0 has_libpapi=0 use_openmp=0 -j$(grep processor /proc/cpuinfo | wc -l) || exit 1
 
-build_coverage_microbench_targets:
-    stage: build_coverage
+test_build_coverage_microbench_targets:
+    stage: test
     script:
         - cd microbench
         - echo
@@ -78,8 +78,8 @@ build_coverage_microbench_targets:
         - make all -j$(grep processor /proc/cpuinfo | wc -l) || exit 1
         - echo
 
-build_coverage_microbench_recordmanagers:
-    stage: build_coverage
+test_build_coverage_microbench_recordmanagers:
+    stage: test
     script:
         - cd microbench
         - echo

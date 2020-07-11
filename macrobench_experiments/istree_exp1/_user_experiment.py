@@ -106,7 +106,7 @@ def define_experiment(exp_dict, args):
     #  'ixThroughput=98991842.440466',
     #  'throughput=4047013.703837',
     #
-    # more info from time:
+    # more info from time (% cpu, sys vs user):
     #     1269.07user 48.47system 0:09.30elapsed 14162%CPU (0avgtext+0avgdata 12697680maxresident)k
     #     0inputs+104outputs (0major+3176941minor)pagefaults 0swaps
     #
