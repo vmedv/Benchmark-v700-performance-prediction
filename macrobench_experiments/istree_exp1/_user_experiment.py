@@ -8,11 +8,12 @@ def define_experiment(exp_dict, args):
     set_dir_compile     (exp_dict, os.getcwd() + '/../../macrobench')
     set_cmd_compile     (exp_dict, './compile.sh')
 
-    binaries_rel_list   = [ \
-        'bin/rundb_YCSB_bronson_pext_bst_occ', \
-        'bin/rundb_YCSB_brown_ext_abtree_lf', \
-        'bin/rundb_YCSB_brown_ext_ist_lf' \
-    ]
+    binaries_to_algs = dict({
+            'bin/rundb_YCSB_bronson_pext_bst_occ'   : 'bronson'
+          , 'bin/rundb_YCSB_brown_ext_abtree_lf'    : 'abtree'
+          , 'bin/rundb_YCSB_brown_ext_ist_lf'       : 'istree'
+    })
+    binaries_list = list(binaries_to_algs.keys())
 
     thread_count_list   = shell_to_list('cd ' + get_dir_tools(exp_dict) + ' ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True)
     min_thread_count    = int(thread_count_list[0])
@@ -25,7 +26,7 @@ def define_experiment(exp_dict, args):
     init_size = compute_suitable_initsize(thread_count_list, 100000000)
 
     add_run_param       (exp_dict, '__trials'           , [1, 2, 3])
-    add_run_param       (exp_dict, 'binary'             , binaries_rel_list)
+    add_run_param       (exp_dict, 'binary'             , binaries_list)
     add_run_param       (exp_dict, 'zeta'               , [0.01, 0.1, 0.5])
     add_run_param       (exp_dict, 'rw_ratio'           , ['-r0.9 -w0.1'])
     add_run_param       (exp_dict, 'init_size'          , [init_size])
@@ -37,8 +38,12 @@ def define_experiment(exp_dict, args):
     if args.testing:
         add_run_param   (exp_dict, '__trials'           , [1])
         add_run_param   (exp_dict, 'zeta'               , [0.1])
-        # add_run_param   (exp_dict, 'binary'             , ['bin/rundb_YCSB_brown_ext_abtree_lf'])
-        # add_run_param   (exp_dict, 'thread_count'       , [max_thread_count])
+
+        ## only test one or two thread counts
+        if max_thread_count == min_thread_count:
+            add_run_param(exp_dict, 'thread_count'      , [min_thread_count])
+        else:
+            add_run_param(exp_dict, 'thread_count'      , [min_thread_count, max_thread_count])
 
         ## smaller initial size for testing
         init_size = compute_suitable_initsize(thread_count_list, 10000000)
@@ -60,7 +65,7 @@ def define_experiment(exp_dict, args):
             ./{binary} -t{thread_count} -s{init_size} {rw_ratio} -z{zeta} {thread_pinning}
     '''.replace('{time_cmd}', time_cmd))
 
-    add_data_field      (exp_dict, 'alg'                , extractor=extract_alg_from_binary_name)
+    add_data_field      (exp_dict, 'alg'                , extractor=get_alg_extractor(binaries_to_algs))
     add_data_field      (exp_dict, 'throughput'         , coltype='REAL', extractor=extract_summary_subfield, validator=is_positive)
     add_data_field      (exp_dict, 'run_time'           , coltype='REAL', extractor=extract_summary_subfield, validator=is_positive)
     add_data_field      (exp_dict, 'txn_cnt'            , coltype='INTEGER', extractor=extract_summary_subfield, validator=is_positive)
@@ -72,8 +77,6 @@ def define_experiment(exp_dict, args):
         add_data_field  (exp_dict, 'time_elapsed_sec'   , coltype='REAL', extractor=extract_time_subfield)
         add_data_field  (exp_dict, 'faults_major'       , coltype='INTEGER', extractor=extract_time_subfield)
         add_data_field  (exp_dict, 'faults_minor'       , coltype='INTEGER', extractor=extract_time_subfield)
-        add_data_field  (exp_dict, 'mem_avg_kb'         , coltype='INTEGER', extractor=extract_time_subfield)
-        add_data_field  (exp_dict, 'mem_avg_resident_kb', coltype='INTEGER', extractor=extract_time_subfield)
         add_data_field  (exp_dict, 'mem_maxresident_kb' , coltype='INTEGER', extractor=extract_time_subfield)
         add_data_field  (exp_dict, 'user_cputime'       , coltype='REAL', extractor=extract_time_subfield)
         add_data_field  (exp_dict, 'sys_cputime'        , coltype='REAL', extractor=extract_time_subfield)
@@ -96,13 +99,12 @@ def define_experiment(exp_dict, args):
         ## we place the above legend on each HTML page by providing "legend_file"
         add_page_set(exp_dict, image_files=field+'-z{zeta}.png', legend_file='legend.png')
 
-    ## TODO: add_plot_set stacked bar support (presumably series become bars in the stacks)
-    ## TODO: add_page_set support list of exact values for row/col -- how to map that to replacements in PNG filenames? list of kwargs? dict from single key to list of values? how will this interact with sanity checks? disable?
+    ## TODO: add_page_set support list of exact values for row/col -- how to map that to replacements in PNG filenames? {row}/{col}? list of kwargs? dict from single key to list of values? how will this interact with sanity checks? disable?
 
     ## render plots for several of the data_fields specified for the time_cmd above
     ## (only if suitable time command support is found)
     if time_cmd:
-        for field in ['time_elapsed_sec', 'faults_minor', 'mem_maxresident_kb', 'percent_cpu']:
+        for field in ['time_elapsed_sec', 'mem_maxresident_kb', 'percent_cpu']:
             add_plot_set(exp_dict \
                 , name=field+'-z{zeta}.png' \
                 , title='z={zeta} threads: '+field \
@@ -110,8 +112,27 @@ def define_experiment(exp_dict, args):
                 , series='alg', x_axis='thread_count', y_axis=field \
                 , plot_type='bars'
             )
-            ## we place the above legend on each HTML page by providing "legend_file"
             add_page_set(exp_dict, image_files=field+'-z{zeta}.png', legend_file='legend.png')
+
+        add_plot_set(exp_dict \
+            , name='user_vs_sys-z{zeta}-n{thread_count}.png' \
+            , title='z={zeta} n={thread_count}' \
+            , varying_cols_list=['zeta', 'thread_count'] \
+            , x_axis='alg', y_axis=['user_cputime', 'sys_cputime'] \
+            , plot_type='bars', plot_cmd_args='--stacked --legend-include --legend-columns 2' \
+        )
+        add_page_set(exp_dict, image_files='user_vs_sys-z{zeta}-n{thread_count}.png')
+
+        add_plot_set(exp_dict \
+            , name='pagefaults-z{zeta}-n{thread_count}.png' \
+            , title='z={zeta} n={thread_count}' \
+            , varying_cols_list=['zeta', 'thread_count'] \
+            , x_axis='alg', y_axis=['faults_major', 'faults_minor'] \
+            , plot_type='bars', plot_cmd_args='--stacked --legend-include --legend-columns 2' \
+        )
+        add_page_set(exp_dict, image_files='pagefaults-z{zeta}-n{thread_count}.png')
+
+
 
 ## test whether the OS has time utility, and whether it has the desired capabilities
 def os_has_suitable_time_cmd(time_cmd):
@@ -131,22 +152,20 @@ def os_has_suitable_time_cmd(time_cmd):
 def _kvlist_get(kvlist, field_name):
     if any([not item or item.count('=') != 1 for item in kvlist]):
         print(Back.RED+Fore.BLACK+'## ERROR: some item is not of the form "ABC=XYZ" in list {}'.format(kvlist)+Style.RESET_ALL)
+        raise
 
     if not any ([item.split('=')[0] == field_name for item in kvlist]):
         print(Back.RED+Fore.BLACK+'## ERROR: field_name {} not found in list {}'.format(field_name, kvlist)+Style.RESET_ALL)
+        raise
 
     for item in kvlist:
         k,v = item.split('=')
-        if k == field_name:
-            value = v
+        if k == field_name: value = v
 
-    try:
-        result = int(value)
+    try: result = int(value)
     except ValueError:
-        try:
-            result = float(value)
-        except ValueError:
-            result = str(value)
+        try: result = float(value)
+        except ValueError: result = str(value)
     return result
 
 def extract_summary_subfield(exp_dict, file_name, field_name):
@@ -171,10 +190,11 @@ def get_extractor_for_summary_subfield_numeric(subfield_ix):
         return int(s)
     return curried_extractor
 
-def extract_alg_from_binary_name(exp_dict, file_name, field_name):
-    binary = grep_line(exp_dict, file_name, 'binary')
-    tokens = binary.split('_')
-    return '_'.join(tokens[2:])
+def get_alg_extractor(binaries_dict):
+    def curried_extractor(exp_dict, file_name, field_name):
+        binary = grep_line(exp_dict, file_name, 'binary')
+        return binaries_dict[binary]
+    return curried_extractor
 
 def extract_maxres(exp_dict, file_name, field_name):
     ## manually parse the maximum resident size from the output of `time` and add it to the data file
