@@ -96,10 +96,16 @@ def define_experiment(exp_dict, args):
             , series='alg', x_axis='thread_count', y_axis=field \
             , plot_type='bars' \
         )
-        ## we place the above legend on each HTML page by providing "legend_file"
-        add_page_set(exp_dict, image_files=field+'-z{zeta}.png', legend_file='legend.png')
+        # ## we place the above legend on each HTML page by providing "legend_file"
+        # add_page_set(exp_dict, image_files=field+'-z{zeta}.png', legend_file='legend.png')
 
-    ## TODO: add_page_set support list of exact values for row/col -- how to map that to replacements in PNG filenames? {row}/{col}? list of kwargs? dict from single key to list of values? how will this interact with sanity checks? disable?
+    ## add page comparing zeta in columns vs the DIFFERENT DATA FIELDS ABOVE in rows
+    add_page_set(exp_dict \
+        , image_files='{row_field}-z{zeta}.png' \
+        , name='tx_vs_index_throughput' \
+        , column_field='zeta' \
+        , row_field=['throughput', 'ixThroughput', 'run_time'] \
+        , legend_file='legend.png')
 
     ## render plots for several of the data_fields specified for the time_cmd above
     ## (only if suitable time command support is found)
