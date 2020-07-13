@@ -102,7 +102,7 @@ def define_experiment(exp_dict, args):
     ## add page comparing zeta in columns vs the DIFFERENT DATA FIELDS ABOVE in rows
     add_page_set(exp_dict \
         , image_files='{row_field}-z{zeta}.png' \
-        , name='tx_vs_index_throughput' \
+        , name='txns_vs_index' \
         , column_field='zeta' \
         , row_field=['throughput', 'ixThroughput', 'run_time'] \
         , legend_file='legend.png')
