@@ -26,12 +26,10 @@ RUN pip3 install \
 
 RUN git clone https://bitbucket.org/icl/papi.git \
         && cd papi/src \
-        && sh -c 'echo 2 > /proc/sys/kernel/perf_event_paranoid' \
         && ./configure \
         && make -j \
         && make install \
         && ldconfig \
-        && make test \
         && cd ../..
 
 RUN git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules \
