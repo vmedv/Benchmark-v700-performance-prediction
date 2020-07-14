@@ -25,15 +25,14 @@ def define_experiment(exp_dict, args):
     add_run_param     ( exp_dict, 'MAXKEY'          , [2000000, 20000000] )
     add_run_param     ( exp_dict, 'DS_TYPENAME'     , ['brown_ext_ist_lf', 'brown_ext_abtree_lf', 'bronson_pext_bst_occ'] )
     add_run_param     ( exp_dict, 'thread_pinning'  , ['-pin ' + shell_to_str('cd ' + get_dir_tools(exp_dict) + ' ; ./get_pinning_cluster.sh', exit_on_error=True)] )
+    add_run_param     ( exp_dict, '__trials'        , [1, 2, 3] )
+    add_run_param     ( exp_dict, 'TOTAL_THREADS'   , [1] + shell_to_listi('cd ' + get_dir_tools(exp_dict) + ' ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
 
     ## i like to have a testing mode (enabled with argument --testing) that runs for less time,
     ##  with fewer parameters (to make sure nothing will blow up before i run for 12 hours...)
     if args.testing:
         add_run_param ( exp_dict, '__trials'        , [1] )
-        add_run_param ( exp_dict, 'TOTAL_THREADS'   , [1, shell_to_str('cd ' + get_dir_tools(exp_dict) + ' ; ./get_thread_counts_max.sh', exit_on_error=True)] )
-    else:
-        add_run_param ( exp_dict, '__trials'        , [1, 2, 3] )
-        add_run_param ( exp_dict, 'TOTAL_THREADS'   , [1] + shell_to_list('cd ' + get_dir_tools(exp_dict) + ' ; ./get_thread_counts_numa_nodes.sh', exit_on_error=True) )
+        add_run_param ( exp_dict, 'TOTAL_THREADS'   , [1] + shell_to_listi('cd ' + get_dir_tools(exp_dict) + ' ; ./get_thread_counts_max.sh', exit_on_error=True) )
 
     ##
     ## specify how to compile and run your program.
@@ -75,7 +74,7 @@ def define_experiment(exp_dict, args):
     ##
     ## also note: each of these fields becomes a replacement token, e.g., {PAPI_L3_TCM}.
     ##
-    ## the following special fields are also defined for you:
+    ## the following special fields are defined for you and automatically added to the resulting sqlite data table:
     ##      {__step}            the number of runs done so far, padded to six digits with leading zeros
     ##      {__cmd_run}         your cmd_run string with any tokens replaced appropriately for this run
     ##      {__file_data}       the output filename for the current run's data
@@ -85,10 +84,6 @@ def define_experiment(exp_dict, args):
 
     ## note: in the following, defaults are "validator=is_nonempty" and "extractor=grep_line"
 
-    add_data_field ( exp_dict, 'INS_DEL_FRAC'      , coltype='TEXT'    , validator=is_run_param('INS_DEL_FRAC') )
-    add_data_field ( exp_dict, 'MAXKEY'            , coltype='INTEGER' , validator=is_run_param('MAXKEY') )
-    add_data_field ( exp_dict, 'DS_TYPENAME'       , coltype='TEXT'    , validator=is_run_param('DS_TYPENAME') )
-    add_data_field ( exp_dict, 'TOTAL_THREADS'     , coltype='INTEGER' , validator=is_run_param('TOTAL_THREADS') )
     add_data_field ( exp_dict, 'total_throughput'  , coltype='INTEGER' , validator=is_positive )
     add_data_field ( exp_dict, 'PAPI_L3_TCM'       , coltype='REAL' )
     add_data_field ( exp_dict, 'PAPI_L2_TCM'       , coltype='REAL' )
@@ -100,10 +95,6 @@ def define_experiment(exp_dict, args):
     add_data_field ( exp_dict, 'MILLIS_TO_RUN'     , coltype='TEXT'    , validator=is_positive )
     add_data_field ( exp_dict, 'RECLAIM'           , coltype='TEXT' )
     add_data_field ( exp_dict, 'POOL'              , coltype='TEXT' )
-    add_data_field ( exp_dict, '__hostname'        , coltype='TEXT' )
-    add_data_field ( exp_dict, '__file_data'       , coltype='TEXT' )
-    add_data_field ( exp_dict, '__path_data'       , coltype='TEXT' )
-    add_data_field ( exp_dict, '__cmd_run'         , coltype='TEXT' )
 
     ##
     ## add_plot_set() will cause a SET of plots to be rendered as images in the data directory.
