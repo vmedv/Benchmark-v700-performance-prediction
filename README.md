@@ -12,7 +12,7 @@ Note: if you check out a branch, you must run `git submodule update` to pull the
 
 Installing necessary build tools, libraries and python packages:
 ```
-sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
+sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip
 pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
 ```
 
@@ -43,7 +43,7 @@ cd ../macrobench
 Installing necessary build tools, libraries and python packages:
 ```
 sudo apt update
-sudo apt install build-essential make g++ git libnuma-dev numactl dos2unix parallel python3 python3-pip
+sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip
 pip3 install --upgrade pip
 pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
 ```

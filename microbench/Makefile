@@ -161,7 +161,7 @@ $(info $(DATA_STRUCTURES))
 define create-target-ds-reclaim =
 $(1).$(2): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) $(LDFLAGS)
-ds-reclaim:: $(1).$(2)
+ds-reclaim: $(1).$(2)
 endef
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach reclaim,$(RECLAIMERS), \
@@ -174,7 +174,7 @@ $(foreach ds,$(DATA_STRUCTURES), \
 define create-target-ds-reclaim-pool =
 _$(1).$(2).p$(3): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).p$(3) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) -DPOOL_TYPE=$(3) $(FLAGS) $(LDFLAGS)
-ds-reclaim-pool:: _$(1).$(2).p$(3)
+ds-reclaim-pool: _$(1).$(2).p$(3)
 endef
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach reclaim,$(RECLAIMERS), \
@@ -190,7 +190,7 @@ $(foreach ds,$(DATA_STRUCTURES), \
 define create-target-ds-alloc-reclaim-pool =
 _$(1).$(2).$(3).p$(4): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).$(3).p$(4) -I../ds/$(1) -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
-all:: _$(1).$(2).$(3).p$(4)
+all: _$(1).$(2).$(3).p$(4)
 endef
 
 $(foreach ds,$(DATA_STRUCTURES), \
