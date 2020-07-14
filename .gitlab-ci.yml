@@ -9,7 +9,7 @@ before_script:
     - dos2unix `find . -type f \( -name "*.txt" -o -name "*.sh" \) -print`
     - chmod 755 `find . -type f -name "*.sh" -print`
 
-compile_microbench:
+build:microbench:
     stage: build
     script:
         - cd microbench
@@ -18,7 +18,7 @@ compile_microbench:
         paths:
             - microbench/bin
 
-compile_macrobench:
+build:macrobench:
     stage: build
     script:
         - cd macrobench
@@ -27,8 +27,31 @@ compile_macrobench:
         paths:
             - macrobench/bin
 
-test_build_coverage_microbench_options:
+docker:master:
+    stage: build
+    before_script:
+        - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    script:
+        - docker build -f docker/Dockerfile -t "$CI_REGISTRY_IMAGE" .
+        - docker/_ci_docker_test.sh
+        - docker push "$CI_REGISTRY_IMAGE"
+    only:
+        - master
+
+docker:other:
+    stage: build
+    before_script:
+        - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    script:
+        - docker build -f docker/Dockerfile -t "$CI_REGISTRY_IMAGE" .
+        - docker/_ci_docker_test.sh
+        - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+    except:
+        - master
+
+test:build_coverage:microbench:options:
     stage: test
+    needs: ["build:microbench"]
     script:
         - cd microbench
         - echo
@@ -62,8 +85,9 @@ test_build_coverage_microbench_options:
         - echo "#########################################################"
         - make has_libnuma=0 has_libpapi=0 use_openmp=0 -j$(grep processor /proc/cpuinfo | wc -l) || exit 1
 
-test_build_coverage_microbench_targets:
+test:build_coverage:microbench:targets:
     stage: test
+    needs: ["build:microbench"]
     script:
         - cd microbench
         - echo
@@ -78,8 +102,9 @@ test_build_coverage_microbench_targets:
         - make all -j$(grep processor /proc/cpuinfo | wc -l) || exit 1
         - echo
 
-test_build_coverage_microbench_recordmanagers:
+test:build_coverage:microbench:recordmanagers:
     stage: test
+    needs: ["build:microbench"]
     script:
         - cd microbench
         - echo
@@ -91,14 +116,16 @@ test_build_coverage_microbench_recordmanagers:
         - echo "#########################################################"
         - make all DATA_STRUCTURES="brown_ext_abtree_lf" RECLAIMERS="none debra debracap ebr_token ebr_tree hazardptr" POOLS="none numa" -j$(grep processor /proc/cpuinfo | wc -l)
 
-test_microbench_experiments_example:
+test:microbench_experiments:example:
     stage: test
+    needs: ["build:microbench"]
     script:
         - cd microbench_experiments/example
         - ./run_testing.sh
 
-test_macrobench_istree_exp1:
+test:macrobench_experiments:istree_exp1:
     stage: test
+    needs: ["build:macrobench"]
     script:
         - cd macrobench_experiments/istree_exp1
         - ./run_testing.sh

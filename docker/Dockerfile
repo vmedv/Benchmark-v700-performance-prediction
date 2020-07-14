@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt update && apt install -y \
         build-essential \
@@ -13,6 +13,12 @@ RUN apt update && apt install -y \
         python3-pip \
         time \
         && rm -rf /var/lib/apt/lists/*
+
+RUN apt update && apt install -y \
+        linux-tools-generic \
+        linux-tools-common \
+        && rm -rf /var/lib/apt/lists/* \
+        && echo alias perf=$(find / -wholename "*-generic/perf") > ~/.bash_aliases
 
 RUN pip3 install \
         numpy \
@@ -33,13 +39,13 @@ RUN cd root \
         && ldconfig \
         && cd ../..
 
-RUN cd root \
-        && echo \
-        && echo '###############################################' \
-        && echo '## CLONE SETBENCH: branch data_framework' \
-        && echo '###############################################' \
-        && echo \
-        && git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules \
-        && cd setbench \
-        && git checkout data_framework \
-        && git submodule update \
+RUN apt update && apt install -y \
+        nano \
+        htop \
+        && rm -rf /var/lib/apt/lists/*
+
+COPY . /root/setbench/
+
+WORKDIR /root/setbench
+
+CMD ["/bin/bash"]
