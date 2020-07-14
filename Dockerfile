@@ -24,7 +24,8 @@ RUN pip3 install \
         jinja2 \
         colorama
 
-RUN git clone https://bitbucket.org/icl/papi.git \
+RUN cd root \
+        && git clone https://bitbucket.org/icl/papi.git \
         && cd papi/src \
         && ./configure \
         && make -j \
@@ -32,7 +33,29 @@ RUN git clone https://bitbucket.org/icl/papi.git \
         && ldconfig \
         && cd ../..
 
-RUN git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules \
+RUN cd root \
+        && echo
+        && echo '###############################################'
+        && echo '## CLONE SETBENCH: branch data_framework'
+        && echo '###############################################'
+        && echo
+        && git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules \
         && cd setbench \
         && git checkout data_framework \
         && git submodule update
+        && echo
+        && echo '###############################################'
+        && echo '## COMPILE & TEST: microbench'
+        && echo '###############################################'
+        && echo
+        && cd microbench_experiments/example \
+        && ./run_testing.sh \
+        && rm -r bin data \
+        && echo
+        && echo '###############################################'
+        && echo '## COMPILE & TEST: macrobench'
+        && echo '###############################################'
+        && echo
+        && cd ../../macrobench_experiments/istree_exp1 \
+        && ./run_testing.sh \
+        && rm -r ../../macrobench/bin data
