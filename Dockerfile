@@ -34,28 +34,28 @@ RUN cd root \
         && cd ../..
 
 RUN cd root \
-        && echo
-        && echo '###############################################'
-        && echo '## CLONE SETBENCH: branch data_framework'
-        && echo '###############################################'
-        && echo
+        && echo \
+        && echo '###############################################' \
+        && echo '## CLONE SETBENCH: branch data_framework' \
+        && echo '###############################################' \
+        && echo \
         && git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules \
         && cd setbench \
         && git checkout data_framework \
         && git submodule update
-        && echo
-        && echo '###############################################'
-        && echo '## COMPILE & TEST: microbench'
-        && echo '###############################################'
-        && echo
+        && echo \
+        && echo '###############################################' \
+        && echo '## COMPILE & TEST: microbench' \
+        && echo '###############################################' \
+        && echo \
         && cd microbench_experiments/example \
         && ./run_testing.sh \
         && rm -r bin data \
-        && echo
-        && echo '###############################################'
-        && echo '## COMPILE & TEST: macrobench'
-        && echo '###############################################'
-        && echo
+        && echo \
+        && echo '###############################################' \
+        && echo '## COMPILE & TEST: macrobench' \
+        && echo '###############################################' \
+        && echo \
         && cd ../../macrobench_experiments/istree_exp1 \
         && ./run_testing.sh \
         && rm -r ../../macrobench/bin data
