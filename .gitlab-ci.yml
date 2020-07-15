@@ -43,7 +43,7 @@ docker:other:
     before_script:
         - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     script:
-        - docker build -f docker/Dockerfile -t "$CI_REGISTRY_IMAGE" .
+        - docker build -f docker/Dockerfile -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH" .
         - docker/_ci_docker_test.sh
         - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
     except:
