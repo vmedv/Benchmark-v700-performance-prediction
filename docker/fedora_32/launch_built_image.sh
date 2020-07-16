@@ -17,9 +17,11 @@ echo
 echo "copying your ~/.ssh/authorized_keys to the container"
 echo "    so you can *hopefully* login using your existing ssh keys"
 echo "    (without any extra work)"
-docker exec setbench bash -c 'mkdir /root/.ssh'
-docker cp ~/.ssh/authorized_keys setbench:/root/.ssh/
-docker exec setbench bash -c 'chown root:root /root/.ssh/authorized_keys'
+if [ -e "~/.ssh/authorized_keys" ]; then
+    docker exec setbench bash -c 'mkdir /root/.ssh'
+    docker cp ~/.ssh/authorized_keys setbench:/root/.ssh/
+    docker exec setbench bash -c 'chown root:root /root/.ssh/authorized_keys'
+fi
 
 ## instructions
 echo

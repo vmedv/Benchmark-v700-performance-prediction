@@ -34,7 +34,7 @@ docker:build_test_deploy:master:
     script:
         - cd docker
         - ./_ci_clean.sh
-        - ./_ci_build.sh "$CI_REGISTRY_IMAGE"
+        - docker build -f ubuntu_20_04/Dockerfile ../ -t "$CI_REGISTRY_IMAGE"
         - ./_ci_launch.sh "$CI_REGISTRY_IMAGE"
         - ./_ci_test_launched.sh
         - ./_ci_clean.sh
@@ -54,7 +54,7 @@ docker:build_test_deploy:data_framework:
     script:
         - cd docker
         - ./_ci_clean.sh
-        - ./_ci_build.sh "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+        - docker build -f ubuntu_20_04/Dockerfile ../ -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
         - ./_ci_launch.sh "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
         - ./_ci_test_launched.sh
         - ./_ci_clean.sh
