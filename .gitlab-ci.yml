@@ -27,7 +27,7 @@ build:macrobench:
         paths:
             - macrobench/bin
 
-docker:master:
+docker:build_test_deploy:master:
     stage: build
     before_script:
         - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -36,11 +36,10 @@ docker:master:
         - ./_ci_clean.sh
         - ./_ci_build.sh "$CI_REGISTRY_IMAGE"
         - ./_ci_launch.sh "$CI_REGISTRY_IMAGE"
-        - docker exec setbench bash -c "cd microbench_experiments/example ; ./run_testing.sh"
-        - docker exec setbench bash -c "cd macrobench_experiments/istree_exp1 ; ./run_testing.sh"
-        - ssh -oStrictHostKeyChecking=no -p 2222 root@localhost -t "ls"
+        - ./_ci_test_launched.sh
         - ./_ci_clean.sh
         - docker push "$CI_REGISTRY_IMAGE"
+    after_script:
         - echo y | docker container prune
         - echo y | docker images prune
         - docker ps -a
@@ -48,7 +47,7 @@ docker:master:
     only:
         - master
 
-docker:other:
+docker:build_test_deploy:data_framework:
     stage: build
     before_script:
         - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
@@ -57,16 +56,43 @@ docker:other:
         - ./_ci_clean.sh
         - ./_ci_build.sh "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
         - ./_ci_launch.sh "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
-        - docker exec setbench bash -c "cd microbench_experiments/example ; ./run_testing.sh"
-        - docker exec setbench bash -c "cd macrobench_experiments/istree_exp1 ; ./run_testing.sh"
-        - ssh -oStrictHostKeyChecking=no -p 2222 root@localhost -t "ls"
+        - ./_ci_test_launched.sh
         - ./_ci_clean.sh
         - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+    after_script:
         - echo y | docker container prune
         - echo y | docker images prune
         - docker ps -a
         - docker images
-    except:
+    only:
+        - data_framework
+
+docker:pull_test:master:
+    stage: test
+    needs: ["docker:build_test_deploy:master"]
+    script:
+        - cd docker
+        - ./_ci_clean.sh
+        - docker rmi -f "$CI_REGISTRY_IMAGE"
+        - docker pull "$CI_REGISTRY_IMAGE"
+        - ./_ci_launch.sh "$CI_REGISTRY_IMAGE"
+        - ./_ci_test_launched.sh
+        - ./_ci_clean.sh
+    only:
+        - master
+
+docker:pull_test:master:
+    stage: test
+    needs: ["docker:build_test_deploy:data_framework"]
+    script:
+        - cd docker
+        - ./_ci_clean.sh
+        - docker rmi -f "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+        - docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+        - ./_ci_launch.sh "$CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH"
+        - ./_ci_test_launched.sh
+        - ./_ci_clean.sh
+    only:
         - master
 
 test:build_coverage:microbench:options:

@@ -40,3 +40,4 @@ fi
 ## stop and remove any existing docker container named setbench
 docker stop setbench 2>/dev/null
 echo y | docker container rm setbench 2>/dev/null
+echo 'finished CI clean'
