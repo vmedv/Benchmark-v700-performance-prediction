@@ -34,7 +34,7 @@ files+=( $(find ../ -name "_private") )
 if [ "${#files[@]}" -ne "0" ]; then
     echo "files:"
     echo "${files[@]}" | tr " " "\n"
-    rm ${files[@]}
+    rm -r ${files[@]}
 fi
 
 ## stop and remove any existing docker container named setbench
