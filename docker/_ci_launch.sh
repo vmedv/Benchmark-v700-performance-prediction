@@ -24,5 +24,6 @@ if [ -e "~/.ssh/authorized_keys" ]; then
 else
     docker exec setbench bash -c 'mkdir /root/.ssh'
     docker exec setbench bash -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINBbSLJB8xHsZaJJjbFDBQC2x5hvU2oeWMKjRbNY/IwE trbot@scuttle" > /root/.ssh/authorized_keys'
+    docker exec setbench bash -c 'echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOvZUB+O/cpUDQgk0rscNdtzZPlznS/PGRVf3ZIexXJP gitlab-runner@herald" >> /root/.ssh/authorized_keys'
     docker exec setbench bash -c 'chown root:root /root/.ssh/authorized_keys'
 fi
