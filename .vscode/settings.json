@@ -82,5 +82,14 @@
     },
     "svg.preview.background": "black",
     "python.pythonPath": "/usr/bin/python3",
-    "python.autoComplete.extraPaths": ["./microbench_experiments/example"]
+    "python.autoComplete.extraPaths": [
+        "./microbench_experiments/example",
+        "./microbench_experiments/tutorial",
+        "./tools/data_framework",
+        "./macrobench_experiments/istree_exp1"
+    ],
+    "[python]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 4
+      },
 }

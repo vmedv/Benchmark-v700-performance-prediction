@@ -144,11 +144,11 @@ public:
         // TODO: determine if there are index collisions in anything but orderline
         //       (and determine why they happen in orderline, and if it's ok)
 #else
-        newItem->next = NULL;
         lock_key(key);
             auto oldItem = index->insertIfAbsent(tid, key, newItem);
             if (oldItem != index->getNoValue()) {
                 // adding to existing list
+                assert(newItem->next == NULL);
                 newItem->next = oldItem->next;
                 oldItem->next = newItem;
             }
@@ -158,9 +158,35 @@ public:
         return RCOK;
     }
     RC index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id = -1, int thd_id = 0) {
-//        lock_key(key);
+        
+        #define IRT_VALIDATE 1
+        #define IRT_LOCK 2
+        #define IRT_UNSAFE 3
+        
+        #define INDEX_READ_TECHNIQUE IRT_VALIDATE
+        
+#if INDEX_READ_TECHNIQUE == IRT_VALIDATE
+        while (1) {
+            vwlock s1 = read_lock_state(key);
+            if (state_is_locked(s1)) continue; // spin until key is unlocked
+
             *item = (VALUE_TYPE) index->find(tid, key);
-//        unlock_key(key);
+
+            vwlock s2 = read_lock_state(key);
+            if (s2 == s1) break; // validate key is still unlocked (with same version)
+            
+            // this validation avoids race conditions where a value/item
+            // is temporarily cut out of the linked list of items,
+            // despite being semantically present in the set.
+            // (an alternative to validation is locking -- see below)
+        }
+#elif INDEX_READ_TECHNIQUE == IRT_LOCK
+            lock_key(key);
+            *item = (VALUE_TYPE) index->find(tid, key);
+            unlock_key(key);
+#elif INDEX_READ_TECHNIQUE == IRT_UNSAFE
+            *item = (VALUE_TYPE) index->find(tid, key);
+#endif
         INCREMENT_NUM_READS(tid);
         return RCOK;
     }

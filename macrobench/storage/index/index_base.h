@@ -21,7 +21,7 @@ typedef uintptr_t vwlock;  /* (Version,LOCKBIT) */
 
 #define BIG_CONSTANT(x) (x##LLU)
 #define PSLOCK(v) (LockTab + (UNS(hash_murmur3((v))) & TABMSK))
-static inline int32_t hash_murmur3(KEY_TYPE v) {
+static inline uint64_t hash_murmur3(KEY_TYPE v) {
     // assert: _TABSZ is a power of 2 and KEY_TYPE is 64-bits
     v ^= v >> 33;
     v *= BIG_CONSTANT(0xff51afd7ed558ccd);
@@ -45,7 +45,9 @@ protected:
     #define INCREMENT_NUM_READS(tid) 
     #define INCREMENT_NUM_RQS(tid) 
     
+    PAD;
     volatile vwlock LockTab[_TABSZ];
+    PAD;
     
     #define PRINT_BUCKETS 30
     long long lockHistogram[PRINT_BUCKETS];
@@ -106,8 +108,8 @@ private:
         assert(((uint64_t) lock) >= ((uint64_t) LockTab));
         assert(((uint64_t) lock) <= ((uint64_t) LockTab)+sizeof(LockTab) - sizeof(vwlock));
         while (1) {
-            vwlock val;
-            while ((val = *lock) & 1); // wait while lock is held
+            vwlock val = *lock;
+            if (val & 1) continue; // wait while lock is held
             if (__sync_bool_compare_and_swap(lock, val, val+1)) break;
         }
     }
@@ -122,6 +124,15 @@ public:
     }
     inline void unlock_key(KEY_TYPE key) {
         vwlock_release(PSLOCK(key));
+    }
+    inline vwlock read_lock_state(KEY_TYPE key) {
+        return *PSLOCK(key);
+    }
+    inline bool state_is_locked(vwlock s) {
+        return s&1;
+    }
+    inline size_t state_get_version(vwlock s) {
+        return s>>1;
     }
 
 //private:

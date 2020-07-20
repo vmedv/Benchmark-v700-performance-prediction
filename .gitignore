@@ -7,7 +7,9 @@ log.txt
 step*.txt
 out*.svg
 out*.png
-temp*.txt
+temp_*.txt
+temp.*.txt
+temp.txt
 compile.txt
 *.pyc
 time*.txt
@@ -36,3 +38,5 @@ data
 macrobench/bin
 log.*
 Makefile.var
+bin
+_unused
