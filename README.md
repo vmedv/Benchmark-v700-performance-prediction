@@ -84,10 +84,51 @@ It likely needs new memory fence placements, or a port to use `atomics`, if it i
 
 ## Docker
 
-Docker files, and pre-built containers for Ubuntu 20.04 and Fedora 32, are provided in `docker/`. You can pull the mainline Ubuntu 20.04 image with `docker pull trbot86/setbench`.
+Docker files for Ubuntu 20.04 and Fedora 32 are provided in `docker/`. You can pull the mainline prebuilt Ubuntu 20.04 image with `docker pull trbot86/setbench` or with script `docker/download_image.sh`. You can then launch a container to run it with `docker/launch_downloaded_image.sh` (and stop it with `stop_container.sh`).
 
 ## Virtual machines
 
 Note that you won't have access to hardware counters for tracking cache misses, etc., if you are using a virtual machine (except possibly in VMWare Player with PMU/PMC counter virtualization, although such results might not be 100% reliable).
 
 However, we are working on preparing one or more VM images.
+
+## Exact Python package versions
+
+If you are installing the Python prerequisites yourself, and you are have trouble getting the various Python packages and the data framework to play well together, you might want to pull the exact same versions we used. So, here's a dump of the version numbers I used when I installed all the packages.
+
+(You should be able to use `pip` to install these specific versions.)
+
+```
+backcall==0.2.0
+colorama==0.4.3
+cycler==0.10.0
+decorator==4.4.2
+ipykernel==5.3.2
+ipython==7.16.1
+ipython-genutils==0.2.0
+jedi==0.17.1
+Jinja2==2.11.2
+jupyter-client==6.1.6
+jupyter-core==4.6.3
+kiwisolver==1.2.0
+MarkupSafe==1.1.1
+matplotlib==3.2.2
+numpy==1.19.0
+pandas==1.0.5
+parso==0.7.0
+pexpect==4.8.0
+pickleshare==0.7.5
+prompt-toolkit==3.0.5
+ptyprocess==0.6.0
+Pygments==2.6.1
+pyparsing==2.4.7
+python-dateutil==2.8.1
+pytz==2020.1
+pyzmq==19.0.1
+scipy==1.5.1
+seaborn==0.10.1
+six==1.15.0
+tornado==6.0.4
+traitlets==4.3.3
+wcwidth==0.2.5
+```
