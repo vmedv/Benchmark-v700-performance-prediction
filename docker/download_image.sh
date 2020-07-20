@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker pull trbot86/setbench:data_framework
+docker pull trbot86/setbench
