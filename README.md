@@ -11,7 +11,7 @@ Note: if you check out a branch, you must run `git submodule update` to pull the
 # For usage instructions visit the SetBench Wiki!
 https://gitlab.com/trbot86/setbench/wikis/home
 
-Also see: `setbench/microbench_experiments/example/instructions_data.ipynb`, a Jupyter notebook tutorial that we recommend opening in the free/open source IDE VSCode (after installing the VSCode Python (Microsoft) extension).
+Also see: `microbench_experiments/tutorial/tutorial.ipynb`, a Jupyter notebook tutorial that we recommend opening in the free/open source IDE VSCode (after installing the VSCode Python (Microsoft) extension).
 
 # Setting up SetBench on Ubuntu 20.04 or 18.04
 
