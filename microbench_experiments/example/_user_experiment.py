@@ -119,60 +119,60 @@ def define_experiment(exp_dict, args):
     set_plot_style_hooks_file( exp_dict, os.getcwd() + '/' + '_user_plot_style.py' )
     ## if you prefer, you can set this PER-PLOT SET instead of globally, by providing argument plot_style_hooks_file below
 
-    add_plot_set( \
-            exp_dict \
-          , name='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: Throughput vs thread count' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , series='DS_TYPENAME' \
-          , x_axis='TOTAL_THREADS' \
-          , y_axis='total_throughput' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: Throughput vs thread count'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , series='DS_TYPENAME'
+          , x_axis='TOTAL_THREADS'
+          , y_axis='total_throughput'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
-    add_plot_set( \
-            exp_dict \
-          , name='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: L2 misses/op vs thread count' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , series='DS_TYPENAME' \
-          , x_axis='TOTAL_THREADS' \
-          , y_axis='PAPI_L2_TCM' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: L2 misses/op vs thread count'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , series='DS_TYPENAME'
+          , x_axis='TOTAL_THREADS'
+          , y_axis='PAPI_L2_TCM'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
-    add_plot_set( \
-            exp_dict \
-          , name='l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: L3 misses/op vs thread count' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , series='DS_TYPENAME' \
-          , x_axis='TOTAL_THREADS' \
-          , y_axis='PAPI_L3_TCM' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='l3miss-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: L3 misses/op vs thread count'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , series='DS_TYPENAME'
+          , x_axis='TOTAL_THREADS'
+          , y_axis='PAPI_L3_TCM'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
-    add_plot_set( \
-            exp_dict \
-          , name='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: Cycles/op vs thread count' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , series='DS_TYPENAME' \
-          , x_axis='TOTAL_THREADS' \
-          , y_axis='PAPI_TOT_CYC' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='cycles-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: Cycles/op vs thread count'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , series='DS_TYPENAME'
+          , x_axis='TOTAL_THREADS'
+          , y_axis='PAPI_TOT_CYC'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
-    add_plot_set( \
-            exp_dict \
-          , name='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , series='DS_TYPENAME' \
-          , x_axis='TOTAL_THREADS' \
-          , y_axis='PAPI_TOT_INS' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='instructions-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: Instructions/op vs thread count'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , series='DS_TYPENAME'
+          , x_axis='TOTAL_THREADS'
+          , y_axis='PAPI_TOT_INS'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
 
     ##
@@ -184,16 +184,16 @@ def define_experiment(exp_dict, args):
     ## note that with only a single series, there is no need for a legend (so we update the plot_cmd_args)
     plot_cmd_args = ''
 
-    add_plot_set( \
-            exp_dict \
-          , name='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput' \
-          , filter='TOTAL_THREADS == 1' \
-          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY'] \
-          , x_axis='DS_TYPENAME' \
-          , y_axis='total_throughput' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='sequential-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY}: Single threaded throughput'
+          , filter='TOTAL_THREADS == 1'
+          , varying_cols_list=['INS_DEL_FRAC', 'MAXKEY']
+          , x_axis='DS_TYPENAME'
+          , y_axis='total_throughput'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
 
     ##
@@ -210,15 +210,15 @@ def define_experiment(exp_dict, args):
     max_threads = p[len(p)-1]
     filter_string = 'TOTAL_THREADS in ({}, {})'.format(min_threads, max_threads)
 
-    add_plot_set( \
-            exp_dict \
-          , name='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
-          , title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)' \
-          , filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS'] \
-          , x_axis='DS_TYPENAME' \
-          , y_axis='maxresident_mb' \
-          , plot_type='bars' \
-          , plot_cmd_args=plot_cmd_args \
+    add_plot_set(
+            exp_dict
+          , name='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png'
+          , title='u={INS_DEL_FRAC} k={MAXKEY} n={TOTAL_THREADS}: Max resident size (MB)'
+          , filter=filter_string, varying_cols_list=['INS_DEL_FRAC', 'MAXKEY', 'TOTAL_THREADS']
+          , x_axis='DS_TYPENAME'
+          , y_axis='maxresident_mb'
+          , plot_type='bars'
+          , plot_cmd_args=plot_cmd_args
     )
 
     ##
@@ -231,12 +231,12 @@ def define_experiment(exp_dict, args):
 
     add_page_set( exp_dict, image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' )
     ## note: the above is interpreted the same as:
-    ##  add_page_set( \
-    ##          exp_dict \
-    ##        , image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png' \
-    ##        , name='throughput' \
-    ##        , column_field='INS_DEL_FRAC' \
-    ##        , row_field='MAXKEY' \
+    ##  add_page_set(
+    ##          exp_dict
+    ##        , image_files='throughput-u{INS_DEL_FRAC}-k{MAXKEY}.png'
+    ##        , name='throughput'
+    ##        , column_field='INS_DEL_FRAC'
+    ##        , row_field='MAXKEY'
     ##  )
     ## the more verbose expression simply gives you more control over which fields are placed in rows and columns
     ##
@@ -252,13 +252,13 @@ def define_experiment(exp_dict, args):
 
     add_page_set( exp_dict, image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' )
     ## note: the above is interpreted the same as:
-    ##  add_page_set( \
-    ##          exp_dict \
-    #$        , image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png' \
-    ##        , name='maxresident' \
-    ##        , table_field='TOTAL_THREADS' \
-    ##        , column_field='INS_DEL_FRAC' \
-    ##        , row_field='MAXKEY' \
+    ##  add_page_set(
+    ##          exp_dict
+    #$        , image_files='maxresident-u{INS_DEL_FRAC}-k{MAXKEY}-n{TOTAL_THREADS}.png'
+    ##        , name='maxresident'
+    ##        , table_field='TOTAL_THREADS'
+    ##        , column_field='INS_DEL_FRAC'
+    ##        , row_field='MAXKEY'
     ##  )
 
     add_page_set( exp_dict, image_files='l2miss-u{INS_DEL_FRAC}-k{MAXKEY}.png' )

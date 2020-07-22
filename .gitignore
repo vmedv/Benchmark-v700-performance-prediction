@@ -40,3 +40,4 @@ log.*
 Makefile.var
 bin
 _unused
+*.html
