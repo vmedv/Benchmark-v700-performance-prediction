@@ -70,7 +70,7 @@ public:
           : data(_data), rng(_rng) {}
     K next() {
         double z; // Uniform random number (0 < z < 1)
-        int zipf_value; // Computed exponential value to be returned
+        int zipf_value = 0; // Computed exponential value to be returned
         int low, high, mid; // Binary-search bounds
 
         // Pull a uniform random number (0 < z < 1)
@@ -80,7 +80,7 @@ public:
         } while ((z == 0) || (z == 1));
 
         // Map z to the value
-        low = 1, high = data->maxKey, mid;
+        low = 1, high = data->maxKey;
         do {
             mid = floor((low + high) / 2);
             if (data->sum_probs[mid] >= z && data->sum_probs[mid - 1] < z) {

@@ -56,6 +56,4 @@
     }) \
 
 
-//     gstats_handle_stat(LONG_LONG, timer_latency, 1, {}) \
-
 #endif /* GSTATS_OUTPUT_DEFS_H */

@@ -8,7 +8,7 @@
  *  gstats_all_data::print_stat(STAT_ID, aggregation_and_print_function)
  *  gstats_all_data::print_all_stats()
  *       uses any aggregation_and_print_function specifications made in create_stat
- * 
+ *
  * aggregation_and_print_functions:
  *  use them with lambdas to curry config args
  *  (could efficiently combine them in one loop over the data by making the agg_
@@ -27,7 +27,7 @@
  *       and you can instead get stat aggregations using a function get(expr).
  *       the ultimate goal is to be able to provide complex expressions using
  *       the following grammar:
- * 
+ *
  *         START = EXPR
  *          EXPR = FLOAT | STAT_NAME
  *          EXPR = [EXPR OPERATOR EXPR]
@@ -35,7 +35,7 @@
  *      OPERATOR = + | - | * | / | %
  *          AGGR = SUM | AVG | MIN | MAX | COUNT | VARIANCE | STDEV | HIST_LOG | HIST_LIN
  *          GRAN = BY_INDEX | BY_THREAD | ALL
- * 
+ *
  * This will allow invocations such as the following:
  *          get("3.0")                                                          -> returns array with a[0] = 3.0
  *          get("num_updates")                                                  -> returns array containing all values stored for num_updates (probably per-thread values)
@@ -324,7 +324,7 @@ public:
         // parallel initialization
         VERBOSE std::cout<<"parallel stat intialization: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
         volatile bool start = false;
-        
+
         std::thread threads[num_processes];
         for (int tid=0;tid<num_processes;++tid) {
             threads[tid] = std::thread([tid,&start,num_processes,this]() {
@@ -632,7 +632,7 @@ private:
         VERBOSE std::cout<<"parallel compute histogram: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
         std::thread threads[std::thread::hardware_concurrency()];
         volatile bool start = false;
-        for (int thread_id=0;thread_id<std::thread::hardware_concurrency();++thread_id) {
+        for (int thread_id=0;thread_id<(int) std::thread::hardware_concurrency();++thread_id) {
             //cout<<"    parallel compute histogram: spawning thread "<<thread_id<<std::endl;
             threads[thread_id] = std::thread([thread_id, histogram, id, &start, num_buckets, metrics, this]() {
 //                while (!start) { __sync_synchronize(); }
@@ -640,7 +640,7 @@ private:
                 // compute our slice of the indices
                 int slice_size = this->num_indices[id] / std::thread::hardware_concurrency();
                 int start_ix = slice_size * thread_id;
-                int end_ix = (thread_id == std::thread::hardware_concurrency()-1) ? this->num_indices[id] : slice_size * (thread_id+1);
+                int end_ix = (thread_id == (int) std::thread::hardware_concurrency()-1) ? this->num_indices[id] : slice_size * (thread_id+1);
 
                 stat_metrics<long long> * __thread_histogram = new stat_metrics<long long>[num_buckets+1];
                 for (int i=0;i<num_buckets+1;++i) {
@@ -688,7 +688,7 @@ private:
                     for (int bucket=0;bucket<num_buckets;++bucket) {
                         __sync_fetch_and_add(&histogram[bucket].none, thread_histogram[bucket].none);
                     }
-                }                        
+                }
 
                 delete[] __thread_histogram;
 
@@ -700,7 +700,7 @@ private:
         start = true;
         __sync_synchronize();
         VERBOSE std::cout<<"parallel compute histogram: joining "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
-        for (int i=0;i<std::thread::hardware_concurrency();++i) {
+        for (int i=0;i<(int) std::thread::hardware_concurrency();++i) {
             //cout<<"    parallel compute histogram: joining thread "<<i<<std::endl;
             threads[i].join();
             //cout<<"    parallel compute histogram: joined thread "<<i<<std::endl;
@@ -755,7 +755,7 @@ private:
         if (metrics) {
             /**
              * if metrics is non-null, compute histogram from metrics
-             */                
+             */
             dims.first_min = std::numeric_limits<double>::max();
             dims.first_max = std::numeric_limits<double>::min();
             dims.cnt_min = std::numeric_limits<double>::max();
@@ -839,7 +839,7 @@ private:
         }
         return std::pair<stat_metrics<long long> *, histogram_lin_dims>(histogram, dims);
     }
-    
+
     void compute_before_printing() {
         if (already_computed_stats) return;
 //            std::cout<<"start compute_before_printing()..."<<std::endl;
@@ -928,7 +928,7 @@ public:
                 break;
             case TOTAL:
                 metrics = (stat_metrics<T> *) computed_gstats_total[id];
-                num_metrics = 1; 
+                num_metrics = 1;
                 granularity_str="_total";
                 break;
             case BY_INDEX:
