@@ -674,7 +674,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             ++rq_cnt;
             size_t rqcnt;
             // GSTATS_TIMER_RESET(tid, timer_latency);
-            if (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
+            if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
                 garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
             }
             // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
@@ -750,7 +750,7 @@ void thread_rq(GlobalsT * g, int __tid) {
 
         TIMELINE_START(tid);
 
-        if (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) {
+        if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
             garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
         }
 
