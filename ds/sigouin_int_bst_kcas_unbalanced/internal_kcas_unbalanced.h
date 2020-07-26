@@ -133,7 +133,7 @@ Node<K, V> * InternalKCAS<RecordManager, K, V>::createNode(const int tid, K key,
 
 template<class RecordManager, typename K, typename V>
 InternalKCAS<RecordManager, K, V>::InternalKCAS(const int _numThreads, const int _minKey, const long long _maxKey)
-        : numThreads(_numThreads), minKey(_minKey), maxKey(_maxKey), recmgr(new RecordManager(numThreads)) {
+        : numThreads(_numThreads), minKey(_minKey), maxKey(_maxKey), recmgr(new RecordManager(_numThreads)) {
 
     root = createNode(0, (maxKey + 1 & 0x00FFFFFFFFFFFFFF), NULL);
     init = true;
@@ -141,7 +141,7 @@ InternalKCAS<RecordManager, K, V>::InternalKCAS(const int _numThreads, const int
 
 template<class RecordManager, typename K, typename V>
 InternalKCAS<RecordManager, K, V>::~InternalKCAS() {
-    auto guard = recmgr->getGuard(tid);
+    // auto guard = recmgr->getGuard(tid);
     freeSubtree(0, root);
     delete recmgr;
 }

@@ -79,6 +79,7 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <algorithm>
 #include "errors.h"
@@ -96,7 +97,7 @@
 #endif
 #define GSTATS_DATA_SIZE_BYTES 8
 #define GSTATS_BITS_IN_BYTE 8
-#define GSTATS_DEFAULT_HISTOGRAM_LIN_NUM_BUCKETS 32
+#define GSTATS_DEFAULT_HISTOGRAM_LIN_NUM_BUCKETS 10
 #define GSTATS_DEFAULT_HISTOGRAM_LOG_NUM_BUCKETS GSTATS_DATA_SIZE_BYTES * GSTATS_BITS_IN_BYTE
 #define GSTATS_SQ(x) ((x)*(x))
 #define GSTATS_USE_TEMPLATE(id, func, args) (this->data_types[id] == LONG_LONG ? func<long long>(args) : func<double>(args))
@@ -110,7 +111,8 @@ enum gstats_enum_data_type {
 enum gstats_enum_output_method {
     PRINT_RAW,
     PRINT_HISTOGRAM_LOG,
-    PRINT_HISTOGRAM_LIN
+    PRINT_HISTOGRAM_LIN,
+    PRINT_TO_FILE
 };
 enum gstats_enum_aggregation_function {
     NONE,
@@ -135,17 +137,26 @@ public:
     gstats_enum_output_method method;
     gstats_enum_aggregation_function func;
     gstats_enum_aggregation_granularity granularity;
+    const char * const output_filename;
     int num_buckets_if_histogram_lin;
     gstats_output_item(gstats_enum_output_method method
                    , gstats_enum_aggregation_function func
                    , gstats_enum_aggregation_granularity granularity
+                   , const char * const output_filename = NULL
                    , const int num_buckets_if_histogram_lin = GSTATS_DEFAULT_HISTOGRAM_LIN_NUM_BUCKETS)
             : method(method)
             , func(func)
             , granularity(granularity)
+            , output_filename(output_filename)
             , num_buckets_if_histogram_lin(num_buckets_if_histogram_lin) {
         if (granularity == TOTAL && (method == PRINT_HISTOGRAM_LOG || method == PRINT_HISTOGRAM_LIN)) {
             setbench_error("cannot use granularity TOTAL with HISTOGRAM methods");
+        }
+        if ((method == PRINT_TO_FILE) && (func != NONE || granularity != FULL_DATA)) {
+            setbench_error("PRINT_TO_FILE can only be used with aggregation function NONE, and granularity FULL_DATA");
+        }
+        if (output_filename && (method != PRINT_TO_FILE || func != NONE || granularity != FULL_DATA)) {
+            setbench_error("output_filename can only be used with PRINT_TO_FILE, NONE, FULL_DATA");
         }
     }
 };
@@ -275,10 +286,16 @@ private:
         std::cout<<std::endl<<"linear_histogram_of_"; \
         GSTATS_PRINT_LOWER(#type); \
         std::cout<<"_"<<id_to_name[sid]<<agg_granularity_str<<"="; \
-        for (int __i=0;__i<=__num_buckets;++__i) std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
+        for (int __i=0;__i<=__num_buckets;++__i) { \
+            if (__histogram[__i].GSTATS_TYPE_TO_FIELD(type)) { \
+                std::cout<<(__i?" ":"")<<(__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type)))<<":"<<__histogram[__i].GSTATS_TYPE_TO_FIELD(type); \
+            } \
+        } \
         std::cout<<std::endl; \
         for (int __i=0;__i<=__num_buckets;++__i) { \
-            printf("    %s%12.2f, %12.2f]: %lld\n", (__i?"(":"["), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + __i*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), __histogram[__i].GSTATS_TYPE_TO_FIELD(type)); \
+            if (__histogram[__i].GSTATS_TYPE_TO_FIELD(type)) { \
+                printf("    %s%12.2f, %12.2f]: %lld\n", (__i?"(":"["), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + __i*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), (__dims.GSTATS_PASTE_MIN(GSTATS_TYPE_TO_FIELD(type)) + (1+__i)*__dims.GSTATS_PASTE_BUCKET_SIZE(GSTATS_TYPE_TO_FIELD(type))), __histogram[__i].GSTATS_TYPE_TO_FIELD(type)); \
+            } \
         } \
     }
 
@@ -997,6 +1014,51 @@ public:
                         case NONE:              GSTATS_PRINT_HISTOGRAM_LIN(id, granularity_str, NONE, metrics, num_metrics, output_item.num_buckets_if_histogram_lin); break;
                         default:                setbench_error("should not reach here"); break;
                     }
+                } break;
+            case PRINT_TO_FILE:
+                {
+                    assert(output_item.granularity == FULL_DATA);
+                    assert(output_item.func == NONE);
+
+                    // // is there any actual data to write?
+                    // int rows_to_write = 0;
+                    // for (int __tid=0;__tid<NUM_PROCESSES;++__tid) {
+                    //     if (thread_data[__tid].size[id]) {
+                    //         for (int __ix=0;__ix<thread_data[__tid].size[id];++__ix) {
+                    //             rows_to_write += (get_stat<T>(__tid, id, __ix) != std::numeric_limits<T>::max()
+                    //                            && get_stat<T>(__tid, id, __ix) != std::numeric_limits<T>::min());
+                    //         }
+                    //     }
+                    // }
+
+                    // // if so, create an output file
+                    // if (rows_to_write) {
+                        std::ofstream ofile;
+                        if (output_item.output_filename) {
+                            ofile.open(output_item.output_filename);
+                        } else {
+                            std::stringstream ss;
+                            ss<<id_to_name[id];
+                            ss<<".txt";
+                            ofile.open(ss.str());
+                        }
+
+                        for (int __tid=0;__tid<NUM_PROCESSES;++__tid) {
+                            if (thread_data[__tid].size[id]) {
+                                for (int __ix=0;__ix<thread_data[__tid].size[id];++__ix) {
+                                    ofile<<__tid;
+                                    ofile<<" "<<__ix;
+                                    if (get_stat<T>(__tid, id, __ix) == std::numeric_limits<T>::max() || get_stat<T>(__tid, id, __ix) == std::numeric_limits<T>::min()) {
+                                        ofile<<" "<<"0";
+                                    } else {
+                                        ofile<<" "<<get_stat<T>(__tid, id, __ix);
+                                    }
+                                    ofile<<std::endl;
+                                }
+                            }
+                        }
+                        ofile.close();
+                    // }
                 } break;
             default: setbench_error("should not reach here"); break;
         }

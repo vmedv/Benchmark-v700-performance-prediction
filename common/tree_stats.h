@@ -42,10 +42,10 @@ private:
     size_t bytesAtDepth[MAX_HEIGHT];
 #endif
     PAD;
-    
+
     void computeStats(NodeHandlerT * handler, nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
         //std::cout<<"nodeAddr="<<(size_t)node<<" depth="<<depth<<" degree="<<node->size<<" internal?="<<NodeHandlerT::isInternal(node)<<std::endl;
-        if (depth > maxDepth) return;
+        if (!node || depth > maxDepth) return;
         keysAtDepth[depth] += handler->getNumKeys(node);
         sumOfKeys += handler->getSumOfKeys(node);
 #ifdef TREE_STATS_BYTES_AT_DEPTH
@@ -62,7 +62,7 @@ private:
             }
         }
     }
-    
+
 public:
     TreeStats(NodeHandlerT * handler, nodeptr root, bool parallelConstruction, bool freeHandler = true) {
         for (size_t d=0;d<MAX_HEIGHT;++d) {
@@ -77,7 +77,7 @@ public:
 #ifdef _OPENMP
         if (!parallelConstruction) {
             computeStats(handler, root, 0);
-            
+
         } else {
             /**
              * PARALLEL constructor
@@ -88,7 +88,7 @@ public:
             #else
                 const size_t minNodes = 1;
             #endif
-            
+
             std::vector<nodeptr> qn;    // queue of node pointers
             std::vector<size_t> qd;     // queue of depths
             qn.reserve(minNodes*2);
@@ -126,7 +126,7 @@ public:
                 ++nodesSeenAtDepth;
 
                 // add any children to the queue
-                if (!handler->isLeaf(node)) {
+                if (node && !handler->isLeaf(node)) {
                     auto it = handler->getChildIterator(node);
                     while (it.hasNext()) {
                         auto child = it.next();
@@ -160,11 +160,11 @@ public:
 //                std::cout<<" "<<qn[i]<<"[depth "<<qd[i]<<"]";
 //            }
 //            std::cout<<std::endl;
-            
+
             // compute stats for the top of the tree, ABOVE the parallel constructed subtrees.
             std::cout<<"computing stats for the top of the tree (above the partitions)..."<<std::endl;
             computeStats(handler, root, 0, currDepth - 1);
-            
+
         }
 #else
         computeStats(handler, root, 0);
@@ -278,55 +278,55 @@ public:
     std::string toString() {
         std::stringstream ss;
         size_t height = getHeight();
-        
+
         ss<<"tree_stats_numInternalsAtDepth=";
         for (size_t d=0;d<height;++d) {
             ss<<(d?" ":"")<<getInternalsAtDepth(d);
         }
         ss<<std::endl;
-        
+
         ss<<"tree_stats_numLeavesAtDepth=";
         for (size_t d=0;d<height;++d) {
             ss<<(d?" ":"")<<getLeavesAtDepth(d);
         }
         ss<<std::endl;
-        
+
         ss<<"tree_stats_numNodesAtDepth=";
         for (size_t d=0;d<height;++d) {
             ss<<(d?" ":"")<<getNodesAtDepth(d);
         }
         ss<<std::endl;
-        
+
 //        ss<<"tree_stats_numPointersAtDepth=";
 //        for (size_t d=0;d<height;++d) {
 //            ss<<(d?" ":"")<<getPointersAtDepth(d);
 //        }
 //        ss<<std::endl;
-        
+
         ss<<"tree_stats_numKeysAtDepth=";
         for (size_t d=0;d<height;++d) {
             ss<<(d?" ":"")<<getKeysAtDepth(d);
         }
         ss<<std::endl;
-        
+
 //        ss<<"tree_stats_avgDegreeLeavesAtDepth=";
 //        for (size_t d=0;d<height;++d) {
 //            ss<<(d?" ":"")<<getAverageDegreeLeavesAtDepth(d);
 //        }
 //        ss<<std::endl;
-//        
+//
 //        ss<<"tree_stats_avgDegreeInternalsAtDepth=";
 //        for (size_t d=0;d<height;++d) {
 //            ss<<(d?" ":"")<<getAverageDegreeInternalsAtDepth(d);
 //        }
 //        ss<<std::endl;
-        
+
         ss<<"tree_stats_avgDegreeAtDepth=";
         for (size_t d=0;d<height;++d) {
             ss<<(d?" ":"")<<getAverageDegreeAtDepth(d);
         }
         ss<<std::endl;
-        
+
         ss<<std::endl;
         ss<<"tree_stats_height="<<height<<std::endl;
         ss<<"tree_stats_numInternals="<<getInternals()<<std::endl;
