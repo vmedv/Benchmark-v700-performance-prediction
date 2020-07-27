@@ -37,6 +37,8 @@ private:
     size_t internalsAtDepth[MAX_HEIGHT];
     size_t leavesAtDepth[MAX_HEIGHT];
     size_t keysAtDepth[MAX_HEIGHT];
+    size_t keysInLeavesAtDepth[MAX_HEIGHT];
+    size_t keysInInternalsAtDepth[MAX_HEIGHT];
     size_t sumOfKeys;
 #ifdef TREE_STATS_BYTES_AT_DEPTH
     size_t bytesAtDepth[MAX_HEIGHT];
@@ -46,15 +48,18 @@ private:
     void computeStats(NodeHandlerT * handler, nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
         //std::cout<<"nodeAddr="<<(size_t)node<<" depth="<<depth<<" degree="<<node->size<<" internal?="<<NodeHandlerT::isInternal(node)<<std::endl;
         if (!node || depth > maxDepth) return;
-        keysAtDepth[depth] += handler->getNumKeys(node);
+        size_t numKeys = handler->getNumKeys(node);
+        keysAtDepth[depth] += numKeys;
         sumOfKeys += handler->getSumOfKeys(node);
 #ifdef TREE_STATS_BYTES_AT_DEPTH
         bytesAtDepth[depth] += handler->getSizeInBytes(node);
 #endif
         if (handler->isLeaf(node)) {
             ++leavesAtDepth[depth];
+            keysInLeavesAtDepth[depth] += numKeys;
         } else {
             ++internalsAtDepth[depth];
+            keysInInternalsAtDepth[depth] += numKeys;
             auto it = handler->getChildIterator(node);
             while (it.hasNext()) {
                 auto child = it.next();
@@ -69,6 +74,8 @@ public:
             internalsAtDepth[d] = 0;
             leavesAtDepth[d] = 0;
             keysAtDepth[d] = 0;
+            keysInLeavesAtDepth[d] = 0;
+            keysInInternalsAtDepth[d] = 0;
 #ifdef TREE_STATS_BYTES_AT_DEPTH
             bytesAtDepth[d] = 0;
 #endif
@@ -146,6 +153,8 @@ public:
                     FAA(&internalsAtDepth[d+currDepth], ts->internalsAtDepth[d]);
                     FAA(&leavesAtDepth[d+currDepth], ts->leavesAtDepth[d]);
                     FAA(&keysAtDepth[d+currDepth], ts->keysAtDepth[d]);
+                    FAA(&keysInLeavesAtDepth[d+currDepth], ts->keysInLeavesAtDepth[d]);
+                    FAA(&keysInInternalsAtDepth[d+currDepth], ts->keysInInternalsAtDepth[d]);
 #ifdef TREE_STATS_BYTES_AT_DEPTH
                     FAA(&bytesAtDepth[d+currDepth], ts->bytesAtDepth[d]);
 #endif
@@ -226,13 +235,29 @@ public:
         }
         return result;
     }
+    size_t getKeysInLeaves() {
+        size_t maxDepth = getHeight();
+        size_t result = 0;
+        for (size_t d=0;d<maxDepth;++d) {
+            result += keysInLeavesAtDepth[d];
+        }
+        return result;
+    }
+    size_t getKeysInInternals() {
+        size_t maxDepth = getHeight();
+        size_t result = 0;
+        for (size_t d=0;d<maxDepth;++d) {
+            result += keysInInternalsAtDepth[d];
+        }
+        return result;
+    }
     double getAverageDegreeLeavesAtDepth(size_t d) {
         double denom = getLeavesAtDepth(d);
         return (denom == 0) ? 0 : getKeysAtDepth(d) / denom;
     }
     double getAverageDegreeLeaves() {
         double denom = getLeaves();
-        return (denom == 0) ? 0 : getKeys() / denom;
+        return (denom == 0) ? 0 : getKeysInLeaves() / denom;
     }
     double getAverageDegreeInternalsAtDepth(size_t d) {
         double denom = getInternalsAtDepth(d);
@@ -243,12 +268,13 @@ public:
         return (denom == 0) ? 0 : getNodes() / denom;
     }
     double getAverageDegreeAtDepth(size_t d) {
-        double denom = getNodesAtDepth(d);
-        return (getPointersAtDepth(d) + getKeysAtDepth(d)) / denom;
+        // double denom = getNodesAtDepth(d);
+        // return (getPointersAtDepth(d) + getKeysAtDepth(d)) / denom;
+        return (getPointersAtDepth(d) + keysInLeavesAtDepth[d]) / (double) getNodesAtDepth(d);
     }
     double getAverageDegree() {
         double denom = getNodes();
-        return (denom == 0) ? 0 : (getNodes() + getKeys()) / denom;
+        return (denom == 0) ? 0 : (denom + getKeysInLeaves()) / denom;
     }
     double getAverageKeyDepth() {
         size_t height = getHeight();
