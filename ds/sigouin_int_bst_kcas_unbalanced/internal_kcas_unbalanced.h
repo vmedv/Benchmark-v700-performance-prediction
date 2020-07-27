@@ -646,7 +646,7 @@ long InternalKCAS<RecordManager, K, V>::validateSubtree(Node<K, V> * node, long 
 template<class RecordManager, typename K, typename V>
 bool InternalKCAS<RecordManager, K, V>::validate() {
     std::unordered_set<casword_t> keys = {};
-    bool errorFound;
+    bool errorFound = false;
 
     rename("graph.dot", "graph_before.dot");
     ofstream graph;
