@@ -1,3 +1,3 @@
 #!/bin/bash
 
-../../tools/data_framework/run_experiment.py _user_experiment.py --testing --do-plot --do-pages
+../../tools/data_framework/run_experiment.py _user_experiment.py --testing -crdpw
