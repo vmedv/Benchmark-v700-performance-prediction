@@ -76,6 +76,7 @@ extern std::atomic_bool ___validateops;
     #include STR(RECLAIM.h)
 #else
     #define RECLAIM reclaimer_debra
+    #include "reclaimer_debra.h"
 #endif
 #ifdef ALLOC_TYPE
     #define ALLOC PASTE(allocator_,ALLOC_TYPE)
@@ -83,6 +84,7 @@ extern std::atomic_bool ___validateops;
     #include STR(ALLOC.h)
 #else
     #define ALLOC allocator_new
+    #include "allocator_new.h"
 #endif
 #ifdef POOL_TYPE
     #define POOL PASTE(pool_,POOL_TYPE)
@@ -90,6 +92,7 @@ extern std::atomic_bool ___validateops;
     #include STR(POOL.h)
 #else
     #define POOL pool_none
+    #include "pool_none.h"
 #endif
 
 #endif	/* GLOBALS_EXTERN_H */

@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   dcss.h
  * Author: Maya Arbel-Raviv and Trevor Brown
  *
@@ -14,8 +14,12 @@
 #include "plaf.h"
 #include "descriptors.h"
 
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
+#ifndef likely
+    #define likely(x)       __builtin_expect((x),1)
+#endif
+#ifndef unlikely
+    #define unlikely(x)     __builtin_expect((x),0)
+#endif
 
 #define dcsstagptr_t uintptr_t
 #define dcssptr_t dcssdesc_t *
@@ -31,7 +35,7 @@
 
 #define DCSS_IGNORED_RETVAL -1
 #define DCSS_SUCCESS 0
-#define DCSS_FAILED_ADDR1 1 
+#define DCSS_FAILED_ADDR1 1
 #define DCSS_FAILED_ADDR2 2
 
 #define MAX_PAYLOAD_PTRS 6
@@ -77,7 +81,7 @@ public:
 #endif
     const int NUM_PROCESSES;
     PAD;
-    
+
     /**
      * Function declarations
      */
@@ -92,7 +96,7 @@ public:
     inline dcssresult_t dcssPtr(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2); // use when addr2 is a pointer, or another type that does not use its least significant bit
     inline dcssresult_t dcssVal(const int tid, casword_t * addr1, casword_t old1, casword_t * addr2, casword_t old2, casword_t new2); // use when addr2 uses its least significant bit, but does not use its most significant but
     void debugPrint();
-    
+
     tagptr_t getDescriptorTagptr(const int otherTid);
     dcssptr_t getDescriptorPtr(tagptr_t tagptr);
     bool getDescriptorSnapshot(tagptr_t tagptr, dcssptr_t const dest);

@@ -46,6 +46,8 @@ private:
     PAD;
 
     void computeStats(NodeHandlerT * handler, nodeptr node, size_t depth, size_t maxDepth = std::numeric_limits<size_t>::max()) {
+        if (!handler) return;
+
         //std::cout<<"nodeAddr="<<(size_t)node<<" depth="<<depth<<" degree="<<node->size<<" internal?="<<NodeHandlerT::isInternal(node)<<std::endl;
         if (!node || depth > maxDepth) return;
         size_t numKeys = handler->getNumKeys(node);
@@ -82,6 +84,9 @@ public:
         }
         sumOfKeys = 0;
 #ifdef _OPENMP
+
+        if (!handler) return;
+
         if (!parallelConstruction) {
             computeStats(handler, root, 0);
 

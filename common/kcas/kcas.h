@@ -20,10 +20,18 @@ public:
     void addToDescriptor(T oldVal, T newVal);
 };
 
-#include "kcas_reuse_htm_impl.h"
+#ifdef KCAS_NO_HTM
+    #include "kcas_reuse_impl.h"
+#else
+    #include "kcas_reuse_htm_impl.h"
+#endif
 
 namespace kcas {
+#ifdef KCAS_NO_HTM
+    KCASLockFree<MAX_KCAS> instance;
+#else
     KCASHTM<MAX_KCAS> instance;
+#endif
 
     void writeInitPtr(casword_t volatile * addr, casword_t const newval) {
         return instance.writeInitPtr(addr, newval);

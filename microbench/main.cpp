@@ -931,7 +931,7 @@ void printOutput(GlobalsT * g) {
     std::cout<<"tree_stats_computeWalltime="<<(elapsedTreeStats/1000.)<<"s"<<std::endl;
     std::cout<<std::endl;
     //std::cout<<"size_nodes="<<
-    std::cout<<treeStats->toString()<<std::endl;
+    if (treeStats) std::cout<<treeStats->toString()<<std::endl;
 #endif
     g->dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
 
@@ -948,8 +948,8 @@ void printOutput(GlobalsT * g) {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->prefillKeySum;
         threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
 #ifdef USE_TREE_STATS
-        long long dsKeySum = treeStats->getSumOfKeys();
-        long long dsSize = treeStats->getKeys();
+        long long dsKeySum = (treeStats) ? treeStats->getSumOfKeys() : threadsKeySum;
+        long long dsSize = (treeStats) ? treeStats->getKeys() : threadsSize;
 #endif
         std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
         std::cout<<"threads_final_size="<<threadsSize<<std::endl;
@@ -959,12 +959,12 @@ void printOutput(GlobalsT * g) {
         if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
             std::cout<<"validate_result=success"<<std::endl;
             std::cout<<"Validation OK."<<std::endl;
+            if (treeStats == NULL) std::cout<<"**** WARNING: VALIDATION WAS ACTUALLY _SKIPPED_ AS THIS DS DOES NOT SUPPORT IT!"<<std::endl;
         } else {
             std::cout<<"validate_result=fail"<<std::endl;
             std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
             std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime(g);
-
             exit(-1);
         }
 #endif
@@ -1049,7 +1049,7 @@ void printOutput(GlobalsT * g) {
 
     papi_print_counters(totalAll);
 #ifdef USE_TREE_STATS
-    delete treeStats;
+    if (treeStats) delete treeStats;
 #endif
 
 #if !defined NDEBUG
