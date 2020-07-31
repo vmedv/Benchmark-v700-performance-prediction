@@ -5,6 +5,11 @@
 #ifndef BST_ADAPTER_H
 #define BST_ADAPTER_H
 
+#ifndef KCAS_TYPE
+    #define KCAS_HTM
+    #define KCAS_TYPE "KCAS_HTM"
+#endif
+
 #include <iostream>
 #include <csignal>
 #include "errors.h"

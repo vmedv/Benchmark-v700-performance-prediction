@@ -2,7 +2,7 @@
 
 #include <cassert>
 #define MAX_KCAS 6
-#include "../../common/kcas/kcas.h"
+#include "kcas.h"
 
 #include <unordered_set>
 #include <iostream>

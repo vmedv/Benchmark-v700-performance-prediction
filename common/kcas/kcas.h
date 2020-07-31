@@ -2,9 +2,16 @@
 
 #define CASWORD_BITS_TYPE casword_t
 
+#ifndef likely
+    #define likely(x)       __builtin_expect((x),1)
+#endif
+#ifndef unlikely
+    #define unlikely(x)     __builtin_expect((x),0)
+#endif
+
 template <typename T>
 struct casword {
-private:
+public:
     CASWORD_BITS_TYPE volatile bits;
 public:
     casword();
@@ -20,17 +27,23 @@ public:
     void addToDescriptor(T oldVal, T newVal);
 };
 
-#ifdef KCAS_NO_HTM
+#if defined KCAS_LOCKFREE
     #include "kcas_reuse_impl.h"
-#else
+#elif defined KCAS_HTM
     #include "kcas_reuse_htm_impl.h"
+#elif defined KCAS_HTM_FULL
+    #include "kcas_reuse_htm_full_impl.h"
+#else
+    #error must define one of KCAS_LOCKFREE KCAS_HTM KCAS_HTM_FULL
 #endif
 
 namespace kcas {
-#ifdef KCAS_NO_HTM
+#if defined KCAS_LOCKFREE
     KCASLockFree<MAX_KCAS> instance;
-#else
+#elif defined KCAS_HTM
     KCASHTM<MAX_KCAS> instance;
+#elif defined KCAS_HTM_FULL
+    KCASHTM_FULL<MAX_KCAS> instance;
 #endif
 
     void writeInitPtr(casword_t volatile * addr, casword_t const newval) {
@@ -57,7 +70,7 @@ namespace kcas {
         return instance.getDescriptor();
     }
 
-    void start() {
+    bool start() {
         return instance.start();
     }
 

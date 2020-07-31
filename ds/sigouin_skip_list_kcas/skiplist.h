@@ -4,7 +4,7 @@
 
 
 #define MAX_KCAS 41
-#include "../../common/kcas/kcas.h"
+#include "kcas.h"
 
 #include <unordered_set>
 #include <iostream>

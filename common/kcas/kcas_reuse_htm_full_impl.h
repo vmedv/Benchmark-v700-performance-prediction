@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdint.h>
 
+#include "user_gstats_handler.h"
 
 using namespace std;
 
@@ -17,6 +18,19 @@ using namespace std;
 
 #define BOOL_CAS __sync_bool_compare_and_swap
 #define VAL_CAS __sync_val_compare_and_swap
+
+enum abort_codes {
+      ABORT_RESERVED_ZERO
+    , ABORT_RETURN_FALSE
+    , ABORT_DESCRIPTOR
+    , ABORT_WRSET_TOO_LARGE
+};
+
+enum kcas_tx_start_result {
+      RETURN_FALSE
+    , HTM_STARTED
+    , FALLBACK
+};
 
 /**
  *
@@ -152,14 +166,27 @@ typedef intptr_t seqbits_t;
 #define KCAS_STATE_FAILED 8
 
 #define KCAS_LEFTSHIFT 2
+#define HTM_READ_DESCRIPTOR 20
+#define HTM_BAD_OLD_VAL 30
 
-#define KCAS_MAX_THREADS 500
+#define MAX_SHORT_RETRIES 5
+#define MAX_FULL_RETRIES 1
 
+
+#ifdef MAX_THREADS_POW2
+    #define KCAS_MAX_THREADS MAX_THREADS_POW2
+#else
+    #define KCAS_MAX_THREADS 500
+#endif
+
+PAD;
 void *volatile thread_ids[KCAS_MAX_THREADS] = {};
+PAD;
 
 class TIDGenerator {
   public:
     int myslot = -1;
+
     TIDGenerator() {
         int i;
         while (true) {
@@ -194,6 +221,72 @@ class TIDGenerator {
 };
 
 thread_local TIDGenerator kcas_tid;
+
+class htm_full_attempter {
+  private:
+    struct wrset_entry {
+        casword_t * addr;
+        casword_t newval;
+    };
+    static const int MAX_ENTRIES = 32;
+    wrset_entry entries[MAX_ENTRIES];
+    int sz;
+    int attempts;
+    bool active;
+
+  public:
+    htm_full_attempter() {
+        active = 0;
+    }
+    inline kcas_tx_start_result tryStart() {
+        sz = 0;
+        active = true;
+        for (attempts = 0; attempts < MAX_FULL_RETRIES; ++attempts) {
+            int status = _xbegin();
+            if (status == _XBEGIN_STARTED) {
+                return kcas_tx_start_result::HTM_STARTED;
+            } else {
+                GSTATS_ADD(kcas_tid.getId(), fasthtm_abort, 1);
+                int user_code = _XABORT_CODE(status);
+                switch (user_code) {
+                    case ABORT_RETURN_FALSE: {
+                        active = false;
+                        return kcas_tx_start_result::RETURN_FALSE;
+                    } break;
+                    case ABORT_WRSET_TOO_LARGE: {
+                        setbench_error("exceeded MAX_ENTRIES");
+                    } break;
+                }
+            }
+        }
+        active = false;
+        return kcas_tx_start_result::FALLBACK;
+    }
+    inline void add(casword_t * addr, casword_t newval) {
+        entries[sz++] = {addr, newval};
+        // if (sz > MAX_ENTRIES) {
+        //     _xabort(ABORT_WRSET_TOO_LARGE);
+        // }
+    }
+    inline void commit() {
+        for (int i=0;i<sz;++i) {
+            *entries[i].addr = entries[i].newval;
+        }
+        _xend();
+        active = false;
+        GSTATS_ADD(kcas_tid.getId(), fasthtm_commit, 1);
+    }
+    inline void abort(int code) {
+        _xabort(code);
+    }
+    inline bool isActive() {
+        return active;
+    }
+};
+
+PAD;
+thread_local htm_full_attempter htm_full;
+PAD;
 
 struct rdcssdesc_t {
     volatile seqbits_t seqBits;
@@ -246,8 +339,12 @@ inline static bool isKcas(casword_t val) {
     return (val & KCAS_TAGBIT);
 }
 
+inline static bool isAnyDescriptor(casword_t val) {
+    return (val & (RDCSS_TAGBIT | KCAS_TAGBIT));
+}
+
 template <int MAX_K>
-class KCASLockFree {
+class KCASHTM_FULL {
   public:
     /**
      * Data definitions
@@ -269,7 +366,7 @@ class KCASLockFree {
      * Function declarations
      */
   public:
-    KCASLockFree();
+    KCASHTM_FULL();
     void writeInitPtr(casword_t volatile *addr, casword_t const newval);
     void writeInitVal(casword_t volatile *addr, casword_t const newval);
     casword_t readPtr(casword_t volatile *addr);
@@ -294,7 +391,7 @@ class KCASLockFree {
 };
 
 template <int MAX_K>
-void KCASLockFree<MAX_K>::rdcssHelp(rdcsstagptr_t tagptr, rdcssptr_t snapshot, bool helpingOther) {
+void KCASHTM_FULL<MAX_K>::rdcssHelp(rdcsstagptr_t tagptr, rdcssptr_t snapshot, bool helpingOther) {
     bool readSuccess;
     casword_t v = DESC_READ_FIELD(readSuccess, *snapshot->addr1, snapshot->old1, KCAS_SEQBITS_MASK_STATE, KCAS_SEQBITS_OFFSET_STATE);
     if (!readSuccess)
@@ -309,16 +406,16 @@ void KCASLockFree<MAX_K>::rdcssHelp(rdcsstagptr_t tagptr, rdcssptr_t snapshot, b
 }
 
 template <int MAX_K>
-void KCASLockFree<MAX_K>::rdcssHelpOther(rdcsstagptr_t tagptr) {
+void KCASHTM_FULL<MAX_K>::rdcssHelpOther(rdcsstagptr_t tagptr) {
     rdcssdesc_t newSnapshot;
-    constexpr int sz = rdcssdesc_t::size;
+    const int sz = rdcssdesc_t::size;
     if (DESC_SNAPSHOT(rdcssdesc_t, rdcssDescriptors, &newSnapshot, tagptr, sz)) {
         rdcssHelp(tagptr, &newSnapshot, true);
     }
 }
 
 template <int MAX_K>
-casword_t KCASLockFree<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
+casword_t KCASHTM_FULL<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
     casword_t r;
     do {
         r = VAL_CAS(ptr->addr2, ptr->old2, (casword_t)tagptr);
@@ -333,7 +430,7 @@ casword_t KCASLockFree<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
 }
 
 template <int MAX_K>
-casword_t KCASLockFree<MAX_K>::rdcssRead(casword_t volatile *addr) {
+casword_t KCASHTM_FULL<MAX_K>::rdcssRead(casword_t volatile *addr) {
     casword_t r;
     do {
         r = *addr;
@@ -346,15 +443,15 @@ casword_t KCASLockFree<MAX_K>::rdcssRead(casword_t volatile *addr) {
 }
 
 template <int MAX_K>
-KCASLockFree<MAX_K>::KCASLockFree() {
+KCASHTM_FULL<MAX_K>::KCASHTM_FULL() {
     DESC_INIT_ALL(kcasDescriptors, KCAS_SEQBITS_NEW);
     DESC_INIT_ALL(rdcssDescriptors, RDCSS_SEQBITS_NEW);
 }
 
 template <int MAX_K>
-void KCASLockFree<MAX_K>::helpOther(kcastagptr_t tagptr) {
+void KCASHTM_FULL<MAX_K>::helpOther(kcastagptr_t tagptr) {
     kcasdesc_t<MAX_K> newSnapshot;
-    constexpr int sz = kcasdesc_t<MAX_K>::size;
+    const int sz = kcasdesc_t<MAX_K>::size;
     //cout<<"size of kcas descriptor is "<<sizeof(kcasdesc_t<MAX_K>)<<" and sz="<<sz<<endl;
     if (DESC_SNAPSHOT(kcasdesc_t<MAX_K>, kcasDescriptors, &newSnapshot, tagptr, sz)) {
         help(tagptr, &newSnapshot, true);
@@ -362,7 +459,7 @@ void KCASLockFree<MAX_K>::helpOther(kcastagptr_t tagptr) {
 }
 
 template <int MAX_K>
-bool KCASLockFree<MAX_K>::help(kcastagptr_t tagptr, kcasptr_t snapshot, bool helpingOther) {
+bool KCASHTM_FULL<MAX_K>::help(kcastagptr_t tagptr, kcasptr_t snapshot, bool helpingOther) {
     // phase 1: "locking" addresses for this kcas
     int newstate;
 
@@ -441,48 +538,95 @@ static void kcasdesc_sort(kcasptr_t ptr) {
 }
 
 template <int MAX_K>
-bool KCASLockFree<MAX_K>::execute() {
+bool KCASHTM_FULL<MAX_K>::execute() {
     assert(kcas_tid.getId() != -1);
+
+    if (htm_full.isActive()) {
+        htm_full.commit();
+        return true;
+    }
+
     auto desc = &kcasDescriptors[kcas_tid.getId()];
     // sort entries in the kcas descriptor to guarantee progress
-    kcasdesc_sort<MAX_K>(desc);
+
     DESC_INITIALIZED(kcasDescriptors, kcas_tid.getId());
     kcastagptr_t tagptr = TAGPTR_NEW(kcas_tid.getId(), desc->seqBits, KCAS_TAGBIT);
 
-    // perform the kcas and retire the old descriptor
-    bool result = help(tagptr, desc, false);
-    return result;
+    for (int i = 0; i < MAX_SHORT_RETRIES; i++) {
+        int status;
+        if ((status = _xbegin()) == _XBEGIN_STARTED) {
+            for (int j = 0; j < desc->numEntries; j++) {
+                casword_t val = *desc->entries[j].addr;
+                if (val != desc->entries[j].oldval) {
+                    if (isKcas(val))
+                        _xabort(HTM_READ_DESCRIPTOR);
+                    _xabort(HTM_BAD_OLD_VAL);
+                }
+            }
+            for (int j = 0; j < desc->numEntries; j++) {
+                *desc->entries[j].addr = desc->entries[j].newval;
+            }
+            _xend();
+            GSTATS_ADD(kcas_tid.getId(), htmpostfix_commit, 1);
+            return true;
+        } else {
+            GSTATS_ADD(kcas_tid.getId(), htmpostfix_abort, 1);
+            if (_XABORT_EXPLICIT & status) {
+                if (_XABORT_CODE(status) == HTM_READ_DESCRIPTOR) {
+                    break;
+                } else if (_XABORT_CODE(status) == HTM_BAD_OLD_VAL) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    kcasdesc_sort<MAX_K>(desc);
+    return help(tagptr, desc, false);
 }
 
 template <int MAX_K>
-inline casword_t KCASLockFree<MAX_K>::readPtr(casword_t volatile *addr) {
-    casword_t r;
-    do {
-        r = rdcssRead(addr);
-        if (unlikely(isKcas(r))) {
-            helpOther((kcastagptr_t)r);
-        } else break;
-    } while (true);
-    return r;
+inline casword_t KCASHTM_FULL<MAX_K>::readPtr(casword_t volatile *addr) {
+    if (htm_full.isActive()) {
+        casword_t r = *addr;
+        if (isAnyDescriptor(r)) htm_full.abort(ABORT_DESCRIPTOR);
+        return r;
+    } else {
+        casword_t r;
+        do {
+            r = rdcssRead(addr);
+            if (unlikely(isKcas(r))) {
+                helpOther((kcastagptr_t)r);
+            } else break;
+        } while (true);
+        return r;
+    }
 }
 
 template <int MAX_K>
-inline casword_t KCASLockFree<MAX_K>::readVal(casword_t volatile *addr) {
+inline casword_t KCASHTM_FULL<MAX_K>::readVal(casword_t volatile *addr) {
     return ((casword_t)readPtr(addr)) >> KCAS_LEFTSHIFT;
 }
 
 template <int MAX_K>
-inline void KCASLockFree<MAX_K>::writeInitPtr(casword_t volatile *addr, casword_t const newval) {
+inline void KCASHTM_FULL<MAX_K>::writeInitPtr(casword_t volatile *addr, casword_t const newval) {
     *addr = newval;
 }
 
 template <int MAX_K>
-inline void KCASLockFree<MAX_K>::writeInitVal(casword_t volatile *addr, casword_t const newval) {
+inline void KCASHTM_FULL<MAX_K>::writeInitVal(casword_t volatile *addr, casword_t const newval) {
     writeInitPtr(addr, newval << KCAS_LEFTSHIFT);
 }
 
 template <int MAX_K>
-bool KCASLockFree<MAX_K>::start() {
+bool KCASHTM_FULL<MAX_K>::start() {
+    kcas_tx_start_result ret = htm_full.tryStart();
+    switch (ret) {
+        case RETURN_FALSE: return false;
+        case HTM_STARTED: return true;
+        case FALLBACK: break;
+    }
+
     // allocate a new kcas descriptor
     kcasptr_t ptr = DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, kcas_tid.getId());
     ptr->numEntries = 0;
@@ -490,23 +634,54 @@ bool KCASLockFree<MAX_K>::start() {
 }
 
 template <int MAX_K>
-inline kcasptr_t KCASLockFree<MAX_K>::getDescriptor() {
+inline kcasptr_t KCASHTM_FULL<MAX_K>::getDescriptor() {
     return &kcasDescriptors[kcas_tid.getId()];
 }
 
 template <int MAX_K>
-void KCASLockFree<MAX_K>::deinitThread() {
+void KCASHTM_FULL<MAX_K>::deinitThread() {
     kcas_tid.explicitRelease();
 }
 
 template <int MAX_K>
 template <typename T>
-inline void KCASLockFree<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal) {
-    caswordptr->addToDescriptor(oldVal, newVal);
+inline void KCASHTM_FULL<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal) {
+    if (htm_full.isActive()) {
+        T val = caswordptr->getValue();
+        // note: getValue() CANNOT return a descriptor... it will ABORT in that case! so no need to check for one.
+        if (val != oldVal) { // assert val is not a descriptor
+            htm_full.abort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
+            // htm_full.abort(ABORT_DESCRIPTOR);
+        }
+
+        if constexpr (std::is_pointer<T>::value) {
+            htm_full.add((casword_t *) &caswordptr->bits, (casword_t) newVal);
+        } else {
+            htm_full.add((casword_t *) &caswordptr->bits, (casword_t) (newVal << KCAS_LEFTSHIFT));
+        }
+    } else {
+        caswordptr->addToDescriptor(oldVal, newVal);
+    }
 }
+
 template <int MAX_K>
 template <typename T, typename... Args>
-void KCASLockFree<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal, Args... args) {
-    caswordptr->addToDescriptor(oldVal, newVal);
+void KCASHTM_FULL<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal, Args... args) {
+    if (htm_full.isActive()) {
+        T val = caswordptr->getValue();
+        // note: getValue() CANNOT return a descriptor... it will ABORT in that case! so no need to check for one.
+        if (val != oldVal) { // assert val is not a descriptor
+            htm_full.abort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
+            // htm_full.abort(ABORT_DESCRIPTOR);
+        }
+
+        if constexpr (std::is_pointer<T>::value) {
+            htm_full.add((casword_t *) &caswordptr->bits, (casword_t) newVal);
+        } else {
+            htm_full.add((casword_t *) &caswordptr->bits, (casword_t) (newVal << KCAS_LEFTSHIFT));
+        }
+    } else {
+        caswordptr->addToDescriptor(oldVal, newVal);
+    }
     add(args...);
 }
