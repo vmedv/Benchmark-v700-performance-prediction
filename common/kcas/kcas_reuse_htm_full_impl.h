@@ -276,9 +276,6 @@ class htm_full_attempter {
         active = false;
         GSTATS_ADD(kcas_tid.getId(), fasthtm_commit, 1);
     }
-    inline void abort(int code) {
-        _xabort(code);
-    }
     inline bool isActive() {
         return active;
     }
@@ -589,7 +586,7 @@ template <int MAX_K>
 inline casword_t KCASHTM_FULL<MAX_K>::readPtr(casword_t volatile *addr) {
     if (htm_full.isActive()) {
         casword_t r = *addr;
-        if (isAnyDescriptor(r)) htm_full.abort(ABORT_DESCRIPTOR);
+        if (isAnyDescriptor(r)) _xabort(ABORT_DESCRIPTOR);
         return r;
     } else {
         casword_t r;
@@ -650,7 +647,7 @@ inline void KCASHTM_FULL<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal)
         T val = caswordptr->getValue();
         // note: getValue() CANNOT return a descriptor... it will ABORT in that case! so no need to check for one.
         if (val != oldVal) { // assert val is not a descriptor
-            htm_full.abort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
+            _xabort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
             // htm_full.abort(ABORT_DESCRIPTOR);
         }
 
@@ -671,7 +668,7 @@ void KCASHTM_FULL<MAX_K>::add(casword<T> *caswordptr, T oldVal, T newVal, Args..
         T val = caswordptr->getValue();
         // note: getValue() CANNOT return a descriptor... it will ABORT in that case! so no need to check for one.
         if (val != oldVal) { // assert val is not a descriptor
-            htm_full.abort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
+            _xabort(ABORT_RETURN_FALSE); // here i can prove my kcas should return false.
             // htm_full.abort(ABORT_DESCRIPTOR);
         }
 
