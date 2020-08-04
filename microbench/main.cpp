@@ -374,7 +374,7 @@ void prefillWithInserts(GlobalsT * g, int64_t expectedSize) {
             g->dsAdapter->initThread(tid);
         #endif
 
-        #pragma omp for schedule(dynamic, 100000)
+        #pragma omp for schedule(dynamic, 1000)
         for (size_t i=0;i<expectedSize;++i) {
             test_type key = g->keygens[tid]->next();
             //test_type key = g->rngs[tid].next(MAXKEY) + 1;
