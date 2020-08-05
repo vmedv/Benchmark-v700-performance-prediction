@@ -122,38 +122,50 @@ public:
             while (ix < qn.size()) {
                 auto node = qn[ix];
                 auto depth = qd[ix];
+                TRACE COUTATOMIC("tree_stats: queue visiting node "<<(uintptr_t) node<<" at depth "<<depth<<std::endl);
                 ++ix;
+                TRACE COUTATOMIC("tree_stats: new ix="<<ix<<std::endl);
 
                 if (depth != currDepth) {
                     if (nodesSeenAtDepth >= minNodes) {
-                        // we have seen enough nodes at depth currdepth,
-                        // so we cut off the BFS there.
+                        TRACE COUTATOMIC("tree_stats: we have seen enough nodes ("<<nodesSeenAtDepth<<") at depth "<<currDepth<<" so we cut off the bfs"<<std::endl);
                         --ix;
+                        TRACE COUTATOMIC("tree_stats: new new ix="<<ix<<std::endl);
                         break;
                     }
                     currDepth = depth;
                     nodesSeenAtDepth = 0;
                     ixStartOfDepth = ix-1;
+                    TRACE COUTATOMIC("tree_stats: new depth "<<depth<<" ixStartOfDepth="<<ixStartOfDepth<<std::endl);
                 }
                 ++nodesSeenAtDepth;
+                TRACE COUTATOMIC("tree_stats: nodesSeenAtDepth "<<currDepth<<" changed to "<<nodesSeenAtDepth<<std::endl);
 
                 // add any children to the queue
                 if (node && !handler->isLeaf(node)) {
                     auto it = handler->getChildIterator(node);
                     while (it.hasNext()) {
                         auto child = it.next();
+                        TRACE COUTATOMIC("tree_stats: add child "<<(uintptr_t) child<<" of node "<<(uintptr_t) node<<" to queue at depth "<<(1+depth)<<std::endl);
                         qn.push_back(child);
                         qd.push_back(1+depth);
                     }
                 }
             }
+            if (nodesSeenAtDepth < minNodes) {
+                currDepth = 0;
+                ix = 1;
+                ixStartOfDepth = 0;
+                TRACE COUTATOMIC("tree_stats: not enough nodes seen ("<<nodesSeenAtDepth<<") at any depth just partition into ONE tree"<<std::endl);
+            }
 
             // we now have at least minNodes subtrees to process (in qn[ixStartOfDepth ... ix]),
             // so we can use openmp parallel for to construct TreeStats for these subtrees in parallel.
-            std::cout<<"partitioned into "<<(ix-ixStartOfDepth+1)<<" subtrees; running parallel for..."<<std::endl;
+            std::cout<<"partitioned into "<<(ix-ixStartOfDepth)<<" subtrees; running parallel for..."<<std::endl;
             #pragma omp parallel for schedule(dynamic, 1)
             for (size_t i=ixStartOfDepth;i<ix;++i) {
                 TreeStats<NodeHandlerT> * ts = new TreeStats(handler, qn[i], false, false);
+                TRACE COUTATOMIC("tree_stats: sequential compute at depth "<<currDepth<<std::endl);
                 for (size_t d=0;d<MAX_HEIGHT-currDepth;++d) {
                     FAA(&internalsAtDepth[d+currDepth], ts->internalsAtDepth[d]);
                     FAA(&leavesAtDepth[d+currDepth], ts->leavesAtDepth[d]);
@@ -177,7 +189,7 @@ public:
 
             // compute stats for the top of the tree, ABOVE the parallel constructed subtrees.
             std::cout<<"computing stats for the top of the tree (above the partitions)..."<<std::endl;
-            computeStats(handler, root, 0, currDepth - 1);
+            if (currDepth > 0) computeStats(handler, root, 0, currDepth - 1);
 
         }
 #else

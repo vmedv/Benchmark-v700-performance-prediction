@@ -650,18 +650,26 @@ void thread_timed(GlobalsT * g, int __tid) {
 //        printf("    key=%d\n", key);
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < INS_FRAC) {
+            TRACE COUTATOMICTID("### calling INSERT "<<key<<std::endl);
             // GSTATS_TIMER_RESET(tid, timer_latency);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
+                TRACE COUTATOMICTID("### completed INSERT modification for "<<key<<std::endl);
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, size_checksum, 1);
+            } else {
+                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
             }
             // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_inserts, 1);
         } else if (op < INS_FRAC+DEL_FRAC) {
             // GSTATS_TIMER_RESET(tid, timer_latency);
+            TRACE COUTATOMICTID("### calling ERASE "<<key<<std::endl);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
+                TRACE COUTATOMICTID("### completed ERASE modification for "<<key<<std::endl);
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, size_checksum, -1);
+            } else {
+                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
             }
             // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
             GSTATS_ADD(tid, num_deletes, 1);

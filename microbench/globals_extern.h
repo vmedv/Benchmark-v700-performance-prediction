@@ -34,6 +34,7 @@
 #error NOT UNIX SYSTEM
 #endif
 
+#ifndef TRACE
 #ifdef USE_TRACE
 extern std::atomic_bool ___trace;
 #define TRACE_TOGGLE {bool ___t = ___trace; ___trace = !___t;}
@@ -42,6 +43,7 @@ extern std::atomic_bool ___trace;
 extern std::atomic_bool ___validateops;
 #define VALIDATEOPS_ON {___validateops = true;}
 #define VALIDATEOPS DEBUG if(___validateops)
+#endif
 #endif
 
 /**
