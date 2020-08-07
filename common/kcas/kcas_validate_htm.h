@@ -168,7 +168,9 @@ typedef intptr_t seqbits_t;
 
 #define KCAS_MAX_THREADS 500
 
+PAD;
 void *volatile thread_ids[KCAS_MAX_THREADS] ={};
+PAD;
 
 class TIDGenerator
 {
@@ -244,8 +246,10 @@ struct validationItem
 
 struct validationSet
 {
+    PAD;
     volatile int size = 0;
     validationItem items[MAX_VALID_SIZE];
+    PAD;
 };
 
 template <int MAX_K>

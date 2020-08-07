@@ -324,8 +324,7 @@ casword_t KCASLockFree<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
         r = VAL_CAS(ptr->addr2, ptr->old2, (casword_t)tagptr);
         if (unlikely(isRdcss(r))) {
             rdcssHelpOther((rdcsstagptr_t)r);
-        } else
-            break;
+        } else break;
     } while (true);
     if (r == ptr->old2)
         rdcssHelp(tagptr, ptr, false); // finish our own operation
@@ -339,8 +338,7 @@ casword_t KCASLockFree<MAX_K>::rdcssRead(casword_t volatile *addr) {
         r = *addr;
         if (unlikely(isRdcss(r))) {
             rdcssHelpOther((rdcsstagptr_t)r);
-        } else
-            break;
+        } else break;
     } while (true);
     return r;
 }

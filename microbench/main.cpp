@@ -307,14 +307,14 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
     int cnt = 0;
     auto __endTime = g->startTime;
     while (!g->done) {
-        if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
-            __endTime = std::chrono::high_resolution_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= g->PREFILL_INTERVAL_MILLIS) {
-                g->done = true;
-                __sync_synchronize();
-                break;
-            }
-        }
+        // if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
+        //     __endTime = std::chrono::high_resolution_clock::now();
+        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= g->PREFILL_INTERVAL_MILLIS) {
+        //         g->done = true;
+        //         __sync_synchronize();
+        //         break;
+        //     }
+        // }
 
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         test_type key = g->keygens[tid]->next();
@@ -634,15 +634,15 @@ void thread_timed(GlobalsT * g, int __tid) {
     DURATION_START(tid);
 
     while (!g->done) {
-        if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            auto __endTime = std::chrono::high_resolution_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= std::abs(MILLIS_TO_RUN)) {
-                __sync_synchronize();
-                g->done = true;
-                __sync_synchronize();
-                break;
-            }
-        }
+        // if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
+        //     auto __endTime = std::chrono::high_resolution_clock::now();
+        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= std::abs(MILLIS_TO_RUN)) {
+        //         __sync_synchronize();
+        //         g->done = true;
+        //         __sync_synchronize();
+        //         break;
+        //     }
+        // }
 
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         test_type key = g->keygens[tid]->next();
@@ -737,15 +737,15 @@ void thread_rq(GlobalsT * g, int __tid) {
     papi_start_counters(tid);
     int cnt = 0;
     while (!g->done) {
-        if (((++cnt) % RQS_BETWEEN_TIME_CHECKS) == 0) {
-            auto __endTime = std::chrono::high_resolution_clock::now();
-            if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= MILLIS_TO_RUN) {
-                __sync_synchronize();
-                g->done = true;
-                __sync_synchronize();
-                break;
-            }
-        }
+        // if (((++cnt) % RQS_BETWEEN_TIME_CHECKS) == 0) {
+        //     auto __endTime = std::chrono::high_resolution_clock::now();
+        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= MILLIS_TO_RUN) {
+        //         __sync_synchronize();
+        //         g->done = true;
+        //         __sync_synchronize();
+        //         break;
+        //     }
+        // }
 
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         // TODO: make this respect KeyGenerators for non-uniform distributions
@@ -859,6 +859,8 @@ void trial(GlobalsT * g) {
         SOFTWARE_BARRIER;
         g->done = true;
         __sync_synchronize();
+        g->endTime = std::chrono::high_resolution_clock::now();
+        __sync_synchronize();
         printUptimeStampForPERF("END");
     }
 
@@ -870,7 +872,8 @@ void trial(GlobalsT * g) {
     COUTATOMIC(std::endl);
 
     const long MAX_NAPPING_MILLIS = (MAXKEY > 5e7 ? 120000 : 30000);
-    g->elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count();
+    // g->elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count();
+    g->elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(g->endTime - g->startTime).count();
     g->elapsedMillisNapping = 0;
     while (g->running > 0 && g->elapsedMillisNapping < MAX_NAPPING_MILLIS) {
         nanosleep(&tsNap, NULL);
@@ -998,7 +1001,7 @@ void printOutput(GlobalsT * g) {
         const long long totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
         const long long totalUpdates = totalInserts + totalDeletes;
 
-        const double SECONDS_TO_RUN = (MILLIS_TO_RUN)/1000.;
+        const double SECONDS_TO_RUN = (g->elapsedMillis/1000.); // (MILLIS_TO_RUN)/1000.;
         totalAll = totalUpdates + totalQueries;
         const long long throughputSearches = (long long) (totalSearches / SECONDS_TO_RUN);
         const long long throughputRQs = (long long) (totalRQs / SECONDS_TO_RUN);
