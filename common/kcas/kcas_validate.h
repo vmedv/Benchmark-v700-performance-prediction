@@ -421,6 +421,21 @@ template <int MAX_K>
 KCASValidate<MAX_K>::KCASValidate() {
     DESC_INIT_ALL(kcasDescriptors, KCAS_SEQBITS_NEW);
     DESC_INIT_ALL(rdcssDescriptors, RDCSS_SEQBITS_NEW);
+
+    printf("sizeof(kcasdesc_t)=%d\n", (int) sizeof(kcasdesc_t<MAX_KCAS>));
+    printf("sizeof(rdcssdesc_t)=%d\n", (int) sizeof(rdcssdesc_t));
+    printf("addrof(kcasDescriptors[0])=%p\n", &kcasDescriptors[0]);
+    printf("addrof(kcasDescriptors[1])=%p\n", &kcasDescriptors[1]);
+    printf("addrof(rdcssDescriptors[0])=%p\n", &rdcssDescriptors[0]);
+    printf("addrof(rdcssDescriptors[1])=%p\n", &rdcssDescriptors[1]);
+    printf("sizeof(validationSet)=%d\n", (int) sizeof(validationSet));
+    printf("sizeof(paths[0])=%d\n", (int) sizeof(paths[0]));
+    printf("sizeof(paths[1])=%d\n", (int) sizeof(paths[1]));
+    printf("addrof(paths[0])=%p\n", &paths[0]);
+    printf("addrof(paths[1])=%p\n", &paths[1]);
+    printf("addrof(paths[2])=%p\n", &paths[2]);
+    printf("addrof(paths[3])=%p\n", &paths[3]);
+    printf("addrof(paths[2047])=%p\n", &paths[2047]);
 }
 
 template <int MAX_K>
