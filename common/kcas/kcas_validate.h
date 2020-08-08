@@ -8,7 +8,7 @@
 
 
 using namespace std;
-#define MAX_VALID_SIZE 128
+#define MAX_VALID_SIZE 100
 #define IS_MARKED(word) (word & 0x1)
 
 /**
