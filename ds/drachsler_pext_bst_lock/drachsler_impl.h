@@ -1,7 +1,7 @@
-/*   
+/*
  *   File: bst-drachsler.c
  *   Author: Tudor David <tudor.david@epfl.ch>
- *   Description: Dana Drachsler, Martin Vechev, and Eran Yahav. 
+ *   Description: Dana Drachsler, Martin Vechev, and Eran Yahav.
  *   Practical Concurrent Binary Search Trees via Logical Ordering. PPoPP 2014.
  *   bst-drachsler.c is part of ASCYLIB
  *
@@ -21,11 +21,20 @@
  *
  */
 
-/* 
+/*
  * File:   drachsler.h
  * Author: Trevor Brown
- * 
+ *
  * Substantial improvements to interface, memory reclamation and bug fixing.
+ *
+ * Sadly, there still *seems* to be a bug that is a holdover from ASCYLIB...
+ * i think it involving lock acquisition and deadlock, or at least highly aggressive livelock...
+ *
+ * symptom: 16000 inserts in TOTAL by 256 threads takes almost TEN SECONDS... this is not reasonable.
+ * This is THOUSANDS of TIMES slower than single threaded!
+ *
+ * Command to reproduce (might need MANY threads, and to run a few times, to expose it...):
+ *      LD_PRELOAD=../../setbench/lib/libmimalloc.so ./drachsler_pext_bst_lock.none -nwork 256 -nprefill 256 -insdel 0 0 -k 2000 -t 100 -pin 0-63,128-191,64-127,192-255
  *
  * Created on June 7, 2017, 3:25 PM
  */
@@ -38,7 +47,7 @@
 
 #define FIELDS_ORDER
 #define SPIN_LOCK
-#define USE_PADDING 
+#define USE_PADDING
 
 #ifndef SPIN_LOCK
 #error only spin lock is currently supported
@@ -58,7 +67,7 @@ typedef pthread_spinlock_t ptlock_t;
     #endif
     #ifdef FIELDS_ORDER
         #undef FIELDS_ORDER
-    #endif 
+    #endif
 #endif
 
 
@@ -139,9 +148,9 @@ PAD;
     bool_t acquire_tree_locks(const int tid, node_t<skey_t, sval_t>* n);
     void remove_from_tree(const int tid, node_t<skey_t, sval_t>* n, bool_t has_two_children);
     void update_child(const int tid, node_t<skey_t, sval_t> *parent, node_t<skey_t, sval_t>* old_ch, node_t<skey_t, sval_t>* new_ch);
-    
+
 public:
-    
+
     drachsler(const int _NUM_THREADS, const skey_t& _KEY_MIN, const skey_t& _KEY_MAX, const sval_t& _VALUE_RESERVED, unsigned int id)
     : NUM_THREADS(_NUM_THREADS), KEY_MIN(_KEY_MIN), KEY_MAX(_KEY_MAX), NO_VALUE(_VALUE_RESERVED), idx_id(id), recmgr(new RecMgr(NUM_THREADS)) {
         const int tid = 0;
@@ -239,7 +248,7 @@ node_t<skey_t, sval_t> * drachsler<skey_t, sval_t, RecMgr>::bst_search(const int
 template <typename skey_t, typename sval_t, class RecMgr>
 sval_t drachsler<skey_t, sval_t, RecMgr>::bst_contains(const int tid, skey_t k) {
     auto guard = recmgr->getGuard(tid, true);
-    
+
     auto n = bst_search(tid, k);
     while (n->key > k) {
         n = n->pred;
@@ -257,12 +266,12 @@ template <typename skey_t, typename sval_t, class RecMgr>
 sval_t drachsler<skey_t, sval_t, RecMgr>::bst_insert(const int tid, skey_t k, sval_t v, bool onlyIfAbsent) {
     while (1) {
         auto guard = recmgr->getGuard(tid);
-        
+
         auto node = bst_search(tid, k);
 #if defined(NO_VOLATILE) || defined(BASELINE)
         volatile node_t<skey_t, sval_t> * p;
 #else
-        node_t<skey_t, sval_t> * volatile p;
+        node_t<skey_t, sval_t> * p;
 #endif
         if (node->key >= k) {
             p = node->pred;
@@ -270,18 +279,18 @@ sval_t drachsler<skey_t, sval_t, RecMgr>::bst_insert(const int tid, skey_t k, sv
             p = node;
         }
 
-        if (onlyIfAbsent) {
-            auto n = node;
-            while (n->key > k) {
-                n = n->pred;
-            }
-            while (n->key < k) {
-                n = n->succ;
-            }
-            if ((n->key == k) && (n->mark == false)) {
-                return n->value;
-            }
-        }
+        // if (onlyIfAbsent) {
+        //     auto n = node;
+        //     while (n->key > k) {
+        //         n = n->pred;
+        //     }
+        //     while (n->key < k) {
+        //         n = n->succ;
+        //     }
+        //     if ((n->key == k) && (n->mark == false)) {
+        //         return n->value;
+        //     }
+        // }
 
         LOCK(&(p->succ_lock));
 #if defined(NO_VOLATILE) || defined(BASELINE)
@@ -292,7 +301,9 @@ sval_t drachsler<skey_t, sval_t, RecMgr>::bst_insert(const int tid, skey_t k, sv
         if ((k > p->key) && (k <= s->key) && (p->mark == false)) {
             if (s->key == k) {
                 sval_t res = s->value;
-                s->value = v; // actually set the new value!
+                if (!onlyIfAbsent) {
+                    s->value = v; // actually set the new value!
+                }
                 UNLOCK(&(p->succ_lock));
                 return res;
             }
@@ -304,8 +315,10 @@ sval_t drachsler<skey_t, sval_t, RecMgr>::bst_insert(const int tid, skey_t k, sv
 #ifdef __tile__
             MEM_BARRIER;
 #endif
-            s->pred = new_node;
+            SOFTWARE_BARRIER;
             p->succ = new_node;
+            SOFTWARE_BARRIER;
+            s->pred = new_node;
             UNLOCK(&(p->succ_lock));
             insert_to_tree(tid, parent, new_node);
             return NO_VALUE;
@@ -404,9 +417,9 @@ sval_t drachsler<skey_t, sval_t, RecMgr>::bst_remove(const int tid, skey_t k) {
             auto s_succ = s->succ;
             s_succ->pred = p;
             p->succ = s_succ;
+            sval_t v = s->value;
             UNLOCK(&(s->succ_lock));
             UNLOCK(&(p->succ_lock));
-            sval_t v = s->value;
             remove_from_tree(tid, s, has_two_children);
             return v;
         }
@@ -431,7 +444,7 @@ bool_t drachsler<skey_t, sval_t, RecMgr>::acquire_tree_locks(const int tid, node
             if (sp != n) {
                 parent = sp;
                 //TRYLOCK failure returns non-zero value!
-                //if (trylock failure) {...} 
+                //if (trylock failure) {...}
                 if (TRYLOCK(&(parent->tree_lock)) != 0) {
                     UNLOCK(&(n->tree_lock));
                     //UNLOCK(&(n->parent->tree_lock));
@@ -446,7 +459,7 @@ bool_t drachsler<skey_t, sval_t, RecMgr>::acquire_tree_locks(const int tid, node
                 }
             }
             //TRYLOCK failure returns non-zero value!
-            //if (trylock failure) {...} 
+            //if (trylock failure) {...}
             if (TRYLOCK(&(s->tree_lock)) != 0) {
                 UNLOCK(&(n->tree_lock));
                 //UNLOCK(&(n->parent->tree_lock));
