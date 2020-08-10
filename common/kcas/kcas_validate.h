@@ -46,7 +46,7 @@ typedef intptr_t seqbits_t;
 #ifndef WIDTH_SEQ
 #define WIDTH_SEQ 48
 #endif
-#define OFFSET_SEQ 14
+#define OFFSET_SEQ 12
 #define MASK_SEQ ((uintptr_t)((1LL << WIDTH_SEQ) - 1) << OFFSET_SEQ) /* cast to avoid signed bit shifting */
 #define UNPACK_SEQ(tagptrOrSeqbits) (((uintptr_t)(tagptrOrSeqbits)) >> OFFSET_SEQ)
 
@@ -155,13 +155,14 @@ typedef intptr_t seqbits_t;
 
 #define KCAS_LEFTSHIFT 2
 
-#define KCAS_MAX_THREADS 500
-
+#define KCAS_MAX_THREADS 512
 void *volatile thread_ids[KCAS_MAX_THREADS] = {};
-
+thread_local int __kcas_tid;
 class TIDGenerator {
   public:
+    // PAD;
     int myslot = -1;
+    // PAD;
     TIDGenerator() {
         int i;
         while (true) {
@@ -173,6 +174,7 @@ class TIDGenerator {
             assert(i < KCAS_MAX_THREADS);
             if (__sync_bool_compare_and_swap(&thread_ids[i], 0, this)) {
                 myslot = i;
+                __kcas_tid = i;
                 break;
             }
         }
@@ -182,11 +184,11 @@ class TIDGenerator {
         thread_ids[myslot] = 0;
     }
 
-    operator int() {
+    inline operator int() {
         return myslot;
     }
 
-    int getId() {
+    inline int getId() {
         return myslot;
     }
 
@@ -194,8 +196,11 @@ class TIDGenerator {
         thread_ids[myslot] = 0;
     }
 };
-
 thread_local TIDGenerator kcas_tid;
+thread_local void * __kcas_path;
+thread_local void * __kcas_desc;
+#define __KCAS_PATH ((validationSet *) __kcas_path)
+#define __KCAS_DESC ((kcasdesc_t<MAX_K> *) __kcas_desc)
 
 struct rdcssdesc_t {
     volatile seqbits_t seqBits;
@@ -357,7 +362,7 @@ casword_t KCASValidate<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::validate(kcasptr_t snapshot, kcastagptr_t tagptr) {
-    auto path = &snapshot->path;
+    validationSet * const path = &snapshot->path;
     auto sz = path->size;
     assert(sz < MAX_VALID_SIZE);
     bool isPtr;
@@ -382,11 +387,11 @@ bool KCASValidate<MAX_K>::validate(kcasptr_t snapshot, kcastagptr_t tagptr) {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::validate() {
-    auto path = &kcasDescriptors[kcas_tid.getId()].path;
-    assert(path->size > 0 && path->size < MAX_VALID_SIZE);
+    // auto path = &kcasDescriptors[__kcas_tid].path;
+    assert(__KCAS_PATH->size > 0 && __KCAS_PATH->size < MAX_VALID_SIZE);
 
-    for (int i = 0; i < path->size; i++) {
-        auto oNode = &path->items[i];
+    for (int i = 0; i < __KCAS_PATH->size; i++) {
+        auto oNode = &__KCAS_PATH->items[i];
         if (oNode->value != oNode->word->getValue() || IS_MARKED(oNode->value)) {
             return false;
         }
@@ -398,10 +403,10 @@ template <int MAX_K>
 template <typename NodePtrType>
 inline casword_t KCASValidate<MAX_K>::visit(NodePtrType node) {
     assert(node != NULL);
-    auto path = &kcasDescriptors[kcas_tid.getId()].path;
+    // validationSet * const path = &kcasDescriptors[__kcas_tid].path;
     casword_t val = node->vNumMark;
-    path->items[path->size].value = val;
-    path->items[path->size++].word = &node->vNumMark;
+    __KCAS_PATH->items[__KCAS_PATH->size].value = val;
+    __KCAS_PATH->items[__KCAS_PATH->size++].word = &node->vNumMark;
     return val;
 }
 
@@ -429,13 +434,13 @@ KCASValidate<MAX_K>::KCASValidate() {
     printf("addrof(rdcssDescriptors[0])=%p\n", &rdcssDescriptors[0]);
     printf("addrof(rdcssDescriptors[1])=%p\n", &rdcssDescriptors[1]);
     printf("sizeof(validationSet)=%d\n", (int) sizeof(validationSet));
-    printf("sizeof(paths[0])=%d\n", (int) sizeof(paths[0]));
-    printf("sizeof(paths[1])=%d\n", (int) sizeof(paths[1]));
-    printf("addrof(paths[0])=%p\n", &paths[0]);
-    printf("addrof(paths[1])=%p\n", &paths[1]);
-    printf("addrof(paths[2])=%p\n", &paths[2]);
-    printf("addrof(paths[3])=%p\n", &paths[3]);
-    printf("addrof(paths[2047])=%p\n", &paths[2047]);
+    // printf("sizeof(paths[0])=%d\n", (int) sizeof(paths[0]));
+    // printf("sizeof(paths[1])=%d\n", (int) sizeof(paths[1]));
+    // printf("addrof(paths[0])=%p\n", &paths[0]);
+    // printf("addrof(paths[1])=%p\n", &paths[1]);
+    // printf("addrof(paths[2])=%p\n", &paths[2]);
+    // printf("addrof(paths[3])=%p\n", &paths[3]);
+    // printf("addrof(paths[2047])=%p\n", &paths[2047]);
 }
 
 template <int MAX_K>
@@ -467,16 +472,16 @@ bool KCASValidate<MAX_K>::help(kcastagptr_t tagptr, kcasptr_t snapshot, bool hel
         for (int i = helpingOther; i < snapshot->numEntries; i++) {
         retry_entry:
             // prepare rdcss descriptor and run rdcss
-            rdcssdesc_t *rdcssptr = DESC_NEW(rdcssDescriptors, RDCSS_SEQBITS_NEW, kcas_tid.getId());
+            rdcssdesc_t *rdcssptr = DESC_NEW(rdcssDescriptors, RDCSS_SEQBITS_NEW, __kcas_tid);
             rdcssptr->addr1 = (casword_t *)&ptr->seqBits;
             rdcssptr->old1 = tagptr; // pass the sequence number (as part of tagptr)
             rdcssptr->old2 = snapshot->entries[i].oldval;
             rdcssptr->addr2 = snapshot->entries[i].addr; // p stopped here (step 2)
             rdcssptr->new2 = (casword_t)tagptr;
-            DESC_INITIALIZED(rdcssDescriptors, kcas_tid.getId());
+            DESC_INITIALIZED(rdcssDescriptors, __kcas_tid);
 
             casword_t val;
-            val = rdcss(rdcssptr, TAGPTR_NEW(kcas_tid.getId(), rdcssptr->seqBits, RDCSS_TAGBIT));
+            val = rdcss(rdcssptr, TAGPTR_NEW(__kcas_tid, rdcssptr->seqBits, RDCSS_TAGBIT));
 
             // check for failure of rdcss and handle it
             if (isKcas(val)) {
@@ -533,12 +538,12 @@ static void kcasdesc_sort(kcasptr_t ptr) {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::execute() {
-    assert(kcas_tid.getId() != -1);
-    auto desc = &kcasDescriptors[kcas_tid.getId()];
+    assert(__kcas_tid != -1);
+    auto desc = &kcasDescriptors[__kcas_tid];
     // sort entries in the kcas descriptor to guarantee progress
     kcasdesc_sort<MAX_K>(desc);
-    DESC_INITIALIZED(kcasDescriptors, kcas_tid.getId());
-    kcastagptr_t tagptr = TAGPTR_NEW(kcas_tid.getId(), desc->seqBits, KCAS_TAGBIT);
+    DESC_INITIALIZED(kcasDescriptors, __kcas_tid);
+    kcastagptr_t tagptr = TAGPTR_NEW(__kcas_tid, desc->seqBits, KCAS_TAGBIT);
 
     // perform the kcas and retire the old descriptor
     bool result = help(tagptr, desc, false);
@@ -547,13 +552,13 @@ bool KCASValidate<MAX_K>::execute() {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::validateAndExecute() {
-    assert(kcas_tid.getId() != -1);
-    auto desc = &kcasDescriptors[kcas_tid.getId()];
+    assert(__kcas_tid != -1);
+    auto desc = &kcasDescriptors[__kcas_tid];
     desc->validationRequired = 1;
     // sort entries in the kcas descriptor to guarantee progress
     kcasdesc_sort<MAX_K>(desc);
-    DESC_INITIALIZED(kcasDescriptors, kcas_tid.getId());
-    kcastagptr_t tagptr = TAGPTR_NEW(kcas_tid.getId(), desc->seqBits, KCAS_TAGBIT);
+    DESC_INITIALIZED(kcasDescriptors, __kcas_tid);
+    kcastagptr_t tagptr = TAGPTR_NEW(__kcas_tid, desc->seqBits, KCAS_TAGBIT);
 
     // perform the kcas and retire the old descriptor
     bool result = help(tagptr, desc, false);
@@ -591,25 +596,29 @@ template <int MAX_K>
 void KCASValidate<MAX_K>::start() {
     // allocate a new kcas descriptor
     kcasptr_t ptr = DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, kcas_tid.getId());
+    __kcas_desc = ptr;
     ptr->numEntries = 0;
     ptr->validationRequired = 0;
-//     kcasptr_t ptr = &kcasDescriptors[kcas_tid.getId()];
-    // ptr->path = &paths[kcas_tid.getId()];
+    __kcas_path = &ptr->path;
+//     kcasptr_t ptr = &kcasDescriptors[__kcas_tid];
+    // ptr->path = &paths[__kcas_tid];
     // ptr->path->size = 0;
-    ptr->path.size = 0;
+    __KCAS_PATH->size = 0;
 }
 
 template <int MAX_K>
 inline kcasptr_t KCASValidate<MAX_K>::getDescriptor() {
-    kcasptr_t descriptor = &kcasDescriptors[kcas_tid.getId()];
-//     if (unlikely((descriptor->seqBits & KCAS_SEQBITS_MASK_STATE) != KCAS_STATE_UNDECIDED)) {
-//         // reset the kcas descriptor
-//         GSTATS_ADD(kcas_tid.getId(), kcas_desc_new)
-//         DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, kcas_tid.getId());
-//         descriptor->numEntries = 0;
-//         descriptor->validationRequired = 0;
-//     }
-    return descriptor;
+//     kcasptr_t descriptor = &kcasDescriptors[__kcas_tid];
+// //     if (unlikely((descriptor->seqBits & KCAS_SEQBITS_MASK_STATE) != KCAS_STATE_UNDECIDED)) {
+// //         // reset the kcas descriptor
+// //         GSTATS_ADD(__kcas_tid, kcas_desc_new)
+// //         DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, __kcas_tid);
+// //         descriptor->numEntries = 0;
+// //         descriptor->validationRequired = 0;
+// //     }
+//     return descriptor;
+    return &kcasDescriptors[__kcas_tid];
+    // return __KCAS_DESC;
 }
 
 template <int MAX_K>
