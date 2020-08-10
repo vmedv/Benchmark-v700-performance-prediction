@@ -220,11 +220,11 @@ struct validationItem {
 };
 
 struct validationSet {
-    PAD;
+    // PAD;
     int size = 0;
     validationItem items[MAX_VALID_SIZE];
-    PAD;
-};
+    // PAD;
+}; // __attribute__((aligned(128)));
 
 template <int MAX_K>
 class kcasdesc_t {
@@ -233,7 +233,7 @@ class kcasdesc_t {
     casword_t numEntries;
     kcasentry_t entries[MAX_K];
     volatile casword_t validationRequired = false;
-    validationSet *path;
+    validationSet path;
     const static int size = sizeof(seqBits) + sizeof(numEntries) + sizeof(entries) + sizeof(validationRequired) + sizeof(path);
     volatile char padding[128 + ((64 - size % 64) % 64)]; // add padding to prevent false sharing
 
@@ -280,8 +280,8 @@ class KCASValidate {
     kcasdesc_t<MAX_K> kcasDescriptors[LAST_TID + 1] __attribute__((aligned(64)));
     rdcssdesc_t rdcssDescriptors[LAST_TID + 1] __attribute__((aligned(64)));
     volatile char __padding_desc3[128];
-    validationSet paths[LAST_TID + 1] __attribute__((aligned(64)));
-    volatile char __padding_desc4[128];
+    // validationSet paths[LAST_TID + 1] __attribute__((aligned(128)));
+    // volatile char __padding_desc4[128];
 
     /**
      * Function declarations
@@ -357,7 +357,7 @@ casword_t KCASValidate<MAX_K>::rdcss(rdcssptr_t ptr, rdcsstagptr_t tagptr) {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::validate(kcasptr_t snapshot, kcastagptr_t tagptr) {
-    auto path = snapshot->path;
+    auto path = &snapshot->path;
     auto sz = path->size;
     assert(sz < MAX_VALID_SIZE);
     bool isPtr;
@@ -382,7 +382,7 @@ bool KCASValidate<MAX_K>::validate(kcasptr_t snapshot, kcastagptr_t tagptr) {
 
 template <int MAX_K>
 bool KCASValidate<MAX_K>::validate() {
-    auto path = kcasDescriptors[kcas_tid.getId()].path;
+    auto path = &kcasDescriptors[kcas_tid.getId()].path;
     assert(path->size > 0 && path->size < MAX_VALID_SIZE);
 
     for (int i = 0; i < path->size; i++) {
@@ -398,7 +398,7 @@ template <int MAX_K>
 template <typename NodePtrType>
 inline casword_t KCASValidate<MAX_K>::visit(NodePtrType node) {
     assert(node != NULL);
-    auto path = kcasDescriptors[kcas_tid.getId()].path;
+    auto path = &kcasDescriptors[kcas_tid.getId()].path;
     casword_t val = node->vNumMark;
     path->items[path->size].value = val;
     path->items[path->size++].word = &node->vNumMark;
@@ -406,7 +406,7 @@ inline casword_t KCASValidate<MAX_K>::visit(NodePtrType node) {
 }
 
 template <int MAX_K>
-casword_t KCASValidate<MAX_K>::rdcssRead(casword_t volatile *addr) {
+inline casword_t KCASValidate<MAX_K>::rdcssRead(casword_t volatile *addr) {
     casword_t r;
     do {
         r = *addr;
@@ -594,8 +594,9 @@ void KCASValidate<MAX_K>::start() {
     ptr->numEntries = 0;
     ptr->validationRequired = 0;
 //     kcasptr_t ptr = &kcasDescriptors[kcas_tid.getId()];
-    ptr->path = &paths[kcas_tid.getId()];
-    ptr->path->size = 0;
+    // ptr->path = &paths[kcas_tid.getId()];
+    // ptr->path->size = 0;
+    ptr->path.size = 0;
 }
 
 template <int MAX_K>

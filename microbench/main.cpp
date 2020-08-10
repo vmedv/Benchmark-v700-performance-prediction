@@ -302,8 +302,8 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
 
     INIT_THREAD(tid);
     __sync_fetch_and_add(&g->running, 1);
-    __sync_synchronize();
-    while (!g->start) { __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    // __sync_synchronize();
+    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     int cnt = 0;
     auto __endTime = g->startTime;
     while (!g->done) {
@@ -455,7 +455,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         // short nap
         timespec tsNap;
         tsNap.tv_sec = 0;
-        tsNap.tv_nsec = 10000000; // 10ms
+        tsNap.tv_nsec = 200000000; // 200ms
 
         nanosleep(&tsExpected, NULL);
         g->done = true;
@@ -625,7 +625,7 @@ void thread_timed(GlobalsT * g, int __tid) {
     __sync_fetch_and_add(&g->running, 1);
     __sync_synchronize();
     //std::cout<<"thread "<<__tid<<" wait for g->start running="<<g->running<<std::endl;
-    while (!g->start) { sched_yield(); __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
     papi_start_counters(tid);
     int cnt = 0;
@@ -731,7 +731,7 @@ void thread_rq(GlobalsT * g, int __tid) {
     papi_create_eventset(tid);
     __sync_fetch_and_add(&g->running, 1);
     __sync_synchronize();
-    while (!g->start) { sched_yield(); __sync_synchronize(); TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
     GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
 
     papi_start_counters(tid);
@@ -813,7 +813,7 @@ void trial(GlobalsT * g) {
     // precompute short nap time
     timespec tsNap;
     tsNap.tv_sec = 0;
-    tsNap.tv_nsec = 10000000; // 10ms
+    tsNap.tv_nsec = 100000000; // 100ms
 
     // start all threads
     std::thread * threads[MAX_THREADS_POW2];

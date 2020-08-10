@@ -338,34 +338,40 @@ public:
         memset(computed_gstats_by_index, 0, GSTATS_MAX_NUM_STATS*sizeof(stat_metrics<double> *));
         memset(computed_gstats_by_thread, 0, GSTATS_MAX_NUM_STATS*sizeof(stat_metrics<double> *));
 
-        // parallel initialization
-        VERBOSE std::cout<<"parallel stat intialization: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
-        volatile bool start = false;
+        #pragma omp parallel for
+        for (int i=0;i<num_processes;++i) {
+            memset(&thread_data[i], 0, sizeof(gstats_thread_data));
+        }
+//         // parallel initialization
+//         VERBOSE std::cout<<"parallel stat intialization: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
+//         volatile bool start = false;
 
-        std::thread threads[num_processes];
-        for (int tid=0;tid<num_processes;++tid) {
-            threads[tid] = std::thread([tid,&start,num_processes,this]() {
-//                while (!start) { __sync_synchronize(); }
-                //cout<<"thread "<<tid<<" initializing thread_data entry of size "<<sizeof(gstats_thread_data)<<std::endl;
-                memset(&this->thread_data[tid], 0, sizeof(gstats_thread_data));
-            });
-        }
-        start = true;
-        __sync_synchronize();
-        VERBOSE std::cout<<"parallel stat initialization: joining "<<num_processes<<" threads"<<std::endl;
-        for (int tid=0;tid<num_processes;++tid) {
-            threads[tid].join();
-        }
-        VERBOSE std::cout<<"parallel stat initialization: joined all."<<std::endl;
+//         std::thread threads[num_processes];
+//         for (int tid=0;tid<num_processes;++tid) {
+//             threads[tid] = std::thread([tid,&start,num_processes,this]() {
+// //                while (!start) { __sync_synchronize(); }
+//                 //cout<<"thread "<<tid<<" initializing thread_data entry of size "<<sizeof(gstats_thread_data)<<std::endl;
+//                 memset(&this->thread_data[tid], 0, sizeof(gstats_thread_data));
+//             });
+//         }
+//         start = true;
+//         __sync_synchronize();
+//         VERBOSE std::cout<<"parallel stat initialization: joining "<<num_processes<<" threads"<<std::endl;
+//         for (int tid=0;tid<num_processes;++tid) {
+//             threads[tid].join();
+//         }
+//         VERBOSE std::cout<<"parallel stat initialization: joined all."<<std::endl;
     }
 
     ~gstats_t() {
+#if !defined NO_CLEANUP_AFTER_WORKLOAD
         acquireLock(&arrays_to_delete_lock);
         for (auto it = arrays_to_delete.begin(); it != arrays_to_delete.end(); it++) {
             delete[] *it;
         }
         releaseLock(&arrays_to_delete_lock);
         delete[] thread_data;
+#endif
     }
 
     template <typename T>
@@ -377,6 +383,7 @@ public:
         }
     }
     void clear_all() {
+        #pragma omp parallel for
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
             for (gstats_stat_id id=0;id<num_stats;++id) {
                 memset(thread_data[tid].data + thread_data[tid].offset[id], 0, GSTATS_DATA_SIZE_BYTES*thread_data[tid].size[id]);
@@ -645,84 +652,127 @@ private:
         }
         stat_metrics<long long> * histogram = &__histogram[1]; // handle -1s returned by log2_capped
 
-        // parallel histogram construction
-        VERBOSE std::cout<<"parallel compute histogram: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
-        std::thread threads[std::thread::hardware_concurrency()];
-        volatile bool start = false;
-        for (int thread_id=0;thread_id<(int) std::thread::hardware_concurrency();++thread_id) {
-            //cout<<"    parallel compute histogram: spawning thread "<<thread_id<<std::endl;
-            threads[thread_id] = std::thread([thread_id, histogram, id, &start, num_buckets, metrics, this]() {
-//                while (!start) { __sync_synchronize(); }
-
-                // compute our slice of the indices
-                int slice_size = this->num_indices[id] / std::thread::hardware_concurrency();
-                int start_ix = slice_size * thread_id;
-                int end_ix = (thread_id == (int) std::thread::hardware_concurrency()-1) ? this->num_indices[id] : slice_size * (thread_id+1);
-
-                stat_metrics<long long> * __thread_histogram = new stat_metrics<long long>[num_buckets+1];
-                for (int i=0;i<num_buckets+1;++i) {
-                    memset(&__thread_histogram[i], 0, sizeof(stat_metrics<long long>));
+        // (MOSTLY) SEQUENTIAL
+        if (num_indices[id] <= (1<<16)) {
+            if (metrics) {
+                /**
+                 * if metrics is non-null, compute histogram from metrics
+                 */
+                #pragma omp parallel
+                {
+                    #pragma omp single
+                    {
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].first)].first; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].cnt)].cnt; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].min)].min; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].max)].max; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].sum)].sum; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].avg)].avg; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].variance)].variance; } }
+                        #pragma omp task
+                        { for (int ix=0;ix<num_indices[id];++ix) { ++histogram[log2_capped(metrics[ix].stdev)].stdev; } }
+                    }
                 }
-                stat_metrics<long long> * thread_histogram = &__thread_histogram[1]; // handle -1s returned by log2_capped
-
-                // compute a thread-local histogram for only our slice of the indices
-                if (metrics) {
-                    /**
-                     * if metrics is non-null, compute histogram from metrics
-                     */
-                    for (int ix=start_ix;ix<end_ix;++ix) {
-                        ++thread_histogram[log2_capped(metrics[ix].first)].first;
-                        ++thread_histogram[log2_capped(metrics[ix].cnt)].cnt;
-                        ++thread_histogram[log2_capped(metrics[ix].min)].min;
-                        ++thread_histogram[log2_capped(metrics[ix].max)].max;
-                        ++thread_histogram[log2_capped(metrics[ix].sum)].sum;
-                        ++thread_histogram[log2_capped(metrics[ix].avg)].avg;
-                        ++thread_histogram[log2_capped(metrics[ix].variance)].variance;
-                        ++thread_histogram[log2_capped(metrics[ix].stdev)].stdev;
+            } else {
+                /**
+                 * if metrics is null, compute histogram from the full data
+                 */
+                for (int ix=0;ix<num_indices[id];++ix) {
+                    for (int tid=0;tid<NUM_PROCESSES;++tid) {
+                        ++histogram[log2_capped(get_stat<T>(tid, id, ix))].none;
                     }
+                }
+            }
 
-                    // use atomic primitives to add our histogram amounts to the shared array
-                    for (int bucket=0;bucket<num_buckets;++bucket) {
-                        __sync_fetch_and_add(&histogram[bucket].first, thread_histogram[bucket].first);
-                        __sync_fetch_and_add(&histogram[bucket].cnt, thread_histogram[bucket].cnt);
-                        __sync_fetch_and_add(&histogram[bucket].min, thread_histogram[bucket].min);
-                        __sync_fetch_and_add(&histogram[bucket].max, thread_histogram[bucket].max);
-                        __sync_fetch_and_add(&histogram[bucket].sum, thread_histogram[bucket].sum);
-                        __sync_fetch_and_add(&histogram[bucket].avg, thread_histogram[bucket].avg);
-                        __sync_fetch_and_add(&histogram[bucket].variance, thread_histogram[bucket].variance);
-                        __sync_fetch_and_add(&histogram[bucket].stdev, thread_histogram[bucket].stdev);
+        // aggressively parallel (for very large)
+        } else {
+
+            // parallel histogram construction
+            VERBOSE std::cout<<"parallel compute histogram: spawning "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
+            std::thread threads[std::thread::hardware_concurrency()];
+            volatile bool start = false;
+            for (int thread_id=0;thread_id<(int) std::thread::hardware_concurrency();++thread_id) {
+                //cout<<"    parallel compute histogram: spawning thread "<<thread_id<<std::endl;
+                threads[thread_id] = std::thread([thread_id, histogram, id, &start, num_buckets, metrics, this]() {
+                    // while (!start) { __sync_synchronize(); }
+
+                    // compute our slice of the indices
+                    int slice_size = this->num_indices[id] / std::thread::hardware_concurrency();
+                    int start_ix = slice_size * thread_id;
+                    int end_ix = (thread_id == (int) std::thread::hardware_concurrency()-1) ? this->num_indices[id] : slice_size * (thread_id+1);
+
+                    stat_metrics<long long> * __thread_histogram = new stat_metrics<long long>[num_buckets+1];
+                    for (int i=0;i<num_buckets+1;++i) {
+                        memset(&__thread_histogram[i], 0, sizeof(stat_metrics<long long>));
                     }
-                } else {
-                    /**
-                     * if metrics is null, compute histogram from the full data
-                     */
-                    for (int ix=start_ix;ix<end_ix;++ix) {
-                        for (int tid=0;tid<NUM_PROCESSES;++tid) {
-                            ++thread_histogram[log2_capped(get_stat<T>(tid, id, ix))].none;
+                    stat_metrics<long long> * thread_histogram = &__thread_histogram[1]; // handle -1s returned by log2_capped
+
+                    // compute a thread-local histogram for only our slice of the indices
+                    if (metrics) {
+                        /**
+                         * if metrics is non-null, compute histogram from metrics
+                         */
+                        for (int ix=start_ix;ix<end_ix;++ix) {
+                            ++thread_histogram[log2_capped(metrics[ix].first)].first;
+                            ++thread_histogram[log2_capped(metrics[ix].cnt)].cnt;
+                            ++thread_histogram[log2_capped(metrics[ix].min)].min;
+                            ++thread_histogram[log2_capped(metrics[ix].max)].max;
+                            ++thread_histogram[log2_capped(metrics[ix].sum)].sum;
+                            ++thread_histogram[log2_capped(metrics[ix].avg)].avg;
+                            ++thread_histogram[log2_capped(metrics[ix].variance)].variance;
+                            ++thread_histogram[log2_capped(metrics[ix].stdev)].stdev;
+                        }
+
+                        // use atomic primitives to add our histogram amounts to the shared array
+                        for (int bucket=0;bucket<num_buckets;++bucket) {
+                            __sync_fetch_and_add(&histogram[bucket].first, thread_histogram[bucket].first);
+                            __sync_fetch_and_add(&histogram[bucket].cnt, thread_histogram[bucket].cnt);
+                            __sync_fetch_and_add(&histogram[bucket].min, thread_histogram[bucket].min);
+                            __sync_fetch_and_add(&histogram[bucket].max, thread_histogram[bucket].max);
+                            __sync_fetch_and_add(&histogram[bucket].sum, thread_histogram[bucket].sum);
+                            __sync_fetch_and_add(&histogram[bucket].avg, thread_histogram[bucket].avg);
+                            __sync_fetch_and_add(&histogram[bucket].variance, thread_histogram[bucket].variance);
+                            __sync_fetch_and_add(&histogram[bucket].stdev, thread_histogram[bucket].stdev);
+                        }
+                    } else {
+                        /**
+                         * if metrics is null, compute histogram from the full data
+                         */
+                        for (int ix=start_ix;ix<end_ix;++ix) {
+                            for (int tid=0;tid<NUM_PROCESSES;++tid) {
+                                ++thread_histogram[log2_capped(get_stat<T>(tid, id, ix))].none;
+                            }
+                        }
+                        // use atomic primitives to add our histogram amounts to the shared array
+                        for (int bucket=0;bucket<num_buckets;++bucket) {
+                            __sync_fetch_and_add(&histogram[bucket].none, thread_histogram[bucket].none);
                         }
                     }
-                    // use atomic primitives to add our histogram amounts to the shared array
-                    for (int bucket=0;bucket<num_buckets;++bucket) {
-                        __sync_fetch_and_add(&histogram[bucket].none, thread_histogram[bucket].none);
-                    }
-                }
 
-                delete[] __thread_histogram;
+                    delete[] __thread_histogram;
 
-                //cout<<"    parallel compute histogram: thread "<<thread_id<<" terminated"<<std::endl;
-            });
-            //cout<<"    parallel compute histogram: spawned thread "<<thread_id<<std::endl;
+                    //cout<<"    parallel compute histogram: thread "<<thread_id<<" terminated"<<std::endl;
+                });
+                //cout<<"    parallel compute histogram: spawned thread "<<thread_id<<std::endl;
+            }
+            __sync_synchronize();
+            start = true;
+            __sync_synchronize();
+            VERBOSE std::cout<<"parallel compute histogram: joining "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
+            for (int i=0;i<(int) std::thread::hardware_concurrency();++i) {
+                //cout<<"    parallel compute histogram: joining thread "<<i<<std::endl;
+                threads[i].join();
+                //cout<<"    parallel compute histogram: joined thread "<<i<<std::endl;
+            }
+            VERBOSE std::cout<<"parallel compute histogram: joined all."<<std::endl;
         }
-        __sync_synchronize();
-        start = true;
-        __sync_synchronize();
-        VERBOSE std::cout<<"parallel compute histogram: joining "<<std::thread::hardware_concurrency()<<" threads"<<std::endl;
-        for (int i=0;i<(int) std::thread::hardware_concurrency();++i) {
-            //cout<<"    parallel compute histogram: joining thread "<<i<<std::endl;
-            threads[i].join();
-            //cout<<"    parallel compute histogram: joined thread "<<i<<std::endl;
-        }
-        VERBOSE std::cout<<"parallel compute histogram: joined all."<<std::endl;
 
         return histogram;
     }
@@ -861,29 +911,56 @@ private:
         if (already_computed_stats) return;
 //            std::cout<<"start compute_before_printing()..."<<std::endl;
 
-        // parallel statistics computation
-        VERBOSE std::cout<<"parallel stats compute before printing: spawning "<<(3*num_stats)<<" threads"<<std::endl;
-        std::thread threads[3*num_stats];
-        for (int id=0;id<num_stats;++id) {
-            if (this->data_types[id] == LONG_LONG) {
-                threads[3*id+0] = std::thread([this,id]() { this->computed_gstats_total[id] = (stat_metrics<double> *) compute_stat_metrics_total<long long>(id); });
-                // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
-                threads[3*id+1] = std::thread([this,id]() { this->computed_gstats_by_index[id] = (stat_metrics<double> *) compute_stat_metrics_by_index<long long>(id, &this->num_indices[id]); });
-                threads[3*id+2] = std::thread([this,id]() { this->computed_gstats_by_thread[id] = (stat_metrics<double> *) compute_stat_metrics_by_thread<long long>(id); });
-            } else {
-                threads[3*id+0] = std::thread([this,id]() { this->computed_gstats_total[id] = compute_stat_metrics_total<double>(id); });
-                // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
-                threads[3*id+1] = std::thread([this,id]() { this->computed_gstats_by_index[id] = compute_stat_metrics_by_index<double>(id, &this->num_indices[id]); });
-                threads[3*id+2] = std::thread([this,id]() { this->computed_gstats_by_thread[id] = compute_stat_metrics_by_thread<double>(id); });
+        #pragma omp parallel
+        {
+            #pragma omp single nowait
+            {
+                for (int id=0;id<num_stats;++id) {
+                    if (this->data_types[id] == LONG_LONG) {
+                        #pragma omp task
+                        { this->computed_gstats_total[id] = (stat_metrics<double> *) compute_stat_metrics_total<long long>(id); }
+                        // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
+                        #pragma omp task
+                        { this->computed_gstats_by_index[id] = (stat_metrics<double> *) compute_stat_metrics_by_index<long long>(id, &this->num_indices[id]); }
+                        #pragma omp task
+                        { this->computed_gstats_by_thread[id] = (stat_metrics<double> *) compute_stat_metrics_by_thread<long long>(id); }
+                    } else {
+                        #pragma omp task
+                        { this->computed_gstats_total[id] = compute_stat_metrics_total<double>(id); }
+                        // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
+                        #pragma omp task
+                        { this->computed_gstats_by_index[id] = compute_stat_metrics_by_index<double>(id, &this->num_indices[id]); }
+                        #pragma omp task
+                        { this->computed_gstats_by_thread[id] = compute_stat_metrics_by_thread<double>(id); }
+                    }
+                }
             }
         }
-        VERBOSE std::cout<<"parallel stats compute before printing: joining "<<(3*num_stats)<<" threads"<<std::endl;
-        for (int i=0;i<3*num_stats;++i) {
-            threads[i].join();
-        }
-        VERBOSE std::cout<<"parallel stats compute before printing: joined all."<<std::endl;
-        __sync_synchronize();
         already_computed_stats = true;
+
+        // // parallel statistics computation
+        // VERBOSE std::cout<<"parallel stats compute before printing: spawning "<<(3*num_stats)<<" threads"<<std::endl;
+        // std::thread threads[3*num_stats];
+        // for (int id=0;id<num_stats;++id) {
+        //     if (this->data_types[id] == LONG_LONG) {
+        //         threads[3*id+0] = std::thread([this,id]() { this->computed_gstats_total[id] = (stat_metrics<double> *) compute_stat_metrics_total<long long>(id); });
+        //         // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
+        //         threads[3*id+1] = std::thread([this,id]() { this->computed_gstats_by_index[id] = (stat_metrics<double> *) compute_stat_metrics_by_index<long long>(id, &this->num_indices[id]); });
+        //         threads[3*id+2] = std::thread([this,id]() { this->computed_gstats_by_thread[id] = (stat_metrics<double> *) compute_stat_metrics_by_thread<long long>(id); });
+        //     } else {
+        //         threads[3*id+0] = std::thread([this,id]() { this->computed_gstats_total[id] = compute_stat_metrics_total<double>(id); });
+        //         // WARNING: compute_stat_metrics_INDEX SETS this->num_indices[id], WHICH IS NEEDED FOR GET_HISTOGRAM_... CALLS AND print_all!
+        //         threads[3*id+1] = std::thread([this,id]() { this->computed_gstats_by_index[id] = compute_stat_metrics_by_index<double>(id, &this->num_indices[id]); });
+        //         threads[3*id+2] = std::thread([this,id]() { this->computed_gstats_by_thread[id] = compute_stat_metrics_by_thread<double>(id); });
+        //     }
+        // }
+        // VERBOSE std::cout<<"parallel stats compute before printing: joining "<<(3*num_stats)<<" threads"<<std::endl;
+        // for (int i=0;i<3*num_stats;++i) {
+        //     threads[i].join();
+        // }
+        // VERBOSE std::cout<<"parallel stats compute before printing: joined all."<<std::endl;
+        // __sync_synchronize();
+        // already_computed_stats = true;
 //            std::cout<<"finished compute_before_printing()."<<std::endl;
     }
 
