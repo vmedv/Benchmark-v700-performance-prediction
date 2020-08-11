@@ -53,6 +53,17 @@ typedef long long test_type;
 // each thread saves its own thread-id (should be used primarily within this file--could be eliminated to improve software engineering)
 __thread int tid = 0;
 
+enum PrefillType {
+    PREFILL_INSERT,
+    PREFILL_MIXED,
+    PREFILL_HYBRID
+};
+const char * PrefillTypeStrings[] = {
+    "PREFILL_INSERT",
+    "PREFILL_MIXED",
+    "PREFILL_HYBRID"
+};
+
 // some read-only globals (could be encapsulated in a struct and passed around to improve software engineering)
 
 #include "plaf.h"
@@ -69,6 +80,9 @@ int PREFILL_THREADS;
 int WORK_THREADS;
 int RQ_THREADS;
 int TOTAL_THREADS;
+PrefillType PREFILL_TYPE;
+int PREFILL_HYBRID_MIN_MS;
+int PREFILL_HYBRID_MAX_MS;
 PAD;
 
 #include "globals_extern.h"
@@ -128,14 +142,6 @@ PAD;
     #define __RLU_DEINIT_ALL
 #endif
 
-#define INIT_THREAD(tid) \
-    __RLU_INIT_THREAD; \
-    __RCU_INIT_THREAD; \
-    g->dsAdapter->initThread(tid);
-#define DEINIT_THREAD(tid) \
-    g->dsAdapter->deinitThread(tid); \
-    __RCU_DEINIT_THREAD; \
-    __RLU_DEINIT_THREAD;
 #define INIT_ALL \
     __RCU_INIT_ALL; \
     __RLU_INIT_ALL;
@@ -143,6 +149,59 @@ PAD;
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
 
+#define THREAD_MEASURED_PRE \
+    tid = __tid; \
+    binding_bindThread(tid); \
+    test_type garbage = 0; \
+    test_type * rqResultKeys = new test_type[RQSIZE+MAX_KEYS_PER_NODE]; \
+    VALUE_TYPE * rqResultValues = new VALUE_TYPE[RQSIZE+MAX_KEYS_PER_NODE]; \
+    __RLU_INIT_THREAD; \
+    __RCU_INIT_THREAD; \
+    g->dsAdapter->initThread(tid); \
+    papi_create_eventset(tid); \
+    __sync_fetch_and_add(&g->running, 1); \
+    __sync_synchronize(); \
+    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } \
+    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
+    papi_start_counters(tid); \
+    int cnt = 0; \
+    int rq_cnt = 0; \
+    DURATION_START(tid);
+
+#define THREAD_MEASURED_POST \
+    __sync_fetch_and_add(&g->running, -1); \
+    DURATION_END(tid, duration_all_ops); \
+    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
+    SOFTWARE_BARRIER; \
+    papi_stop_counters(tid); \
+    SOFTWARE_BARRIER; \
+    while (g->running) { SOFTWARE_BARRIER; } \
+    g->dsAdapter->deinitThread(tid); \
+    __RCU_DEINIT_THREAD; \
+    __RLU_DEINIT_THREAD; \
+    delete[] rqResultKeys; \
+    delete[] rqResultValues; \
+    g->garbage += garbage;
+
+#define THREAD_PREFILL_PRE \
+    tid = __tid; \
+    binding_bindThread(tid); \
+    test_type garbage = 0; \
+    double insProbability = (INS_FRAC > 0 ? 100*INS_FRAC/(INS_FRAC+DEL_FRAC) : 50.); \
+    __RLU_INIT_THREAD; \
+    __RCU_INIT_THREAD; \
+    g->dsAdapter->initThread(tid); \
+    __sync_fetch_and_add(&g->running, 1); \
+    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
+
+#define THREAD_PREFILL_POST \
+    __sync_fetch_and_add(&g->running, -1); \
+    SOFTWARE_BARRIER; \
+    while (g->running) { SOFTWARE_BARRIER; } \
+    g->dsAdapter->deinitThread(tid); \
+    __RCU_DEINIT_THREAD; \
+    __RLU_DEINIT_THREAD; \
+    g->garbage += garbage;
 
 
 
@@ -189,12 +248,12 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
     GSTATS_TIMER_RESET(tid, timer_duration);
 #define TIMING_STOP \
     std::cout<<"timing_elapsed "<<(GSTATS_TIMER_SPLIT(tid, timer_duration)/1000000000.)<<"s"<<std::endl;
-
-
-
-
-
-
+#ifndef OPS_BETWEEN_TIME_CHECKS
+#define OPS_BETWEEN_TIME_CHECKS 100
+#endif
+#ifndef RQS_BETWEEN_TIME_CHECKS
+#define RQS_BETWEEN_TIME_CHECKS 10
+#endif
 
 enum KeyGeneratorDistribution {
     UNIFORM, ZIPF
@@ -220,7 +279,6 @@ struct globals_t {
     long long startClockTicks;
     PAD;
     long elapsedMillisNapping;
-    volatile long long prefillIntervalElapsedMillis;
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime;
     PAD;
     volatile test_type garbage; // used to prevent optimizing out some code
@@ -273,7 +331,6 @@ struct globals_t {
         running = 0;
         dsAdapter = NULL;
         garbage = 0;
-        prefillIntervalElapsedMillis = 0;
         prefillKeySum = 0;
         prefillSize = 0;
     }
@@ -285,42 +342,89 @@ struct globals_t {
     }
 };
 
-#ifndef OPS_BETWEEN_TIME_CHECKS
-#define OPS_BETWEEN_TIME_CHECKS 100
-#endif
-#ifndef RQS_BETWEEN_TIME_CHECKS
-#define RQS_BETWEEN_TIME_CHECKS 10
-#endif
+
+
+template <class GlobalsT>
+void thread_timed(GlobalsT * g, int __tid) {
+    THREAD_MEASURED_PRE;
+    while (!g->done) {
+        ++cnt;
+        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
+        test_type key = g->keygens[tid]->next();
+        double op = g->rngs[tid].next(100000000) / 1000000.;
+        if (op < INS_FRAC) {
+            TRACE COUTATOMICTID("### calling INSERT "<<key<<std::endl);
+            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
+                TRACE COUTATOMICTID("### completed INSERT modification for "<<key<<std::endl);
+                GSTATS_ADD(tid, key_checksum, key);
+                GSTATS_ADD(tid, size_checksum, 1);
+            } else {
+                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
+            }
+            GSTATS_ADD(tid, num_inserts, 1);
+        } else if (op < INS_FRAC+DEL_FRAC) {
+            TRACE COUTATOMICTID("### calling ERASE "<<key<<std::endl);
+            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
+                TRACE COUTATOMICTID("### completed ERASE modification for "<<key<<std::endl);
+                GSTATS_ADD(tid, key_checksum, -key);
+                GSTATS_ADD(tid, size_checksum, -1);
+            } else {
+                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
+            }
+            GSTATS_ADD(tid, num_deletes, 1);
+        } else if (op < INS_FRAC+DEL_FRAC+RQ) {
+            // TODO: make this respect KeyGenerators for non-uniform distributions
+            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
+            assert(_key >= 1); assert(_key <= MAXKEY);
+            assert(_key <= std::max(1, MAXKEY - RQSIZE));
+            assert(MAXKEY > RQSIZE || _key == 0);
+            key = (test_type) _key;
+            ++rq_cnt;
+            size_t rqcnt;
+            if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
+                garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
+            }
+            GSTATS_ADD(tid, num_rq, 1);
+        } else {
+            if (g->dsAdapter->contains(tid, key)) {
+                garbage += key; // prevent optimizing out
+            }
+            GSTATS_ADD(tid, num_searches, 1);
+        }
+        GSTATS_ADD(tid, num_operations, 1);
+    }
+    THREAD_MEASURED_POST;
+}
+
+template <class GlobalsT>
+void thread_rq(GlobalsT * g, int __tid) {
+    THREAD_MEASURED_PRE;
+    while (!g->done) {
+        // TODO: make this respect KeyGenerators for non-uniform distributions
+        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
+        assert(_key >= 1);
+        assert(_key <= MAXKEY);
+        assert(_key <= std::max(1, MAXKEY - RQSIZE));
+        assert(MAXKEY > RQSIZE || _key == 0);
+        test_type key = (test_type) _key;
+        size_t rqcnt;
+        TIMELINE_START(tid);
+        if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
+            garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
+        }
+        TIMELINE_END(tid, "RQThreadOperation");
+        GSTATS_ADD(tid, num_rq, 1);
+        GSTATS_ADD(tid, num_operations, 1);
+    }
+    THREAD_MEASURED_POST;
+}
 
 template <class GlobalsT>
 void thread_prefill_with_updates(GlobalsT * g, int __tid) {
-    tid = __tid;
-    binding_bindThread(tid);
-    test_type garbage = 0;
-
-    double insProbability = (INS_FRAC > 0 ? 100*INS_FRAC/(INS_FRAC+DEL_FRAC) : 50.);
-
-    INIT_THREAD(tid);
-    __sync_fetch_and_add(&g->running, 1);
-    // __sync_synchronize();
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
-    int cnt = 0;
-    auto __endTime = g->startTime;
+    THREAD_PREFILL_PRE;
     while (!g->done) {
-        // if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0) {
-        //     __endTime = std::chrono::high_resolution_clock::now();
-        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= g->PREFILL_INTERVAL_MILLIS) {
-        //         g->done = true;
-        //         __sync_synchronize();
-        //         break;
-        //     }
-        // }
-
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
         test_type key = g->keygens[tid]->next();
-        //test_type key = g->rngs[tid].next(MAXKEY) + 1;
         double op = g->rngs[tid].next(100000000) / 1000000.;
-        // GSTATS_TIMER_RESET(tid, timer_latency);
         if (op < insProbability) {
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
@@ -335,24 +439,16 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
             GSTATS_ADD(tid, num_deletes, 1);
         }
         GSTATS_ADD(tid, num_operations, 1);
-        // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
     }
-
-    __sync_fetch_and_add(&g->running, -1);
-    while (g->running) {
-        // wait
-    }
-
-    DEINIT_THREAD(tid);
-    g->garbage += garbage;
-    __sync_bool_compare_and_swap(&g->prefillIntervalElapsedMillis, 0, std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count());
+    THREAD_PREFILL_POST;
 }
 
 // note: this function guarantees that exactly expectedSize keys are inserted into the data structure by the end
 template <class GlobalsT>
-void prefillWithInserts(GlobalsT * g, int64_t expectedSize) {
+void prefillInsert(GlobalsT * g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using INSERTION ONLY."<<std::endl;
-    auto prefillStartTime = std::chrono::high_resolution_clock::now();
+    g->startTime = std::chrono::high_resolution_clock::now();
+    auto prefillStartTime = g->startTime;
 
     const int tid = 0;
     #ifdef _OPENMP
@@ -374,7 +470,7 @@ void prefillWithInserts(GlobalsT * g, int64_t expectedSize) {
             g->dsAdapter->initThread(tid);
         #endif
 
-        #pragma omp for schedule(dynamic, 1000)
+        #pragma omp for
         for (size_t i=0;i<expectedSize;++i) {
             test_type key = g->keygens[tid]->next();
             //test_type key = g->rngs[tid].next(MAXKEY) + 1;
@@ -384,7 +480,7 @@ void prefillWithInserts(GlobalsT * g, int64_t expectedSize) {
                 GSTATS_ADD(tid, prefill_size, 1);
 
                 // monitor prefilling progress (completely optional!!)
-                if ((tid == 0) && (GSTATS_GET(tid, prefill_size) % 1000000) == 0) {
+                if ((tid == 0) && (GSTATS_GET(tid, prefill_size) % (100000 / std::max(1, (PREFILL_THREADS/2)))) == 0) {
                     double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count();
                     //double percent_done = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum / (double) expectedSize;
                     double percent_done = GSTATS_GET(tid, prefill_size) * ompThreads / (double) expectedSize;
@@ -401,21 +497,10 @@ void prefillWithInserts(GlobalsT * g, int64_t expectedSize) {
         }
     }
     TIMING_STOP;
-
-    auto prefillEndTime = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
-    GSTATS_PRINT;
-    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum + GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
-    g->prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
-    g->prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
-    COUTATOMIC("finished prefilling to size "<<expectedSize<<" keysum="<<g->prefillKeySum<<", performing "<<totalSuccUpdates<<" successful updates in "<<(elapsed/1000.)<<"s"<<std::endl);
-    std::cout<<"pref_size="<<expectedSize<<std::endl;
-    //std::cout<<"pref_millis="<<elapsed<<std::endl;
-    GSTATS_CLEAR_ALL;
 }
 
 template<class GlobalsT>
-void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
+void prefillMixed(GlobalsT * g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using UPDATES (ins & del)."<<std::endl;
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
@@ -441,7 +526,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
         g->startTime = std::chrono::high_resolution_clock::now();
 
-        g->prefillIntervalElapsedMillis = 0;
+        auto prefillIntervalElapsedMillis = 0;
         __sync_synchronize();
         g->start = true;
 
@@ -462,11 +547,11 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         __sync_synchronize();
 
         const long MAX_NAPPING_MILLIS = 5000;
-        g->elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count();
-        g->elapsedMillisNapping = 0;
-        while (g->running > 0 && g->elapsedMillisNapping < MAX_NAPPING_MILLIS) {
+        auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count();
+        auto elapsedMillisNapping = 0;
+        while (g->running > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
             nanosleep(&tsNap, NULL);
-            g->elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count() - g->elapsedMillis;
+            elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count() - elapsedMillis;
         }
         if (g->running > 0) {
             COUTATOMIC(std::endl);
@@ -490,7 +575,7 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
         g->done = false;
 
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-        totalThreadsPrefillElapsedMillis += g->prefillIntervalElapsedMillis;
+        totalThreadsPrefillElapsedMillis += prefillIntervalElapsedMillis;
         if (sz >= (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
             break;
         } else {
@@ -502,27 +587,140 @@ void prefillWithUpdates(GlobalsT * g, int64_t expectedSize) {
 
         DEINIT_ALL;
     }
-
     if (attempts >= MAX_ATTEMPTS) {
         std::cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<std::endl;
         exit(-1);
     }
+}
 
-    auto prefillEndTime = std::chrono::high_resolution_clock::now();
-    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(prefillEndTime-prefillStartTime).count();
+template<class GlobalsT>
+void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
+    using namespace std::chrono;
 
-    GSTATS_PRINT;
-    const long totalSuccUpdates = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum + GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
-    g->prefillKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum;
-    g->prefillSize = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum;
-    COUTATOMIC("finished prefilling to size "<<sz<<" for expected size "<<expectedSize<<" keysum="<< g->prefillKeySum /*<<" dskeysum="<<g->ds->getKeyChecksum()<<" dssize="<<g->ds->getSize()*/<<", performing "<<totalSuccUpdates<<" successful updates in "<<(totalThreadsPrefillElapsedMillis/1000.) /*(elapsed/1000.)*/<<" seconds (total time "<<(elapsed/1000.)<<"s)"<<std::endl);
-    std::cout<<"pref_size="<<sz<<std::endl;
-//    std::cout<<"pref_millis="<<elapsed<<std::endl;
-    GSTATS_CLEAR_ALL;
+    std::cout<<"Info: prefilling using hybrid approach; mixed then insert-only if needed."<<std::endl;
+    g->startTime = high_resolution_clock::now();
+
+    const double PREFILL_THRESHOLD = 0.02;
+    int64_t sz = 0;
+    INIT_ALL;
+
+    // start all threads
+    std::thread * threads[MAX_THREADS_POW2];
+    for (int i=0;i<PREFILL_THREADS;++i) {
+        threads[i] = new std::thread(thread_prefill_with_updates<GlobalsT>, g, i);
+    }
+
+    TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<g->running<<std::endl);
+    SOFTWARE_BARRIER;
+    while (g->running < PREFILL_THREADS) { SOFTWARE_BARRIER; }
+    TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
+
+    auto now = high_resolution_clock::now();
+    auto elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+    std::cout<<"prefilling initialization took "<<(elapsedMillis/1000.)<<"s"<<std::endl;
+
+    // for the purposes of prefilling for a MINIMUM time, we don't want to include the preceding initialization...
+    g->startTime = now;
+
+    __sync_synchronize();
+    g->start = true;
+
+    /**
+     * MAIN THREAD NOW DETERMINES WHEN PREFILLING THREADS SHOULD STOP (setting g->done)
+     */
+
+    /**
+     * first, we wait for the minimum prefilling time
+     */
+
+    timespec tsMinPrefillingTime = {0, PREFILL_HYBRID_MIN_MS * ((__syscall_slong_t) 1000000)};
+    nanosleep(&tsMinPrefillingTime, NULL);
+
+    /**
+     * if we didn't sleep long enough, do so in 100ms increments
+     */
+
+    now = high_resolution_clock::now();
+    elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+    while (elapsedMillis < PREFILL_HYBRID_MIN_MS) {
+        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
+        now = high_resolution_clock::now();
+        elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+    }
+    // print status update
+    sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+    std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+
+    /**
+     * now repeatedly check whether the data structure is prefilled enough
+     */
+
+    while (elapsedMillis < PREFILL_HYBRID_MAX_MS && sz < (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
+        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
+        now = high_resolution_clock::now();
+        elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+
+        // print status update
+        sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+        std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+    }
+
+    /**
+     * stop all mixed prefilling
+     */
+
+    // stop mixed prefilling (threads will stop after their current/next operation)
+    SOFTWARE_BARRIER;
+    g->done = true;
+    __sync_synchronize();
+
+    // wait until all threads have stopped running (checking for infinite loops)
+    const long MAX_NAPPING_MILLIS = 10000;
+    now = high_resolution_clock::now();
+    elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+    int64_t elapsedMillisNapping = 0;
+    while (g->running > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
+        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
+        elapsedMillisNapping = (int64_t) (duration_cast<milliseconds>(high_resolution_clock::now() - g->startTime).count() - elapsedMillis);
+    }
+    if (g->running > 0) {
+        COUTATOMIC(std::endl<<"Validation FAILURE: "<<g->running<<" non-responsive thread(s) [during prefill]"<<std::endl<<std::endl);
+        exit(-1);
+    }
+
+    // stop threads
+    for (int i=0;i<PREFILL_THREADS;++i) {
+        threads[i]->join();
+        delete threads[i];
+    }
+    g->start = false;
+    g->done = false;
+
+    /**
+     * if needed, finish up with insert-only prefilling
+     */
+
+    sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+    if (sz < (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
+        std::cout<<"Info: prefilling requires an additional insert phase to complete."<<std::endl;
+
+        // use insert-only prefilling to close the gap between sz and expectedSize
+        int64_t numKeysToInsert = expectedSize - sz;
+        prefillInsert(g, numKeysToInsert);
+
+        // print status update
+        now = high_resolution_clock::now();
+        elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+        sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+        std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+    }
+
+    DEINIT_ALL;
+    g->prefillStartTime = g->startTime; // supporting legacy output code...
 }
 
 template <class GlobalsT>
-size_t * prefillWithArrayConstruction(GlobalsT * g, int64_t expectedSize) {
+size_t * prefillArray(GlobalsT * g, int64_t expectedSize) {
     std::cout<<"Info: prefilling using ARRAY CONSTRUCTION to expectedSize="<<expectedSize<<" w/MAXKEY="<<MAXKEY<<"."<<std::endl;
     if (MAXKEY < expectedSize) setbench_error("specified key range must be large enough to accommodate the specified prefill size");
 
@@ -583,211 +781,50 @@ void createAndPrefillDataStructure(GlobalsT * g, int64_t expectedSize) {
     // prefill data structure to mimic its structure in the steady state
     g->prefillStartTime = std::chrono::high_resolution_clock::now();
 
+#ifdef PREFILL_BUILD_FROM_ARRAY
     // PREBUILD VIA PARALLEL ARRAY CONSTRUCTION
-    #ifdef PREFILL_BUILD_FROM_ARRAY
-        auto present = prefillWithArrayConstruction(g, expectedSize);
-        TIMING_START("constructing data structure");
-        g->dsAdapter = new DS_ADAPTER_T(
-                std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
-                (test_type const *) present, (VALUE_TYPE const *) present, expectedSize, rand());
-        TIMING_STOP;
-        delete[] present;
+    auto present = prefillArray(g, expectedSize);
+    TIMING_START("constructing data structure");
+    g->dsAdapter = new DS_ADAPTER_T(
+            std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
+            (test_type const *) present, (VALUE_TYPE const *) present, expectedSize, rand());
+    TIMING_STOP;
+    delete[] present;
+#else
+    g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
 
     // PREBUILD VIA REPEATED CONCURRENT INSERT-ONLY TRIALS
-    #elif defined PREFILL_INSERTION_ONLY
-        g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
-        prefillWithInserts(g, expectedSize);
+    if (PREFILL_TYPE == PREFILL_INSERT) {
+        prefillInsert(g, expectedSize);
 
     // PREBUILD VIA REPEATED CONCURRENT INSERT-AND-DELETE TRIALS
-    #else
-        g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
-        prefillWithUpdates(g, expectedSize);
-    #endif
+    } else if (PREFILL_TYPE == PREFILL_MIXED) {
+        prefillMixed(g, expectedSize);
+
+    // PREBUILD VIA A HYBRID APPROACH (FIRST MIXED UPDATES, THEN INSERT-ONLY IF NEEDED ONCE TIME IS UP)
+    } else if (PREFILL_TYPE == PREFILL_HYBRID) {
+        prefillHybrid(g, expectedSize);
+
+    } else {
+        setbench_error("invalid prefilling type specified");
+    }
+#endif
+
+    // print prefilling status information
+    using namespace std::chrono;
+    const long totalUpdates = GSTATS_OBJECT_NAME.get_sum<long long>(num_inserts) + GSTATS_OBJECT_NAME.get_sum<long long>(num_deletes);
+    g->prefillKeySum = GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
+    g->prefillSize = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+    auto now = high_resolution_clock::now();
+    auto elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+    COUTATOMIC("finished prefilling to size "<<g->prefillSize<<" for expected size "<<expectedSize<<" keysum="<< g->prefillKeySum<<", performing "<<totalUpdates<<" updates; total_prefilling_elapsed_ms="<<elapsedMillis<<" ms)"<<std::endl);
+    std::cout<<"pref_size="<<g->prefillSize<<std::endl;
+    std::cout<<"pref_millis="<<elapsedMillis<<std::endl;
+    GSTATS_CLEAR_ALL;
 
     // print total prefilling time
     std::cout<<"prefill_elapsed_ms="<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count()<<std::endl;
     g->dsAdapter->printSummary(); ///////// debug
-}
-
-template <class GlobalsT>
-void thread_timed(GlobalsT * g, int __tid) {
-    tid = __tid;
-
-    binding_bindThread(tid);
-    test_type garbage = 0;
-
-    test_type * rqResultKeys = new test_type[RQSIZE+MAX_KEYS_PER_NODE];
-    VALUE_TYPE * rqResultValues = new VALUE_TYPE[RQSIZE+MAX_KEYS_PER_NODE];
-
-    //std::cout<<"tid="<<tid<<std::endl;
-    INIT_THREAD(tid);
-    papi_create_eventset(tid);
-    __sync_fetch_and_add(&g->running, 1);
-    __sync_synchronize();
-    //std::cout<<"thread "<<__tid<<" wait for g->start running="<<g->running<<std::endl;
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
-    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
-    papi_start_counters(tid);
-    int cnt = 0;
-    int rq_cnt = 0;
-
-    DURATION_START(tid);
-
-    while (!g->done) {
-        // if (((++cnt) % OPS_BETWEEN_TIME_CHECKS) == 0 || (rq_cnt % RQS_BETWEEN_TIME_CHECKS) == 0) {
-        //     auto __endTime = std::chrono::high_resolution_clock::now();
-        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= std::abs(MILLIS_TO_RUN)) {
-        //         __sync_synchronize();
-        //         g->done = true;
-        //         __sync_synchronize();
-        //         break;
-        //     }
-        // }
-
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        test_type key = g->keygens[tid]->next();
-        //test_type key = g->rngs[tid].next(MAXKEY) + 1;
-//        printf("    key=%d\n", key);
-        double op = g->rngs[tid].next(100000000) / 1000000.;
-        if (op < INS_FRAC) {
-            TRACE COUTATOMICTID("### calling INSERT "<<key<<std::endl);
-            // GSTATS_TIMER_RESET(tid, timer_latency);
-            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed INSERT modification for "<<key<<std::endl);
-                GSTATS_ADD(tid, key_checksum, key);
-                GSTATS_ADD(tid, size_checksum, 1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
-            }
-            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
-            GSTATS_ADD(tid, num_inserts, 1);
-        } else if (op < INS_FRAC+DEL_FRAC) {
-            // GSTATS_TIMER_RESET(tid, timer_latency);
-            TRACE COUTATOMICTID("### calling ERASE "<<key<<std::endl);
-            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed ERASE modification for "<<key<<std::endl);
-                GSTATS_ADD(tid, key_checksum, -key);
-                GSTATS_ADD(tid, size_checksum, -1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
-            }
-            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_updates);
-            GSTATS_ADD(tid, num_deletes, 1);
-        } else if (op < INS_FRAC+DEL_FRAC+RQ) {
-            // TODO: make this respect KeyGenerators for non-uniform distributions
-            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-            assert(_key >= 1);
-            assert(_key <= MAXKEY);
-            assert(_key <= std::max(1, MAXKEY - RQSIZE));
-            assert(MAXKEY > RQSIZE || _key == 0);
-            key = (test_type) _key;
-
-            ++rq_cnt;
-            size_t rqcnt;
-            // GSTATS_TIMER_RESET(tid, timer_latency);
-            if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
-                garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
-            }
-            // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
-            GSTATS_ADD(tid, num_rq, 1);
-        } else {
-        //    GSTATS_TIMER_RESET(tid, timer_latency);
-            if (g->dsAdapter->contains(tid, key)) {
-            }
-        //    GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_searches);
-            GSTATS_ADD(tid, num_searches, 1);
-        }
-        GSTATS_ADD(tid, num_operations, 1);
-    }
-    __sync_fetch_and_add(&g->running, -1);
-//    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g->startClockTicks);
-
-    DURATION_END(tid, duration_all_ops);
-
-    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
-
-    SOFTWARE_BARRIER;
-    papi_stop_counters(tid);
-    SOFTWARE_BARRIER;
-
-    while (g->running) { sched_yield(); __sync_synchronize(); }
-    DEINIT_THREAD(tid);
-    delete[] rqResultKeys;
-    delete[] rqResultValues;
-    g->garbage += garbage;
-}
-
-template <class GlobalsT>
-void thread_rq(GlobalsT * g, int __tid) {
-    tid = __tid;
-
-    binding_bindThread(tid);
-    test_type garbage = 0;
-
-    test_type * rqResultKeys = new test_type[RQSIZE+MAX_KEYS_PER_NODE];
-    VALUE_TYPE * rqResultValues = new VALUE_TYPE[RQSIZE+MAX_KEYS_PER_NODE];
-
-    INIT_THREAD(tid);
-    papi_create_eventset(tid);
-    __sync_fetch_and_add(&g->running, 1);
-    __sync_synchronize();
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
-    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
-
-    papi_start_counters(tid);
-    int cnt = 0;
-    while (!g->done) {
-        // if (((++cnt) % RQS_BETWEEN_TIME_CHECKS) == 0) {
-        //     auto __endTime = std::chrono::high_resolution_clock::now();
-        //     if (std::chrono::duration_cast<std::chrono::milliseconds>(__endTime-g->startTime).count() >= MILLIS_TO_RUN) {
-        //         __sync_synchronize();
-        //         g->done = true;
-        //         __sync_synchronize();
-        //         break;
-        //     }
-        // }
-
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        // TODO: make this respect KeyGenerators for non-uniform distributions
-        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-        assert(_key >= 1);
-        assert(_key <= MAXKEY);
-        assert(_key <= std::max(1, MAXKEY - RQSIZE));
-        assert(MAXKEY > RQSIZE || _key == 0);
-
-        test_type key = (test_type) _key;
-        size_t rqcnt;
-        // GSTATS_TIMER_RESET(tid, timer_latency);
-
-        TIMELINE_START(tid);
-
-        if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
-            garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
-        }
-
-        TIMELINE_END(tid, "RQThreadOperation");
-
-        // GSTATS_TIMER_APPEND_ELAPSED(tid, timer_latency, latency_rqs);
-        GSTATS_ADD(tid, num_rq, 1);
-        GSTATS_ADD(tid, num_operations, 1);
-    }
-    __sync_fetch_and_add(&g->running, -1);
-
-    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count());
-
-    SOFTWARE_BARRIER;
-    papi_stop_counters(tid);
-    SOFTWARE_BARRIER;
-
-    //    GSTATS_SET(tid, num_prop_thread_exit_time, get_server_clock() - g->startClockTicks);
-    while (g->running) {
-        sched_yield(); // wait
-    }
-
-    DEINIT_THREAD(tid);
-    delete[] rqResultKeys;
-    delete[] rqResultValues;
-    g->garbage += garbage;
 }
 
 template <class GlobalsT>
@@ -1154,9 +1191,14 @@ int main(int argc, char** argv) {
     INS_FRAC = 10;
     DEL_FRAC = 10;
     MAXKEY = 100000;
+    PREFILL_HYBRID_MIN_MS = 1000;
+    PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
+    // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
                                 // to get NO prefilling, set -nprefill 0
     KeyGeneratorDistribution distribution = KeyGeneratorDistribution::UNIFORM;
+
+    PREFILL_TYPE = PREFILL_MIXED;
 
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
@@ -1180,6 +1222,16 @@ int main(int argc, char** argv) {
             WORK_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-nprefill") == 0) { // num threads to prefill with
             PREFILL_THREADS = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-prefill-mixed") == 0) { // prefilling type
+            PREFILL_TYPE = PREFILL_MIXED;
+        } else if (strcmp(argv[i], "-prefill-insert") == 0) { // prefilling type
+            PREFILL_TYPE = PREFILL_INSERT;
+        } else if (strcmp(argv[i], "-prefill-hybrid") == 0) { // prefilling type
+            PREFILL_TYPE = PREFILL_HYBRID;
+        } else if (strcmp(argv[i], "-prefill-hybrid-min-ms") == 0) {
+            PREFILL_HYBRID_MIN_MS = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-prefill-hybrid-max-ms") == 0) {
+            PREFILL_HYBRID_MAX_MS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-prefillsize") == 0) {
             DESIRED_PREFILL_SIZE = atol(argv[++i]);
         } else if (strcmp(argv[i], "-dist-zipf") == 0) {
@@ -1222,6 +1274,9 @@ int main(int argc, char** argv) {
     PRINTI(RQ_THREADS);
     PRINTI(distribution);
     printf("INS_DEL_FRAC=%.1f %.1f\n", INS_FRAC, DEL_FRAC);
+    printf("PREFILL_TYPE=%s\n", PrefillTypeStrings[PREFILL_TYPE]);
+    PRINTI(PREFILL_HYBRID_MIN_MS);
+    PRINTI(PREFILL_HYBRID_MAX_MS);
 
     switch (distribution) {
         case UNIFORM: {

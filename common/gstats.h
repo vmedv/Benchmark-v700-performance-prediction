@@ -967,8 +967,8 @@ private:
 public:
 
     template <typename T>
-    double get_sum(const gstats_stat_id id) {
-        double sum = 0;
+    T get_sum(const gstats_stat_id id) {
+        T sum = 0;
         for (int tid=0;tid<NUM_PROCESSES;++tid) {
             int size = thread_data[tid].size[id];
             auto data = thread_data[tid].get_ptr<T>(id);
