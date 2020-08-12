@@ -347,6 +347,7 @@ struct globals_t {
 template <class GlobalsT>
 void thread_timed(GlobalsT * g, int __tid) {
     THREAD_MEASURED_PRE;
+    int tid = __tid;
     while (!g->done) {
         ++cnt;
         VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);

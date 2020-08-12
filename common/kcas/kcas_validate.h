@@ -157,7 +157,6 @@ typedef intptr_t seqbits_t;
 
 #define KCAS_MAX_THREADS 512
 void *volatile thread_ids[KCAS_MAX_THREADS] = {};
-thread_local int __kcas_tid;
 class TIDGenerator {
   public:
     // PAD;
@@ -174,7 +173,7 @@ class TIDGenerator {
             assert(i < KCAS_MAX_THREADS);
             if (__sync_bool_compare_and_swap(&thread_ids[i], 0, this)) {
                 myslot = i;
-                __kcas_tid = i;
+                // __kcas_tid = i;
                 break;
             }
         }
@@ -197,6 +196,7 @@ class TIDGenerator {
     }
 };
 thread_local TIDGenerator kcas_tid;
+thread_local int const __kcas_tid = kcas_tid.getId();
 thread_local void * __kcas_path;
 thread_local void * __kcas_desc;
 #define __KCAS_PATH ((validationSet *) __kcas_path)
@@ -595,7 +595,7 @@ inline void KCASValidate<MAX_K>::writeInitVal(casword_t volatile *addr, casword_
 template <int MAX_K>
 void KCASValidate<MAX_K>::start() {
     // allocate a new kcas descriptor
-    kcasptr_t ptr = DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, kcas_tid.getId());
+    kcasptr_t ptr = DESC_NEW(kcasDescriptors, KCAS_SEQBITS_NEW, __kcas_tid);
     __kcas_desc = ptr;
     ptr->numEntries = 0;
     ptr->validationRequired = 0;
