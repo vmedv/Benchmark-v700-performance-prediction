@@ -90,6 +90,10 @@ public:
         ds->debugGetRecMgr()->debugGCSingleThreaded();
     }
 
+    size_t size() {
+        return ds->sequentialSize();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:

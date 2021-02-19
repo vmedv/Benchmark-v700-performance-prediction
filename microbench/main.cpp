@@ -296,6 +296,8 @@ struct globals_t {
     PAD;
     volatile int running; // number of threads that are running
     PAD;
+    volatile bool debug_print;
+    PAD;
 
     globals_t(size_t maxkeyToGenerate, KeyGeneratorDistribution distribution)
     : NO_VALUE(NULL)
@@ -303,6 +305,7 @@ struct globals_t {
     , KEY_MAX(std::numeric_limits<test_type>::max()-1)
     , PREFILL_INTERVAL_MILLIS(200)
     {
+        debug_print = 0;
         keygenZipfData = NULL;
         srand(time(0));
         for (int i=0;i<MAX_THREADS_POW2;++i) {
@@ -333,6 +336,12 @@ struct globals_t {
         garbage = 0;
         prefillKeySum = 0;
         prefillSize = 0;
+    }
+    void enable_debug_print() {
+        debug_print = 1;
+    }
+    void disable_debug_print() {
+        debug_print = 0;
     }
     ~globals_t() {
         for (int i=0;i<MAX_THREADS_POW2;++i) {
@@ -427,12 +436,14 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
         test_type key = g->keygens[tid]->next();
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < insProbability) {
+            if (g->debug_print) printf("inserting %ld\n", key);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, prefill_size, 1);
             }
             GSTATS_ADD(tid, num_inserts, 1);
         } else {
+            if (g->debug_print) printf("deleting %ld\n", key);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, prefill_size, -1);
@@ -582,7 +593,9 @@ void prefillMixed(GlobalsT * g, int64_t expectedSize) {
         } else {
             auto currTime = std::chrono::high_resolution_clock::now();
             auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currTime-prefillStartTime).count();
-            std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz << " total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
+            // auto szConfirm = g->dsAdapter->size();
+            // std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz << " (CONFIRMING AT "<<szConfirm<<") total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
+            std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz <<" total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
             std::cout<<"pref_round_size="<<sz<<std::endl;
         }
 

@@ -38,7 +38,7 @@ endif
 
 no_optimize=0
 ifeq ($(no_optimize), 1)
-	FLAGS += -O0
+	FLAGS += -O0 -fno-inline-functions -fno-inline
 else
 	FLAGS += -O3
 endif

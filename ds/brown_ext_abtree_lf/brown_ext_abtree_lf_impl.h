@@ -241,7 +241,7 @@ public:
 
         Node<DEGREE,K> * debug_getEntryPoint() { return entry; }
 
-    private:
+    public:
         /*******************************************************************
          * Utility functions for integration with the test harness
          *******************************************************************/
