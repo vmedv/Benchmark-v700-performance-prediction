@@ -14,7 +14,6 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random_fnv1a.h"
 #ifdef USE_TREE_STATS
 #   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
@@ -35,7 +34,7 @@ public:
                const K& KEY_NEG_INFTY,
                const K& unused1,
                const V& unused2,
-               RandomFNV1A * const unused3)
+               Random64 * const unused3)
     : tree(new DATA_STRUCTURE_T(NUM_THREADS, KEY_NEG_INFTY))
     {
         if (NUM_THREADS > MAX_THREADS_POW2) {

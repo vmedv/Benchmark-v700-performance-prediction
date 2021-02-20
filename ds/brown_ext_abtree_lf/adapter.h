@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random_fnv1a.h"
 #include "brown_ext_abtree_lf_impl.h"
 #ifdef USE_TREE_STATS
 #   define TREE_STATS_BYTES_AT_DEPTH
@@ -33,7 +32,7 @@ public:
                const K& KEY_ANY,
                const K& unused1,
                const V& unused2,
-               RandomFNV1A * const unused3)
+               Random64 * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_ANY))
     {
         if (sizeof(V) > sizeof(void *)) {

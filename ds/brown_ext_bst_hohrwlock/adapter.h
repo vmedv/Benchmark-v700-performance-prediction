@@ -9,7 +9,6 @@
 #include <iostream>
 #include <csignal>
 #include "errors.h"
-#include "random_fnv1a.h"
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
 #endif
@@ -29,7 +28,7 @@ public:
                const K& KEY_RESERVED,
                const K& unused1,
                const V& VALUE_RESERVED,
-               RandomFNV1A * const unused2)
+               Random64 * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , ds(new DATA_STRUCTURE_T(KEY_RESERVED, NO_VALUE, NUM_THREADS))
     {}

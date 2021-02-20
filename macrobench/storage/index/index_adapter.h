@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   index_with_rq.h
  * Author: trbot
  *
@@ -16,12 +16,11 @@
 #include "index_base.h"     // for table_t declaration, and parent class inheritance
 
 #include <ctime>
-#include "random_fnv1a.h"
 #include "plaf.h"
 #include "adapter.h"
 
 //static PAD;
-static RandomFNV1A rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
+static Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 
 /**
  * Define index data structure and record manager types
@@ -47,8 +46,8 @@ static RandomFNV1A rngs[MAX_THREADS_POW2]; // create per-thread random number ge
 class Index : public index_base {
 private:
     ds_adapter<KEY_TYPE, VALUE_TYPE> * index;
-    
-//    unsigned long alignment[9] = {0}; 
+
+//    unsigned long alignment[9] = {0};
 //    unsigned long sum_nodes_depths = 0;
 //    unsigned long sum_leaf_depths = 0;
 //    unsigned long num_leafs = 0;
@@ -56,12 +55,12 @@ private:
 //    unsigned long num_keys = 0;
 //    int max_depth = 0;
     PAD;
-    
+
 //    void calculate_index_stats(NODE_TYPE * curr, int depth) {
-//        if (curr == NULL) return; 
+//        if (curr == NULL) return;
 //        unsigned node_alignment = (unsigned long) curr & 63UL;
 //        assert((node_alignment % 8) == 0);
-//        alignment[node_alignment/8]++; 
+//        alignment[node_alignment/8]++;
 //        sum_nodes_depths += depth;
 //        ++num_nodes;
 //        if (depth > max_depth) {
@@ -75,7 +74,7 @@ private:
 //            CALL_CALCULATE_INDEX_STATS_FOREACH_CHILD(curr, 1+depth);
 //        }
 //    }
-    
+
 private:
     static void callback_free_rows_and_items(KEY_TYPE key, VALUE_TYPE item, string this_idx_name) {
         while (item) {
@@ -84,19 +83,19 @@ private:
             //  since they are duplicate indexes that simply share rows with another index...)
             if (this_idx_name.compare("CUSTOMER_LAST_IDX") != 0 &&
                 this_idx_name.compare("ORDERLINE_WD_IDX") != 0) {
-                
+
                 item->setbench_deinit();
             }
-            
+
             // then try to free the item
             VALUE_TYPE nextItem = item->next;
             free(item);
             item = nextItem;
         }
     }
-    
+
 public:
-    
+
     ~Index() {
         std::cout<<"  performing iterate()"<<std::endl;
 #ifdef DS_ADAPTER_SUPPORTS_TERMINAL_ITERATE
@@ -107,7 +106,7 @@ public:
         std::cout<<"  performing delete"<<std::endl;
         delete index;
     }
-    
+
     // WARNING: DO NOT OVERLOAD init() WITH NO ARGUMENTS!!!
     RC init(uint64_t part_cnt, table_t * table) {
         if (part_cnt != 1) setbench_error("part_cnt != 1 unsupported");
@@ -116,20 +115,20 @@ public:
         for (int i=0;i<MAX_THREADS_POW2;++i) {
             rngs[i].setSeed(rand());
         }
-        
+
         KEY_TYPE minKey = __NO_KEY;
         KEY_TYPE maxKey = std::numeric_limits<KEY_TYPE>::max();
         VALUE_TYPE reservedValue = __NO_VALUE;
-        
+
         if (g_thread_cnt > MAX_THREADS_POW2) {
             setbench_error("g_thread_cnt > MAX_THREADS_POW2");
         }
         index = new ds_adapter<KEY_TYPE, VALUE_TYPE>(MAX_THREADS_POW2, minKey, maxKey, reservedValue, rngs);
         this->table = table;
-        
+
         return RCOK;
     }
-    
+
     RC index_insert(KEY_TYPE key, VALUE_TYPE newItem, int part_id = -1) {
 #if defined USE_RANGE_QUERIES
         auto oldVal = index->insertIfAbsent(tid, key, newItem);
@@ -158,13 +157,13 @@ public:
         return RCOK;
     }
     RC index_read(KEY_TYPE key, VALUE_TYPE * item, int part_id = -1, int thd_id = 0) {
-        
+
         #define IRT_VALIDATE 1
         #define IRT_LOCK 2
         #define IRT_UNSAFE 3
-        
+
         #define INDEX_READ_TECHNIQUE IRT_VALIDATE
-        
+
 #if INDEX_READ_TECHNIQUE == IRT_VALIDATE
         while (1) {
             vwlock s1 = read_lock_state(key);
@@ -174,7 +173,7 @@ public:
 
             vwlock s2 = read_lock_state(key);
             if (s2 == s1) break; // validate key is still unlocked (with same version)
-            
+
             // this validation avoids race conditions where a value/item
             // is temporarily cut out of the linked list of items,
             // despite being semantically present in the set.
@@ -205,17 +204,17 @@ public:
     void deinitThread(const int tid) {
         index->deinitThread(tid);
     }
-    
+
     size_t getNodeSize() {
 //        return sizeof(NODE_TYPE);
         return 0;
     }
-    
+
     size_t getDescriptorSize() {
 //        return sizeof(DESCRIPTOR_TYPE);
         return 0;
     }
-    
+
     void print_stats(){
         index->printObjectSizes();
         index->printSummary();
@@ -228,7 +227,7 @@ public:
 //        cout << "Descriptor size: " << sizeof(DESCRIPTOR_TYPE) << endl;
 //        cout << "Max path length: " << max_depth << endl;
 //        cout << "Avg depth: " << (num_nodes?sum_nodes_depths/num_nodes:0) << endl;
-//        cout << "Avg leaf depth: " << (num_leafs?sum_leaf_depths/num_leafs:0) << endl; 
+//        cout << "Avg leaf depth: " << (num_leafs?sum_leaf_depths/num_leafs:0) << endl;
 //        for (int i=0; i<8 ;i++){
 //            cout << "Alignment " << i*8 << ": " << (alignment[i]/(double)num_nodes)*100 << "%" << endl;
 //        }

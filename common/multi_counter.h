@@ -1,4 +1,4 @@
-/* 
+/*
  * File:   multi_counter.h
  * Author: tbrown
  *
@@ -9,7 +9,6 @@
 #define MULTI_COUNTER_H
 
 #include "plaf.h"
-#include "random_fnv1a.h"
 #include <cstdlib>
 
 struct SingleCounter {
@@ -41,7 +40,7 @@ public:
         delete[] counters;
 //        delete[] (counters - 1);                                                // shift by -1 (don't use first entry---to effectively add padding at the start of the array)
     }
-    inline size_t inc(const int tid, RandomFNV1A * rng, const size_t amt = 1) {
+    inline size_t inc(const int tid, Random64 * rng, const size_t amt = 1) {
         const int i = rng->next(numCounters);
         int j;
         do {
@@ -51,7 +50,7 @@ public:
         size_t vj = counters[1+j].v;
         return FAA((vi < vj ? &counters[1+i].v : &counters[1+j].v), amt) + amt;
     }
-    inline size_t readFast(const int tid, RandomFNV1A * rng) {
+    inline size_t readFast(const int tid, Random64 * rng) {
         const int i = rng->next(numCounters);
         return numCounters * counters[1+i].v;
     }

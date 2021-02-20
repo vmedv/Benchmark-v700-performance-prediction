@@ -86,7 +86,7 @@ int PREFILL_HYBRID_MAX_MS;
 PAD;
 
 #include "globals_extern.h"
-#include "random_fnv1a.h"
+#include "random_xoshiro256p.h"
 #include "plaf.h"
 #include "binding.h"
 #include "papi_util_impl.h"
@@ -288,7 +288,7 @@ struct globals_t {
     KeyGeneratorZipfData * keygenZipfData;
     KeyGenT * keygens[MAX_THREADS_POW2];
     PAD;
-    RandomFNV1A rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
+    Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 //    PAD; // not needed because of padding at the end of rngs
     volatile bool start;
     PAD;
@@ -436,14 +436,14 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
         test_type key = g->keygens[tid]->next();
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < insProbability) {
-            if (g->debug_print) printf("inserting %ld\n", key);
+            if (g->debug_print) printf("inserting %lld\n", key);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
                 GSTATS_ADD(tid, prefill_size, 1);
             }
             GSTATS_ADD(tid, num_inserts, 1);
         } else {
-            if (g->debug_print) printf("deleting %ld\n", key);
+            if (g->debug_print) printf("deleting %lld\n", key);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
                 GSTATS_ADD(tid, prefill_size, -1);
@@ -1230,6 +1230,9 @@ int main(int argc, char** argv) {
             RQSIZE = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-k") == 0) {
             MAXKEY = atoi(argv[++i]);
+            if (MAXKEY < 1) {
+                setbench_error("key range cannot contain fewer than 1 key");
+            }
         } else if (strcmp(argv[i], "-nrq") == 0) {
             RQ_THREADS = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-nwork") == 0) {

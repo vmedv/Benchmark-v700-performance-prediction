@@ -50,7 +50,6 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random_fnv1a.h"
 
 #ifdef DS_H_FILE
     #include STR(DS_H_FILE)
@@ -78,7 +77,7 @@ public:
                const K& unused1,
                const K& KEY_POS_INFTY,
                const V& VALUE_RESERVED,
-               RandomFNV1A * const unused2)
+               Random64 * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , tree(new DATA_STRUCTURE_T(KEY_POS_INFTY, NO_VALUE, NUM_THREADS))
     {}

@@ -13,7 +13,6 @@
 #include <iostream>
 #include <csignal>
 #include "errors.h"
-#include "random_fnv1a.h"
 #include "record_manager.h"
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
@@ -36,7 +35,7 @@ public:
                const K& KEY_MIN,
                const K& KEY_MAX,
                const V& VALUE_RESERVED,
-               RandomFNV1A * const unused2)
+               Random64 * const unused2)
     : NO_VALUE(VALUE_RESERVED)
     , ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MIN, KEY_MAX))
     { }

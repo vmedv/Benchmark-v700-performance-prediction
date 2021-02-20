@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random_fnv1a.h"
 #include "record_manager.h"
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
@@ -29,7 +28,7 @@ public:
                const K& unused1,
                const K& unused2,
                const V& unused3,
-               RandomFNV1A * const unused4)
+               Random64 * const unused4)
     : recmgr(new RECORD_MANAGER_T(NUM_THREADS, SIGQUIT))
     , NO_VALUE(unused3)
     {}

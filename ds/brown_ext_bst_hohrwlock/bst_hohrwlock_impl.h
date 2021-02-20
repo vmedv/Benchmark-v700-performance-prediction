@@ -2,7 +2,6 @@
 #define	BST_HOHRWLOCK_H
 
 #include "record_manager.h"
-#include "random_fnv1a.h"
 #include "locks_impl.h"
 
 #include "rwlock.h"

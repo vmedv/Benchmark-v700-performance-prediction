@@ -1,8 +1,8 @@
 /**
  * Preliminary C++ implementation of binary search tree using LLX/SCX.
- * 
+ *
  * Copyright (C) 2014 Trevor Brown
- * 
+ *
  */
 
 #ifndef RANDOM_FNV1A_H
@@ -10,20 +10,20 @@
 
 #include "plaf.h"
 
-class RandomFNV1A {
+class Random64 {
 private:
     union {
         PAD;
         uint64_t seed;
     };
 public:
-    RandomFNV1A() {
+    Random64() {
         this->seed = 0;
     }
-    RandomFNV1A(uint64_t seed) {
+    Random64(uint64_t seed) {
         this->seed = seed;
     }
-    
+
     void setSeed(uint64_t seed) {
         this->seed = seed;
     }

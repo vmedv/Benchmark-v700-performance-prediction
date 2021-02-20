@@ -10,7 +10,6 @@
 
 #include <iostream>
 #include "errors.h"
-#include "random_fnv1a.h"
 #include "brown_ext_ist_lf_impl.h"
 #ifdef USE_TREE_STATS
 #   define TREE_STATS_BYTES_AT_DEPTH
@@ -72,7 +71,7 @@ public:
                const K& unused1,
                const K& KEY_MAX,
                const V& NO_VALUE,
-               RandomFNV1A * const unused3)
+               Random64 * const unused3)
     : ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MAX, NO_VALUE))
     {
         if (!isValidAllocator<Alloc>()) {
@@ -89,7 +88,7 @@ public:
             , const K& unused1
             , const K& KEY_MAX
             , const V& NO_VALUE
-            , RandomFNV1A * const unused3
+            , Random64 * const unused3
             , const K * const initKeys
             , const V * const initValues
             , const size_t initNumKeys

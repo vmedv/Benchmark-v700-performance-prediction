@@ -19,7 +19,7 @@ casword<T>::casword() {
 
 template <typename T>
 inline T casword<T>::setInitVal(T other) {
-    if constexpr (is_pointer<T>::value) {
+    if (is_pointer<T>::value) {
         bits = CASWORD_CAST(other);
     } else {
         bits = CASWORD_CAST(other);
@@ -32,7 +32,7 @@ inline T casword<T>::setInitVal(T other) {
 
 template <typename T>
 inline casword<T>::operator T() {
-    if constexpr (is_pointer<T>::value) {
+    if (is_pointer<T>::value) {
         return (T)kcas::instance.readPtr(&bits);
     } else {
         return (T)kcas::instance.readVal(&bits);
@@ -47,7 +47,7 @@ inline T casword<T>::operator->() {
 
 template <typename T>
 inline T casword<T>::getValue() {
-    if constexpr (is_pointer<T>::value) {
+    if (is_pointer<T>::value) {
         return (T)kcas::instance.readPtr(&bits);
     } else {
         return (T)kcas::instance.readVal(&bits);
@@ -67,7 +67,7 @@ inline void casword<T>::addToDescriptor(T oldVal, T newVal) {
     auto c_newVal = (casword_t)newVal;
     assert(((c_oldVal & 0xE000000000000000) == 0) && ((c_newVal & 0xE000000000000000) == 0));
 
-    if constexpr (is_pointer<T>::value) {
+    if (is_pointer<T>::value) {
         descriptor->addPtrAddr(&bits, c_oldVal, c_newVal);
     } else {
         descriptor->addValAddr(&bits, c_oldVal, c_newVal);

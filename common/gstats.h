@@ -437,11 +437,11 @@ public:
 
     template <typename T>
     inline T add_stat(const int tid, const gstats_stat_id id, T value, const int index) {
-        if (index >= thread_data[tid].capacity[id]) {
+        if (index < 0 || index >= thread_data[tid].capacity[id]) {
             //error("index="<<index<<" >= capacity="<<thread_data[tid].capacity[id]<<" for tid="<<tid<<" sid="<<id<<" stat="<<id_to_name[id]);
             return -1;
         }
-        assert(index < thread_data[tid].capacity[id]);
+        assert(index >= 0 || index < thread_data[tid].capacity[id]);
         T * ptr = thread_data[tid].get_ptr<T>(id);
         T retval = (ptr[index] += value);
         //cout<<"adding to id="<<id<<" index="<<index<<" value="<<value<<" result="<<ptr[index]<<std::endl;

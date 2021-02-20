@@ -111,7 +111,6 @@ public:
 #ifdef MEASURE_DURATION_STATS
 #include "server_clock.h"
 #endif
-#include "random_fnv1a.h"
 #include "record_manager.h"
 #include "dcss_impl.h"
 #ifdef _OPENMP
@@ -179,7 +178,7 @@ public:
 #define REBUILD_FRACTION            (0.25) /* any subtree will be rebuilt after a number of updates equal to this fraction of its size are performed; example: after 250k updates in a subtree that contained 1M keys at the time it was last rebuilt, it will be rebuilt again */
 #define EPS                         (0.25) /* unused */
 
-//static thread_local RandomFNV1A * myRNG = NULL; //new RandomFNV1A(rand());
+//static thread_local Random64 * myRNG = NULL; //new Random64(rand());
 
 enum UpdateType {
     InsertIfAbsent, InsertReplace, Erase
@@ -227,7 +226,7 @@ struct Node {
         return *ptrAddr(ix);
     }
 
-    inline void incrementChangeSum(const int tid, RandomFNV1A * rng) {
+    inline void incrementChangeSum(const int tid, Random64 * rng) {
 #ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
         if (likely(externalChangeCounter == NULL)) {
             __sync_fetch_and_add(&changeSum, 1);
@@ -238,7 +237,7 @@ struct Node {
         __sync_fetch_and_add(&changeSum, 1);
 #endif
     }
-    inline size_t readChangeSum(const int tid, RandomFNV1A * rng) {
+    inline size_t readChangeSum(const int tid, Random64 * rng) {
 #ifndef IST_DISABLE_MULTICOUNTER_AT_ROOT
         if (likely(externalChangeCounter == NULL)) {
             return changeSum;
@@ -681,7 +680,7 @@ private:
 
     int init[MAX_THREADS_POW2] = {0,};
     PAD;
-    RandomFNV1A threadRNGs[MAX_THREADS_POW2];
+    Random64 threadRNGs[MAX_THREADS_POW2];
     PAD;
 public:
     const K INF_KEY;
@@ -690,7 +689,7 @@ public:
     PAD;
 
     void initThread(const int tid) {
-//        if (myRNG == NULL) myRNG = new RandomFNV1A(rand());
+//        if (myRNG == NULL) myRNG = new Random64(rand());
         if (init[tid]) return; else init[tid] = !init[tid];
 
         threadRNGs[tid].setSeed(rand());
