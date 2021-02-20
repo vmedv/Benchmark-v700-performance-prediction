@@ -87,6 +87,7 @@ PAD;
 
 #include "globals_extern.h"
 #include "random_xoshiro256p.h"
+// #include "random_fnv1a.h"
 #include "plaf.h"
 #include "binding.h"
 #include "papi_util_impl.h"
@@ -367,7 +368,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 TRACE COUTATOMICTID("### completed INSERT modification for "<<key<<std::endl);
                 GSTATS_ADD(tid, key_checksum, key);
-                GSTATS_ADD(tid, size_checksum, 1);
+                // GSTATS_ADD(tid, size_checksum, 1);
             } else {
                 TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
             }
@@ -377,7 +378,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 TRACE COUTATOMICTID("### completed ERASE modification for "<<key<<std::endl);
                 GSTATS_ADD(tid, key_checksum, -key);
-                GSTATS_ADD(tid, size_checksum, -1);
+                // GSTATS_ADD(tid, size_checksum, -1);
             } else {
                 TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
             }
@@ -401,7 +402,7 @@ void thread_timed(GlobalsT * g, int __tid) {
             }
             GSTATS_ADD(tid, num_searches, 1);
         }
-        GSTATS_ADD(tid, num_operations, 1);
+        // GSTATS_ADD(tid, num_operations, 1);
     }
     THREAD_MEASURED_POST;
 }
@@ -762,7 +763,7 @@ size_t * prefillArray(GlobalsT * g, int64_t expectedSize) {
         //auto key = g->rngs[tid].next(MAXKEY) + 1;
         if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
             GSTATS_ADD(tid, key_checksum, key);
-            GSTATS_ADD(tid, size_checksum, 1);
+            // GSTATS_ADD(tid, size_checksum, 1);
         } else {
             goto retry;
         }
@@ -1008,24 +1009,24 @@ void printOutput(GlobalsT * g) {
 #ifdef USE_GSTATS
     {
         threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->prefillKeySum;
-        threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
+        // threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
 #ifdef USE_TREE_STATS
         long long dsKeySum = (treeStats) ? treeStats->getSumOfKeys() : threadsKeySum;
-        long long dsSize = (treeStats) ? treeStats->getKeys() : threadsSize;
+        long long dsSize = (treeStats) ? treeStats->getKeys() : -1; // threadsSize;
 #endif
         std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
-        std::cout<<"threads_final_size="<<threadsSize<<std::endl;
+        // std::cout<<"threads_final_size="<<threadsSize<<std::endl;
 #ifdef USE_TREE_STATS
         std::cout<<"final_keysum="<<dsKeySum<<std::endl;
         std::cout<<"final_size="<<dsSize<<std::endl;
-        if (threadsKeySum == dsKeySum && threadsSize == dsSize) {
+        if (threadsKeySum == dsKeySum) { // && threadsSize == dsSize) {
             std::cout<<"validate_result=success"<<std::endl;
             std::cout<<"Validation OK."<<std::endl;
             if (treeStats == NULL) std::cout<<"**** WARNING: VALIDATION WAS ACTUALLY _SKIPPED_ AS THIS DS DOES NOT SUPPORT IT!"<<std::endl;
         } else {
             std::cout<<"validate_result=fail"<<std::endl;
-            std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<<" threadsSize="<<threadsSize<<" dsSize="<<dsSize<<std::endl;
-            std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
+            std::cout<<"Validation FAILURE: threadsKeySum="<<threadsKeySum<<" dsKeySum="<<dsKeySum<</*" threadsSize="<<threadsSize<<*/" dsSize="<<dsSize<<std::endl;
+            // std::cout<<"Validation comment: data structure is "<<(dsSize > threadsSize ? "LARGER" : "SMALLER")<<" than it should be according to the operation return values"<<std::endl;
             printExecutionTime(g);
             exit(-1);
         }

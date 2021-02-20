@@ -17,6 +17,7 @@
 
 #include <ctime>
 #include "plaf.h"
+#include "random_xoshiro256p.h"
 #include "adapter.h"
 
 //static PAD;

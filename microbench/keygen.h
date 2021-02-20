@@ -23,7 +23,7 @@ public:
     K next() {
         auto result = 1+rng->next(maxKey);
         assert((result >= 1) && (result <= maxKey));
-        GSTATS_ADD_IX(tid, key_gen_histogram, 1, result);
+        // GSTATS_ADD_IX(tid, key_gen_histogram, 1, result);
         return result;
     }
 };
@@ -79,7 +79,7 @@ public:
         zipf_value = std::upper_bound(data->sum_probs + 1, data->sum_probs + data->maxKey + 1, z) - data->sum_probs;
         // Assert that zipf_value is between 1 and N
         assert((zipf_value >= 1) && (zipf_value <= data->maxKey));
-        GSTATS_ADD_IX(tid, key_gen_histogram, 1, zipf_value);
+        // GSTATS_ADD_IX(tid, key_gen_histogram, 1, zipf_value);
         return (zipf_value);
     }
 };
