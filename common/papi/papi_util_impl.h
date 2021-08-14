@@ -7,9 +7,9 @@
 
 int all_cpu_counters[] = {
 #ifdef USE_PAPI
-//    PAPI_L1_DCM,
-    PAPI_L2_TCM,
-    PAPI_L3_TCM,
+//    PAPI_L1_DCM, // works on amd17h
+    PAPI_L2_DCM, // works on amd17h also
+    PAPI_L3_TCM, // does not work on amd17h
     PAPI_TOT_CYC,
    PAPI_TOT_INS,
 //    PAPI_RES_STL,
@@ -79,7 +79,7 @@ void papi_create_eventset(int id){
     for (int i = 0; i < nall_cpu_counters; i++) {
         int c = all_cpu_counters[i];
         if ((result = PAPI_query_event(c)) != PAPI_OK) {
-            std::cout<<"warning: PAPI event "<<cpu_counter(c)<<" could not be successfully queried: "<<PAPI_strerror(result)<<std::endl;
+            // std::cout<<"warning: PAPI event "<<cpu_counter(c)<<" could not be successfully queried: "<<PAPI_strerror(result)<<std::endl;
             continue;
         }
         if ((result = PAPI_add_event(*event_set, c)) != PAPI_OK) {

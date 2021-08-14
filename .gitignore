@@ -2,6 +2,7 @@ nbproject
 _private
 ubench_*
 perf.data*
+data_temp*
 *.dot
 log.txt
 step*.txt
@@ -41,3 +42,7 @@ Makefile.var
 bin
 _unused
 *.html
+_bak
+*/to_upload
+*/output_tex
+common/papi/a.out
