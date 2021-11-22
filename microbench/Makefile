@@ -170,11 +170,20 @@ $(1).$(2): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) $(LDFLAGS)
 ds-reclaim: $(1).$(2)
 endef
+define create-target-openbwtree-ds-reclaim =
+$(1).$(2): dir_guard
+	$(GPP) ./main.cpp ../ds/$(1)/bwtree.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) -Wno-invalid-offsetof $(LDFLAGS) -latomic
+ds-reclaim: $(1).$(2)
+endef
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach reclaim,$(RECLAIMERS), \
-		$(eval $(call create-target-ds-reclaim,$(ds),$(reclaim))) \
+		$(if $(filter wang_openbwtree,$(ds)), \
+			$(eval $(call create-target-openbwtree-ds-reclaim,$(ds),$(reclaim))), \
+			$(eval $(call create-target-ds-reclaim,$(ds),$(reclaim))) \
+		) \
 	) \
 )
+
 
 ## create build targets for combinations of DATA_STRUCTURES, RECLAIMERS and POOLS
 ## and add them to a combined target: "ds-reclaim-pool"
@@ -183,10 +192,18 @@ _$(1).$(2).p$(3): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).p$(3) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) -DPOOL_TYPE=$(3) $(FLAGS) $(LDFLAGS)
 ds-reclaim-pool: _$(1).$(2).p$(3)
 endef
+define create-target-openbwtree-ds-reclaim-pool =
+_$(1).$(2).p$(3): dir_guard
+	$(GPP) ./main.cpp ../ds/$(1)/bwtree.cpp -o $(bin_dir)/$(1).$(2).p$(3) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) -DPOOL_TYPE=$(3) $(FLAGS) -Wno-invalid-offsetof $(LDFLAGS) -latomic
+ds-reclaim-pool: _$(1).$(2).p$(3)
+endef
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach reclaim,$(RECLAIMERS), \
 		$(foreach pool,$(POOLS), \
-			$(eval $(call create-target-ds-reclaim-pool,$(ds),$(reclaim),$(pool))) \
+			$(if $(filter wang_openbwtree,$(ds)), \
+				$(eval $(call create-target-openbwtree-ds-reclaim-pool,$(ds),$(reclaim),$(pool))), \
+				$(eval $(call create-target-ds-reclaim-pool,$(ds),$(reclaim),$(pool))) \
+			) \
 		) \
 	) \
 )
@@ -199,12 +216,20 @@ _$(1).$(2).$(3).p$(4): dir_guard
 	$(GPP) ./main.cpp -o $(bin_dir)/$(1).$(2).$(3).p$(4) -I../ds/$(1) -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) $(LDFLAGS)
 all: _$(1).$(2).$(3).p$(4)
 endef
+define create-target-openbwtree-ds-alloc-reclaim-pool =
+_$(1).$(2).$(3).p$(4): dir_guard
+	$(GPP) ./main.cpp ../ds/$(1)/bwtree.cpp -o $(bin_dir)/$(1).$(2).$(3).p$(4) -I../ds/$(1) -DDS_TYPENAME=$(1) -DALLOC_TYPE=$(2) -DRECLAIM_TYPE=$(3) -DPOOL_TYPE=$(4) $(FLAGS) -Wno-invalid-offsetof $(LDFLAGS) -latomic
+all: _$(1).$(2).$(3).p$(4)
+endef
 
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach alloc,$(ALLOCATORS), \
 		$(foreach reclaim,$(RECLAIMERS), \
 			$(foreach pool,$(POOLS), \
-				$(eval $(call create-target-ds-alloc-reclaim-pool,$(ds),$(alloc),$(reclaim),$(pool))) \
+				$(if $(filter wang_openbwtree,$(ds)), \
+					$(eval $(call create-target-openbwtree-ds-alloc-reclaim-pool,$(ds),$(alloc),$(reclaim),$(pool))), \
+					$(eval $(call create-target-ds-alloc-reclaim-pool,$(ds),$(alloc),$(reclaim),$(pool))) \
+				) \
 			) \
 		) \
 	) \
