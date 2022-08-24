@@ -20,13 +20,13 @@ typedef long long test_type;
 #include <perftools.h>
 
 #ifdef PRINT_JEMALLOC_STATS
-    #include <jemalloc/jemalloc.h>
-    #define DEBUG_PRINT_ARENA_STATS malloc_stats_print(printCallback, NULL, "ag")
-    void printCallback(void * nothing, const char * data) {
-        std::cout<<data;
-    }
+#include <jemalloc/jemalloc.h>
+#define DEBUG_PRINT_ARENA_STATS malloc_stats_print(printCallback, NULL, "ag")
+void printCallback(void * nothing, const char * data) {
+    std::cout<<data;
+}
 #else
-    #define DEBUG_PRINT_ARENA_STATS
+#define DEBUG_PRINT_ARENA_STATS
 #endif
 
 
@@ -58,15 +58,16 @@ enum PrefillType {
     PREFILL_MIXED,
     PREFILL_HYBRID
 };
-const char * PrefillTypeStrings[] = {
-    "PREFILL_INSERT",
-    "PREFILL_MIXED",
-    "PREFILL_HYBRID"
+const char *PrefillTypeStrings[] = {
+        "PREFILL_INSERT",
+        "PREFILL_MIXED",
+        "PREFILL_HYBRID"
 };
 
 // some read-only globals (could be encapsulated in a struct and passed around to improve software engineering)
 
 #include "plaf.h"
+
 PAD;
 double INS_FRAC;
 double DEL_FRAC;
@@ -84,6 +85,13 @@ double ZIPF_PARAM;
 PrefillType PREFILL_TYPE;
 int PREFILL_HYBRID_MIN_MS;
 int PREFILL_HYBRID_MAX_MS;
+
+double READ_X;
+double READ_Y;
+double WRITE_X;
+double WRITE_Y;
+double INTERSECTION;
+//int W; //=== INS_FRAC + DEL_FRAC
 PAD;
 
 #include "globals_extern.h"
@@ -94,54 +102,56 @@ PAD;
 #include "papi_util_impl.h"
 #include "rq_provider.h"
 #include "keygen.h"
+//#include "KeyGeneratorDistribution.h"
 
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
 #include "tree_stats.h"
+
 #define DS_ADAPTER_T ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >
 
 #ifndef INSERT_FUNC
-    #define INSERT_FUNC insertIfAbsent
+#define INSERT_FUNC insertIfAbsent
 #endif
 
 #ifdef RQ_SNAPCOLLECTOR
-    #define RQ_SNAPCOLLECTOR_OBJECT_TYPES , SnapCollector<node_t<test_type, test_type>, test_type>, SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper, ReportItem, CompactReportItem
-    #define RQ_SNAPCOLLECTOR_OBJ_SIZES <<" SnapCollector="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>))<<" NodeWrapper="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper))<<" ReportItem="<<(sizeof(ReportItem))<<" CompactReportItem="<<(sizeof(CompactReportItem))
+#define RQ_SNAPCOLLECTOR_OBJECT_TYPES , SnapCollector<node_t<test_type, test_type>, test_type>, SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper, ReportItem, CompactReportItem
+#define RQ_SNAPCOLLECTOR_OBJ_SIZES <<" SnapCollector="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>))<<" NodeWrapper="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper))<<" ReportItem="<<(sizeof(ReportItem))<<" CompactReportItem="<<(sizeof(CompactReportItem))
 #else
-    #define RQ_SNAPCOLLECTOR_OBJECT_TYPES
-    #define RQ_SNAPCOLLECTOR_OBJ_SIZES
+#define RQ_SNAPCOLLECTOR_OBJECT_TYPES
+#define RQ_SNAPCOLLECTOR_OBJ_SIZES
 #endif
 
 #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
 #define VALUE_TYPE void *
 
 #ifdef USE_RCU
-    #include "eer_prcu_impl.h"
-    #define __RCU_INIT_THREAD urcu::registerThread(tid);
-    #define __RCU_DEINIT_THREAD urcu::unregisterThread();
-    #define __RCU_INIT_ALL urcu::init(TOTAL_THREADS);
-    #define __RCU_DEINIT_ALL urcu::deinit(TOTAL_THREADS);
+#include "eer_prcu_impl.h"
+#define __RCU_INIT_THREAD urcu::registerThread(tid);
+#define __RCU_DEINIT_THREAD urcu::unregisterThread();
+#define __RCU_INIT_ALL urcu::init(TOTAL_THREADS);
+#define __RCU_DEINIT_ALL urcu::deinit(TOTAL_THREADS);
 #else
-    #define __RCU_INIT_THREAD
-    #define __RCU_DEINIT_THREAD
-    #define __RCU_INIT_ALL
-    #define __RCU_DEINIT_ALL
+#define __RCU_INIT_THREAD
+#define __RCU_DEINIT_THREAD
+#define __RCU_INIT_ALL
+#define __RCU_DEINIT_ALL
 #endif
 
 #ifdef USE_RLU
-    #include "rlu.h"
-    PAD;
-    __thread rlu_thread_data_t * rlu_self;
-    PAD;
-    rlu_thread_data_t * rlu_tdata = NULL;
-    #define __RLU_INIT_THREAD rlu_self = &rlu_tdata[tid]; RLU_THREAD_INIT(rlu_self);
-    #define __RLU_DEINIT_THREAD RLU_THREAD_FINISH(rlu_self);
-    #define __RLU_INIT_ALL rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2]; RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
-    #define __RLU_DEINIT_ALL RLU_FINISH(); delete[] rlu_tdata;
+#include "rlu.h"
+PAD;
+__thread rlu_thread_data_t * rlu_self;
+PAD;
+rlu_thread_data_t * rlu_tdata = NULL;
+#define __RLU_INIT_THREAD rlu_self = &rlu_tdata[tid]; RLU_THREAD_INIT(rlu_self);
+#define __RLU_DEINIT_THREAD RLU_THREAD_FINISH(rlu_self);
+#define __RLU_INIT_ALL rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2]; RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+#define __RLU_DEINIT_ALL RLU_FINISH(); delete[] rlu_tdata;
 #else
-    #define __RLU_INIT_THREAD
-    #define __RLU_DEINIT_THREAD
-    #define __RLU_INIT_ALL
-    #define __RLU_DEINIT_ALL
+#define __RLU_INIT_THREAD
+#define __RLU_DEINIT_THREAD
+#define __RLU_INIT_ALL
+#define __RLU_DEINIT_ALL
 #endif
 
 #define INIT_ALL \
@@ -228,16 +238,16 @@ PAD;
  *****************************************************************************/
 GSTATS_DECLARE_ALL_STAT_IDS;
 #ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
-    GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__DECLARE_STAT_ID);
+GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__DECLARE_STAT_ID);
 #endif
 #ifdef GSTATS_HANDLE_STATS_POOL_NUMA
-    GSTATS_HANDLE_STATS_POOL_NUMA(__DECLARE_STAT_ID);
+GSTATS_HANDLE_STATS_POOL_NUMA(__DECLARE_STAT_ID);
 #endif
 #ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
-    GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__DECLARE_STAT_ID);
+GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__DECLARE_STAT_ID);
 #endif
 #ifdef GSTATS_HANDLE_STATS_USER
-    GSTATS_HANDLE_STATS_USER(__DECLARE_STAT_ID);
+GSTATS_HANDLE_STATS_USER(__DECLARE_STAT_ID);
 #endif
 // Create storage for the CONTENTS of gstats counters (for MAX_THREADS_POW2 threads)
 GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
@@ -258,14 +268,14 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #endif
 
 enum KeyGeneratorDistribution {
-    UNIFORM, ZIPF, ZIPFFAST
+    UNIFORM, ZIPF, ZIPFFAST, BINOMIAL
 };
 
-template <class KeyGenT>
+template<class KeyGenT>
 struct globals_t {
     PAD;
     // const
-    void * const NO_VALUE;
+    void *const NO_VALUE;
     const test_type KEY_MIN; // must be smaller than any key that can be inserted/deleted
     const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this! (and larger than any key that can be inserted/deleted)
     const long long PREFILL_INTERVAL_MILLIS;
@@ -285,15 +295,16 @@ struct globals_t {
     PAD;
     volatile test_type garbage; // used to prevent optimizing out some code
     PAD;
-    DS_ADAPTER_T * dsAdapter; // the data structure
+    DS_ADAPTER_T *dsAdapter; // the data structure
     PAD;
-    KeyGeneratorZipfData * keygenZipfData;
-    ZipfRejectionInversionSamplerData * keygenZipfFastData;
-    KeyGenT * keygens[MAX_THREADS_POW2];
+    KeyGeneratorZipfData *keygenZipfData;
+    KeyGeneratorBinomialData *keygenBinomialData;
+    ZipfRejectionInversionSamplerData *keygenZipfFastData;
+    KeyGenerator<test_type> *keygens[MAX_THREADS_POW2];
     PAD;
     // We want to prefill with uniform because  Zipf generation is slow for large key ranges (and either way the
     // probability of a given key being in the data structure is 50%).
-    KeyGeneratorUniform<test_type> * prefillKeygens[MAX_THREADS_POW2];
+    KeyGenerator<test_type> *prefillKeygens[MAX_THREADS_POW2];
     PAD;
     Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 //    PAD; // not needed because of padding at the end of rngs
@@ -307,46 +318,61 @@ struct globals_t {
     PAD;
 
     globals_t(size_t maxkeyToGenerate, KeyGeneratorDistribution distribution)
-    : NO_VALUE(NULL)
-    , KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
-    , KEY_MAX(std::numeric_limits<test_type>::max()-1)
-    , PREFILL_INTERVAL_MILLIS(200)
-    {
+            : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
+            , KEY_MAX(std::numeric_limits<test_type>::max() - 1), PREFILL_INTERVAL_MILLIS(200) {
         debug_print = 0;
         keygenZipfData = NULL;
         keygenZipfFastData = NULL;
         srand(time(0));
-        for (int i=0;i<MAX_THREADS_POW2;++i) {
+        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             rngs[i].setSeed(rand());
-        }
-
-        for (int i=0;i<MAX_THREADS_POW2;++i) {
-            prefillKeygens[i] = new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate);
         }
 
         switch (distribution) {
             case ZIPF: {
                 keygenZipfData = new KeyGeneratorZipfData(maxkeyToGenerate, ZIPF_PARAM);
-                #pragma omp parallel for
-                for (int i=0;i<MAX_THREADS_POW2;++i) {
-                    keygens[i] = (KeyGenT *) (new KeyGeneratorZipf<test_type>(keygenZipfData, &rngs[i]));
+#pragma omp parallel for
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    keygens[i] = new KeyGeneratorZipf<test_type>(keygenZipfData, &rngs[i]);
                 }
-            } break;
+            }
+                break;
+            case BINOMIAL: {
+                keygenBinomialData = new KeyGeneratorBinomialData(maxkeyToGenerate, READ_Y, WRITE_Y, INTERSECTION);
+#pragma omp parallel for
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    keygens[i] = new KeyGeneratorBinomial<test_type>(keygenBinomialData, &rngs[i],
+                                                                     READ_X, WRITE_X);
+                }
+            }
+                break;
             case ZIPFFAST: {
                 keygenZipfFastData = new ZipfRejectionInversionSamplerData(maxkeyToGenerate);
-                #pragma omp parallel for
-                for (int i=0;i<MAX_THREADS_POW2;++i) {
-                    keygens[i] = (KeyGenT *) (new ZipfRejectionInversionSampler(keygenZipfFastData, ZIPF_PARAM, &rngs[i]));
+#pragma omp parallel for
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    keygens[i] = new ZipfRejectionInversionSampler(keygenZipfFastData, ZIPF_PARAM,
+                                                                   &rngs[i]);
                 }
-            } break;
+            }
+                break;
             case UNIFORM: {
-                for (int i=0;i<MAX_THREADS_POW2;++i) {
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
                     keygens[i] = (KeyGenT *) (new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate));
                 }
-            } break;
+            }
+                break;
             default: {
                 setbench_error("invalid case");
-            } break;
+            }
+                break;
+        }
+
+        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+            if (distribution == BINOMIAL) {
+                prefillKeygens[i] = keygens[i];
+            } else {
+                prefillKeygens[i] = new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate);
+            }
         }
 
         start = false;
@@ -357,14 +383,17 @@ struct globals_t {
         prefillKeySum = 0;
         prefillSize = 0;
     }
+
     void enable_debug_print() {
         debug_print = 1;
     }
+
     void disable_debug_print() {
         debug_print = 0;
     }
+
     ~globals_t() {
-        for (int i=0;i<MAX_THREADS_POW2;++i) {
+        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             delete prefillKeygens[i];
             if (keygens[i]) delete keygens[i];
         }
@@ -374,50 +403,56 @@ struct globals_t {
 };
 
 
-
-template <class GlobalsT>
-void thread_timed(GlobalsT * g, int __tid) {
+template<class GlobalsT>
+void thread_timed(GlobalsT *g, int __tid) {
     THREAD_MEASURED_PRE;
     int tid = __tid;
     while (!g->done) {
         ++cnt;
-        VERBOSE if (cnt&&((cnt % 1000000) == 0)) COUTATOMICTID("op# "<<cnt<<std::endl);
-        test_type key = g->keygens[tid]->next();
+        VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
+        test_type key;
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < INS_FRAC) {
-            TRACE COUTATOMICTID("### calling INSERT "<<key<<std::endl);
+            key = g->keygens[tid]->next_insert();
+            TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed INSERT modification for "<<key<<std::endl);
+                TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
                 GSTATS_ADD(tid, key_checksum, key);
                 // GSTATS_ADD(tid, size_checksum, 1);
             } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
+                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
             }
             GSTATS_ADD(tid, num_inserts, 1);
-        } else if (op < INS_FRAC+DEL_FRAC) {
-            TRACE COUTATOMICTID("### calling ERASE "<<key<<std::endl);
+        } else if (op < INS_FRAC + DEL_FRAC) {
+            key = g->keygens[tid]->next_erase();
+            TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed ERASE modification for "<<key<<std::endl);
+                TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
                 GSTATS_ADD(tid, key_checksum, -key);
                 // GSTATS_ADD(tid, size_checksum, -1);
             } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY"<<std::endl);
+                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
             }
             GSTATS_ADD(tid, num_deletes, 1);
-        } else if (op < INS_FRAC+DEL_FRAC+RQ) {
+        } else if (op < INS_FRAC + DEL_FRAC + RQ) {
+            key = g->keygens[tid]->next();
             // TODO: make this respect KeyGenerators for non-uniform distributions
             uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-            assert(_key >= 1); assert(_key <= MAXKEY);
+            assert(_key >= 1);
+            assert(_key <= MAXKEY);
             assert(_key <= std::max(1, MAXKEY - RQSIZE));
             assert(MAXKEY > RQSIZE || _key == 0);
             key = (test_type) _key;
             ++rq_cnt;
             size_t rqcnt;
-            if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
-                garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
+            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+                                                  (VALUE_TYPE*) rqResultValues))) {
+                garbage += rqResultKeys[0] +
+                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
             }
             GSTATS_ADD(tid, num_rq, 1);
         } else {
+            key = g->keygens[tid]->next_read();
             if (g->dsAdapter->contains(tid, key)) {
                 garbage += key; // prevent optimizing out
             }
@@ -428,8 +463,8 @@ void thread_timed(GlobalsT * g, int __tid) {
     THREAD_MEASURED_POST;
 }
 
-template <class GlobalsT>
-void thread_rq(GlobalsT * g, int __tid) {
+template<class GlobalsT>
+void thread_rq(GlobalsT *g, int __tid) {
     THREAD_MEASURED_PRE;
     while (!g->done) {
         // TODO: make this respect KeyGenerators for non-uniform distributions
@@ -441,8 +476,10 @@ void thread_rq(GlobalsT * g, int __tid) {
         test_type key = (test_type) _key;
         size_t rqcnt;
         TIMELINE_START(tid);
-        if ( (rqcnt = g->dsAdapter->rangeQuery(tid, key, key+RQSIZE-1, rqResultKeys, (VALUE_TYPE *) rqResultValues)) ) {
-            garbage += rqResultKeys[0] + rqResultKeys[rqcnt-1]; // prevent rqResultValues and count from being optimized out
+        if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+                                              (VALUE_TYPE*) rqResultValues))) {
+            garbage += rqResultKeys[0] +
+                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
         }
         TIMELINE_END(tid, "RQThreadOperation");
         GSTATS_ADD(tid, num_rq, 1);
@@ -451,11 +488,11 @@ void thread_rq(GlobalsT * g, int __tid) {
     THREAD_MEASURED_POST;
 }
 
-template <class GlobalsT>
-void thread_prefill_with_updates(GlobalsT * g, int __tid) {
+template<class GlobalsT>
+void thread_prefill_with_updates(GlobalsT *g, int __tid) {
     THREAD_PREFILL_PRE;
     while (!g->done) {
-        test_type key = g->prefillKeygens[tid]->next();
+        test_type key = g->prefillKeygens[tid]->next_prefill();
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < insProbability) {
             if (g->debug_print) printf("inserting %lld\n", key);
@@ -478,35 +515,35 @@ void thread_prefill_with_updates(GlobalsT * g, int __tid) {
 }
 
 // note: this function guarantees that exactly expectedSize keys are inserted into the data structure by the end
-template <class GlobalsT>
-void prefillInsert(GlobalsT * g, int64_t expectedSize) {
-    std::cout<<"Info: prefilling using INSERTION ONLY."<<std::endl;
+template<class GlobalsT>
+void prefillInsert(GlobalsT *g, int64_t expectedSize) {
+    std::cout << "Info: prefilling using INSERTION ONLY." << std::endl;
     g->startTime = std::chrono::high_resolution_clock::now();
     auto prefillStartTime = g->startTime;
 
     const int tid = 0;
-    #ifdef _OPENMP
-        omp_set_num_threads(PREFILL_THREADS);
-        const int ompThreads = omp_get_max_threads();
-    #else
-        const int ompThreads = 1;
-    #endif
+#ifdef _OPENMP
+    omp_set_num_threads(PREFILL_THREADS);
+    const int ompThreads = omp_get_max_threads();
+#else
+    const int ompThreads = 1;
+#endif
 
-    TIMING_START("inserting "<<expectedSize<<" keys with "<<ompThreads<<" threads");
-    #pragma omp parallel
+    TIMING_START("inserting " << expectedSize << " keys with " << ompThreads << " threads");
+#pragma omp parallel
     {
-        #ifdef _OPENMP
-            const int tid = omp_get_thread_num();
-            g->dsAdapter->initThread(tid);
-            binding_bindThread(tid);
-        #else
-            const int tid = 0;
-            g->dsAdapter->initThread(tid);
-        #endif
+#ifdef _OPENMP
+        const int tid = omp_get_thread_num();
+        g->dsAdapter->initThread(tid);
+        binding_bindThread(tid);
+#else
+        const int tid = 0;
+        g->dsAdapter->initThread(tid);
+#endif
 
-        #pragma omp for
-        for (size_t i=0;i<expectedSize;++i) {
-            test_type key = g->prefillKeygens[tid]->next();
+#pragma omp for
+        for (size_t i = 0; i < expectedSize; ++i) {
+            test_type key = g->prefillKeygens[tid]->next_prefill();
             //test_type key = g->rngs[tid].next(MAXKEY) + 1;
             GSTATS_ADD(tid, num_inserts, 1);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
@@ -514,14 +551,19 @@ void prefillInsert(GlobalsT * g, int64_t expectedSize) {
                 GSTATS_ADD(tid, prefill_size, 1);
 
                 // monitor prefilling progress (completely optional!!)
-                if ((tid == 0) && (GSTATS_GET(tid, prefill_size) % (100000 / std::max(1, (PREFILL_THREADS/2)))) == 0) {
-                    double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count();
+                if ((tid == 0) &&
+                    (GSTATS_GET(tid, prefill_size) % (100000 / std::max(1, (PREFILL_THREADS / 2)))) == 0) {
+                    double elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            std::chrono::high_resolution_clock::now() - g->prefillStartTime).count();
                     //double percent_done = GSTATS_GET_STAT_METRICS(prefill_size, TOTAL)[0].sum / (double) expectedSize;
                     double percent_done = GSTATS_GET(tid, prefill_size) * ompThreads / (double) expectedSize;
-                    double magic_error_multiplier = (1+(1-percent_done)*1.25); // derived experimentally using huge trees. super rough and silly linear estimator for what is clearly a curve...
+                    double magic_error_multiplier = (1 + (1 - percent_done) *
+                                                         1.25); // derived experimentally using huge trees. super rough and silly linear estimator for what is clearly a curve...
                     double total_estimate_ms = magic_error_multiplier * elapsed_ms / percent_done;
                     double remaining_ms = total_estimate_ms - elapsed_ms;
-                    printf("tid=%d thread_prefill_amount=%lld percent_done_estimate=%.1f elapsed_s=%.0f est_remaining_s=%.0f / %0.f\n", tid, GSTATS_GET(tid, prefill_size), (100*percent_done), (elapsed_ms / 1000), (remaining_ms / 1000), (total_estimate_ms / 1000));
+                    printf("tid=%d thread_prefill_amount=%lld percent_done_estimate=%.1f elapsed_s=%.0f est_remaining_s=%.0f / %0.f\n",
+                           tid, GSTATS_GET(tid, prefill_size), (100 * percent_done), (elapsed_ms / 1000),
+                           (remaining_ms / 1000), (total_estimate_ms / 1000));
                     fflush(stdout); // for some reason the above is stubborn and doesn't print until too late (to watch progress) if i don't flush explicitly.
                 }
             } else {
@@ -534,8 +576,8 @@ void prefillInsert(GlobalsT * g, int64_t expectedSize) {
 }
 
 template<class GlobalsT>
-void prefillMixed(GlobalsT * g, int64_t expectedSize) {
-    std::cout<<"Info: prefilling using UPDATES (ins & del)."<<std::endl;
+void prefillMixed(GlobalsT *g, int64_t expectedSize) {
+    std::cout << "Info: prefilling using UPDATES (ins & del)." << std::endl;
     std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime = std::chrono::high_resolution_clock::now();
 
     const double PREFILL_THRESHOLD = 0.02;
@@ -543,21 +585,20 @@ void prefillMixed(GlobalsT * g, int64_t expectedSize) {
 
     long long totalThreadsPrefillElapsedMillis = 0;
 
-    std::thread * threads[MAX_THREADS_POW2];
+    std::thread *threads[MAX_THREADS_POW2];
 
     int sz = 0;
     int attempts;
-    for (attempts=0;attempts<MAX_ATTEMPTS;++attempts) {
-        INIT_ALL;
+    for (attempts = 0; attempts < MAX_ATTEMPTS; ++attempts) { INIT_ALL;
 
         // start all threads
-        for (int i=0;i<PREFILL_THREADS;++i) {
+        for (int i = 0; i < PREFILL_THREADS; ++i) {
             threads[i] = new std::thread(thread_prefill_with_updates<GlobalsT>, g, i);
         }
 
-        TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<g->running<<std::endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running=" << g->running << std::endl);
         while (g->running < PREFILL_THREADS) {}
-        TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
+        TRACE COUTATOMIC("main thread: starting prefilling timer..." << std::endl);
         g->startTime = std::chrono::high_resolution_clock::now();
 
         auto prefillIntervalElapsedMillis = 0;
@@ -581,15 +622,18 @@ void prefillMixed(GlobalsT * g, int64_t expectedSize) {
         __sync_synchronize();
 
         const long MAX_NAPPING_MILLIS = 5000;
-        auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count();
+        auto elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::high_resolution_clock::now() - g->startTime).count();
         auto elapsedMillisNapping = 0;
         while (g->running > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
             nanosleep(&tsNap, NULL);
-            elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count() - elapsedMillis;
+            elapsedMillisNapping = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now() - g->startTime).count() - elapsedMillis;
         }
         if (g->running > 0) {
             COUTATOMIC(std::endl);
-            COUTATOMIC("Validation FAILURE: "<<g->running<<" non-responsive thread(s) [during prefill]"<<std::endl);
+            COUTATOMIC(
+                    "Validation FAILURE: " << g->running << " non-responsive thread(s) [during prefill]" << std::endl);
             COUTATOMIC(std::endl);
             exit(-1);
         }
@@ -597,10 +641,10 @@ void prefillMixed(GlobalsT * g, int64_t expectedSize) {
          * END INFINITE LOOP DETECTION CODE
          */
 
-        TRACE COUTATOMIC("main thread: waiting for threads to STOP prefilling running="<<g->running<<std::endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to STOP prefilling running=" << g->running << std::endl);
         while (g->running > 0) {}
 
-        for (int i=0;i<PREFILL_THREADS;++i) {
+        for (int i = 0; i < PREFILL_THREADS; ++i) {
             threads[i]->join();
             delete threads[i];
         }
@@ -610,50 +654,52 @@ void prefillMixed(GlobalsT * g, int64_t expectedSize) {
 
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
         totalThreadsPrefillElapsedMillis += prefillIntervalElapsedMillis;
-        if (sz >= (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
+        if (sz >= (size_t) expectedSize * (1 - PREFILL_THRESHOLD)) {
             break;
         } else {
             auto currTime = std::chrono::high_resolution_clock::now();
-            auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(currTime-prefillStartTime).count();
+            auto totalElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                    currTime - prefillStartTime).count();
             // auto szConfirm = g->dsAdapter->size();
             // std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz << " (CONFIRMING AT "<<szConfirm<<") total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
-            std::cout << " finished prefilling round "<<attempts<<" with ds size: " << sz <<" total elapsed time "<<(totalElapsed/1000.)<<"s"<<std::endl;
-            std::cout<<"pref_round_size="<<sz<<std::endl;
+            std::cout << " finished prefilling round " << attempts << " with ds size: " << sz << " total elapsed time "
+                      << (totalElapsed / 1000.) << "s" << std::endl;
+            std::cout << "pref_round_size=" << sz << std::endl;
         }
 
         DEINIT_ALL;
     }
     if (attempts >= MAX_ATTEMPTS) {
-        std::cerr<<"ERROR: could not prefill to expected size "<<expectedSize<<". reached size "<<sz<<" after "<<attempts<<" attempts"<<std::endl;
+        std::cerr << "ERROR: could not prefill to expected size " << expectedSize << ". reached size " << sz
+                  << " after " << attempts << " attempts" << std::endl;
         exit(-1);
     }
 }
 
 template<class GlobalsT>
-void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
+void prefillHybrid(GlobalsT *g, int64_t expectedSize) {
     using namespace std::chrono;
 
-    std::cout<<"Info: prefilling using hybrid approach; mixed then insert-only if needed."<<std::endl;
+    std::cout << "Info: prefilling using hybrid approach; mixed then insert-only if needed." << std::endl;
     g->startTime = high_resolution_clock::now();
 
     const double PREFILL_THRESHOLD = 0.02;
-    int64_t sz = 0;
-    INIT_ALL;
+    int64_t sz = 0;INIT_ALL;
 
     // start all threads
-    std::thread * threads[MAX_THREADS_POW2];
-    for (int i=0;i<PREFILL_THREADS;++i) {
+    std::thread *threads[MAX_THREADS_POW2];
+    for (int i = 0; i < PREFILL_THREADS; ++i) {
         threads[i] = new std::thread(thread_prefill_with_updates<GlobalsT>, g, i);
     }
 
-    TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running="<<g->running<<std::endl);
+    TRACE COUTATOMIC("main thread: waiting for threads to START prefilling running=" << g->running << std::endl);
     SOFTWARE_BARRIER;
     while (g->running < PREFILL_THREADS) { SOFTWARE_BARRIER; }
-    TRACE COUTATOMIC("main thread: starting prefilling timer..."<<std::endl);
+    TRACE COUTATOMIC("main thread: starting prefilling timer..." << std::endl);
 
     auto now = high_resolution_clock::now();
     auto elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
-    std::cout<<"prefilling initialization took "<<(elapsedMillis/1000.)<<"s"<<std::endl;
+    std::cout << "prefilling initialization took " << (elapsedMillis / 1000.) << "s" << std::endl;
 
     // for the purposes of prefilling for a MINIMUM time, we don't want to include the preceding initialization...
     g->startTime = now;
@@ -679,26 +725,30 @@ void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
     now = high_resolution_clock::now();
     elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
     while (elapsedMillis < PREFILL_HYBRID_MIN_MS) {
-        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
+        timespec tsNap = {0, 100000000};
+        nanosleep(&tsNap, NULL);
         now = high_resolution_clock::now();
         elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
     }
     // print status update
     sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-    std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+    std::cout << "prefilling_size=" << sz << " prefilling_elapsed_millis=" << (elapsedMillis / 1000.) << "s"
+              << std::endl;
 
     /**
      * now repeatedly check whether the data structure is prefilled enough
      */
 
-    while (elapsedMillis < PREFILL_HYBRID_MAX_MS && sz < (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
-        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
+    while (elapsedMillis < PREFILL_HYBRID_MAX_MS && sz < (size_t) expectedSize * (1 - PREFILL_THRESHOLD)) {
+        timespec tsNap = {0, 100000000};
+        nanosleep(&tsNap, NULL);
         now = high_resolution_clock::now();
         elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
 
         // print status update
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-        std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+        std::cout << "prefilling_size=" << sz << " prefilling_elapsed_millis=" << (elapsedMillis / 1000.) << "s"
+                  << std::endl;
     }
 
     /**
@@ -716,16 +766,19 @@ void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
     elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
     int64_t elapsedMillisNapping = 0;
     while (g->running > 0 && elapsedMillisNapping < MAX_NAPPING_MILLIS) {
-        timespec tsNap = {0, 100000000}; nanosleep(&tsNap, NULL);
-        elapsedMillisNapping = (int64_t) (duration_cast<milliseconds>(high_resolution_clock::now() - g->startTime).count() - elapsedMillis);
+        timespec tsNap = {0, 100000000};
+        nanosleep(&tsNap, NULL);
+        elapsedMillisNapping = (int64_t) (
+                duration_cast<milliseconds>(high_resolution_clock::now() - g->startTime).count() - elapsedMillis);
     }
     if (g->running > 0) {
-        COUTATOMIC(std::endl<<"Validation FAILURE: "<<g->running<<" non-responsive thread(s) [during prefill]"<<std::endl<<std::endl);
+        COUTATOMIC(std::endl << "Validation FAILURE: " << g->running << " non-responsive thread(s) [during prefill]"
+                             << std::endl << std::endl);
         exit(-1);
     }
 
     // stop threads
-    for (int i=0;i<PREFILL_THREADS;++i) {
+    for (int i = 0; i < PREFILL_THREADS; ++i) {
         threads[i]->join();
         delete threads[i];
     }
@@ -737,8 +790,8 @@ void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
      */
 
     sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-    if (sz < (size_t) expectedSize*(1-PREFILL_THRESHOLD)) {
-        std::cout<<"Info: prefilling requires an additional insert phase to complete."<<std::endl;
+    if (sz < (size_t) expectedSize * (1 - PREFILL_THRESHOLD)) {
+        std::cout << "Info: prefilling requires an additional insert phase to complete." << std::endl;
 
         // use insert-only prefilling to close the gap between sz and expectedSize
         int64_t numKeysToInsert = expectedSize - sz;
@@ -748,39 +801,42 @@ void prefillHybrid(GlobalsT * g, int64_t expectedSize) {
         now = high_resolution_clock::now();
         elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
         sz = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
-        std::cout<<"prefilling_size="<<sz<<" prefilling_elapsed_millis="<<(elapsedMillis/1000.)<<"s"<<std::endl;
+        std::cout << "prefilling_size=" << sz << " prefilling_elapsed_millis=" << (elapsedMillis / 1000.) << "s"
+                  << std::endl;
     }
 
     DEINIT_ALL;
     g->prefillStartTime = g->startTime; // supporting legacy output code...
 }
 
-template <class GlobalsT>
-size_t * prefillArray(GlobalsT * g, int64_t expectedSize) {
-    std::cout<<"Info: prefilling using ARRAY CONSTRUCTION to expectedSize="<<expectedSize<<" w/MAXKEY="<<MAXKEY<<"."<<std::endl;
-    if (MAXKEY < expectedSize) setbench_error("specified key range must be large enough to accommodate the specified prefill size");
+template<class GlobalsT>
+size_t *prefillArray(GlobalsT *g, int64_t expectedSize) {
+    std::cout << "Info: prefilling using ARRAY CONSTRUCTION to expectedSize=" << expectedSize << " w/MAXKEY=" << MAXKEY
+              << "." << std::endl;
+    if (MAXKEY < expectedSize) setbench_error(
+            "specified key range must be large enough to accommodate the specified prefill size");
 
     TIMING_START("creating key array");
-    size_t sz = MAXKEY+2;
+    size_t sz = MAXKEY + 2;
     const size_t DOES_NOT_EXIST = std::numeric_limits<size_t>::max();
-    size_t * present = new size_t[sz];
-    #ifdef _OPENMP
-        omp_set_num_threads(PREFILL_THREADS);
-    #endif
-    #pragma omp parallel for schedule(dynamic, 100000)
-    for (size_t i=0;i<sz;++i) present[i]=DOES_NOT_EXIST;
+    size_t *present = new size_t[sz];
+#ifdef _OPENMP
+    omp_set_num_threads(PREFILL_THREADS);
+#endif
+#pragma omp parallel for schedule(dynamic, 100000)
+    for (size_t i = 0; i < sz; ++i) present[i] = DOES_NOT_EXIST;
     TIMING_STOP;
 
     TIMING_START("choosing random keys with present array");
-    #pragma omp parallel for schedule(dynamic, 100000)
-    for (size_t i=0;i<expectedSize;++i) {
-    retry:
-        #ifdef _OPENMP
-            const int tid = omp_get_thread_num();
-        #else
-            const int tid = 0;
-        #endif
-        test_type key = g->prefillKeygens[tid]->next();
+#pragma omp parallel for schedule(dynamic, 100000)
+    for (size_t i = 0; i < expectedSize; ++i) {
+        retry:
+#ifdef _OPENMP
+        const int tid = omp_get_thread_num();
+#else
+        const int tid = 0;
+#endif
+        test_type key = g->prefillKeygens[tid]->next_prefill();
         //auto key = g->rngs[tid].next(MAXKEY) + 1;
         if (__sync_bool_compare_and_swap(&present[key], DOES_NOT_EXIST, key)) {
             GSTATS_ADD(tid, key_checksum, key);
@@ -792,25 +848,27 @@ size_t * prefillArray(GlobalsT * g, int64_t expectedSize) {
     TIMING_STOP;
 
     TIMING_START("parallel sort to obtain keys to insert");
-    #ifdef _OPENMP
-        __gnu_parallel::sort(present, present+sz);
-    #else
-        std::sort(present, present+sz);
-    #endif
+#ifdef _OPENMP
+    __gnu_parallel::sort(present, present+sz);
+#else
+    std::sort(present, present + sz);
+#endif
     TIMING_STOP;
 
     return present;
 }
 
-template <class GlobalsT>
-void createAndPrefillDataStructure(GlobalsT * g, int64_t expectedSize) {
+template<class GlobalsT>
+void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     if (PREFILL_THREADS == 0) {
-        g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
+        g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE,
+                                        g->rngs);
         return;
     }
 
     if (expectedSize == -1) {
-        const double expectedFullness = (INS_FRAC+DEL_FRAC ? INS_FRAC / (double)(INS_FRAC+DEL_FRAC) : 0.5); // percent full in expectation
+        const double expectedFullness = (INS_FRAC + DEL_FRAC ? INS_FRAC / (double) (INS_FRAC + DEL_FRAC)
+                                                             : 0.5); // percent full in expectation
         expectedSize = (int64_t) (MAXKEY * expectedFullness);
     }
 
@@ -827,17 +885,18 @@ void createAndPrefillDataStructure(GlobalsT * g, int64_t expectedSize) {
     TIMING_STOP;
     delete[] present;
 #else
-    g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs);
+    g->dsAdapter = new DS_ADAPTER_T(std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE,
+                                    g->rngs);
 
     // PREBUILD VIA REPEATED CONCURRENT INSERT-ONLY TRIALS
     if (PREFILL_TYPE == PREFILL_INSERT) {
         prefillInsert(g, expectedSize);
 
-    // PREBUILD VIA REPEATED CONCURRENT INSERT-AND-DELETE TRIALS
+        // PREBUILD VIA REPEATED CONCURRENT INSERT-AND-DELETE TRIALS
     } else if (PREFILL_TYPE == PREFILL_MIXED) {
         prefillMixed(g, expectedSize);
 
-    // PREBUILD VIA A HYBRID APPROACH (FIRST MIXED UPDATES, THEN INSERT-ONLY IF NEEDED ONCE TIME IS UP)
+        // PREBUILD VIA A HYBRID APPROACH (FIRST MIXED UPDATES, THEN INSERT-ONLY IF NEEDED ONCE TIME IS UP)
     } else if (PREFILL_TYPE == PREFILL_HYBRID) {
         prefillHybrid(g, expectedSize);
 
@@ -848,23 +907,28 @@ void createAndPrefillDataStructure(GlobalsT * g, int64_t expectedSize) {
 
     // print prefilling status information
     using namespace std::chrono;
-    const long totalUpdates = GSTATS_OBJECT_NAME.get_sum<long long>(num_inserts) + GSTATS_OBJECT_NAME.get_sum<long long>(num_deletes);
+    const long totalUpdates =
+            GSTATS_OBJECT_NAME.get_sum<long long>(num_inserts) + GSTATS_OBJECT_NAME.get_sum<long long>(num_deletes);
     g->prefillKeySum = GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
     g->prefillSize = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
     auto now = high_resolution_clock::now();
     auto elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
-    COUTATOMIC("finished prefilling to size "<<g->prefillSize<<" for expected size "<<expectedSize<<" keysum="<< g->prefillKeySum<<", performing "<<totalUpdates<<" updates; total_prefilling_elapsed_ms="<<elapsedMillis<<" ms)"<<std::endl);
-    std::cout<<"pref_size="<<g->prefillSize<<std::endl;
-    std::cout<<"pref_millis="<<elapsedMillis<<std::endl;
+    COUTATOMIC("finished prefilling to size " << g->prefillSize << " for expected size " << expectedSize << " keysum="
+                                              << g->prefillKeySum << ", performing " << totalUpdates
+                                              << " updates; total_prefilling_elapsed_ms=" << elapsedMillis << " ms)"
+                                              << std::endl);
+    std::cout << "pref_size=" << g->prefillSize << std::endl;
+    std::cout << "pref_millis=" << elapsedMillis << std::endl;
     GSTATS_CLEAR_ALL;
 
     // print total prefilling time
-    std::cout<<"prefill_elapsed_ms="<<std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->prefillStartTime).count()<<std::endl;
+    std::cout << "prefill_elapsed_ms=" << std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now() - g->prefillStartTime).count() << std::endl;
     g->dsAdapter->printSummary(); ///////// debug
 }
 
-template <class GlobalsT>
-void trial(GlobalsT * g) {
+template<class GlobalsT>
+void trial(GlobalsT *g) {
     using namespace std::chrono;
     papi_init_program(TOTAL_THREADS);
 
@@ -890,8 +954,8 @@ void trial(GlobalsT * g) {
     tsNap.tv_nsec = 100000000; // 100ms
 
     // start all threads
-    std::thread * threads[MAX_THREADS_POW2];
-    for (int i=0;i<TOTAL_THREADS;++i) {
+    std::thread *threads[MAX_THREADS_POW2];
+    for (int i = 0; i < TOTAL_THREADS; ++i) {
         if (i < WORK_THREADS) {
             threads[i] = new std::thread(thread_timed<GlobalsT>, g, i);
         } else {
@@ -900,15 +964,15 @@ void trial(GlobalsT * g) {
     }
 
     while (g->running < TOTAL_THREADS) {
-        TRACE COUTATOMIC("main thread: waiting for threads to START running="<<g->running<<std::endl);
+        TRACE COUTATOMIC("main thread: waiting for threads to START running=" << g->running << std::endl);
     } // wait for all threads to be ready
-    COUTATOMIC("main thread: starting timer..."<<std::endl);
+    COUTATOMIC("main thread: starting timer..." << std::endl);
 
     DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
-    COUTATOMIC("################################ BEGIN RUNNING ################################"<<std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
+    COUTATOMIC("################################ BEGIN RUNNING ################################" << std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
     COUTATOMIC(std::endl);
 
     SOFTWARE_BARRIER;
@@ -940,9 +1004,9 @@ void trial(GlobalsT * g) {
 
     DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
-    COUTATOMIC("################################## TIME IS UP #################################"<<std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
+    COUTATOMIC("################################## TIME IS UP #################################" << std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
     COUTATOMIC(std::endl);
 
     const long MAX_NAPPING_MILLIS = (MAXKEY > 5e7 ? 120000 : 30000);
@@ -950,25 +1014,29 @@ void trial(GlobalsT * g) {
     g->elapsedMillisNapping = 0;
     while (g->running > 0 && g->elapsedMillisNapping < MAX_NAPPING_MILLIS) {
         nanosleep(&tsNap, NULL);
-        g->elapsedMillisNapping = duration_cast<milliseconds>(high_resolution_clock::now() - g->startTime).count() - g->elapsedMillis;
+        g->elapsedMillisNapping =
+                duration_cast<milliseconds>(high_resolution_clock::now() - g->startTime).count() - g->elapsedMillis;
     }
 
     if (g->running > 0) {
         COUTATOMIC(std::endl);
-        COUTATOMIC("Validation FAILURE: "<<g->running<<" non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"<<std::endl);
+        COUTATOMIC("Validation FAILURE: " << g->running
+                                          << " non-terminating thread(s) [did we exhaust physical memory and experience excessive slowdown due to swap mem?]"
+                                          << std::endl);
         COUTATOMIC(std::endl);
-        COUTATOMIC("elapsedMillis="<<g->elapsedMillis<<" elapsedMillisNapping="<<g->elapsedMillisNapping<<std::endl);
+        COUTATOMIC("elapsedMillis=" << g->elapsedMillis << " elapsedMillisNapping=" << g->elapsedMillisNapping
+                                    << std::endl);
 
         if (g->dsAdapter->validateStructure()) {
-            std::cout<<"Structural validation OK"<<std::endl;
+            std::cout << "Structural validation OK" << std::endl;
         } else {
-            std::cout<<"Structural validation FAILURE."<<std::endl;
+            std::cout << "Structural validation FAILURE." << std::endl;
         }
 
-        #if defined USE_GSTATS && defined OVERRIDE_PRINT_STATS_ON_ERROR
-            GSTATS_PRINT;
-            std::cout<<std::endl;
-        #endif
+#if defined USE_GSTATS && defined OVERRIDE_PRINT_STATS_ON_ERROR
+        GSTATS_PRINT;
+        std::cout<<std::endl;
+#endif
 
         g->dsAdapter->printSummary();
 #ifdef RQ_DEBUGGING_H
@@ -979,33 +1047,33 @@ void trial(GlobalsT * g) {
 
     // join all threads
     COUTATOMIC("joining threads...");
-    for (int i=0;i<TOTAL_THREADS;++i) {
+    for (int i = 0; i < TOTAL_THREADS; ++i) {
         //COUTATOMIC("joining thread "<<i<<std::endl);
         threads[i]->join();
         delete threads[i];
     }
 
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
-    COUTATOMIC("################################# END RUNNING #################################"<<std::endl);
-    COUTATOMIC("###############################################################################"<<std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
+    COUTATOMIC("################################# END RUNNING #################################" << std::endl);
+    COUTATOMIC("###############################################################################" << std::endl);
     COUTATOMIC(std::endl);
 
-    COUTATOMIC(((g->elapsedMillis+g->elapsedMillisNapping)/1000.)<<"s"<<std::endl);
+    COUTATOMIC(((g->elapsedMillis + g->elapsedMillisNapping) / 1000.) << "s" << std::endl);
 
-    papi_deinit_program();
-    DEINIT_ALL;
+    papi_deinit_program();DEINIT_ALL;
 }
 
-template <class GlobalsT>
-void printExecutionTime(GlobalsT * g) {
-    auto programExecutionElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - g->programExecutionStartTime).count();
-    std::cout<<"total_execution_walltime="<<(programExecutionElapsed/1000.)<<"s"<<std::endl;
+template<class GlobalsT>
+void printExecutionTime(GlobalsT *g) {
+    auto programExecutionElapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::high_resolution_clock::now() - g->programExecutionStartTime).count();
+    std::cout << "total_execution_walltime=" << (programExecutionElapsed / 1000.) << "s" << std::endl;
 }
 
-template <class GlobalsT>
-void printOutput(GlobalsT * g) {
-    std::cout<<"PRODUCING OUTPUT"<<std::endl;
+template<class GlobalsT>
+void printOutput(GlobalsT *g) {
+    std::cout << "PRODUCING OUTPUT" << std::endl;
 #ifdef USE_TREE_STATS
     auto timeBeforeTreeStats = std::chrono::high_resolution_clock::now();
     auto treeStats = g->dsAdapter->createTreeStats(g->KEY_MIN, g->KEY_MAX);
@@ -1021,7 +1089,7 @@ void printOutput(GlobalsT * g) {
 
 #ifdef USE_GSTATS
     GSTATS_PRINT;
-    std::cout<<std::endl;
+    std::cout << std::endl;
 #endif
 
     long long threadsKeySum = 0;
@@ -1035,7 +1103,7 @@ void printOutput(GlobalsT * g) {
         long long dsKeySum = (treeStats) ? treeStats->getSumOfKeys() : threadsKeySum;
         long long dsSize = (treeStats) ? treeStats->getKeys() : -1; // threadsSize;
 #endif
-        std::cout<<"threads_final_keysum="<<threadsKeySum<<std::endl;
+        std::cout << "threads_final_keysum=" << threadsKeySum << std::endl;
         // std::cout<<"threads_final_size="<<threadsSize<<std::endl;
 #ifdef USE_TREE_STATS
         std::cout<<"final_keysum="<<dsKeySum<<std::endl;
@@ -1057,9 +1125,9 @@ void printOutput(GlobalsT * g) {
 
 #if !defined SKIP_VALIDATION
     if (g->dsAdapter->validateStructure()) {
-        std::cout<<"Structural validation OK."<<std::endl;
+        std::cout << "Structural validation OK." << std::endl;
     } else {
-        std::cout<<"Structural validation FAILURE."<<std::endl;
+        std::cout << "Structural validation FAILURE." << std::endl;
         printExecutionTime(g);
         exit(-1);
     }
@@ -1076,7 +1144,7 @@ void printOutput(GlobalsT * g) {
         const long long totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
         const long long totalUpdates = totalInserts + totalDeletes;
 
-        const double SECONDS_TO_RUN = (g->elapsedMillis/1000.); // (MILLIS_TO_RUN)/1000.;
+        const double SECONDS_TO_RUN = (g->elapsedMillis / 1000.); // (MILLIS_TO_RUN)/1000.;
         totalAll = totalUpdates + totalQueries;
         const long long throughputSearches = (long long) (totalSearches / SECONDS_TO_RUN);
         const long long throughputRQs = (long long) (totalRQs / SECONDS_TO_RUN);
@@ -1085,52 +1153,53 @@ void printOutput(GlobalsT * g) {
         const long long throughputAll = (long long) (totalAll / SECONDS_TO_RUN);
 
         COUTATOMIC(std::endl);
-        COUTATOMIC("total_find="<<totalSearches<<std::endl);
-        COUTATOMIC("total_rq="<<totalRQs<<std::endl);
-        COUTATOMIC("total_inserts="<<totalInserts<<std::endl);
-        COUTATOMIC("total_deletes="<<totalDeletes<<std::endl);
-        COUTATOMIC("total_updates="<<totalUpdates<<std::endl);
-        COUTATOMIC("total_queries="<<totalQueries<<std::endl);
-        COUTATOMIC("total_ops="<<totalAll<<std::endl);
-        COUTATOMIC("find_throughput="<<throughputSearches<<std::endl);
-        COUTATOMIC("rq_throughput="<<throughputRQs<<std::endl);
-        COUTATOMIC("update_throughput="<<throughputUpdates<<std::endl);
-        COUTATOMIC("query_throughput="<<throughputQueries<<std::endl);
-        COUTATOMIC("total_throughput="<<throughputAll<<std::endl);
+        COUTATOMIC("total_find=" << totalSearches << std::endl);
+        COUTATOMIC("total_rq=" << totalRQs << std::endl);
+        COUTATOMIC("total_inserts=" << totalInserts << std::endl);
+        COUTATOMIC("total_deletes=" << totalDeletes << std::endl);
+        COUTATOMIC("total_updates=" << totalUpdates << std::endl);
+        COUTATOMIC("total_queries=" << totalQueries << std::endl);
+        COUTATOMIC("total_ops=" << totalAll << std::endl);
+        COUTATOMIC("find_throughput=" << throughputSearches << std::endl);
+        COUTATOMIC("rq_throughput=" << throughputRQs << std::endl);
+        COUTATOMIC("update_throughput=" << throughputUpdates << std::endl);
+        COUTATOMIC("query_throughput=" << throughputQueries << std::endl);
+        COUTATOMIC("total_throughput=" << throughputAll << std::endl);
         COUTATOMIC(std::endl);
 
         COUTATOMIC(std::endl);
-        COUTATOMIC("total find                    : "<<totalSearches<<std::endl);
-        COUTATOMIC("total rq                      : "<<totalRQs<<std::endl);
-        COUTATOMIC("total inserts                 : "<<totalInserts<<std::endl);
-        COUTATOMIC("total deletes                 : "<<totalDeletes<<std::endl);
-        COUTATOMIC("total updates                 : "<<totalUpdates<<std::endl);
-        COUTATOMIC("total queries                 : "<<totalQueries<<std::endl);
-        COUTATOMIC("total ops                     : "<<totalAll<<std::endl);
-        COUTATOMIC("find throughput               : "<<throughputSearches<<std::endl);
-        COUTATOMIC("rq throughput                 : "<<throughputRQs<<std::endl);
-        COUTATOMIC("update throughput             : "<<throughputUpdates<<std::endl);
-        COUTATOMIC("query throughput              : "<<throughputQueries<<std::endl);
-        COUTATOMIC("total throughput              : "<<throughputAll<<std::endl);
+        COUTATOMIC("total find                    : " << totalSearches << std::endl);
+        COUTATOMIC("total rq                      : " << totalRQs << std::endl);
+        COUTATOMIC("total inserts                 : " << totalInserts << std::endl);
+        COUTATOMIC("total deletes                 : " << totalDeletes << std::endl);
+        COUTATOMIC("total updates                 : " << totalUpdates << std::endl);
+        COUTATOMIC("total queries                 : " << totalQueries << std::endl);
+        COUTATOMIC("total ops                     : " << totalAll << std::endl);
+        COUTATOMIC("find throughput               : " << throughputSearches << std::endl);
+        COUTATOMIC("rq throughput                 : " << throughputRQs << std::endl);
+        COUTATOMIC("update throughput             : " << throughputUpdates << std::endl);
+        COUTATOMIC("query throughput              : " << throughputQueries << std::endl);
+        COUTATOMIC("total throughput              : " << throughputAll << std::endl);
         COUTATOMIC(std::endl);
     }
 #endif
 
-    COUTATOMIC("elapsed milliseconds          : "<<g->elapsedMillis<<std::endl);
-    COUTATOMIC("napping milliseconds overtime : "<<g->elapsedMillisNapping<<std::endl);
+    COUTATOMIC("elapsed milliseconds          : " << g->elapsedMillis << std::endl);
+    COUTATOMIC("napping milliseconds overtime : " << g->elapsedMillisNapping << std::endl);
     COUTATOMIC(std::endl);
 
 //    g->dsAdapter->printSummary();
 
     // free ds
 #if !defined NO_CLEANUP_AFTER_WORKLOAD
-    std::cout<<"begin delete ds..."<<std::endl;
+    std::cout << "begin delete ds..." << std::endl;
     if (MAXKEY > 10000000) {
-        std::cout<<"    SKIPPING deletion of data structure to save time! (because key range is so large)"<<std::endl;
+        std::cout << "    SKIPPING deletion of data structure to save time! (because key range is so large)"
+                  << std::endl;
     } else {
         delete g->dsAdapter;
     }
-    std::cout<<"end delete ds."<<std::endl;
+    std::cout << "end delete ds." << std::endl;
 #endif
 
     papi_print_counters(totalAll);
@@ -1139,15 +1208,16 @@ void printOutput(GlobalsT * g) {
 #endif
 
 #if !defined NDEBUG
-    std::cout<<"WARNING: NDEBUG is not defined, so experiment results may be affected by assertions and debug code."<<std::endl;
+    std::cout << "WARNING: NDEBUG is not defined, so experiment results may be affected by assertions and debug code."
+              << std::endl;
 #endif
 #if defined MEASURE_REBUILDING_TIME || defined MEASURE_TIMELINE_STATS || defined RAPID_RECLAMATION
     std::cout<<"WARNING: one or more of MEASURE_REBUILDING_TIME | MEASURE_TIMELINE_STATS | RAPID_RECLAMATION are defined, which *may* affect experiments results."<<std::endl;
 #endif
 }
 
-template <class GlobalsT>
-void main_continued_with_globals(GlobalsT * g) {
+template<class GlobalsT>
+void main_continued_with_globals(GlobalsT *g) {
     g->programExecutionStartTime = std::chrono::high_resolution_clock::now();
 
     // print object sizes, to help debugging/sanity checking memory layouts
@@ -1157,13 +1227,13 @@ void main_continued_with_globals(GlobalsT * g) {
     binding_configurePolicy(TOTAL_THREADS);
 
     // print actual thread pinning/binding layout
-    std::cout<<"ACTUAL_THREAD_BINDINGS=";
-    for (int i=0;i<TOTAL_THREADS;++i) {
-        std::cout<<(i?",":"")<<binding_getActualBinding(i);
+    std::cout << "ACTUAL_THREAD_BINDINGS=";
+    for (int i = 0; i < TOTAL_THREADS; ++i) {
+        std::cout << (i ? "," : "") << binding_getActualBinding(i);
     }
-    std::cout<<std::endl;
+    std::cout << std::endl;
     if (!binding_isInjectiveMapping(TOTAL_THREADS)) {
-        std::cout<<"ERROR: thread binding maps more than one thread to a single logical processor"<<std::endl;
+        std::cout << "ERROR: thread binding maps more than one thread to a single logical processor" << std::endl;
         exit(-1);
     }
 
@@ -1179,45 +1249,49 @@ void main_continued_with_globals(GlobalsT * g) {
      * create, e.g., your own data structure specific statistics trackers.
      * They will only be included / printed when your data structure is active.
      *****************************************************************************/
-    std::cout<<std::endl;
-    #ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
-        GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__CREATE_STAT);
-    #endif
-    #ifdef GSTATS_HANDLE_STATS_POOL_NUMA
-        GSTATS_HANDLE_STATS_POOL_NUMA(__CREATE_STAT);
-    #endif
-    #ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
-        GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__CREATE_STAT);
-    #endif
-    #ifdef GSTATS_HANDLE_STATS_USER
-        GSTATS_HANDLE_STATS_USER(__CREATE_STAT);
-    #endif
+    std::cout << std::endl;
+#ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
+    GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__CREATE_STAT);
+#endif
+#ifdef GSTATS_HANDLE_STATS_POOL_NUMA
+    GSTATS_HANDLE_STATS_POOL_NUMA(__CREATE_STAT);
+#endif
+#ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
+    GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__CREATE_STAT);
+#endif
+#ifdef GSTATS_HANDLE_STATS_USER
+    GSTATS_HANDLE_STATS_USER(__CREATE_STAT);
+#endif
     GSTATS_CREATE_ALL;
-    std::cout<<std::endl;
+    std::cout << std::endl;
 
     trial(g);
     printOutput(g);
 
     binding_deinit();
-    std::cout<<"garbage="<<g->garbage<<std::endl; // to prevent certain steps from being optimized out
+    std::cout << "garbage=" << g->garbage << std::endl; // to prevent certain steps from being optimized out
     GSTATS_DESTROY;
 
     printExecutionTime(g);
     delete g;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
-        std::cout<<std::endl;
-        std::cout<<"Example usage:"<<std::endl;
-        std::cout<<"LD_PRELOAD=/path/to/libjemalloc.so "<<argv[0]<<" -nwork 64 -nprefill 64 -i 5 -d 5 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"<<std::endl;
-        std::cout<<std::endl;
-        std::cout<<"This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"<<std::endl;
+        std::cout << std::endl;
+        std::cout << "Example usage:" << std::endl;
+        std::cout << "LD_PRELOAD=/path/to/libjemalloc.so " << argv[0]
+                  << " -nwork 64 -nprefill 64 -i 5 -d 5 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
+                  << std::endl;
+        std::cout << std::endl;
+        std::cout
+                << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"
+                << std::endl;
         return 1;
     }
 
-    std::cout<<"binary="<<argv[0]<<std::endl;
+    std::cout << "binary=" << argv[0] << std::endl;
 
     // setup default args
     PREFILL_THREADS = 0;
@@ -1233,14 +1307,39 @@ int main(int argc, char** argv) {
     PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
     // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
-                                // to get NO prefilling, set -nprefill 0
+    // to get NO prefilling, set -nprefill 0
     KeyGeneratorDistribution distribution = KeyGeneratorDistribution::UNIFORM;
 
     PREFILL_TYPE = PREFILL_MIXED;
 
+    /**
+        n — b — w — i — rx — ry — wx — wy
+            n — количество элементов
+            b — размер блока
+              // при запросе k-ого элемента, так же запрашиваем b соседей
+            w — вероятность запроса на изменение
+              // 100% - w — запрос на чтение
+              // можно изменить на другую букву, или переименовать на wp, чтобы не путать с wx и wy
+            i — степень пересечения множеств горячих данных для чтения и изменения
+              // как удобнее будет считать и воспринимать эту степень надо будет ещё подумать
+            rx — процент элементов множества на горячее чтение
+            ry — вероятность чтения элемента из горячего множества
+              // 100% - ry — чтение остальных элементов
+            wx | wy — аналогично как и rx | ry для изменения (insert, delete)
+    */
+
+    READ_X = 0;
+    READ_Y = 0;
+    WRITE_X = 0;
+    WRITE_Y = 0;
+    INTERSECTION = 0;
+//    W = 0;
+
+
+
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
-    for (int i=1;i<argc;++i) {
+    for (int i = 1; i < argc; ++i) {
         if (strcmp(argv[i], "-i") == 0) {
             INS_FRAC = atof(argv[++i]);
         } else if (strcmp(argv[i], "-d") == 0) {
@@ -1287,15 +1386,33 @@ int main(int argc, char** argv) {
             MILLIS_TO_RUN = atoi(argv[++i]);
         } else if (strcmp(argv[i], "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
             binding_parseCustom(argv[++i]); // e.g., "1.2.3.8-11.4-7.0"
-            std::cout<<"parsed custom binding: "<<argv[i]<<std::endl;
+            std::cout << "parsed custom binding: " << argv[i] << std::endl;
+        }
+            /**
+             *  n — b — w — i — rx — ry — wx — wy
+             */
+        else if (strcmp(argv[i], "-dist-binomial") == 0) {
+            distribution = KeyGeneratorDistribution::BINOMIAL;
+        } else if (strcmp(argv[i], "-ry") == 0) {
+            READ_X = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-rx") == 0) {
+            READ_Y = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-wy") == 0) {
+            WRITE_X = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-wx") == 0) {
+            WRITE_Y = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-inter") == 0) {
+            INTERSECTION = atof(argv[++i]);
         } else {
-            std::cout<<"bad argument "<<argv[i]<<std::endl;
+            std::cout << "bad argument " << argv[i] << std::endl;
             exit(1);
         }
     }
+
+
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
 
-    // print used args
+// print used args
     PRINTS(DS_TYPENAME);
     PRINTS(FIND_FUNC);
     PRINTS(INSERT_FUNC);
@@ -1323,20 +1440,34 @@ int main(int argc, char** argv) {
     PRINTI(PREFILL_HYBRID_MIN_MS);
     PRINTI(PREFILL_HYBRID_MAX_MS);
 
+
+//    KeyGeneratorDistribution *keyGeneratorDistribution;
     switch (distribution) {
         case UNIFORM: {
             main_continued_with_globals(new globals_t<KeyGeneratorUniform<test_type>>(MAXKEY, distribution));
-        } break;
+        }
+            break;
         case ZIPF: {
             main_continued_with_globals(new globals_t<KeyGeneratorZipf<test_type>>(MAXKEY, distribution));
-        } break;
+        }
+            break;
         case ZIPFFAST: {
             main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
-        } break;
+        }
+            break;
+        case BINOMIAL: {
+            main_continued_with_globals(new globals_t<KeyGeneratorBinomial<test_type>>(MAXKEY, distribution));
+        }
+            break;
         default: {
             setbench_error("invalid case");
-        } break;
+        }
+            break;
     }
+
+//    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
+
+
     printUptimeStampForPERF("MAIN_END");
     return 0;
 }
