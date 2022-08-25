@@ -272,7 +272,6 @@ enum KeyGeneratorDistribution {
     UNIFORM, ZIPF, ZIPFFAST, SKEWED_SETS
 };
 
-template<class KeyGenT>
 struct globals_t {
     PAD;
     // const
@@ -1450,30 +1449,7 @@ int main(int argc, char **argv) {
 
 
 //    KeyGeneratorDistribution *keyGeneratorDistribution;
-    switch (distribution) {
-        case UNIFORM: {
-            main_continued_with_globals(new globals_t<KeyGeneratorUniform < test_type>>
-            (MAXKEY, distribution));
-        }
-            break;
-        case ZIPF: {
-            main_continued_with_globals(new globals_t<KeyGeneratorZipf < test_type>>
-            (MAXKEY, distribution));
-        }
-            break;
-        case ZIPFFAST: {
-            main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
-        }
-            break;
-        case SKEWED_SETS: {
-            main_continued_with_globals(new globals_t<KeyGeneratorSkewedSets<test_type>>(MAXKEY, distribution));
-        }
-            break;
-        default: {
-            setbench_error("invalid case");
-        }
-            break;
-    }
+    main_continued_with_globals(new globals_t(MAXKEY, distribution));
 
 //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
 
