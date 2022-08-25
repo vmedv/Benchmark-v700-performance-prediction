@@ -102,6 +102,7 @@ PAD;
 #include "papi_util_impl.h"
 #include "rq_provider.h"
 #include "keygen.h"
+#include "distribution.h"
 //#include "KeyGeneratorDistribution.h"
 
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
@@ -268,7 +269,7 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #endif
 
 enum KeyGeneratorDistribution {
-    UNIFORM, ZIPF, ZIPFFAST, BINOMIAL
+    UNIFORM, ZIPF, ZIPFFAST, SKEWED_SETS
 };
 
 template<class KeyGenT>
@@ -297,8 +298,8 @@ struct globals_t {
     PAD;
     DS_ADAPTER_T *dsAdapter; // the data structure
     PAD;
-    KeyGeneratorZipfData *keygenZipfData;
-    KeyGeneratorBinomialData *keygenBinomialData;
+    ZipfDistributionData *keygenZipfData;
+    KeyGeneratorSkewedSetsData *keygenSkewedSetsData;
     ZipfRejectionInversionSamplerData *keygenZipfFastData;
     KeyGenerator<test_type> *keygens[MAX_THREADS_POW2];
     PAD;
@@ -330,19 +331,11 @@ struct globals_t {
 
         switch (distribution) {
             case ZIPF: {
-                keygenZipfData = new KeyGeneratorZipfData(maxkeyToGenerate, ZIPF_PARAM);
+                keygenZipfData = new ZipfDistributionData(maxkeyToGenerate, ZIPF_PARAM);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new KeyGeneratorZipf<test_type>(keygenZipfData, &rngs[i]);
-                }
-            }
-                break;
-            case BINOMIAL: {
-                keygenBinomialData = new KeyGeneratorBinomialData(maxkeyToGenerate, READ_Y, WRITE_Y, INTERSECTION);
-#pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new KeyGeneratorBinomial<test_type>(keygenBinomialData, &rngs[i],
-                                                                     READ_X, WRITE_X);
+                    keygens[i] = new SimpleKeyGenerator<test_type>(
+                            new ZipfDistribution<test_type>(keygenZipfData, &rngs[i]));
                 }
             }
                 break;
@@ -350,14 +343,28 @@ struct globals_t {
                 keygenZipfFastData = new ZipfRejectionInversionSamplerData(maxkeyToGenerate);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new ZipfRejectionInversionSampler(keygenZipfFastData, ZIPF_PARAM,
-                                                                   &rngs[i]);
+                    keygens[i] = new SimpleKeyGenerator<test_type>(
+                            new ZipfRejectionInversionSampler(keygenZipfFastData, ZIPF_PARAM, &rngs[i]));
                 }
             }
                 break;
             case UNIFORM: {
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = (KeyGenT *) (new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate));
+                    keygens[i] = new SimpleKeyGenerator<test_type>(
+                            new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate));
+                }
+            }
+                break;
+            case SKEWED_SETS: {
+                keygenSkewedSetsData = new KeyGeneratorSkewedSetsData(maxkeyToGenerate,
+                                                                      READ_Y, WRITE_Y, INTERSECTION);
+#pragma omp parallel for
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    keygens[i] = new KeyGeneratorSkewedSets<test_type>(
+                            keygenSkewedSetsData, &rngs[i],
+                            new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate * READ_Y),
+                            new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate * WRITE_Y),
+                            READ_X, WRITE_X);
                 }
             }
                 break;
@@ -368,10 +375,11 @@ struct globals_t {
         }
 
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-            if (distribution == BINOMIAL) {
+            if (distribution == SKEWED_SETS) {
                 prefillKeygens[i] = keygens[i];
             } else {
-                prefillKeygens[i] = new KeyGeneratorUniform<test_type>(&rngs[i], maxkeyToGenerate);
+                prefillKeygens[i] = new SimpleKeyGenerator<test_type>(
+                        new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate));
             }
         }
 
@@ -435,7 +443,7 @@ void thread_timed(GlobalsT *g, int __tid) {
             }
             GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS_FRAC + DEL_FRAC + RQ) {
-            key = g->keygens[tid]->next();
+            key = g->keygens[tid]->next_read();
             // TODO: make this respect KeyGenerators for non-uniform distributions
             uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
             assert(_key >= 1);
@@ -1391,8 +1399,8 @@ int main(int argc, char **argv) {
             /**
              *  n — b — w — i — rx — ry — wx — wy
              */
-        else if (strcmp(argv[i], "-dist-binomial") == 0) {
-            distribution = KeyGeneratorDistribution::BINOMIAL;
+        else if (strcmp(argv[i], "-dist-skewed-sets") == 0) {
+            distribution = KeyGeneratorDistribution::SKEWED_SETS;
         } else if (strcmp(argv[i], "-ry") == 0) {
             READ_X = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rx") == 0) {
@@ -1444,19 +1452,21 @@ int main(int argc, char **argv) {
 //    KeyGeneratorDistribution *keyGeneratorDistribution;
     switch (distribution) {
         case UNIFORM: {
-            main_continued_with_globals(new globals_t<KeyGeneratorUniform<test_type>>(MAXKEY, distribution));
+            main_continued_with_globals(new globals_t<KeyGeneratorUniform < test_type>>
+            (MAXKEY, distribution));
         }
             break;
         case ZIPF: {
-            main_continued_with_globals(new globals_t<KeyGeneratorZipf<test_type>>(MAXKEY, distribution));
+            main_continued_with_globals(new globals_t<KeyGeneratorZipf < test_type>>
+            (MAXKEY, distribution));
         }
             break;
         case ZIPFFAST: {
             main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
         }
             break;
-        case BINOMIAL: {
-            main_continued_with_globals(new globals_t<KeyGeneratorBinomial<test_type>>(MAXKEY, distribution));
+        case SKEWED_SETS: {
+            main_continued_with_globals(new globals_t<KeyGeneratorSkewedSets<test_type>>(MAXKEY, distribution));
         }
             break;
         default: {
