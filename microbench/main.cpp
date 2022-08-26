@@ -1482,6 +1482,9 @@ int main(int argc, char **argv) {
         } else if (strcmp(argv[i], "-ti") == 0) {
             int pointer = atof(argv[++i]);
             TSParm->setHotTime(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-rti") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setRelaxTimes(pointer, atof(argv[++i]));
         } else {
             std::cout << "bad argument " << argv[i] << std::endl;
             exit(1);
