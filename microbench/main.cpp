@@ -18,6 +18,7 @@ typedef long long test_type;
 #include <parallel/algorithm>
 #include <omp.h>
 #include <perftools.h>
+#include <regex>
 
 #ifdef PRINT_JEMALLOC_STATS
 #include <jemalloc/jemalloc.h>
@@ -68,6 +69,9 @@ const char *PrefillTypeStrings[] = {
 
 #include "plaf.h"
 
+#include "parameters/temporary_skewed_parameters.h"
+#include "parameters/skewed_sets_parameters.h"
+
 PAD;
 double INS_FRAC;
 double DEL_FRAC;
@@ -86,12 +90,15 @@ PrefillType PREFILL_TYPE;
 int PREFILL_HYBRID_MIN_MS;
 int PREFILL_HYBRID_MAX_MS;
 
-double READ_X;
-double READ_Y;
-double WRITE_X;
-double WRITE_Y;
-double INTERSECTION;
+//double READ_HOT_SIZE;
+//double READ_HOT_PROB;
+//double WRITE_HOT_SIZE;
+//double WRITE_HOT_PROB;
+//double INTERSECTION;
 //int W; //=== INS_FRAC + DEL_FRAC
+
+SkewedSetsParameters *SkeSParm;
+TemporarySkewedParameters *TSParm;
 PAD;
 
 #include "globals_extern.h"
@@ -103,7 +110,6 @@ PAD;
 #include "rq_provider.h"
 #include "keygen.h"
 #include "distribution.h"
-//#include "KeyGeneratorDistribution.h"
 
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
 #include "tree_stats.h"
@@ -269,7 +275,7 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #endif
 
 enum KeyGeneratorDistribution {
-    UNIFORM, ZIPF, ZIPFFAST, SKEWED_SETS
+    UNIFORM, ZIPF, ZIPFFAST, SKEWED_SETS, TEMPORARY_SKEWED
 };
 
 struct globals_t {
@@ -298,8 +304,9 @@ struct globals_t {
     DS_ADAPTER_T *dsAdapter; // the data structure
     PAD;
     ZipfDistributionData *keygenZipfData;
-    KeyGeneratorSkewedSetsData *keygenSkewedSetsData;
     ZipfRejectionInversionSamplerData *keygenZipfFastData;
+    KeyGeneratorSkewedSetsData *keygenSkewedSetsData;
+    KeyGeneratorTemporarySkewedData *keygenTemporarySkewedData;
     KeyGenerator<test_type> *keygens[MAX_THREADS_POW2];
     PAD;
     // We want to prefill with uniform because  Zipf generation is slow for large key ranges (and either way the
@@ -356,14 +363,42 @@ struct globals_t {
                 break;
             case SKEWED_SETS: {
                 keygenSkewedSetsData = new KeyGeneratorSkewedSetsData(maxkeyToGenerate,
-                                                                      READ_Y, WRITE_Y, INTERSECTION);
+                                                                      SkeSParm->READ_HOT_SIZE, SkeSParm->WRITE_HOT_SIZE,
+                                                                      SkeSParm->INTERSECTION);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
                     keygens[i] = new KeyGeneratorSkewedSets<test_type>(
                             keygenSkewedSetsData, &rngs[i],
-                            new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate * READ_Y),
-                            new UniformDistribution<test_type>(&rngs[i], maxkeyToGenerate * WRITE_Y),
-                            READ_X, WRITE_X);
+                            new SkewedSetsDistribution<test_type>(
+                                    new UniformDistribution<test_type>(
+                                            &rngs[i], (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
+                                    new UniformDistribution<test_type>(
+                                            &rngs[i], (size_t) (maxkeyToGenerate - maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
+                                    &rngs[i], SkeSParm->READ_HOT_PROB, (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
+                            new SkewedSetsDistribution<test_type>(
+                                    new UniformDistribution<test_type>(
+                                            &rngs[i], (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)),
+                                    new UniformDistribution<test_type>(
+                                            &rngs[i], maxkeyToGenerate - (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)),
+                                    &rngs[i], SkeSParm->WRITE_HOT_PROB, (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)));
+                }
+            }
+                break;
+            case TEMPORARY_SKEWED: {
+                keygenTemporarySkewedData = new KeyGeneratorTemporarySkewedData(maxkeyToGenerate, TSParm);
+#pragma omp parallel for
+                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    Distribution<test_type> **dists = new Distribution<test_type> *[TSParm->setCount];
+                    //static_cast<Distribution<test_type> **>(malloc(TSParm->setCount * sizeof(void *)));
+                    for (int j = 0; j < TSParm->setCount; ++j) {
+                        dists[j] = new SkewedSetsDistribution<test_type>(
+                                new UniformDistribution<test_type>(
+                                        &rngs[i], (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
+                                new UniformDistribution<test_type>(
+                                        &rngs[i], maxkeyToGenerate - (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
+                                &rngs[i], TSParm->hotProbs[j], (size_t) (maxkeyToGenerate * TSParm->setSizes[j]));
+                    }
+                    keygens[i] = new KeyGeneratorTemporarySkewed<test_type>(keygenTemporarySkewedData, dists);
                 }
             }
                 break;
@@ -404,8 +439,10 @@ struct globals_t {
             delete prefillKeygens[i];
             if (keygens[i]) delete keygens[i];
         }
-        if (keygenZipfData) delete keygenZipfData;
-        if (keygenZipfFastData) delete keygenZipfFastData;
+        delete keygenZipfData;
+        delete keygenZipfFastData;
+        delete keygenSkewedSetsData;
+        delete keygenTemporarySkewedData;
     }
 };
 
@@ -1335,14 +1372,25 @@ int main(int argc, char **argv) {
             wx | wy — аналогично как и rx | ry для изменения (insert, delete)
     */
 
-    READ_X = 0;
-    READ_Y = 0;
-    WRITE_X = 0;
-    WRITE_Y = 0;
-    INTERSECTION = 0;
+//    READ_HOT_SIZE = 0;
+//    READ_HOT_PROB = 0;
+//    WRITE_HOT_SIZE = 0;
+//    WRITE_HOT_PROB = 0;
+//    INTERSECTION = 0;
 //    W = 0;
 
 
+    /**
+        n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti }
+            n — количество элементов
+            xi — процент элементов i-ого множества
+            yi — вероятность чтения элемента из i-ого множества
+              // 100% - yi — чтение остальных элементов
+            ti — время / количество итераций работы в режиме горячего вызова i-ого множества
+            rti / rt (relax time) — время / количество итераций работы в обычном режиме (равномерное распределение на все элементы)
+              // rt — если relax time всегда одинаковый
+              // rti — relax time после горячей работы с i-ым множеством
+     */
 
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
@@ -1400,26 +1448,49 @@ int main(int argc, char **argv) {
              */
         else if (strcmp(argv[i], "-dist-skewed-sets") == 0) {
             distribution = KeyGeneratorDistribution::SKEWED_SETS;
-        } else if (strcmp(argv[i], "-ry") == 0) {
-            READ_X = atof(argv[++i]);
         } else if (strcmp(argv[i], "-rx") == 0) {
-            READ_Y = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-wy") == 0) {
-            WRITE_X = atof(argv[++i]);
+            SkeSParm->READ_HOT_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-ry") == 0) {
+            SkeSParm->READ_HOT_PROB = atof(argv[++i]);
         } else if (strcmp(argv[i], "-wx") == 0) {
-            WRITE_Y = atof(argv[++i]);
+            SkeSParm->WRITE_HOT_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-wy") == 0) {
+            SkeSParm->WRITE_HOT_PROB = atof(argv[++i]);
         } else if (strcmp(argv[i], "-inter") == 0) {
-            INTERSECTION = atof(argv[++i]);
+            SkeSParm->INTERSECTION = atof(argv[++i]);
+        }
+            /**
+              *  n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti }
+              */
+        else if (strcmp(argv[i], "-dist-temporary-skewed") == 0
+                 || strcmp(argv[i], "-dist-temp-skewed") == 0) {
+            distribution = KeyGeneratorDistribution::TEMPORARY_SKEWED;
+        } else if (strcmp(argv[i], "-set-count") == 0) {
+            TSParm->setSetCount(atof(argv[++i]));
+        } else if (strcmp(argv[i], "-rt") == 0) {
+            TSParm->setCommonRelaxTime(atof(argv[++i]));
+        } else if (strcmp(argv[i], "-ht") == 0) {
+            TSParm->setCommonHotTime(atof(argv[++i]));
+//        } else if (std::regex_match(argv[i], std::regex(R"(ht\d+)"))) {
+//            TSParm.setHotTime(atof(argv[i].substr(2, 4)), atof(argv[++i]));
+        } else if (strcmp(argv[i], "-xi") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setSetSize(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-yi") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setHotProb(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-ti") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setHotTime(pointer, atof(argv[++i]));
         } else {
             std::cout << "bad argument " << argv[i] << std::endl;
             exit(1);
         }
     }
 
-
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
 
-// print used args
+    // print used args
     PRINTS(DS_TYPENAME);
     PRINTS(FIND_FUNC);
     PRINTS(INSERT_FUNC);
@@ -1448,10 +1519,10 @@ int main(int argc, char **argv) {
     PRINTI(PREFILL_HYBRID_MAX_MS);
 
 
-//    KeyGeneratorDistribution *keyGeneratorDistribution;
+    //    KeyGeneratorDistribution *keyGeneratorDistribution;
     main_continued_with_globals(new globals_t(MAXKEY, distribution));
 
-//    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
+    //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distribution));
 
 
     printUptimeStampForPERF("MAIN_END");

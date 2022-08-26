@@ -28,10 +28,10 @@ class UniformDistribution : public Distribution<K> {
 private:
     PAD;
     Random64 *rng;
-    int maxKey;
+    size_t maxKey;
     PAD;
 public:
-    UniformDistribution(Random64 *_rng, int _maxKey) : rng(_rng), maxKey(_maxKey) {}
+    UniformDistribution(Random64 *_rng, const size_t _maxKey) : rng(_rng), maxKey(_maxKey) {}
 
     K next() {
         auto result = 1 + rng->next(maxKey);
@@ -44,12 +44,12 @@ public:
 class ZipfDistributionData {
 public:
     PAD;
-    int maxKey;
+    size_t maxKey;
     double c = 0; // Normalization constant
     double *sum_probs; // Pre-calculated sum of probabilities
     PAD;
 
-    ZipfDistributionData(const int _maxKey, const double _alpha) {
+    ZipfDistributionData(const size_t _maxKey, const double _alpha) {
         maxKey = _maxKey;
         // Compute normalization constant c for implied key range: [1, maxKey]
         for (int i = 1; i <= _maxKey; i++) {
@@ -109,11 +109,11 @@ private:
     Distribution<K> *hotDistribution;
     Distribution<K> *coldDistribution;
     double hotProb;
-    int hotSetLength;
+    size_t hotSetLength;
     PAD;
 public:
     SkewedSetsDistribution(Distribution<K> *_hotDistribution, Distribution<K> *_coldDistribution,
-                           Random64 *_rng, const double _hotProb, const int _hotSetLength)
+                           Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
             : hotDistribution(_hotDistribution), coldDistribution(_coldDistribution),
             rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
 
