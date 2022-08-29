@@ -1378,7 +1378,7 @@ int main(int argc, char **argv) {
 //    WRITE_HOT_PROB = 0;
 //    INTERSECTION = 0;
 //    W = 0;
-
+    SkeSParm = new SkewedSetsParameters();
 
     /**
         n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti }
@@ -1391,6 +1391,8 @@ int main(int argc, char **argv) {
               // rt — если relax time всегда одинаковый
               // rti — relax time после горячей работы с i-ым множеством
      */
+
+    TSParm = new TemporarySkewedParameters();
 
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
