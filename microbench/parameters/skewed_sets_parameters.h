@@ -1,5 +1,5 @@
 //
-// Created by Huawei on 26.08.2022.
+// Created by Ravil Galiev on 26.08.2022.
 //
 
 #ifndef SETBENCH_SKEWED_SETS_PARAMETERS_H
