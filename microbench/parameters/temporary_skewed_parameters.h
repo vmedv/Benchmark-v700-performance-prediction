@@ -20,7 +20,7 @@
 
 struct TemporarySkewedParameters {
 public:
-    int setCount;
+    size_t setCount = 0;
     double *setSizes;
     double *hotProbs;
     int *hotTimes;
@@ -28,7 +28,7 @@ public:
     int hotTime = -1;
     int relaxTime = -1;
 
-    void setSetCount(const int _setCount) {
+    void setSetCount(const size_t _setCount) {
         setCount = _setCount;
         setSizes = new double[setCount];
         hotProbs = new double[setCount];
@@ -39,21 +39,21 @@ public:
          * if hotTimes[i] == -1, we will use hotTime
          * relaxTime analogically
          */
-        std::fill(hotTimes, hotTimes + setCount, -1);
-        std::fill(relaxTimes, relaxTimes + setCount, -1);
+        std::fill(hotTimes, hotTimes + setCount, hotTime);
+        std::fill(relaxTimes, relaxTimes + setCount, relaxTime);
     }
 
-    void setSetSize(const int i, const double _setSize) {
+    void setSetSize(const size_t i, const double _setSize) {
         assert(i < setCount);
         setSizes[i] = _setSize;
     }
 
-    void setHotProb(const int i, const double _hotProb) {
+    void setHotProb(const size_t i, const double _hotProb) {
         assert(i < setCount);
         hotProbs[i] = _hotProb;
     }
 
-    void setHotTime(const int i, const int _hotTime) {
+    void setHotTime(const size_t i, const int _hotTime) {
         assert(i < setCount);
 //        assert(hotTime == -1);
 //
@@ -64,7 +64,7 @@ public:
         hotTimes[i] = _hotTime;
     }
 
-    void setRelaxTimes(const int i, const int _relaxTime) {
+    void setRelaxTimes(const size_t i, const int _relaxTime) {
         assert(i < setCount);
 //        assert(relaxTime == -1);
 //
@@ -77,6 +77,7 @@ public:
 
     void setCommonHotTime(const int _hotTime) {
         hotTime = _hotTime;
+
         for (int i = 0; i < setCount; ++i) {
             if (hotTimes[i] == -1) {
                 hotTimes[i] = hotTime;
@@ -86,6 +87,7 @@ public:
 
     void setCommonRelaxTime(const int _relaxTime) {
         relaxTime = _relaxTime;
+
         for (int i = 0; i < setCount; ++i) {
             if (relaxTimes[i] == -1) {
                 relaxTimes[i] = relaxTime;

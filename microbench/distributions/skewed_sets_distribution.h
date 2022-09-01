@@ -11,24 +11,23 @@
 #include "plaf.h"
 #include "distribution.h"
 
-template<typename K>
-class SkewedSetsDistribution : public Distribution<K> {
+class SkewedSetsDistribution : public Distribution {
 private:
     PAD;
     Random64 *rng;
-    Distribution<K> *hotDistribution;
-    Distribution<K> *coldDistribution;
+    Distribution *hotDistribution;
+    Distribution *coldDistribution;
     double hotProb;
     size_t hotSetLength;
     PAD;
 public:
-    SkewedSetsDistribution(Distribution<K> *_hotDistribution, Distribution<K> *_coldDistribution,
+    SkewedSetsDistribution(Distribution *_hotDistribution, Distribution *_coldDistribution,
                            Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
             : hotDistribution(_hotDistribution), coldDistribution(_coldDistribution),
               rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
 
-    K next() {
-        K value;
+    size_t next() {
+        size_t value;
         double z; // Uniform random number (0 < z < 1)
         // Pull a uniform random number (0 < z < 1)
         do {

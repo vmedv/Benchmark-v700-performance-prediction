@@ -10,8 +10,7 @@
 #include "plaf.h"
 #include "distribution.h"
 
-template<typename K>
-class UniformDistribution : public Distribution<K> {
+class UniformDistribution : public MutableDistribution {
 private:
     PAD;
     Random64 *rng;
@@ -20,11 +19,20 @@ private:
 public:
     UniformDistribution(Random64 *_rng, const size_t _maxKey) : rng(_rng), maxKey(_maxKey) {}
 
-    K next() {
+    void setMaxKey(size_t _maxKey) {
+        maxKey = _maxKey;
+    }
+
+    size_t next() {
         auto result = 1 + rng->next(maxKey);
         assert((result >= 1) && (result <= maxKey));
         // GSTATS_ADD_IX(tid, key_gen_histogram, 1, result);
         return result;
+    }
+
+    size_t next(size_t _maxKey) {
+        setMaxKey(_maxKey);
+        return next();
     }
 };
 

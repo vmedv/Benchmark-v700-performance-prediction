@@ -55,7 +55,7 @@ class TemporarySkewedKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
     TemporarySkewedKeyGeneratorData *keygenData;
-    Distribution<K> **dists;
+    Distribution **dists;
     long long time;
     size_t pointer;
     PAD;
@@ -73,7 +73,7 @@ private:
     }
 
 public:
-    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData *_keygenData, Distribution<K> **_dists)
+    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData *_keygenData, Distribution **_dists)
             : keygenData(_keygenData), dists(_dists) {
         time = 0;
         pointer = 0;

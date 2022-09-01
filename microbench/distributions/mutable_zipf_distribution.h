@@ -11,8 +11,7 @@
 #include "plaf.h"
 #include "distribution.h"
 
-template<typename K>
-class MutableZipfDistribution : public Distribution<K>{
+class MutableZipfDistribution : public MutableDistribution{
 private:
     PAD;
     Random64 *rng;
@@ -33,7 +32,7 @@ public:
         }
     }
 
-    K next() {
+    size_t next() {
         double z; // Uniform random number (0 < z < 1)
         do {
             z = (rng->next() / (double) std::numeric_limits<uint64_t>::max());
@@ -48,6 +47,11 @@ public:
             zipf_value = (size_t) pow(s*(1-alpha), 1/(1-alpha));
         }
         return zipf_value;
+    }
+
+    size_t next(size_t _maxKey) {
+        setMaxKey(_maxKey);
+        return next();
     }
 };
 

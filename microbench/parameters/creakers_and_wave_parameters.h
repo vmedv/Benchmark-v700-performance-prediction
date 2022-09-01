@@ -2,8 +2,8 @@
 // Created by Ravil Galiev on 29.08.2022.
 //
 
-#ifndef SETBENCH_CREAKERS_AND_NEW_WAVE_PARAMETERS_H
-#define SETBENCH_CREAKERS_AND_NEW_WAVE_PARAMETERS_H
+#ifndef SETBENCH_CREAKERS_AND_WAVE_PARAMETERS_H
+#define SETBENCH_CREAKERS_AND_WAVE_PARAMETERS_H
 
 
 #include "parameters/key_gen_distribution_type.h"
@@ -32,11 +32,11 @@ public:
 
     double CREAKERS_SIZE = 0;
     double CREAKERS_PROB = 0;
-    int CREAKERS_AGE = 0;
+    size_t CREAKERS_AGE = 0;
     double WAVE_SIZE = 0;
     KeyGeneratorDistribution grandDist = UNIFORM;
     KeyGeneratorDistribution newWaveDist = MUTABLE_ZIPF;
 
 };
 
-#endif //SETBENCH_CREAKERS_AND_NEW_WAVE_PARAMETERS_H
+#endif //SETBENCH_CREAKERS_AND_WAVE_PARAMETERS_H

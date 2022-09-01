@@ -45,8 +45,7 @@ public:
     }
 };
 
-template<typename K>
-class ZipfDistribution : public Distribution<K> {
+class ZipfDistribution : public Distribution {
 private:
     PAD;
     ZipfDistributionData *data;
@@ -56,7 +55,7 @@ public:
     ZipfDistribution(ZipfDistributionData *_data, Random64 *_rng)
             : data(_data), rng(_rng) {}
 
-    K next() {
+    size_t next() {
         double z; // Uniform random number (0 < z < 1)
         int zipf_value = 0; // Computed exponential value to be returned
         // Pull a uniform random number (0 < z < 1)

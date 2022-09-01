@@ -32,7 +32,7 @@ struct ZipfRejectionInversionSamplerData {
 };
 
 
-class ZipfRejectionInversionSampler : public Distribution<long long> {
+class ZipfRejectionInversionSampler : public Distribution {
     const double exponent;
     const int maxkey;
     Random64 *rng;
@@ -97,7 +97,7 @@ public:
      * @param random random generator to use
      * @return generated integral number in the range [1, maxkey]
      */
-    long long next() {
+    size_t next() {
         while (true) {
             // Pull a uniform random number (0 < z < 1)
             const double z = (rng->next() / (double) std::numeric_limits<uint64_t>::max());

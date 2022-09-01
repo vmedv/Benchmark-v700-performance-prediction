@@ -13,10 +13,10 @@ template<typename K>
 class SimpleKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
-    Distribution<K> *distribution;
+    Distribution *distribution;
     PAD;
 public:
-    SimpleKeyGenerator(Distribution<K> *_distribution) : distribution(_distribution) {}
+    SimpleKeyGenerator(Distribution *_distribution) : distribution(_distribution) {}
 
     K next_read() {
         return distribution->next();
