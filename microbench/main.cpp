@@ -72,6 +72,7 @@ const char *PrefillTypeStrings[] = {
 #include "parameters/temporary_skewed_parameters.h"
 #include "parameters/skewed_sets_parameters.h"
 #include "parameters/creakers_and_wave_parameters.h"
+#include "parameters/simple_parameters.h"
 
 PAD;
 double INS_FRAC;
@@ -101,6 +102,7 @@ int PREFILL_HYBRID_MAX_MS;
 SkewedSetsParameters *SkeSParm;
 TemporarySkewedParameters *TSParm;
 CreakersAndWaveParameters *CWParm;
+SimpleParameters *SParm;
 
 PAD;
 
@@ -290,7 +292,7 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #endif
 
 //enum KeyGeneratorDistribution {
-//    UNIFORM, ZIPF, ZIPFFAST, SKEWED_SETS, TEMPORARY_SKEWED
+//    UNIFORM, ZIPF, ZIPF_FAST, SKEWED_SETS, TEMPORARY_SKEWED
 //};
 
 #include "parameters/key_gen_distribution_type.h"
@@ -320,7 +322,7 @@ struct globals_t {
     PAD;
     DS_ADAPTER_T *dsAdapter; // the data structure
     PAD;
-    KeyGeneratorDistribution distribution;
+    KeyGeneratorType keygenType;
 
     ZipfDistributionData *zipfKeygenData;
     ZipfRejectionInversionSamplerData *zipfFastKeygenData;
@@ -344,10 +346,10 @@ struct globals_t {
     volatile bool debug_print;
     PAD;
 
-    globals_t(size_t maxkeyToGenerate, KeyGeneratorDistribution _distribution)
+    globals_t(size_t maxkeyToGenerate, KeyGeneratorType _keygenType)
             : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
             , KEY_MAX(std::numeric_limits<test_type>::max() - 1), PREFILL_INTERVAL_MILLIS(200),
-              distribution(_distribution) {
+              keygenType(_keygenType) {
         debug_print = 0;
         zipfKeygenData = NULL;
         zipfFastKeygenData = NULL;
@@ -356,35 +358,47 @@ struct globals_t {
             rngs[i].setSeed(rand());
         }
 
-        switch (distribution) {
-            case ZIPF: {
-                zipfKeygenData = new ZipfDistributionData(maxkeyToGenerate, ZIPF_PARAM);
+        switch (keygenType) {
+            case SIMPLE: {
+                switch (SParm->distributionType) {
+
+                    case ZIPF: {
+                        zipfKeygenData = new ZipfDistributionData(maxkeyToGenerate, ZIPF_PARAM);
 #pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new SimpleKeyGenerator<test_type>(
-                            new ZipfDistribution(zipfKeygenData, &rngs[i]));
-                }
-            }
-                break;
-            case ZIPFFAST: {
-                zipfFastKeygenData = new ZipfRejectionInversionSamplerData(maxkeyToGenerate);
+                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                            keygens[i] = new SimpleKeyGenerator<test_type>(
+                                    new ZipfDistribution(zipfKeygenData, &rngs[i]));
+                        }
+                    }
+                        break;
+                    case ZIPF_FAST: {
+                        zipfFastKeygenData = new ZipfRejectionInversionSamplerData(maxkeyToGenerate);
 #pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new SimpleKeyGenerator<test_type>(
-                            new ZipfRejectionInversionSampler(zipfFastKeygenData, ZIPF_PARAM, &rngs[i]));
-                }
-            }
-                break;
-            case UNIFORM: {
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new SimpleKeyGenerator<test_type>(
-                            new UniformDistribution(&rngs[i], maxkeyToGenerate));
+                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                            keygens[i] = new SimpleKeyGenerator<test_type>(
+                                    new ZipfRejectionInversionSampler(
+                                            zipfFastKeygenData, SParm->zipf_parm, &rngs[i]));
+                        }
+                    }
+                        break;
+                    case UNIFORM: {
+                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                            keygens[i] = new SimpleKeyGenerator<test_type>(
+                                    new UniformDistribution(&rngs[i], maxkeyToGenerate));
+                        }
+                    }
+                        break;
+                    default: {
+                        setbench_error("invalid case");
+                    }
+                        break;
                 }
             }
                 break;
             case SKEWED_SETS: {
                 skewedSetsKeygenData = new SkewedSetsKeyGeneratorData(maxkeyToGenerate,
-                                                                      SkeSParm->READ_HOT_SIZE, SkeSParm->WRITE_HOT_SIZE,
+                                                                      SkeSParm->READ_HOT_SIZE,
+                                                                      SkeSParm->WRITE_HOT_SIZE,
                                                                       SkeSParm->INTERSECTION);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
@@ -434,7 +448,7 @@ struct globals_t {
                     keygens[i] = new CreakersAndWaveKeyGenerator<test_type>(
                             creakersAndWaveKeygenData, &rngs[i],
                             new UniformDistribution(&rngs[i], maxkeyToGenerate),
-                            new MutableZipfDistribution(&rngs[i], ZIPF_PARAM)
+                            new MutableZipfDistribution(&rngs[i], CWParm->waveZipfParm)
                     );
                 }
             }
@@ -446,7 +460,7 @@ struct globals_t {
         }
 
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-            switch (distribution) {
+            switch (keygenType) {
                 case SKEWED_SETS:
                 case TEMPORARY_SKEWED:
                 case CREAKERS_AND_WAVE:
@@ -952,7 +966,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
         return;
     }
 
-    if (g->distribution == KeyGeneratorDistribution::CREAKERS_AND_WAVE) {
+    if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
         expectedSize = g->creakersAndWaveKeygenData->prefillSize;
     }
 
@@ -1023,8 +1037,8 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
       * it's sequential
       */
 
-    if (g->distribution == KeyGeneratorDistribution::CREAKERS_AND_WAVE) {
-        CreakersAndWaveKeyGenerator<test_type> * keygen = static_cast<CreakersAndWaveKeyGenerator<test_type> *>(g->keygens[0]);
+    if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
+        CreakersAndWaveKeyGenerator<test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator<test_type> *>(g->keygens[0]);
         for (int i = 0; i < g->creakersAndWaveKeygenData->CWParm->CREAKERS_AGE; ++i) {
             test_type key = keygen->next_warming();
             g->dsAdapter->contains(tid, key);
@@ -1381,6 +1395,172 @@ void main_continued_with_globals(GlobalsT *g) {
     delete g;
 }
 
+
+void parseCommonParameters(size_t &i, size_t argc, char **argv) {
+    if (strcmp(argv[i], "-i") == 0) {
+        INS_FRAC = atof(argv[++i]);
+    } else if (strcmp(argv[i], "-d") == 0) {
+        DEL_FRAC = atof(argv[++i]);
+    } else if (strcmp(argv[i], "-insdel") == 0) {
+        INS_FRAC = atof(argv[++i]);
+        DEL_FRAC = atof(argv[++i]);
+    } else if (strcmp(argv[i], "-rq") == 0) {
+        RQ = atof(argv[++i]);
+    } else if (strcmp(argv[i], "-rqsize") == 0) {
+        RQSIZE = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-k") == 0) {
+        MAXKEY = atoi(argv[++i]);
+        if (MAXKEY < 1) {
+            setbench_error("key range cannot contain fewer than 1 key");
+        }
+    } else if (strcmp(argv[i], "-nrq") == 0) {
+        RQ_THREADS = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-nwork") == 0) {
+        WORK_THREADS = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-nprefill") == 0) { // num threads to prefill with
+        PREFILL_THREADS = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-prefill-mixed") == 0) { // prefilling type
+        PREFILL_TYPE = PREFILL_MIXED;
+    } else if (strcmp(argv[i], "-prefill-insert") == 0) { // prefilling type
+        PREFILL_TYPE = PREFILL_INSERT;
+    } else if (strcmp(argv[i], "-prefill-hybrid") == 0) { // prefilling type
+        PREFILL_TYPE = PREFILL_HYBRID;
+    } else if (strcmp(argv[i], "-prefill-hybrid-min-ms") == 0) {
+        PREFILL_HYBRID_MIN_MS = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-prefill-hybrid-max-ms") == 0) {
+        PREFILL_HYBRID_MAX_MS = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-prefillsize") == 0) {
+        DESIRED_PREFILL_SIZE = atol(argv[++i]);
+    } else if (strcmp(argv[i], "-t") == 0) {
+        MILLIS_TO_RUN = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
+        binding_parseCustom(argv[++i]); // e.g., "1.2.3.8-11.4-7.0"
+        std::cout << "parsed custom binding: " << argv[i] << std::endl;
+    } else {
+        std::cout << "bad argument " << argv[i] << "\nindex: " << i << std::endl;
+        exit(1);
+    }
+}
+
+bool parseDistributionParameters(size_t &i, size_t argc, char **argv, DistributionType &distType, double &distParm) {
+    if (strcmp(argv[i], "-dist-zipf") == 0) {
+        distParm = atof(argv[++i]);
+        distType = DistributionType::ZIPF;
+    } else if (strcmp(argv[i], "-dist-zipf-fast") == 0) {
+        distParm = atof(argv[++i]);
+        distType = DistributionType::ZIPF_FAST;
+    } else if (strcmp(argv[i], "-dist-zipf-mutable") == 0) {
+        distParm = atof(argv[++i]);
+        distType = DistributionType::MUTABLE_ZIPF;
+    } else if (strcmp(argv[i], "-dist-uniform") == 0) {
+        distType = DistributionType::UNIFORM;
+    } else {
+        return false;
+    }
+    return true;
+
+    //todo very strange
+}
+
+void parseSkewedSetsParameters(size_t i, size_t argc, char **argv) {
+    for (; i < argc; ++i) {
+        if (strcmp(argv[i], "-rs") == 0) {
+            SkeSParm->READ_HOT_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-rp") == 0) {
+            SkeSParm->READ_HOT_PROB = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-ws") == 0) {
+            SkeSParm->WRITE_HOT_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-wp") == 0) {
+            SkeSParm->WRITE_HOT_PROB = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-inter") == 0) {
+            SkeSParm->INTERSECTION = atof(argv[++i]);
+        } else {
+            parseCommonParameters(i, argc, argv);
+        }
+    }
+}
+
+void parseTemporarySkewedParameters(size_t i, size_t argc, char **argv) {
+    for (; i < argc; ++i) {
+        if (strcmp(argv[i], "-set-count") == 0) {
+            TSParm->setSetCount(atof(argv[++i]));
+        } else if (strcmp(argv[i], "-rt") == 0) {
+            TSParm->setCommonRelaxTime(atof(argv[++i]));
+        } else if (strcmp(argv[i], "-ht") == 0) {
+            TSParm->setCommonHotTime(atof(argv[++i]));
+//        } else if (std::regex_match(argv[i], std::regex(R"(ht\d+)"))) {
+//            TSParm.setHotTime(atof(argv[i].substr(2, 4)), atof(argv[++i]));
+        } else if (strcmp(argv[i], "-si") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setSetSize(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-pi") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setHotProb(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-ti") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setHotTime(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-rti") == 0) {
+            int pointer = atof(argv[++i]);
+            TSParm->setRelaxTimes(pointer, atof(argv[++i]));
+        } else {
+            parseCommonParameters(i, argc, argv);
+        }
+    }
+}
+
+void parseCreakersAndWaveParameters(size_t i, size_t argc, char **argv) {
+    std::cout << i << "\n";
+
+    for (; i < argc; ++i) {
+        if (strcmp(argv[i], "-gs") == 0
+            || strcmp(argv[i], "-cs") == 0) {
+            CWParm->CREAKERS_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-gp") == 0
+                   || strcmp(argv[i], "-cp") == 0) {
+            CWParm->CREAKERS_PROB = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-ws") == 0) {
+            CWParm->WAVE_SIZE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-g-age") == 0
+                   || strcmp(argv[i], "-c-age") == 0) {
+            CWParm->CREAKERS_AGE = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-g-dist") == 0
+                   || strcmp(argv[i], "-c-dist") == 0) {
+            parseDistributionParameters(++i, argc, argv, CWParm->creakersDist, CWParm->creakersZipfParm);
+        } else if (strcmp(argv[i], "-w-dist") == 0) {
+            parseDistributionParameters(++i, argc, argv, CWParm->waveDist, CWParm->waveZipfParm);
+        } else {
+            parseCommonParameters(i, argc, argv);
+        }
+    }
+}
+
+void parseSimpleParameters(size_t i, size_t argc, char **argv) {
+    for (; i < argc; ++i) {
+        if (!parseDistributionParameters(i, argc, argv, SParm->distributionType, SParm->zipf_parm)) {
+            parseCommonParameters(i, argc, argv);
+        }
+    }
+}
+
+KeyGeneratorType parseParameters(size_t argc, char **argv) {
+    KeyGeneratorType keygenType;
+    if (strcmp(argv[1], "-skewed-sets") == 0) {
+        keygenType = KeyGeneratorType::SKEWED_SETS;
+        parseSkewedSetsParameters(2, argc, argv);
+    } else if (strcmp(argv[1], "-temporary-skewed") == 0
+               || strcmp(argv[1], "-temp-skewed") == 0) {
+        keygenType = KeyGeneratorType::TEMPORARY_SKEWED;
+        parseTemporarySkewedParameters(2, argc, argv);
+    } else if (strcmp(argv[1], "-creakers-and-wave") == 0) {
+        keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
+        parseCreakersAndWaveParameters(2, argc, argv);
+    } else {
+        keygenType = KeyGeneratorType::SIMPLE;
+        parseSimpleParameters(2, argc, argv);
+    }
+    return keygenType;
+}
+
 int main(int argc, char **argv) {
     printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
@@ -1413,9 +1593,10 @@ int main(int argc, char **argv) {
     // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
     // to get NO prefilling, set -nprefill 0
-    KeyGeneratorDistribution distribution = KeyGeneratorDistribution::UNIFORM;
+    KeyGeneratorType keygenType = KeyGeneratorType::SIMPLE;
 
     PREFILL_TYPE = PREFILL_MIXED;
+
 
     /**
         n — b — w — i — rx — ry — wx — wy
@@ -1433,24 +1614,18 @@ int main(int argc, char **argv) {
             wx | wy — аналогично как и rx | ry для изменения (insert, delete)
     */
 
-//    READ_HOT_SIZE = 0;
-//    READ_HOT_PROB = 0;
-//    WRITE_HOT_SIZE = 0;
-//    WRITE_HOT_PROB = 0;
-//    INTERSECTION = 0;
-//    W = 0;
     SkeSParm = new SkewedSetsParameters();
 
     /**
-        n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti }
-            n — количество элементов
-            xi — процент элементов i-ого множества
-            yi — вероятность чтения элемента из i-ого множества
-              // 100% - yi — чтение остальных элементов
-            ti — время / количество итераций работы в режиме горячего вызова i-ого множества
-            rti / rt (relax time) — время / количество итераций работы в обычном режиме (равномерное распределение на все элементы)
-              // rt — если relax time всегда одинаковый
-              // rti — relax time после горячей работы с i-ым множеством
+        n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti } \n
+            n — количество элементов \n
+            xi — процент элементов i-ого множества \n
+            yi — вероятность чтения элемента из i-ого множества\n
+              // 100% - yi — чтение остальных элементов\n
+            ti — время / количество итераций работы в режиме горячего вызова i-ого множества\n
+            rti / rt (relax time) — время / количество итераций работы в обычном режиме (равномерное распределение на все элементы)\n
+              // rt — если relax time всегда одинаковый\n
+              // rti — relax time после горячей работы с i-ым множеством\n
      */
 
     TSParm = new TemporarySkewedParameters();
@@ -1474,124 +1649,12 @@ int main(int argc, char **argv) {
                     (то есть брать ca не от общей вероятности, а только при чтении"
      */
 
+    CWParm = new CreakersAndWaveParameters();
+
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
-    for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "-i") == 0) {
-            INS_FRAC = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-d") == 0) {
-            DEL_FRAC = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-insdel") == 0) {
-            INS_FRAC = atof(argv[++i]);
-            DEL_FRAC = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-rq") == 0) {
-            RQ = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-rqsize") == 0) {
-            RQSIZE = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-k") == 0) {
-            MAXKEY = atoi(argv[++i]);
-            if (MAXKEY < 1) {
-                setbench_error("key range cannot contain fewer than 1 key");
-            }
-        } else if (strcmp(argv[i], "-nrq") == 0) {
-            RQ_THREADS = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-nwork") == 0) {
-            WORK_THREADS = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-nprefill") == 0) { // num threads to prefill with
-            PREFILL_THREADS = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-prefill-mixed") == 0) { // prefilling type
-            PREFILL_TYPE = PREFILL_MIXED;
-        } else if (strcmp(argv[i], "-prefill-insert") == 0) { // prefilling type
-            PREFILL_TYPE = PREFILL_INSERT;
-        } else if (strcmp(argv[i], "-prefill-hybrid") == 0) { // prefilling type
-            PREFILL_TYPE = PREFILL_HYBRID;
-        } else if (strcmp(argv[i], "-prefill-hybrid-min-ms") == 0) {
-            PREFILL_HYBRID_MIN_MS = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-prefill-hybrid-max-ms") == 0) {
-            PREFILL_HYBRID_MAX_MS = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-prefillsize") == 0) {
-            DESIRED_PREFILL_SIZE = atol(argv[++i]);
-        } else if (strcmp(argv[i], "-dist-zipf") == 0) {
-            ZIPF_PARAM = atof(argv[++i]);
-            distribution = KeyGeneratorDistribution::ZIPF;
-        } else if (strcmp(argv[i], "-dist-zipf-fast") == 0) {
-            ZIPF_PARAM = atof(argv[++i]);
-            distribution = KeyGeneratorDistribution::ZIPFFAST;
-        } else if (strcmp(argv[i], "-dist-zipf-mutable") == 0) {
-            ZIPF_PARAM = atof(argv[++i]);
-            distribution = KeyGeneratorDistribution::MUTABLE_ZIPF;
-        } else if (strcmp(argv[i], "-dist-uniform") == 0) {
-            distribution = KeyGeneratorDistribution::UNIFORM; // default behaviour
-        } else if (strcmp(argv[i], "-t") == 0) {
-            MILLIS_TO_RUN = atoi(argv[++i]);
-        } else if (strcmp(argv[i], "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
-            binding_parseCustom(argv[++i]); // e.g., "1.2.3.8-11.4-7.0"
-            std::cout << "parsed custom binding: " << argv[i] << std::endl;
-        }
-            /**
-             *  n — b — w — i — rx — ry — wx — wy
-             */
-        else if (strcmp(argv[i], "-dist-skewed-sets") == 0) {
-            distribution = KeyGeneratorDistribution::SKEWED_SETS;
-        } else if (strcmp(argv[i], "-rx") == 0) {
-            SkeSParm->READ_HOT_SIZE = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-ry") == 0) {
-            SkeSParm->READ_HOT_PROB = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-wx") == 0) {
-            SkeSParm->WRITE_HOT_SIZE = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-wy") == 0) {
-            SkeSParm->WRITE_HOT_PROB = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-inter") == 0) {
-            SkeSParm->INTERSECTION = atof(argv[++i]);
-        }
-            /**
-              *  n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti }
-              */
-        else if (strcmp(argv[i], "-dist-temporary-skewed") == 0
-                 || strcmp(argv[i], "-dist-temp-skewed") == 0) {
-            distribution = KeyGeneratorDistribution::TEMPORARY_SKEWED;
-        } else if (strcmp(argv[i], "-set-count") == 0) {
-            TSParm->setSetCount(atof(argv[++i]));
-        } else if (strcmp(argv[i], "-rt") == 0) {
-            TSParm->setCommonRelaxTime(atof(argv[++i]));
-        } else if (strcmp(argv[i], "-ht") == 0) {
-            TSParm->setCommonHotTime(atof(argv[++i]));
-//        } else if (std::regex_match(argv[i], std::regex(R"(ht\d+)"))) {
-//            TSParm.setHotTime(atof(argv[i].substr(2, 4)), atof(argv[++i]));
-        } else if (strcmp(argv[i], "-xi") == 0) {
-            int pointer = atof(argv[++i]);
-            TSParm->setSetSize(pointer, atof(argv[++i]));
-        } else if (strcmp(argv[i], "-yi") == 0) {
-            int pointer = atof(argv[++i]);
-            TSParm->setHotProb(pointer, atof(argv[++i]));
-        } else if (strcmp(argv[i], "-ti") == 0) {
-            int pointer = atof(argv[++i]);
-            TSParm->setHotTime(pointer, atof(argv[++i]));
-        } else if (strcmp(argv[i], "-rti") == 0) {
-            int pointer = atof(argv[++i]);
-            TSParm->setRelaxTimes(pointer, atof(argv[++i]));
-        }
-            /**
-              *  n — g — gx — gk — cp — ca
-              */
-        else if (strcmp(argv[i], "-creakers-and-wave") == 0) {
-            distribution = KeyGeneratorDistribution::CREAKERS_AND_WAVE;
-        } else if (strcmp(argv[i], "-gx") == 0
-                   || strcmp(argv[i], "-cx") == 0) {
-            CWParm->CREAKERS_SIZE = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-gy") == 0
-                   || strcmp(argv[i], "-cy") == 0) {
-            CWParm->CREAKERS_PROB = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-ws") == 0) {
-            CWParm->WAVE_SIZE = atof(argv[++i]);
-        } else if (strcmp(argv[i], "-g-age") == 0
-                   || strcmp(argv[i], "-c-age") == 0) {
-            CWParm->CREAKERS_AGE = atof(argv[++i]);
-        } else {
-            std::cout << "bad argument " << argv[i] << std::endl;
-            exit(1);
-        }
-    }
+
+    keygenType = parseParameters(argc, argv);
 
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
 
@@ -1606,6 +1669,56 @@ int main(int argc, char **argv) {
     PRINTS(POOL);
     PRINTS(MAX_THREADS_POW2);
     PRINTS(CPU_FREQ_GHZ);
+
+    PRINTI(keygenType);
+    switch (keygenType) {
+        case SIMPLE: {
+            PRINTI(SParm->distributionType);
+            if (SParm->distributionType == DistributionType::ZIPF
+                || SParm->distributionType == DistributionType::ZIPF_FAST
+                || SParm->distributionType == DistributionType::MUTABLE_ZIPF) {
+                PRINTI(SParm->zipf_parm);
+            }
+        }
+            break;
+        case CREAKERS_AND_WAVE: {
+            PRINTI(CWParm->CREAKERS_SIZE);
+            PRINTI(CWParm->CREAKERS_PROB);
+            PRINTI(CWParm->CREAKERS_AGE);
+            PRINTI(CWParm->WAVE_SIZE);
+            PRINTI(CWParm->creakersDist);
+            if (CWParm->creakersDist == DistributionType::ZIPF
+                || CWParm->creakersDist == DistributionType::ZIPF_FAST
+                || CWParm->creakersDist == DistributionType::MUTABLE_ZIPF) {
+                PRINTI(CWParm->creakersZipfParm);
+            }
+            PRINTI(CWParm->waveDist);
+            if (CWParm->waveDist == DistributionType::ZIPF
+                || CWParm->waveDist == DistributionType::ZIPF_FAST
+                || CWParm->waveDist == DistributionType::MUTABLE_ZIPF) {
+                PRINTI(CWParm->waveZipfParm);
+            }
+        }
+            break;
+        case SKEWED_SETS: {
+            PRINTI(SkeSParm->READ_HOT_SIZE);
+            PRINTI(SkeSParm->READ_HOT_PROB);
+            PRINTI(SkeSParm->WRITE_HOT_SIZE);
+            PRINTI(SkeSParm->WRITE_HOT_PROB);
+            PRINTI(SkeSParm->INTERSECTION);
+        }
+            break;
+        case TEMPORARY_SKEWED: {
+            PRINTI(TSParm->setCount);
+            PRINTI(TSParm->hotTime);
+            PRINTI(TSParm->relaxTime);
+            PRINTI(TSParm->setSizes);
+            PRINTI(TSParm->hotProbs);
+            PRINTI(TSParm->hotTimes);
+            PRINTI(TSParm->relaxTimes);
+        }
+            break;
+    }
     PRINTI(MILLIS_TO_RUN);
     PRINTI(INS_FRAC);
     PRINTI(DEL_FRAC);
@@ -1617,7 +1730,7 @@ int main(int argc, char **argv) {
     PRINTI(TOTAL_THREADS);
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
-    PRINTI(distribution);
+    PRINTI(keygenType);
     printf("INS_DEL_FRAC=%.1f %.1f\n", INS_FRAC, DEL_FRAC);
     printf("PREFILL_TYPE=%s\n", PrefillTypeStrings[PREFILL_TYPE]);
     PRINTI(PREFILL_HYBRID_MIN_MS);
@@ -1625,7 +1738,7 @@ int main(int argc, char **argv) {
 
 
     //    KeyGeneratorDistribution *keyGeneratorDistribution;
-    main_continued_with_globals(new globals_t(MAXKEY, distribution));
+    main_continued_with_globals(new globals_t(MAXKEY, keygenType));
 
     //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distributions));
 

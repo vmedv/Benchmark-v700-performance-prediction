@@ -5,6 +5,10 @@
 #ifndef SETBENCH_KEY_GENERATOR_H
 #define SETBENCH_KEY_GENERATOR_H
 
+enum KeyGeneratorType {
+    SIMPLE, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE
+};
+
 template<typename K>
 class KeyGenerator {
 public:

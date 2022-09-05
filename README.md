@@ -1,134 +1,165 @@
-# Warning: CLONING requires a special command!
+# Тестирование на новых рабочих нагрузках
 
-Cloning this repo is complicated by the existence of *submodules*:
+## Клонирование репозитория
+
+Клонирование репозитория с подмодулями (без них код не будет работать), 
+переход в рабочую ветку и дальнейшая сборка проекта  
 
 ```
-git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
-```
+git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules
+git checkout new_workloads
 
-Note: if you check out a branch, you must run `git submodule update` to pull the correct versions of the submodules for that branch.
-
-# For usage instructions visit the SetBench Wiki!
-https://gitlab.com/trbot86/setbench/wikis/home
-
-Also see: `microbench_experiments/tutorial/tutorial.ipynb`, a Jupyter notebook tutorial that we recommend opening in the free/open source IDE VSCode (after installing the VSCode Python (Microsoft) extension).
-
-# Setting up SetBench on Ubuntu 20.04 or 18.04
-
-Installing necessary build tools, libraries and python packages:
-```
-sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip zip
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
-```
-
-Installing LibPAPI (needed for per-operation cache-miss counts, cycle counts, etc.):
-```
-git clone https://bitbucket.org/icl/papi.git
-cd papi/src
-./configure
-sudo sh -c "echo 2 > /proc/sys/kernel/perf_event_paranoid"
-./configure
-make -j
-make test
-sudo make install
-sudo ldconfig
-```
-
-Clone and build SetBench:
-```
-git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
 cd setbench/microbench
-make -j<NUMBER_OF_CORES>
+make -j
 cd ../macrobench
 ./compile.sh
 ```
 
-## Setting up SetBench on Ubuntu 16.04
-
-Installing necessary build tools, libraries and python packages:
-```
-sudo apt update
-sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip zip
-pip3 install --upgrade pip
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
-```
-
-*The rest is the same as in Ubuntu 18.04+ (above).*
-
-## Setting up SetBench on Fedora 32
-
-Installing necessary build tools, libraries and python packages:
-```
-dnf update -y
-dnf install -y @development-tools dos2unix gcc g++ git make numactl numactl-devel parallel python3 python3-pip time findutils hostname zip perf papi papi-static papi-libs
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
-```
-
-*The rest is the same as in Ubuntu 18.04+ (above).*
-
-## Other operating systems
-
-- Debian: Should probably work, as it's very similar to Ubuntu... may need some minor tweaks to package names (can usually be resolved by googling "debian cannot find package xyz").
-
-- Windows (WSL): Should work if you disable `USE_PAPI` in the Makefile(s), and eliminate any mention of `numactl`. Note that hardware counters won't work.
-
-- FreeBSD: Could possibly make this work with a lot of tweaking.
-
-- Mac / OSX: Suspect it should work with minor tweaking, but haven't tested.
-
-## Other architectures
-
-This benchmark is for Intel/AMD x86_64.
-
-It likely needs new memory fence placements, or a port to use `atomics`, if it is to run correctly on ARM or POWER (except in x86 memory model emulation mode).
-
-## Docker
-
-Docker files for Ubuntu 20.04 and Fedora 32 are provided in `docker/`. You can pull the mainline prebuilt Ubuntu 20.04 image with `docker pull trbot86/setbench` or with script `docker/download_image.sh`. You can then launch a container to run it with `docker/launch_downloaded_image.sh` (and stop it with `stop_container.sh`).
-
-## Virtual machines
-
-Note that you won't have access to hardware counters for tracking cache misses, etc., if you are using a virtual machine (except possibly in VMWare Player with PMU/PMC counter virtualization, although such results might not be 100% reliable).
-
-However, we are working on preparing one or more VM images.
-
-## Exact Python package versions
-
-If you are installing the Python prerequisites yourself, and you are have trouble getting the various Python packages and the data framework to play well together, you might want to pull the exact same versions we used. So, here's a dump of the version numbers I used when I installed all the packages.
-
-(You should be able to use `pip` to install these specific versions.)
+## Запуск бенчмарка
 
 ```
-backcall==0.2.0
-colorama==0.4.3
-cycler==0.10.0
-decorator==4.4.2
-ipykernel==5.3.2
-ipython==7.16.1
-ipython-genutils==0.2.0
-jedi==0.17.1
-Jinja2==2.11.2
-jupyter-client==6.1.6
-jupyter-core==4.6.3
-kiwisolver==1.2.0
-MarkupSafe==1.1.1
-matplotlib==3.2.2
-numpy==1.19.0
-pandas==1.0.5
-parso==0.7.0
-pexpect==4.8.0
-pickleshare==0.7.5
-prompt-toolkit==3.0.5
-ptyprocess==0.6.0
-Pygments==2.6.1
-pyparsing==2.4.7
-python-dateutil==2.8.1
-pytz==2020.1
-pyzmq==19.0.1
-scipy==1.5.1
-seaborn==0.10.1
-six==1.15.0
-tornado==6.0.4
-traitlets==4.3.3
-wcwidth==0.2.5
+cd setbench/microbench
+
+LD_PRELOAD=../lib/libjemalloc.so ./bin/<data_structure_name>.debra <workload_type> <parameters>
 ```
+
+Пример:
+```
+LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -dist-skewed-sets 
+    -rx 0.9 -ry 0.1 -wx 0.9 -wy 0.2 -inter 0.05 -i 5 -d 5 -rq 0 -k 100000 
+    -prefillsize 100000 -nprefill 8 -t 10000 -nrq 0 -nwork 8 -prefill-insert 
+```
+
+## Виды рабочих нагрузок
+
+### Стандартная 
+
+Стандартная рабочая нагрузка, где есть лишь одно распределение ключей на все виды операций. 
+Для его вызова, аргумент `workload_type` необходимо оставить пустым.
+
+### Skewed sets
+
+Аргумент для вызова — `-skewed-sets`
+
+Для запросов чтения и записи используются разные распределения.
+
+Примечание: на данном этапе реализации используются только `skewed-sets` распределения 
+
+[//]: # (При использовании скошенных распределений, )
+[//]: # (для контролирования пересечения "горячих" данных для операций чтения и записи )
+
+### Temporary skewed
+
+Аргумент для вызова — `-temporary-skewed` или `-temp-skewed`
+
+На каждый временной промежуток своё распределение ключей. 
+Есть два типа временных промежутка:
+1. Горячее время — когда элементы из какого-то подмножество
+вызывается чаще остальных
+2. Время отдыха — когда элементы вызываются равновероятно
+
+Примечание: на данном этапе реализации используются только `skewed-sets` распределения
+
+### Сreakers and wave
+
+Аргумент для вызова — `-creakers-and-wave`
+
+Есть два типа данных: старички и волна.  
+Старички (creakers) — данные, которые запрашиваются редко, но на постоянной основе.  
+Волна (wave) — данные, где новые элементы запрашиваются очень часто, 
+но со временем их востребованность падает, после чего и вовсе удаляются.
+
+Примечание: в случае, если данные удаляются сначала логически и со временем физически, 
+тестирующий должен подобрать значение количества ключей `N` так, 
+чтобы элемент был гарантировано удалён физически за `N` запросов.
+Иначе велика вероятность, что данные из `wave` станут теми же старичками, 
+и суть рабочей нагрузки пропадёт.
+
+
+## Параметры
+
+### Обозначения
+
++ `<p>` — целое число принимающее значение [0, 100]
++ `<n>` — целое число принимающее значение [0, +∞] 
++ `<f>` — дробное число принимающее значение [0, 1]
++ `<d>` — дробное число принимающее значение [0, +∞]
+
+[//]: # (+ `<p>` —)
+
+[//]: # ($+\infty$+∞)
+
+
+### Общие параметры 
+
++ `-i <p>` — процентное соотношение операций insert
++ `-d <p>` — процентное соотношение операций delete
++ `-insdel <p1> <p2>` — процентное соотношение операций insert и delete. 
+Равносильно `-i <p1> -d <p2>` 
++ `-rq <>` — todo наверное связано с запросами на промежутке
++ `-rqsize <>` —
++ `-k <n>` — количество ключей 
++ `-nrq <>` —
++ `-nwork <n>` — количество потоков
++ `-nprefill <n>` — количество выделенных потоков для предварительного заполнения 
++ `-prefill-insert` — заполнение контейнера посредством операций insert 
++ `-prefill-mixed` —
++ `-prefill-hybrid-min-ms <>` —
++ `-prefill-hybrid-max-ms <>` —
++ `-prefillsize <n>` — количество ключей для заполнения 
++ `-t <n>` — время работы бенчамрка в миллисекундах 
++ `-pin <....>` — 
+
+### Стандартная рабочая нагрузка
+
++ `<dist_type>` — распределение, 
+которое будет использоваться в стандартной рабочей нагрузке.
+
+  
+### Skewed sets
+
++ `-rs <f>` — размер "горячих" данных для чтения в соотношении ко всему множеству ключей
++ `-ws <f>` — аналогично для операции записи
++ `-rp <f>` — вероятность чтения "горячих" данных
++ `-wp <f>` — аналогично для операции записи
++ `-inter <f>` — размер пересечения "горячих" данных для чтения и записи
+в соотношении ко всему множеству ключей
+
+### Temporary skewed
+
++ `-set-count <n>` — количество подмножеств / распределений, зависимых от времени
++ `-ht <h>` — горячее время по умолчанию (указывается в количествах итераций):
+если горячее время после определенного временного промежутка не будет явно указано,
+то будет использовано значение этого параметра
++ `-rt <n>` — время отдыха по умолчанию (указывается в количествах итераций): 
+если время отдыха после определенного горячего временного промежутка не будет явно указано, 
+то будет использовано значение этого параметра
++ `-si <n> <p>` — размер горячих данных из `n-ого` подмножества 
+в соотношении ко всему множеству ключей
++ `-pi <n> <p>` — вероятность обращения к горячим данным из `n-ого` подмножества
+в соотношении ко всему множеству ключей
++ `-hti <n1> <n2>` — время работы с горячими данными из `n1-ого` подмножества
++ `-rti <n1> <n2>` — время отдыха после работы с горячими данными из `n1-ого` подмножества
+
+### Creakers and wave
+
++ `-gs <f>` || `-cs <f>` — размер подмножества старичков 
+в соотношении ко всему множеству ключей
++ `-gp <f>` || `-cp <f>` — вероятность чтения из множества старичков
++ `-ws <f>` — размер волны в соотношении ко всему множеству ключей
++ `-g-age <n>` || `-c-age <n>` — возраст старичков. 
+Перед началом тестирования, будет произведено `n` запросов чтения 
+из множества старичков
++ `-g-dist <dist_type>` || `-c-dist <dist_type>` — распределение ключей 
+для множества старичков. 
+(Пока доступно только равномерное распределение)
++ `-w-dist <dist_type>` — распределение ключей
+для множества волны. (Пока доступно только распределение Ципфа)
+
+
+### Распределения
+
++ `-dist-zipf <d>` — распределение Ципфа с параметром `d`
++ `-dist-uniform` — равномерное распределение
++ `-dist-skewed-sets ...` — скошенное распределение
+

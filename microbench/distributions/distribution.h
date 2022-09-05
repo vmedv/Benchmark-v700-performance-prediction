@@ -5,6 +5,11 @@
 #ifndef SETBENCH_DISTRIBUTION_H
 #define SETBENCH_DISTRIBUTION_H
 
+enum DistributionType {
+    UNIFORM, ZIPF, ZIPF_FAST, MUTABLE_ZIPF
+    /*, SKEWED_SETS */
+};
+
 class Distribution {
 public:
     Distribution() = default;

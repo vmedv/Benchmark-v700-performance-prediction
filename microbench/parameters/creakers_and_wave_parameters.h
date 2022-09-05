@@ -6,7 +6,7 @@
 #define SETBENCH_CREAKERS_AND_WAVE_PARAMETERS_H
 
 
-#include "parameters/key_gen_distribution_type.h"
+#include "distributions/distribution.h"
 
 /**
     старички + волна
@@ -34,9 +34,10 @@ public:
     double CREAKERS_PROB = 0;
     size_t CREAKERS_AGE = 0;
     double WAVE_SIZE = 0;
-    KeyGeneratorDistribution grandDist = UNIFORM;
-    KeyGeneratorDistribution newWaveDist = MUTABLE_ZIPF;
-
+    DistributionType creakersDist = UNIFORM;
+    DistributionType waveDist = MUTABLE_ZIPF;
+    double creakersZipfParm = 1.0;
+    double waveZipfParm = 1.0;
 };
 
 #endif //SETBENCH_CREAKERS_AND_WAVE_PARAMETERS_H
