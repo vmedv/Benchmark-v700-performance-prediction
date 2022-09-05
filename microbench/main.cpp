@@ -295,8 +295,6 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 //    UNIFORM, ZIPF, ZIPF_FAST, SKEWED_SETS, TEMPORARY_SKEWED
 //};
 
-#include "parameters/key_gen_distribution_type.h"
-
 struct globals_t {
     PAD;
     // const
@@ -359,7 +357,7 @@ struct globals_t {
         }
 
         switch (keygenType) {
-            case SIMPLE: {
+            case SIMPLE_KEYGEN: {
                 switch (SParm->distributionType) {
 
                     case ZIPF: {
@@ -1555,7 +1553,7 @@ KeyGeneratorType parseParameters(size_t argc, char **argv) {
         keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
         parseCreakersAndWaveParameters(2, argc, argv);
     } else {
-        keygenType = KeyGeneratorType::SIMPLE;
+        keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
         parseSimpleParameters(2, argc, argv);
     }
     return keygenType;
@@ -1593,7 +1591,7 @@ int main(int argc, char **argv) {
     // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
     // to get NO prefilling, set -nprefill 0
-    KeyGeneratorType keygenType = KeyGeneratorType::SIMPLE;
+    KeyGeneratorType keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
 
     PREFILL_TYPE = PREFILL_MIXED;
 
@@ -1672,7 +1670,7 @@ int main(int argc, char **argv) {
 
     PRINTI(keygenType);
     switch (keygenType) {
-        case SIMPLE: {
+        case SIMPLE_KEYGEN: {
             PRINTI(SParm->distributionType);
             if (SParm->distributionType == DistributionType::ZIPF
                 || SParm->distributionType == DistributionType::ZIPF_FAST
