@@ -10,6 +10,19 @@ enum DistributionType {
     /*, SKEWED_SETS */
 };
 
+char * distributionTypeToString(DistributionType distributionType) {
+    switch (distributionType) {
+        case UNIFORM:
+            return "UNIFORM";
+        case ZIPF:
+            return "ZIPF";
+        case ZIPF_FAST:
+            return "ZIPF_FAST";
+        case MUTABLE_ZIPF:
+            return "MUTABLE_ZIPF";
+    }
+}
+
 class Distribution {
 public:
     Distribution() = default;

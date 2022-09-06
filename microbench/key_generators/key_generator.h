@@ -9,6 +9,19 @@ enum KeyGeneratorType {
     SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE
 };
 
+char *keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
+    switch (keyGeneratorType) {
+        case SIMPLE_KEYGEN:
+            return "SIMPLE";
+        case SKEWED_SETS:
+            return "SKEWED_SETS";
+        case TEMPORARY_SKEWED:
+            return "TEMPORARY_SKEWED";
+        case CREAKERS_AND_WAVE:
+            return "CREAKERS_AND_WAVE";
+    }
+}
+
 template<typename K>
 class KeyGenerator {
 public:
