@@ -55,38 +55,61 @@ class TemporarySkewedKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
     TemporarySkewedKeyGeneratorData *keygenData;
-    Distribution **dists;
+    Distribution **hotDists;
+    Distribution * relaxDist;
     long long time;
     size_t pointer;
+    bool relaxTime;
     PAD;
 
     void update_pointer() {
-        if (time > keygenData->TSParm->hotTimes[pointer]) {
-            time = 0;
-            ++pointer;
-            if (pointer >= keygenData->TSParm->setCount) {
-                pointer = 0;
+        if (!relaxTime) {
+            if (time > keygenData->TSParm->hotTimes[pointer]) {
+                time = -1;
+                relaxTime = true;
             }
         } else {
-            ++time;
+            if (time > keygenData->TSParm->relaxTimes[pointer]) {
+                time = -1;
+                relaxTime = false;
+                ++pointer;
+                if (pointer >= keygenData->TSParm->setCount) {
+                    pointer = 0;
+                }
+            }
         }
+        ++time;
     }
 
 public:
-    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData *_keygenData, Distribution **_dists)
-            : keygenData(_keygenData), dists(_dists) {
+    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData *_keygenData,
+                                Distribution *_relaxDist, Distribution **_hotDists)
+            : keygenData(_keygenData), relaxDist(_relaxDist), hotDists(_hotDists) {
         time = 0;
         pointer = 0;
+        relaxTime = false;
     }
 
     K next_read() {
         update_pointer();
-        return keygenData->data[keygenData->setBegins[pointer] + dists[pointer]->next()];
+        K value;
+        if (relaxTime) {
+            value = keygenData->data[relaxDist->next()];
+        } else {
+            value = keygenData->data[keygenData->setBegins[pointer] + hotDists[pointer]->next()];
+        }
+        return value;
     }
 
     K next_write() {
         update_pointer();
-        return keygenData->data[keygenData->setBegins[pointer] + dists[pointer]->next()];
+        K value;
+        if (relaxTime) {
+            value = keygenData->data[relaxDist->next()];
+        } else {
+            value = keygenData->data[keygenData->setBegins[pointer] + hotDists[pointer]->next()];
+        }
+        return value;
     }
 
     K next_erase() {
@@ -98,8 +121,7 @@ public:
     }
 
     K next_prefill() {
-        update_pointer();
-        return keygenData->data[keygenData->setBegins[pointer] + dists[pointer]->next()];
+        return keygenData->data[relaxDist->next()];
     }
 };
 

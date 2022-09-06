@@ -425,17 +425,19 @@ struct globals_t {
                 temporarySkewedKeygenData = new TemporarySkewedKeyGeneratorData(maxkeyToGenerate, TSParm);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    Distribution **dists = new Distribution *[TSParm->setCount];
+                    Distribution **hotDists = new Distribution *[TSParm->setCount];
                     //static_cast<Distribution<test_type> **>(malloc(TSParm->setCount * sizeof(void *)));
                     for (int j = 0; j < TSParm->setCount; ++j) {
-                        dists[j] = new SkewedSetsDistribution(
+                        hotDists[j] = new SkewedSetsDistribution(
                                 new UniformDistribution(
                                         &rngs[i], (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
                                 new UniformDistribution(
                                         &rngs[i], maxkeyToGenerate - (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
-                                &rngs[i], TSParm->hotProbs[j], (size_t) (maxkeyToGenerate * TSParm->setSizes[j]));
+                                &rngs[i], TSParm->hotProbs[j],
+                                (size_t) (maxkeyToGenerate * TSParm->setSizes[j]));
                     }
-                    keygens[i] = new TemporarySkewedKeyGenerator<test_type>(temporarySkewedKeygenData, dists);
+                    keygens[i] = new TemporarySkewedKeyGenerator<test_type>(
+                            temporarySkewedKeygenData, new UniformDistribution(&rngs[i], maxkeyToGenerate), hotDists);
                 }
             }
                 break;
@@ -1494,7 +1496,7 @@ void parseTemporarySkewedParameters(size_t i, size_t argc, char **argv) {
         } else if (strcmp(argv[i], "-pi") == 0) {
             int pointer = atof(argv[++i]);
             TSParm->setHotProb(pointer, atof(argv[++i]));
-        } else if (strcmp(argv[i], "-ti") == 0) {
+        } else if (strcmp(argv[i], "-hti") == 0) {
             int pointer = atof(argv[++i]);
             TSParm->setHotTime(pointer, atof(argv[++i]));
         } else if (strcmp(argv[i], "-rti") == 0) {
@@ -1507,8 +1509,6 @@ void parseTemporarySkewedParameters(size_t i, size_t argc, char **argv) {
 }
 
 void parseCreakersAndWaveParameters(size_t i, size_t argc, char **argv) {
-    std::cout << i << "\n";
-
     for (; i < argc; ++i) {
         if (strcmp(argv[i], "-gs") == 0
             || strcmp(argv[i], "-cs") == 0) {
@@ -1559,6 +1559,18 @@ KeyGeneratorType parseParameters(size_t argc, char **argv) {
     return keygenType;
 }
 
+template<typename K>
+std::string printArray(size_t size, K *array) {
+    std::string result = "[";
+    for (size_t i = 0; i < size; i++) {
+        result += std::to_string(array[i]);
+        if (i < size - 1) {
+            result += ", ";
+        }
+    }
+    return result + "]";
+}
+
 int main(int argc, char **argv) {
     printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
@@ -1595,58 +1607,8 @@ int main(int argc, char **argv) {
 
     PREFILL_TYPE = PREFILL_MIXED;
 
-
-    /**
-        n — b — w — i — rx — ry — wx — wy
-            n — количество элементов
-            b — размер блока
-              // при запросе k-ого элемента, так же запрашиваем b соседей
-            w — вероятность запроса на изменение
-              // 100% - w — запрос на чтение
-              // можно изменить на другую букву, или переименовать на wp, чтобы не путать с wx и wy
-            i — степень пересечения множеств горячих данных для чтения и изменения
-              // как удобнее будет считать и воспринимать эту степень надо будет ещё подумать
-            rx — процент элементов множества на горячее чтение
-            ry — вероятность чтения элемента из горячего множества
-              // 100% - ry — чтение остальных элементов
-            wx | wy — аналогично как и rx | ry для изменения (insert, delete)
-    */
-
     SkeSParm = new SkewedSetsParameters();
-
-    /**
-        n — { xi — yi — ti — rti } // либо   n — rt — { xi — yi — ti } \n
-            n — количество элементов \n
-            xi — процент элементов i-ого множества \n
-            yi — вероятность чтения элемента из i-ого множества\n
-              // 100% - yi — чтение остальных элементов\n
-            ti — время / количество итераций работы в режиме горячего вызова i-ого множества\n
-            rti / rt (relax time) — время / количество итераций работы в обычном режиме (равномерное распределение на все элементы)\n
-              // rt — если relax time всегда одинаковый\n
-              // rti — relax time после горячей работы с i-ым множеством\n
-     */
-
     TSParm = new TemporarySkewedParameters();
-
-    /**
-        старички + волна
-        n — g — gx — gk — cp — ca
-            n — количество элементов
-            g (grand) — процент старичков
-                // 100% - g — процент новичков
-            gx — вероятность их вызова
-                // 100% - gx — вероятность вызова новичков
-            gk — на сколько стары наши старички
-                | преподсчёт - перед началом теста делаем gk количество запросов к старичкам
-            cp (child) — распределение вызовов среди новичков
-                // по умолчанию Zipf 1
-                // при желании можно сделать cx — cy
-            ca (child add) — вероятность добавления нового элемента
-                // 100% - gx - ca — чтение новичка, ca добавление нового новичка
-                // при желании можно переработать на "100% - ca — чтение, ca — запись"
-                    (то есть брать ca не от общей вероятности, а только при чтении"
-     */
-
     CWParm = new CreakersAndWaveParameters();
 
     // read command line args
@@ -1668,10 +1630,11 @@ int main(int argc, char **argv) {
     PRINTS(MAX_THREADS_POW2);
     PRINTS(CPU_FREQ_GHZ);
 
-    PRINTI(keygenType);
+
+    printf("KEYGEN_TYPE=%s\n", keyGeneratorTypeToString(keygenType));
     switch (keygenType) {
         case SIMPLE_KEYGEN: {
-            PRINTI(SParm->distributionType);
+            printf("DISTRIBUTION_TYPE=%s\n", distributionTypeToString(SParm->distributionType));
             if (SParm->distributionType == DistributionType::ZIPF
                 || SParm->distributionType == DistributionType::ZIPF_FAST
                 || SParm->distributionType == DistributionType::MUTABLE_ZIPF) {
@@ -1684,13 +1647,14 @@ int main(int argc, char **argv) {
             PRINTI(CWParm->CREAKERS_PROB);
             PRINTI(CWParm->CREAKERS_AGE);
             PRINTI(CWParm->WAVE_SIZE);
-            PRINTI(CWParm->creakersDist);
+            printf("CREAKERS_DISTRIBUTION_TYPE=%s\n", distributionTypeToString(CWParm->creakersDist));
             if (CWParm->creakersDist == DistributionType::ZIPF
                 || CWParm->creakersDist == DistributionType::ZIPF_FAST
                 || CWParm->creakersDist == DistributionType::MUTABLE_ZIPF) {
                 PRINTI(CWParm->creakersZipfParm);
             }
-            PRINTI(CWParm->waveDist);
+
+            printf("WAVE_DISTRIBUTION_TYPE=%s\n", distributionTypeToString(CWParm->waveDist));
             if (CWParm->waveDist == DistributionType::ZIPF
                 || CWParm->waveDist == DistributionType::ZIPF_FAST
                 || CWParm->waveDist == DistributionType::MUTABLE_ZIPF) {
@@ -1710,10 +1674,14 @@ int main(int argc, char **argv) {
             PRINTI(TSParm->setCount);
             PRINTI(TSParm->hotTime);
             PRINTI(TSParm->relaxTime);
-            PRINTI(TSParm->setSizes);
-            PRINTI(TSParm->hotProbs);
-            PRINTI(TSParm->hotTimes);
-            PRINTI(TSParm->relaxTimes);
+            printf("SET_SIZES=%s\n", printArray(TSParm->setCount, TSParm->setSizes).c_str());
+            printf("HOT_PROBS=%s\n", printArray(TSParm->setCount, TSParm->hotProbs).c_str());
+            printf("HOT_TIMES=%s\n", printArray(TSParm->setCount, TSParm->hotTimes).c_str());
+            printf("RELAX_TIMES=%s\n", printArray(TSParm->setCount, TSParm->relaxTimes).c_str());
+//            PRINTI(TSParm->setSizes);
+//            PRINTI(TSParm->hotProbs);
+//            PRINTI(TSParm->hotTimes);
+//            PRINTI(TSParm->relaxTimes);
         }
             break;
     }
