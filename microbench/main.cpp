@@ -1398,12 +1398,12 @@ void main_continued_with_globals(GlobalsT *g) {
 
 void parseCommonParameters(size_t &i, size_t argc, char **argv) {
     if (strcmp(argv[i], "-i") == 0) {
-        INS_FRAC = atof(argv[++i]);
+        INS_FRAC = atof(argv[++i]) * 100;
     } else if (strcmp(argv[i], "-d") == 0) {
-        DEL_FRAC = atof(argv[++i]);
+        DEL_FRAC = atof(argv[++i]) * 100;
     } else if (strcmp(argv[i], "-insdel") == 0) {
-        INS_FRAC = atof(argv[++i]);
-        DEL_FRAC = atof(argv[++i]);
+        INS_FRAC = atof(argv[++i]) * 100;
+        DEL_FRAC = atof(argv[++i]) * 100;
     } else if (strcmp(argv[i], "-rq") == 0) {
         RQ = atof(argv[++i]);
     } else if (strcmp(argv[i], "-rqsize") == 0) {
@@ -1577,7 +1577,7 @@ int main(int argc, char **argv) {
         std::cout << std::endl;
         std::cout << "Example usage:" << std::endl;
         std::cout << "LD_PRELOAD=/path/to/libjemalloc.so " << argv[0]
-                  << " -nwork 64 -nprefill 64 -i 5 -d 5 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
+                  << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
                   << std::endl;
         std::cout << std::endl;
         std::cout
@@ -1595,8 +1595,8 @@ int main(int argc, char **argv) {
     WORK_THREADS = 4;
     RQSIZE = 0;
     RQ = 0;
-    INS_FRAC = 10;
-    DEL_FRAC = 10;
+    INS_FRAC = 0.1;
+    DEL_FRAC = 0.1;
     MAXKEY = 100000;
     PREFILL_HYBRID_MIN_MS = 1000;
     PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
