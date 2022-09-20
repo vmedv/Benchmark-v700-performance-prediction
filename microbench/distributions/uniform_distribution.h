@@ -24,7 +24,7 @@ public:
     }
 
     size_t next() {
-        auto result = 1 + rng->next(maxKey);
+        size_t result = rng->next(maxKey);
         assert((result >= 1) && (result <= maxKey));
         // GSTATS_ADD_IX(tid, key_gen_histogram, 1, result);
         return result;

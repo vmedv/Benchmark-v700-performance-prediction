@@ -28,14 +28,14 @@ public:
     std::atomic<size_t> waveEnd;
     CreakersAndWaveParameters *CWParm;
 
-    int *data;
+    size_t *data;
     PAD;
 
     CreakersAndWaveKeyGeneratorData(const size_t _maxKey, CreakersAndWaveParameters *_CWParm) : CWParm(_CWParm) {
         maxKey = _maxKey;
-        data = new int[maxKey];
-        for (int i = 0; i < maxKey; i++) {
-            data[i] = i + 1;
+        data = new size_t[maxKey];
+        for (size_t i = 0; i < maxKey; i++) {
+            data[i] = i;
         }
 
         std::random_shuffle(data, data + maxKey - 1);

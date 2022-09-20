@@ -1437,7 +1437,7 @@ void parseCommonParameters(size_t &i, size_t argc, char **argv) {
         binding_parseCustom(argv[++i]); // e.g., "1.2.3.8-11.4-7.0"
         std::cout << "parsed custom binding: " << argv[i] << std::endl;
     } else {
-        std::cout << "bad argument " << argv[i] << "\nindex: " << i << std::endl;
+        std::cout << "bad argument: " << argv[i] << "\nindex: " << i << std::endl;
         exit(1);
     }
 }

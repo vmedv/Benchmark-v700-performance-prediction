@@ -35,7 +35,7 @@ public:
     size_t next() {
         double z; // Uniform random number (0 < z < 1)
         do {
-            z = (rng->next() / (double) std::numeric_limits<uint64_t>::max());
+            z = (rng->next() / (double) rng->max_value);
         } while ((z == 0) || (z == 1));
 
         size_t zipf_value = 0;

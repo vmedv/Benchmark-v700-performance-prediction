@@ -32,6 +32,8 @@ private:
         return (x << k) | (x >> (64 - k));
     }
 public:
+    uint64_t max_value = (uint64_t) 1 << 53;
+
     void setSeed(uint64_t seed) {
         InitSplitMixer subseedGenerator (seed);
         for (int i=0;i<NUM_64BIT_WORDS;++i) {

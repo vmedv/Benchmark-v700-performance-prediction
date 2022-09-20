@@ -100,7 +100,7 @@ public:
     size_t next() {
         while (true) {
             // Pull a uniform random number (0 < z < 1)
-            const double z = (rng->next() / (double) std::numeric_limits<uint64_t>::max());
+            const double z = (rng->next() / (double) rng->max_value);
             const double u = hIntegralmaxkey + z * (hIntegralX1 - hIntegralmaxkey);
             // u is uniformly distributed in (hIntegralX1, hIntegralmaxkey]
 
