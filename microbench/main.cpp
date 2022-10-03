@@ -92,13 +92,6 @@ PrefillType PREFILL_TYPE;
 int PREFILL_HYBRID_MIN_MS;
 int PREFILL_HYBRID_MAX_MS;
 
-//double READ_HOT_SIZE;
-//double READ_HOT_PROB;
-//double WRITE_HOT_SIZE;
-//double WRITE_HOT_PROB;
-//double INTERSECTION;
-//int W; //=== INS_FRAC + DEL_FRAC
-
 SkewedSetsParameters *SkeSParm;
 TemporarySkewedParameters *TSParm;
 CreakersAndWaveParameters *CWParm;
@@ -400,24 +393,19 @@ struct globals_t {
                                                                       SkeSParm->INTERSECTION);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+                    size_t readHotSize = (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE);
+                    size_t writeHotSize = (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE);
                     keygens[i] = new SkewedSetsKeyGenerator<test_type>(
                             skewedSetsKeygenData, &rngs[i],
                             new SkewedSetsDistribution(
-                                    new UniformDistribution(
-                                            &rngs[i], (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
-                                    new UniformDistribution(
-                                            &rngs[i],
-                                            (size_t) (maxkeyToGenerate - maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
-                                    &rngs[i], SkeSParm->READ_HOT_PROB,
-                                    (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE)),
+                                    new UniformDistribution(&rngs[i], readHotSize),
+                                    new UniformDistribution(&rngs[i], maxkeyToGenerate - readHotSize),
+                                    &rngs[i], SkeSParm->READ_HOT_PROB, readHotSize),
                             new SkewedSetsDistribution(
-                                    new UniformDistribution(
-                                            &rngs[i], (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)),
-                                    new UniformDistribution(
-                                            &rngs[i],
-                                            maxkeyToGenerate - (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)),
-                                    &rngs[i], SkeSParm->WRITE_HOT_PROB,
-                                    (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE)));
+                                    new UniformDistribution(&rngs[i], writeHotSize),
+                                    new UniformDistribution(&rngs[i], maxkeyToGenerate - writeHotSize),
+                                    &rngs[i], SkeSParm->WRITE_HOT_PROB, writeHotSize)
+                    );
                 }
             }
                 break;
@@ -428,13 +416,12 @@ struct globals_t {
                     Distribution **hotDists = new Distribution *[TSParm->setCount];
                     //static_cast<Distribution<test_type> **>(malloc(TSParm->setCount * sizeof(void *)));
                     for (int j = 0; j < TSParm->setCount; ++j) {
+                        size_t setSize = (size_t) (maxkeyToGenerate * TSParm->setSizes[j]);
+
                         hotDists[j] = new SkewedSetsDistribution(
-                                new UniformDistribution(
-                                        &rngs[i], (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
-                                new UniformDistribution(
-                                        &rngs[i], maxkeyToGenerate - (size_t) (maxkeyToGenerate * TSParm->setSizes[j])),
-                                &rngs[i], TSParm->hotProbs[j],
-                                (size_t) (maxkeyToGenerate * TSParm->setSizes[j]));
+                                new UniformDistribution(&rngs[i], setSize),
+                                new UniformDistribution(&rngs[i], maxkeyToGenerate - setSize),
+                                &rngs[i], TSParm->hotProbs[j], setSize);
                     }
                     keygens[i] = new TemporarySkewedKeyGenerator<test_type>(
                             temporarySkewedKeygenData, new UniformDistribution(&rngs[i], maxkeyToGenerate), hotDists);
@@ -447,7 +434,7 @@ struct globals_t {
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
                     keygens[i] = new CreakersAndWaveKeyGenerator<test_type>(
                             creakersAndWaveKeygenData, &rngs[i],
-                            new UniformDistribution(&rngs[i], maxkeyToGenerate),
+                            new UniformDistribution(&rngs[i], creakersAndWaveKeygenData->creakersLength),
                             new MutableZipfDistribution(&rngs[i], CWParm->waveZipfParm)
                     );
                 }
@@ -1554,7 +1541,7 @@ KeyGeneratorType parseParameters(size_t argc, char **argv) {
         parseCreakersAndWaveParameters(2, argc, argv);
     } else {
         keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
-        parseSimpleParameters(2, argc, argv);
+        parseSimpleParameters(1, argc, argv);
     }
     return keygenType;
 }

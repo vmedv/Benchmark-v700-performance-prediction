@@ -82,13 +82,13 @@ private:
 
     /**
      *
-     * @return true - creakers, true - wave
+     * @return true - creakers, false - wave
      */
     bool next_coin() {
         double z; // Uniform random number (0 < z < 1)
 
         do {
-            z = (rng->next() / (double) std::numeric_limits<uint64_t>::max());
+            z = (rng->next() / (double) rng->max_value);
         } while ((z == 0) || (z == 1));
 
         return z < keygenData->CWParm->CREAKERS_PROB;

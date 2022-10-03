@@ -24,9 +24,8 @@ public:
     TemporarySkewedParameters *TSParm;
     PAD;
 
-    TemporarySkewedKeyGeneratorData(const size_t _maxKey, TemporarySkewedParameters *_TSParm) {
-        TSParm = _TSParm;
-        maxKey = _maxKey;
+    TemporarySkewedKeyGeneratorData(const size_t _maxKey, TemporarySkewedParameters *_TSParm)
+            : maxKey(_maxKey), TSParm(_TSParm) {
         data = new int[maxKey];
         for (int i = 0; i < maxKey; i++) {
             data[i] = i + 1;
@@ -38,7 +37,7 @@ public:
         setBegins = new size_t[TSParm->setCount + 1];
         setBegins[0] = 0;
         for (int i = 0; i < TSParm->setCount; i++) {
-            setLengths[i] = (size_t) (maxKey * TSParm->setSizes[i]) + 1;
+            setLengths[i] = (size_t) (maxKey * TSParm->setSizes[i]);
             setBegins[i + 1] = setBegins[i] + setLengths[i];
         }
     }
@@ -56,21 +55,21 @@ private:
     PAD;
     TemporarySkewedKeyGeneratorData *keygenData;
     Distribution **hotDists;
-    Distribution * relaxDist;
-    long long time;
+    Distribution *relaxDist;
+    size_t time;
     size_t pointer;
     bool relaxTime;
     PAD;
 
     void update_pointer() {
         if (!relaxTime) {
-            if (time > keygenData->TSParm->hotTimes[pointer]) {
-                time = -1;
+            if (time >= keygenData->TSParm->hotTimes[pointer]) {
+                time = 0;
                 relaxTime = true;
             }
         } else {
-            if (time > keygenData->TSParm->relaxTimes[pointer]) {
-                time = -1;
+            if (time >= keygenData->TSParm->relaxTimes[pointer]) {
+                time = 0;
                 relaxTime = false;
                 ++pointer;
                 if (pointer >= keygenData->TSParm->setCount) {
@@ -90,26 +89,28 @@ public:
         relaxTime = false;
     }
 
-    K next_read() {
+    K next() {
         update_pointer();
         K value;
         if (relaxTime) {
             value = keygenData->data[relaxDist->next()];
         } else {
-            value = keygenData->data[keygenData->setBegins[pointer] + hotDists[pointer]->next()];
+            size_t index = keygenData->setBegins[pointer] + hotDists[pointer]->next();
+            if (index >= keygenData->maxKey) {
+                index -= keygenData->maxKey;
+            }
+            value = keygenData->data[index];
         }
+
         return value;
     }
 
+    K next_read() {
+        return next();
+    }
+
     K next_write() {
-        update_pointer();
-        K value;
-        if (relaxTime) {
-            value = keygenData->data[relaxDist->next()];
-        } else {
-            value = keygenData->data[keygenData->setBegins[pointer] + hotDists[pointer]->next()];
-        }
-        return value;
+        return next();
     }
 
     K next_erase() {

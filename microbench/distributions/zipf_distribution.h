@@ -60,7 +60,7 @@ public:
         int zipf_value = 0; // Computed exponential value to be returned
         // Pull a uniform random number (0 < z < 1)
         do {
-            z = (rng->next() / (double) rng->max_value);
+            z = ((double) rng->next() / (double) rng->max_value);
         } while ((z == 0) || (z == 1));
         zipf_value = std::upper_bound(data->sum_probs + 1, data->sum_probs + data->maxKey + 1, z) - data->sum_probs;
         // Assert that zipf_value is between 1 and N
