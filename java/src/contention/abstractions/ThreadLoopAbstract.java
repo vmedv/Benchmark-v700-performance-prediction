@@ -1,7 +1,10 @@
 package contention.abstractions;
 
 public abstract class ThreadLoopAbstract implements ThreadLoop {
-    /** The stop flag, indicating whether the loop is over */
+    protected final KeyGenerator keygen;
+    /**
+     * The stop flag, indicating whether the loop is over
+     */
     protected volatile boolean stop = false;
     public long numAdd = 0;
     public long numRemove = 0;
@@ -9,16 +12,26 @@ public abstract class ThreadLoopAbstract implements ThreadLoop {
     public long numRemoveAll = 0;
     public long numSize = 0;
     public long numContains = 0;
-    /** The counter of the false-returning operations */
+    /**
+     * The counter of the false-returning operations
+     */
     public long failures = 0;
-    /** The counter of the thread operations */
+    /**
+     * The counter of the thread operations
+     */
     public long total = 0;
-    /** The counter of aborts */
+    /**
+     * The counter of aborts
+     */
     public long aborts = 0;
 
     public long getCount;
     public long nodesTraversed;
     public long structMods;
+
+    protected ThreadLoopAbstract(KeyGenerator keygen) {
+        this.keygen = keygen;
+    }
 
     public long getNumAdd() {
         return numAdd;

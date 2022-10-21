@@ -36,6 +36,7 @@ public interface ThreadLoop extends Runnable {
     long getAborts();
 
     void setAborts(long aborts);
+
     long getGetCount();
 
     void setGetCount(long getCount);
@@ -49,4 +50,8 @@ public interface ThreadLoop extends Runnable {
     void setStructMods(long structMods);
 
     void stopThread();
+
+    void run();
+
+    void prefill();
 }

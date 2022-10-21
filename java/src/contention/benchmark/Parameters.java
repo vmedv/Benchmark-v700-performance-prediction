@@ -8,7 +8,8 @@ package contention.benchmark;
  */
 public class Parameters {
     
-    public static int numThreads = 1, 
+    public static int numThreads = 1,
+		numPrefillThreads = 1,
     	numMilliseconds = 5000,
     	numWrites = 40,
     	numWriteAlls = 0,
