@@ -25,7 +25,7 @@ public class TemporarySkewedParameters extends Parameters {
     public static int relaxTime = -1;
 
     public void setSetCount(final int setCount) {
-        this.setCount = setCount;
+        TemporarySkewedParameters.setCount = setCount;
         setSizes = new double[setCount];
         hotProbs = new double[setCount];
         hotTimes = new int[setCount];

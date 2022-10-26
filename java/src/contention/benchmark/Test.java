@@ -188,7 +188,8 @@ public class Test {
                         }
                     }
                     case ZIPF, MUTABLE_ZIPF -> {
-                        //todo add SimpleKeyGenData
+                        SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
+
                         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                             keygens[threadNum] = new SimpleKeyGenerator(
                                     new ZipfDistribution(SimpleParameters.zipfParm, Parameters.range)
@@ -196,7 +197,8 @@ public class Test {
                         }
                     }
                     case SKEWED_SETS -> {
-                        //todo add SimpleKeyGenData
+                        SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
+
                         int hotLength = (int) (Parameters.range * SimpleParameters.skewedSetParameters.HOT_SIZE);
                         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                             keygens[threadNum] = new SimpleKeyGenerator(
@@ -217,7 +219,6 @@ public class Test {
                 int intersectionLength = (int) (Parameters.range * SkewedSetsParameters.INTERSECTION);
 
                 SkewedSetsKeyGeneratorData data = new SkewedSetsKeyGeneratorData(
-                        Parameters.range,
                         readHotLength,
                         writeHotLength,
                         intersectionLength
