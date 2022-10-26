@@ -3,6 +3,10 @@ package contention.benchmark.distributions;
 import contention.abstractions.MutableDistribution;
 
 public class UniformDistribution implements MutableDistribution {
+    public UniformDistribution(int range) {
+
+    }
+
     @Override
     public long next() {
         return 0;//todo

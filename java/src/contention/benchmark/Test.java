@@ -10,6 +10,10 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import contention.benchmark.ThreadLoops.*;
+import contention.benchmark.distributions.*;
+import contention.benchmark.keygenerators.*;
+import contention.benchmark.keygenerators.data.*;
+import contention.benchmark.keygenerators.parameters.*;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -177,36 +181,131 @@ public class Test {
         KeyGenerator[] keygens = new KeyGenerator[Parameters.numThreads];
         switch (keygenType) {
             case SIMPLE_KEYGEN -> {
-//todo
+                switch (SimpleParameters.distributionType) {
+                    case UNIFORM -> {
+                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                            keygens[threadNum] = new SimpleKeyGenerator(new UniformDistribution(Parameters.range));
+                        }
+                    }
+                    case ZIPF, MUTABLE_ZIPF -> {
+                        //todo add SimpleKeyGenData
+                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                            keygens[threadNum] = new SimpleKeyGenerator(
+                                    new ZipfDistribution(SimpleParameters.zipfParm, Parameters.range)
+                            );
+                        }
+                    }
+                    case SKEWED_SETS -> {
+                        //todo add SimpleKeyGenData
+                        int hotLength = (int) (Parameters.range * SimpleParameters.skewedSetParameters.HOT_SIZE);
+                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                            keygens[threadNum] = new SimpleKeyGenerator(
+                                    new SkewedSetsDistribution(
+                                            hotLength,
+                                            SimpleParameters.skewedSetParameters.HOT_PROB,
+                                            new UniformDistribution(hotLength),
+                                            new UniformDistribution(Parameters.range - hotLength)
+                                    )
+                            );
+                        }
+                    }
+                }
             }
             case SKEWED_SETS -> {
+                int readHotLength = (int) (Parameters.range * SkewedSetsParameters.READ.HOT_SIZE);
+                int writeHotLength = (int) (Parameters.range * SkewedSetsParameters.WRITE.HOT_SIZE);
+                int intersectionLength = (int) (Parameters.range * SkewedSetsParameters.INTERSECTION);
 
+                SkewedSetsKeyGeneratorData data = new SkewedSetsKeyGeneratorData(
+                        Parameters.range,
+                        readHotLength,
+                        writeHotLength,
+                        intersectionLength
+                );
+
+                SkewedSetsKeyGenerator.setData(data);
+
+                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                    keygens[threadNum] = new SkewedSetsKeyGenerator(
+                            new SkewedSetsDistribution(
+                                    readHotLength,
+                                    SkewedSetsParameters.READ.HOT_PROB,
+                                    new UniformDistribution(readHotLength),
+                                    new UniformDistribution(Parameters.range - readHotLength)
+                            ),
+                            new SkewedSetsDistribution(
+                                    writeHotLength,
+                                    SkewedSetsParameters.WRITE.HOT_PROB,
+                                    new UniformDistribution(writeHotLength),
+                                    new UniformDistribution(Parameters.range - writeHotLength)
+                            )
+                    );
+                }
             }
             case TEMPORARY_SKEWED -> {
+                TemporarySkewedKeyGeneratorData data = new TemporarySkewedKeyGeneratorData(
+                        //todo there all parameters is static and exist in TemporarySkewedParameters
+                );
 
+                TemporarySkewedKeyGenerator.setData(data);
+
+                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                    Distribution[] hotDists = new Distribution[TemporarySkewedParameters.setCount];
+
+                    for (int i = 0; i < TemporarySkewedParameters.setCount; ++i) {
+                        //todo setSize get from data
+                        int setSize = (int) (Parameters.range * TemporarySkewedParameters.setSizes[i]);
+
+                        hotDists[i] = new SkewedSetsDistribution(
+                                setSize,
+                                TemporarySkewedParameters.hotProbs[i],
+                                new UniformDistribution(setSize),
+                                new UniformDistribution(Parameters.range - setSize)
+                        );
+                    }
+
+                    keygens[threadNum] = new TemporarySkewedKeyGenerator(
+                            hotDists, new UniformDistribution(Parameters.range)
+                    );
+                }
             }
             case CREAKERS_AND_WAVE -> {
+                int creakersLength = (int) (Parameters.range * CreakersAndWaveParameters.CREAKERS_SIZE);
+
+                CreakersAndWaveKeyGeneratorData data = new CreakersAndWaveKeyGeneratorData(
+                        //todo there all parameters is static and exist in TemporarySkewedParameters
+                );
+
+                CreakersAndWaveKeyGenerator.setData(data);
+
+                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                    keygens[threadNum] = new CreakersAndWaveKeyGenerator(
+                            new UniformDistribution(creakersLength),
+                            new ZipfDistribution(CreakersAndWaveParameters.waveZipfParm)
+                    );
+                }
 
             }
         }
+
         switch (benchType) {
-            case INTSET:
+            case INTSET -> {
                 threadLoops = new ThreadSetLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                     threadLoops[threadNum] = new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum]);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
-                break;
-            case MAP:
+            }
+            case MAP -> {
                 threadLoops = new ThreadMapLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                     threadLoops[threadNum] = new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum]);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
-                break;
-            case SORTEDSET:
+            }
+            case SORTEDSET -> {
                 threadLoops = new ThreadSortedSetLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -214,8 +313,7 @@ public class Test {
                             methods, keygens[threadNum]);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
-                break;
-            //TODO this is the place to initiate workloads and data for them
+            }
         }
     }
 

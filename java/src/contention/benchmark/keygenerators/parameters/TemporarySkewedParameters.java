@@ -1,5 +1,7 @@
 package contention.benchmark.keygenerators.parameters;
 
+import contention.benchmark.Parameters;
+
 import java.util.Arrays;
 
 /**
@@ -13,14 +15,14 @@ import java.util.Arrays;
             // rt — если relax time всегда одинаковый
             // rti — relax time после горячей работы с i-ым множеством
  */
-public class TemporarySkewedParameters {
-    public int setCount = 0;
-    public double[] setSizes;
-    public double[] hotProbs;
-    public int[] hotTimes;
-    public int[] relaxTimes;
-    public int hotTime = -1;
-    public int relaxTime = -1;
+public class TemporarySkewedParameters extends Parameters {
+    public static int setCount = 0;
+    public static double[] setSizes;
+    public static double[] hotProbs;
+    public static int[] hotTimes;
+    public static int[] relaxTimes;
+    public static int hotTime = -1;
+    public static int relaxTime = -1;
 
     public void setSetCount(final int setCount) {
         this.setCount = setCount;
