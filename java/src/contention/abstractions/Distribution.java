@@ -1,5 +1,5 @@
 package contention.abstractions;
 
 public interface Distribution {
-    long next();
+    int next();
 }

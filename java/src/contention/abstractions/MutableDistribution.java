@@ -1,7 +1,10 @@
 package contention.abstractions;
 
 public interface MutableDistribution extends Distribution {
-    void setMaxKey(int maxKey);
+    void setRange(int range);
 
-    int next(int maxKey);
+    default int next(int range) {
+        setRange(range);
+        return next();
+    }
 }
