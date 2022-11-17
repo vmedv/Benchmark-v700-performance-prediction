@@ -11,7 +11,7 @@
 #include "plaf.h"
 #include "distribution.h"
 
-class MutableZipfDistribution : public MutableDistribution{
+class MutableZipfDistribution : public MutableDistribution {
 private:
     PAD;
     Random64 *rng;
@@ -26,9 +26,8 @@ public:
         maxKey = _maxKey;
         if (alpha == 1.0) {
             area = log(maxKey);
-        }
-        else {
-            area = pow((double) maxKey, 1.0 - alpha)/(1.0 - alpha);
+        } else {
+            area = pow((double) maxKey, 1.0 - alpha) / (1.0 - alpha);
         }
     }
 
@@ -42,9 +41,8 @@ public:
         double s = area * z;
         if (alpha == 1.0) {
             zipf_value = (size_t) exp(s);
-        }
-        else {
-            zipf_value = (size_t) pow(s*(1-alpha), 1/(1-alpha));
+        } else {
+            zipf_value = (size_t) pow(s * (1 - alpha), 1 / (1 - alpha));
         }
         return zipf_value;
     }

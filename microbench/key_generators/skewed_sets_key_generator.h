@@ -57,11 +57,13 @@ private:
     Distribution *readDist;
     Distribution *writeDist;
     size_t prefillSize;
+    bool writePrefillOnly;
     PAD;
 public:
     SkewedSetsKeyGenerator(SkewedSetsKeyGeneratorData *_keygenData, Random64 *_rng,
-                           Distribution *_readDist, Distribution *_writeDist)
-            : keygenData(_keygenData), rng(_rng), readDist(_readDist), writeDist(_writeDist) {}
+                           Distribution *_readDist, Distribution *_writeDist, bool _writePrefillOnly)
+            : keygenData(_keygenData), rng(_rng), readDist(_readDist), writeDist(_writeDist),
+              writePrefillOnly(_writePrefillOnly) {}
 
     K next_read() {
         return keygenData->data[readDist->next()];
@@ -81,11 +83,16 @@ public:
 
     K next_prefill() {
         K value = 0;
-        if (prefillSize < keygenData->readSetLength) {
-            value = keygenData->data[prefillSize++];
-        } else {
-            value = keygenData->data[keygenData->readSetLength +
-                                     rng->next(keygenData->maxKey - keygenData->readSetLength)];
+        if (writePrefillOnly) {
+            value = next_write();
+        }
+        else {
+            if (prefillSize < keygenData->readSetLength) {
+                value = keygenData->data[prefillSize++];
+            } else {
+                value = keygenData->data[keygenData->readSetLength +
+                                         rng->next(keygenData->maxKey - keygenData->readSetLength)];
+            }
         }
         return value;
     }

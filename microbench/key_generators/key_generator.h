@@ -5,19 +5,19 @@
 #ifndef SETBENCH_KEY_GENERATOR_H
 #define SETBENCH_KEY_GENERATOR_H
 
-enum KeyGeneratorType {
+enum class KeyGeneratorType {
     SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE
 };
 
 char *keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
     switch (keyGeneratorType) {
-        case SIMPLE_KEYGEN:
+        case KeyGeneratorType::SIMPLE_KEYGEN:
             return "SIMPLE";
-        case SKEWED_SETS:
+        case KeyGeneratorType::SKEWED_SETS:
             return "SKEWED_SETS";
-        case TEMPORARY_SKEWED:
+        case KeyGeneratorType::TEMPORARY_SKEWED:
             return "TEMPORARY_SKEWED";
-        case CREAKERS_AND_WAVE:
+        case KeyGeneratorType::CREAKERS_AND_WAVE:
             return "CREAKERS_AND_WAVE";
     }
 }

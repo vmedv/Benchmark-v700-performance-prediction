@@ -5,21 +5,23 @@
 #ifndef SETBENCH_DISTRIBUTION_H
 #define SETBENCH_DISTRIBUTION_H
 
-enum DistributionType {
-    UNIFORM, ZIPF, ZIPF_FAST, MUTABLE_ZIPF
-    /*, SKEWED_SETS */
+enum class DistributionType {
+    UNIFORM, ZIPF, ZIPF_FAST, MUTABLE_ZIPF, SKEWED_SETS
 };
 
 char * distributionTypeToString(DistributionType distributionType) {
+
     switch (distributionType) {
-        case UNIFORM:
+        case DistributionType::UNIFORM:
             return "UNIFORM";
-        case ZIPF:
+        case DistributionType::ZIPF:
             return "ZIPF";
-        case ZIPF_FAST:
+        case DistributionType::ZIPF_FAST:
             return "ZIPF_FAST";
-        case MUTABLE_ZIPF:
+        case DistributionType::MUTABLE_ZIPF:
             return "MUTABLE_ZIPF";
+        case DistributionType::SKEWED_SETS:
+            break;
     }
 }
 

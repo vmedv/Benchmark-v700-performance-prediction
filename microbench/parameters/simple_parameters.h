@@ -7,8 +7,8 @@
 
 struct SimpleParameters {
 public:
-    DistributionType distributionType = UNIFORM;
-    double zipf_parm;
+    DistributionType distributionType = DistributionType::UNIFORM;
+    double zipf_parm = 1.0;
 };
 
 #endif //SETBENCH_SIMPLE_PARAMETERS_H

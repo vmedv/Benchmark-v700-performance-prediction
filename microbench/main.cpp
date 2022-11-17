@@ -350,10 +350,10 @@ struct globals_t {
         }
 
         switch (keygenType) {
-            case SIMPLE_KEYGEN: {
+            case KeyGeneratorType::SIMPLE_KEYGEN: {
                 switch (SParm->distributionType) {
 
-                    case ZIPF: {
+                    case DistributionType::ZIPF: {
                         zipfKeygenData = new ZipfDistributionData(maxkeyToGenerate, ZIPF_PARAM);
 #pragma omp parallel for
                         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
@@ -362,8 +362,8 @@ struct globals_t {
                         }
                     }
                         break;
-                    case ZIPF_FAST: {
-                        zipfFastKeygenData = new ZipfRejectionInversionSamplerData(maxkeyToGenerate);
+                    case DistributionType::ZIPF_FAST: {
+                        zipfFastKeygenData = new ZipfRejectionInversionSamplerData((int) maxkeyToGenerate);
 #pragma omp parallel for
                         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
                             keygens[i] = new SimpleKeyGenerator<test_type>(
@@ -372,7 +372,7 @@ struct globals_t {
                         }
                     }
                         break;
-                    case UNIFORM: {
+                    case DistributionType::UNIFORM: {
                         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
                             keygens[i] = new SimpleKeyGenerator<test_type>(
                                     new UniformDistribution(&rngs[i], maxkeyToGenerate));
@@ -386,7 +386,7 @@ struct globals_t {
                 }
             }
                 break;
-            case SKEWED_SETS: {
+            case KeyGeneratorType::SKEWED_SETS: {
                 skewedSetsKeygenData = new SkewedSetsKeyGeneratorData(maxkeyToGenerate,
                                                                       SkeSParm->READ_HOT_SIZE,
                                                                       SkeSParm->WRITE_HOT_SIZE,
@@ -404,12 +404,13 @@ struct globals_t {
                             new SkewedSetsDistribution(
                                     new UniformDistribution(&rngs[i], writeHotSize),
                                     new UniformDistribution(&rngs[i], maxkeyToGenerate - writeHotSize),
-                                    &rngs[i], SkeSParm->WRITE_HOT_PROB, writeHotSize)
+                                    &rngs[i], SkeSParm->WRITE_HOT_PROB, writeHotSize),
+                            SkeSParm->writePrefillOnly
                     );
                 }
             }
                 break;
-            case TEMPORARY_SKEWED: {
+            case KeyGeneratorType::TEMPORARY_SKEWED: {
                 temporarySkewedKeygenData = new TemporarySkewedKeyGeneratorData(maxkeyToGenerate, TSParm);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
@@ -428,7 +429,7 @@ struct globals_t {
                 }
             }
                 break;
-            case CREAKERS_AND_WAVE: {
+            case KeyGeneratorType::CREAKERS_AND_WAVE: {
                 creakersAndWaveKeygenData = new CreakersAndWaveKeyGeneratorData(maxkeyToGenerate, CWParm);
 #pragma omp parallel for
                 for (int i = 0; i < MAX_THREADS_POW2; ++i) {
@@ -448,9 +449,9 @@ struct globals_t {
 
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             switch (keygenType) {
-                case SKEWED_SETS:
-                case TEMPORARY_SKEWED:
-                case CREAKERS_AND_WAVE:
+                case KeyGeneratorType::SKEWED_SETS:
+                case KeyGeneratorType::TEMPORARY_SKEWED:
+                case KeyGeneratorType::CREAKERS_AND_WAVE:
                     prefillKeygens[i] = keygens[i];
                     break;
                 default:
@@ -579,9 +580,10 @@ template<class GlobalsT>
 void thread_prefill_with_updates(GlobalsT *g, int __tid) {
     THREAD_PREFILL_PRE;
     while (!g->done) {
-        test_type key = g->prefillKeygens[tid]->next_prefill();
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < insProbability) {
+            test_type key = g->prefillKeygens[tid]->next_insert();
+
             if (g->debug_print) printf("inserting %lld\n", key);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, key);
@@ -589,6 +591,8 @@ void thread_prefill_with_updates(GlobalsT *g, int __tid) {
             }
             GSTATS_ADD(tid, num_inserts, 1);
         } else {
+            test_type key = g->prefillKeygens[tid]->next_erase();
+
             if (g->debug_print) printf("deleting %lld\n", key);
             if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
                 GSTATS_ADD(tid, key_checksum, -key);
@@ -1461,6 +1465,8 @@ void parseSkewedSetsParameters(size_t i, size_t argc, char **argv) {
             SkeSParm->WRITE_HOT_PROB = atof(argv[++i]);
         } else if (strcmp(argv[i], "-inter") == 0) {
             SkeSParm->INTERSECTION = atof(argv[++i]);
+        } else if (strcmp(argv[i], "-write-prefill-only") == 0) {
+            SkeSParm->writePrefillOnly = true;
         } else {
             parseCommonParameters(i, argc, argv);
         }
@@ -1531,16 +1537,24 @@ KeyGeneratorType parseParameters(size_t argc, char **argv) {
     KeyGeneratorType keygenType;
     if (strcmp(argv[1], "-skewed-sets") == 0) {
         keygenType = KeyGeneratorType::SKEWED_SETS;
+        SkeSParm = new SkewedSetsParameters();
+
         parseSkewedSetsParameters(2, argc, argv);
     } else if (strcmp(argv[1], "-temporary-skewed") == 0
                || strcmp(argv[1], "-temp-skewed") == 0) {
         keygenType = KeyGeneratorType::TEMPORARY_SKEWED;
+        TSParm = new TemporarySkewedParameters();
+
         parseTemporarySkewedParameters(2, argc, argv);
     } else if (strcmp(argv[1], "-creakers-and-wave") == 0) {
         keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
+        CWParm = new CreakersAndWaveParameters();
+
         parseCreakersAndWaveParameters(2, argc, argv);
     } else {
         keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
+        SParm = new SimpleParameters();
+
         parseSimpleParameters(1, argc, argv);
     }
     return keygenType;
@@ -1594,10 +1608,6 @@ int main(int argc, char **argv) {
 
     PREFILL_TYPE = PREFILL_MIXED;
 
-    SkeSParm = new SkewedSetsParameters();
-    TSParm = new TemporarySkewedParameters();
-    CWParm = new CreakersAndWaveParameters();
-
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
 
@@ -1620,8 +1630,9 @@ int main(int argc, char **argv) {
 
     printf("KEYGEN_TYPE=%s\n", keyGeneratorTypeToString(keygenType));
     switch (keygenType) {
-        case SIMPLE_KEYGEN: {
+        case KeyGeneratorType::SIMPLE_KEYGEN: {
             printf("DISTRIBUTION_TYPE=%s\n", distributionTypeToString(SParm->distributionType));
+
             if (SParm->distributionType == DistributionType::ZIPF
                 || SParm->distributionType == DistributionType::ZIPF_FAST
                 || SParm->distributionType == DistributionType::MUTABLE_ZIPF) {
@@ -1629,12 +1640,13 @@ int main(int argc, char **argv) {
             }
         }
             break;
-        case CREAKERS_AND_WAVE: {
+        case KeyGeneratorType::CREAKERS_AND_WAVE: {
             PRINTI(CWParm->CREAKERS_SIZE);
             PRINTI(CWParm->CREAKERS_PROB);
             PRINTI(CWParm->CREAKERS_AGE);
             PRINTI(CWParm->WAVE_SIZE);
             printf("CREAKERS_DISTRIBUTION_TYPE=%s\n", distributionTypeToString(CWParm->creakersDist));
+
             if (CWParm->creakersDist == DistributionType::ZIPF
                 || CWParm->creakersDist == DistributionType::ZIPF_FAST
                 || CWParm->creakersDist == DistributionType::MUTABLE_ZIPF) {
@@ -1649,7 +1661,7 @@ int main(int argc, char **argv) {
             }
         }
             break;
-        case SKEWED_SETS: {
+        case KeyGeneratorType::SKEWED_SETS: {
             PRINTI(SkeSParm->READ_HOT_SIZE);
             PRINTI(SkeSParm->READ_HOT_PROB);
             PRINTI(SkeSParm->WRITE_HOT_SIZE);
@@ -1657,7 +1669,7 @@ int main(int argc, char **argv) {
             PRINTI(SkeSParm->INTERSECTION);
         }
             break;
-        case TEMPORARY_SKEWED: {
+        case KeyGeneratorType::TEMPORARY_SKEWED: {
             PRINTI(TSParm->setCount);
             PRINTI(TSParm->hotTime);
             PRINTI(TSParm->relaxTime);
@@ -1665,10 +1677,6 @@ int main(int argc, char **argv) {
             printf("HOT_PROBS=%s\n", printArray(TSParm->setCount, TSParm->hotProbs).c_str());
             printf("HOT_TIMES=%s\n", printArray(TSParm->setCount, TSParm->hotTimes).c_str());
             printf("RELAX_TIMES=%s\n", printArray(TSParm->setCount, TSParm->relaxTimes).c_str());
-//            PRINTI(TSParm->setSizes);
-//            PRINTI(TSParm->hotProbs);
-//            PRINTI(TSParm->hotTimes);
-//            PRINTI(TSParm->relaxTimes);
         }
             break;
     }
@@ -1683,7 +1691,9 @@ int main(int argc, char **argv) {
     PRINTI(TOTAL_THREADS);
     PRINTI(WORK_THREADS);
     PRINTI(RQ_THREADS);
-    PRINTI(keygenType);
+
+    printf("KEY_GENERATOR_TYPE=%s\n", keyGeneratorTypeToString(keygenType));
+
     printf("INS_DEL_FRAC=%.1f %.1f\n", INS_FRAC, DEL_FRAC);
     printf("PREFILL_TYPE=%s\n", PrefillTypeStrings[PREFILL_TYPE]);
     PRINTI(PREFILL_HYBRID_MIN_MS);

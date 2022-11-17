@@ -6,11 +6,13 @@
 #define SETBENCH_SKEWED_SETS_PARAMETERS_H
 
 struct SkewedSetsParameters  {
+public:
     double READ_HOT_SIZE = 0;
     double READ_HOT_PROB = 0;
     double WRITE_HOT_SIZE = 0;
     double WRITE_HOT_PROB = 0;
     double INTERSECTION = 0;
+    bool writePrefillOnly = false;
 };
 
 #endif //SETBENCH_SKEWED_SETS_PARAMETERS_H

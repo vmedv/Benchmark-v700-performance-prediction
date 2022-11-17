@@ -29,13 +29,12 @@
 
 struct CreakersAndWaveParameters {
 public:
-
     double CREAKERS_SIZE = 0;
     double CREAKERS_PROB = 0;
     size_t CREAKERS_AGE = 0;
     double WAVE_SIZE = 0;
-    DistributionType creakersDist = UNIFORM;
-    DistributionType waveDist = MUTABLE_ZIPF;
+    DistributionType creakersDist = DistributionType::UNIFORM;
+    DistributionType waveDist = DistributionType::MUTABLE_ZIPF;
     double creakersZipfParm = 1.0;
     double waveZipfParm = 1.0;
 };
