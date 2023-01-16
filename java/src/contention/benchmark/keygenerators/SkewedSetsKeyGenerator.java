@@ -7,8 +7,12 @@ import contention.benchmark.keygenerators.data.SkewedSetsKeyGeneratorData;
 public class SkewedSetsKeyGenerator implements KeyGenerator {
     private static SkewedSetsKeyGeneratorData data;
 
-    public SkewedSetsKeyGenerator(Distribution readDistribution, Distribution writeDistribution) {
+    private final Distribution readDistribution;
+    private final Distribution writeDistribution;
 
+    public SkewedSetsKeyGenerator(Distribution readDistribution, Distribution writeDistribution) {
+        this.readDistribution = readDistribution;
+        this.writeDistribution = writeDistribution;
     }
 
     public static void setData(SkewedSetsKeyGeneratorData data) {
@@ -17,7 +21,7 @@ public class SkewedSetsKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextRead() {
-        return 0;//todo
+        return 0;
     }
 
     @Override

@@ -86,31 +86,37 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
 
             } else if (coin < cdf[1]) { // 2. should we run a writeSome
                 // operation?
-
                 if (2 * (coin - cdf[0]) < cdf[1] - cdf[0]) { // add
+                    newInt = keygen.nextInsert();
+
                     if ((a = bench.putIfAbsent(newInt, newInt)) == null) {
                         numAdd++;
                     } else {
                         failures++;
                     }
                 } else { // remove
+                    newInt = keygen.nextErase();
+
                     if ((a = bench.remove(newInt)) != null) {
                         numRemove++;
                     } else
                         failures++;
                 }
-
+                //
             } else if (coin < cdf[2]) { // 3. should we run a readAll operation?
 
                 bench.size();
                 numSize++;
 
-            } else { // 4. then we should run a readSome operation
+            } else if (coin < cdf[3]) { // 4. then we should run a readSome operation
 
                 if (bench.get(newInt) != null)
                     numContains++;
                 else
                     failures++;
+            } else {
+//                sleep(Parameters.sleepTime);
+                // warmup для определения sleepTime
             }
             total++;
 

@@ -180,14 +180,15 @@ public class Test {
     private void initThreads() {
         KeyGenerator[] keygens = new KeyGenerator[Parameters.numThreads];
         switch (keygenType) {
-            case SIMPLE_KEYGEN -> {
+            case SIMPLE_KEYGEN: {
                 switch (SimpleParameters.distributionType) {
-                    case UNIFORM -> {
+                    case UNIFORM:
                         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                             keygens[threadNum] = new SimpleKeyGenerator(new UniformDistribution(Parameters.range));
                         }
-                    }
-                    case ZIPF, MUTABLE_ZIPF -> {
+                        break;
+                    case ZIPF:
+                    case MUTABLE_ZIPF:
                         SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
 
                         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -195,8 +196,8 @@ public class Test {
                                     new ZipfDistribution(SimpleParameters.zipfParm, Parameters.range)
                             );
                         }
-                    }
-                    case SKEWED_SETS -> {
+                        break;
+                    case SKEWED_SETS:
                         SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
 
                         int hotLength = (int) (Parameters.range * SimpleParameters.skewedSetParameters.HOT_SIZE);
@@ -209,11 +210,12 @@ public class Test {
                                             new UniformDistribution(Parameters.range - hotLength)
                                     )
                             );
+                            break;
                         }
-                    }
                 }
             }
-            case SKEWED_SETS -> {
+            break;
+            case SKEWED_SETS: {
                 int readHotLength = (int) (Parameters.range * SkewedSetsParameters.READ.HOT_SIZE);
                 int writeHotLength = (int) (Parameters.range * SkewedSetsParameters.WRITE.HOT_SIZE);
                 int intersectionLength = (int) (Parameters.range * SkewedSetsParameters.INTERSECTION);
@@ -243,7 +245,8 @@ public class Test {
                     );
                 }
             }
-            case TEMPORARY_SKEWED -> {
+            break;
+            case TEMPORARY_SKEWED: {
                 TemporarySkewedKeyGeneratorData data = new TemporarySkewedKeyGeneratorData(
                         //todo there all parameters is static and exist in TemporarySkewedParameters
                 );
@@ -270,7 +273,8 @@ public class Test {
                     );
                 }
             }
-            case CREAKERS_AND_WAVE -> {
+            break;
+            case CREAKERS_AND_WAVE: {
                 int creakersLength = (int) (Parameters.range * CreakersAndWaveParameters.CREAKERS_SIZE);
 
                 CreakersAndWaveKeyGeneratorData data = new CreakersAndWaveKeyGeneratorData(
@@ -287,10 +291,11 @@ public class Test {
                 }
 
             }
+            break;
         }
 
         switch (benchType) {
-            case INTSET -> {
+            case INTSET: {
                 threadLoops = new ThreadSetLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -298,7 +303,8 @@ public class Test {
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
-            case MAP -> {
+            break;
+            case MAP: {
                 threadLoops = new ThreadMapLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -306,7 +312,8 @@ public class Test {
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
-            case SORTEDSET -> {
+            break;
+            case SORTEDSET: {
                 threadLoops = new ThreadSortedSetLoop[Parameters.numThreads];
                 threads = new Thread[Parameters.numThreads];
                 for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -315,6 +322,7 @@ public class Test {
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
+            break;
         }
     }
 
@@ -474,19 +482,51 @@ public class Test {
                 } else {
                     String optionValue = args[argNumber++];
                     switch (currentArg) {
-                        case "--thread-nums", "-t" -> Parameters.numThreads = Integer.parseInt(optionValue);
-                        case "--prefill-thread-nums", "-pt" ->
-                                Parameters.numPrefillThreads = Integer.parseInt(optionValue);
-                        case "--duration", "-d" -> Parameters.numMilliseconds = Integer
-                                .parseInt(optionValue);
-                        case "--updates", "-u" -> Parameters.numWrites = Integer.parseInt(optionValue);
-                        case "--writeAll", "-a" -> Parameters.numWriteAlls = Integer.parseInt(optionValue);
-                        case "--snapshots", "-s" -> Parameters.numSnapshots = Integer.parseInt(optionValue);
-                        case "--size", "-i" -> Parameters.size = Integer.parseInt(optionValue);
-                        case "--range", "-r" -> Parameters.range = Integer.parseInt(optionValue);
-                        case "--Warmup", "-W" -> Parameters.warmUp = Integer.parseInt(optionValue);
-                        case "--benchmark", "-b" -> Parameters.benchClassName = optionValue;
-                        case "--iterations", "-n" -> Parameters.iterations = Integer.parseInt(optionValue);
+                        case "--thread-nums":
+                        case "-t":
+                            Parameters.numThreads = Integer.parseInt(optionValue);
+                            break;
+                        case "--prefill-thread-nums":
+                        case "-pt":
+                            Parameters.numPrefillThreads = Integer.parseInt(optionValue);
+                            break;
+                        case "--duration":
+                        case "-d":
+                            Parameters.numMilliseconds = Integer
+                                    .parseInt(optionValue);
+                            break;
+                        case "--updates":
+                        case "-u":
+                            Parameters.numWrites = Integer.parseInt(optionValue);
+                            break;
+                        case "--writeAll":
+                        case "-a":
+                            Parameters.numWriteAlls = Integer.parseInt(optionValue);
+                            break;
+                        case "--snapshots":
+                        case "-s":
+                            Parameters.numSnapshots = Integer.parseInt(optionValue);
+                            break;
+                        case "--size":
+                        case "-i":
+                            Parameters.size = Integer.parseInt(optionValue);
+                            break;
+                        case "--range":
+                        case "-r":
+                            Parameters.range = Integer.parseInt(optionValue);
+                            break;
+                        case "--Warmup":
+                        case "-W":
+                            Parameters.warmUp = Integer.parseInt(optionValue);
+                            break;
+                        case "--benchmark":
+                        case "-b":
+                            Parameters.benchClassName = optionValue;
+                            break;
+                        case "--iterations":
+                        case "-n":
+                            Parameters.iterations = Integer.parseInt(optionValue);
+                            break;
                     }
                 }
             } catch (IndexOutOfBoundsException e) {
@@ -838,7 +878,7 @@ public class Test {
         numAbortsInvalidSnapshot = Statistics.getNumAbortsInvalidSnapshot();
         readSetSizeSum = Statistics.getSumReadSetSize();
         writeSetSizeSum = Statistics.getSumWriteSetSize();
-        ;
+        
         statSize = Statistics.getStatSize();
         txDurationSum = Statistics.getSumCommitingTxTime();
         elasticReads = Statistics.getTotalElasticReads();
