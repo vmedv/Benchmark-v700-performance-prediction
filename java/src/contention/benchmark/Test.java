@@ -114,30 +114,6 @@ public class Test {
         for (Thread thread : prefillThreads)
             thread.join();
 
-
-        for (long i = size; i > 0; ) {
-            int v = s_random.get().nextInt(range);
-            switch (benchType) {
-                case INTSET:
-                    if (setBench.addInt(v)) {
-                        i--;
-                    }
-                    break;
-                case MAP:
-                    if (mapBench.putIfAbsent(v, v) == null) {
-                        i--;
-                    }
-                    break;
-                case SORTEDSET:
-                    if (sortedBench.add(v)) {
-                        i--;
-                    }
-                    break;
-                default:
-                    System.err.println("Wrong benchmark type");
-                    System.exit(0);
-            }
-        }
     }
 
 

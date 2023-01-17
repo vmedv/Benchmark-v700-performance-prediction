@@ -108,16 +108,16 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 bench.size();
                 numSize++;
 
-            } else if (coin < cdf[3]) { // 4. then we should run a readSome operation
+            } else { //if (coin < cdf[3]) { // 4. then we should run a readSome operation
 
                 if (bench.get(newInt) != null)
                     numContains++;
                 else
                     failures++;
-            } else {
+            } //else {
 //                sleep(Parameters.sleepTime);
                 // warmup для определения sleepTime
-            }
+//            }
             total++;
 
             assert total == failures + numContains + numSize + numRemove
