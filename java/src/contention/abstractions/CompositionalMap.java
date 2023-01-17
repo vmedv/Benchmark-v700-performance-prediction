@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public interface CompositionalMap<K, V> extends Map<K, V> {
 	
-    public static final boolean TRAVERSAL_COUNT = false;
+    public static final boolean TRAVERSAL_COUNT = true;
     public static final boolean STRUCT_MODS = false;
     
     public class Vars {
