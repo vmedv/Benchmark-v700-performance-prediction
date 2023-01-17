@@ -1,6 +1,6 @@
-#!/usr/bin/bash
+#!/bin/bash
 
-synFolder='/mnt/tank/scratch/rgaliev/Synchrobench/'
+synFolder='/mnt/tank/scratch/rgaliev/synchrobench/java/'
 #synFolder='/mnt/c/Users/Huawei/OneDrive/Документы/ИТМО/LAB/synchrobench/java/'
 resultFolder='synchrobench_tests_results/'
 
