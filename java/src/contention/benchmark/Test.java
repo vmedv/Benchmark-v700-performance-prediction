@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 import contention.benchmark.ThreadLoops.*;
 import contention.benchmark.distributions.*;
@@ -101,6 +100,7 @@ public class Test {
         }
     };
 
+    //TODO delete parameters
     public void fill(final int range, final long size) throws InterruptedException {
         Thread[] prefillThreads = new Thread[Parameters.numThreads];
         for (int threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
@@ -177,7 +177,7 @@ public class Test {
                         SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
 
                         int hotLength = (int) (Parameters.range * SimpleParameters.skewedSetParameters.HOT_SIZE);
-                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+                        for (int threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
                             keygens[threadNum] = new SimpleKeyGenerator(
                                     new SkewedSetsDistribution(
                                             hotLength,
@@ -186,8 +186,8 @@ public class Test {
                                             new UniformDistribution(Parameters.range - hotLength)
                                     )
                             );
-                            break;
                         }
+                        break;
                 }
             }
             break;
