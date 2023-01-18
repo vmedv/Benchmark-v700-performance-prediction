@@ -1,0 +1,4 @@
+/var/lib/slurm-llnl/slurmd/job611925/slurm_script: line 34: /mnt/tank/scratch/rgaliev/synchrobench/javasynchrobench_tests_results/trees.lockbased.LockBasedFriendlyTreeMap/LockBasedFriendlyTreeMap-t1-u0-r100000-d10000.txt: No such file or directory
+
+/var/lib/slurm-llnl/slurmd/job611925/slurm_script: line 34: /mnt/tank/scratch/rgaliev/synchrobench/javasynchrobench_tests_results/trees.lockbased.LockBasedStanfordTreeMap/LockBasedStanfordTreeMap-t1-u0-r100000-d10000.txt: No such file or directory
+
