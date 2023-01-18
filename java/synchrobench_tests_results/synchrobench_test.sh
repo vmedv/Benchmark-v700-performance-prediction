@@ -8,9 +8,9 @@ resultFolder='synchrobench_tests_results/'
 #version='_16_fs_2'
 
 # -t
-numThreads=("1") # "2" "4" "8" "16" "32" "64")
+numThreads=("1" "2" "4" "8" "16" "32" "64")
 # -u
-numWrites=("0") # "2" "10" "20")
+numWrites=("0" "2" "10" "20")
 # -r
 rangeAndSizes=("100000 -i 50000") # "100000 -i 50000" "1000000 -i 500000")
 ranges=("100000") # "100000" "1000000")
@@ -29,15 +29,10 @@ for algo in ${algos[@]}; do
         file=$synFolder$resultFolder$algoFolder$algo'/'$algo'-t'$numThread'-u'$numWrite'-r'${ranges[ri]}'-d'$timeD'.txt'
 
         STest=$main$args
-#        echo $file
-#        echo $STest
+
         java $STest > $file
         echo
       done
     done
   done
 done
-
-#java -cp $synFolderbin contention.benchmark.Test -b trees.lockbased.LockBasedStanfordTreeMap $args
-#>$synFolder$resultFolder/testFS_Stanford$version.txt
-
