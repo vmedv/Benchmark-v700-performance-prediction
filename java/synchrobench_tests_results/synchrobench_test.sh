@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 synFolder='/mnt/tank/scratch/rgaliev/synchrobench/java/'
 #synFolder='/mnt/c/Users/Huawei/OneDrive/Документы/ИТМО/LAB/synchrobench/java/'
