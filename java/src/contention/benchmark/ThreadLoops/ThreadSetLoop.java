@@ -119,7 +119,7 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
 
     @Override
     public void prefill() {
-        long size = Parameters.range / Parameters.numPrefillThreads;
+        long size = Parameters.size / Parameters.numPrefillThreads;
         for (long i = size; i > 0; ) {
             int v = rand.nextInt(Parameters.range);
             if (bench.addInt(v)) {

@@ -102,8 +102,8 @@ public class Test {
 
     //TODO delete parameters
     public void fill(final int range, final long size) throws InterruptedException {
-        Thread[] prefillThreads = new Thread[Parameters.numThreads];
-        for (int threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+        Thread[] prefillThreads = new Thread[Parameters.numPrefillThreads];
+        for (int threadNum = 0; threadNum < Parameters.numPrefillThreads; threadNum++) {
             final int finalThreadNum = threadNum;
             prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill());
         }

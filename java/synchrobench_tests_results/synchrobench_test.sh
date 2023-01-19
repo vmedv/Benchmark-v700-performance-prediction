@@ -31,7 +31,6 @@ for algo in ${algos[@]}; do
         STest=$main$args
 
         java $STest > $file
-        echo
       done
     done
   done
