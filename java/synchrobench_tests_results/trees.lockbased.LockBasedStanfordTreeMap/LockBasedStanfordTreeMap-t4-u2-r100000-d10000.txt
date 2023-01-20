@@ -6,9 +6,9 @@ A benchmark-suite to evaluate synchronization techniques
 Benchmark parameters
 --------------------
   Detailed stats:          	disabled
-  Number of threads:       	1
+  Number of threads:       	4
   Length:                  	10000 ms
-  Write ratio:             	0 %
+  Write ratio:             	2 %
   WriteAll ratio:          	0 %
   Snapshot ratio:          	0 %
   Size:                    	50000 elts
@@ -17,20 +17,23 @@ Benchmark parameters
   Iterations:              	1
   Benchmark:               	trees.lockbased.LockBasedStanfordTreeMap
 Thread #0 finished.
+Thread #3 finished.
+Thread #2 finished.
+Thread #1 finished.
 -------------------------------------------------------------------------------
 Benchmark statistics
 -------------------------------------------------------------------------------
-  Average traversal length: 	15.953302819807703
+  Average traversal length: 	15.918093379722018
   Struct Modifications:     	0
-  Throughput (ops/s):       	1721755.3489302138
-  Elapsed time (s):         	10.002
-  Operations:               	17220997	( 100 %)
-    effective updates:     	0	( 0.00 %)
-    |--add successful:     	0	( 0.00 %)
-    |--remove succ.:       	0	( 0.00 %)
+  Throughput (ops/s):       	4892422.730907638
+  Elapsed time (s):         	10.004
+  Operations:               	48943797	( 100 %)
+    effective updates:     	489416	( 1.00 %)
+    |--add successful:     	244688	( 0.50 %)
+    |--remove succ.:       	244728	( 0.50 %)
     |--addAll succ.:       	0	( 0.00 %)
     |--removeAll succ.:    	0	( 0.00 %)
     size successful:       	0	( 0.00 %)
-    contains succ.:        	8607767	( 49.98 %)
-    unsuccessful ops:      	8613230	( 50.02 %)
-  Final size:              	50000
+    contains succ.:        	24004000	( 49.04 %)
+    unsuccessful ops:      	24450381	( 49.96 %)
+  Final size:              	49960
