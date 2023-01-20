@@ -503,6 +503,10 @@ public class Test {
                         case "-n":
                             Parameters.iterations = Integer.parseInt(optionValue);
                             break;
+                        case "--zipf":
+                            SimpleParameters.distributionType = DistributionType.ZIPF;
+                            SimpleParameters.zipfParm = Double.parseDouble(optionValue);
+                            break;
                     }
                 }
             } catch (IndexOutOfBoundsException e) {
@@ -622,7 +626,15 @@ public class Test {
                 + Parameters.iterations
                 + "\n"
                 + "  Benchmark:               \t"
-                + Parameters.benchClassName;
+                + Parameters.benchClassName
+                + "\n"
+                + "  Distribution:            \t"
+                + SimpleParameters.distributionType;
+        if (SimpleParameters.distributionType == DistributionType.ZIPF) {
+            params += "\n"
+                    + "  Zipf Parm:               \t"
+                    + SimpleParameters.zipfParm;
+        }
         System.out.println(params);
     }
 
@@ -854,7 +866,7 @@ public class Test {
         numAbortsInvalidSnapshot = Statistics.getNumAbortsInvalidSnapshot();
         readSetSizeSum = Statistics.getSumReadSetSize();
         writeSetSizeSum = Statistics.getSumWriteSetSize();
-        
+
         statSize = Statistics.getStatSize();
         txDurationSum = Statistics.getSumCommitingTxTime();
         elasticReads = Statistics.getTotalElasticReads();
