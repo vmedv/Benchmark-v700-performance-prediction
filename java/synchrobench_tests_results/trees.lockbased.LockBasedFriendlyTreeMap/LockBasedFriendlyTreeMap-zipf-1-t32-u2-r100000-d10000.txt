@@ -1,0 +1,72 @@
+-------------------------------------------------------------------------------
+Synchrobench-java
+A benchmark-suite to evaluate synchronization techniques
+-------------------------------------------------------------------------------
+
+Benchmark parameters
+--------------------
+  Detailed stats:          	disabled
+  Number of threads:       	32
+  Length:                  	10000 ms
+  Write ratio:             	2 %
+  WriteAll ratio:          	0 %
+  Snapshot ratio:          	0 %
+  Size:                    	50000 elts
+  Range:                   	100000 elts
+  WarmUp:                  	0 s
+  Iterations:              	1
+  Benchmark:               	trees.lockbased.LockBasedFriendlyTreeMap
+  Distribution:            	ZIPF
+  Zipf Parm:               	1.0
+Thread #1 finished.
+Thread #6 finished.
+Thread #31 finished.
+Thread #26 finished.
+Thread #7 finished.
+Thread #18 finished.
+Thread #21 finished.
+Thread #28 finished.
+Thread #25 finished.
+Thread #12 finished.
+Thread #11 finished.
+Thread #15 finished.
+Thread #2 finished.
+Thread #19 finished.
+Thread #13 finished.
+Thread #23 finished.
+Thread #9 finished.
+Thread #16 finished.
+Thread #22 finished.
+Thread #14 finished.
+Thread #29 finished.
+Thread #0 finished.
+Thread #17 finished.
+Thread #5 finished.
+Thread #24 finished.
+Thread #30 finished.
+Thread #3 finished.
+Thread #4 finished.
+Thread #27 finished.
+Thread #20 finished.
+Thread #8 finished.
+Thread #10 finished.
+Propogations: 0
+Rotations: 0
+-------------------------------------------------------------------------------
+Benchmark statistics
+-------------------------------------------------------------------------------
+  Average traversal length: 	15.91738069822723
+  Struct Modifications:     	0
+  Throughput (ops/s):       	2.3898117968594715E7
+  Elapsed time (s):         	10.062
+  Operations:               	240462863	( 100 %)
+    effective updates:     	2401619	( 1.00 %)
+    |--add successful:     	1200791	( 0.50 %)
+    |--remove succ.:       	1200828	( 0.50 %)
+    |--addAll succ.:       	0	( 0.00 %)
+    |--removeAll succ.:    	0	( 0.00 %)
+    size successful:       	0	( 0.00 %)
+    contains succ.:        	117868331	( 49.02 %)
+    unsuccessful ops:      	120192913	( 49.98 %)
+  Final size:              	49963
+  #nodes (inc. deleted): 	60146

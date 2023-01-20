@@ -1,0 +1,53 @@
+-------------------------------------------------------------------------------
+Synchrobench-java
+A benchmark-suite to evaluate synchronization techniques
+-------------------------------------------------------------------------------
+
+Benchmark parameters
+--------------------
+  Detailed stats:          	disabled
+  Number of threads:       	16
+  Length:                  	10000 ms
+  Write ratio:             	10 %
+  WriteAll ratio:          	0 %
+  Snapshot ratio:          	0 %
+  Size:                    	50000 elts
+  Range:                   	100000 elts
+  WarmUp:                  	0 s
+  Iterations:              	1
+  Benchmark:               	trees.lockbased.LockBasedStanfordTreeMap
+  Distribution:            	ZIPF
+  Zipf Parm:               	1.0
+Thread #15 finished.
+Thread #6 finished.
+Thread #11 finished.
+Thread #8 finished.
+Thread #5 finished.
+Thread #4 finished.
+Thread #3 finished.
+Thread #1 finished.
+Thread #12 finished.
+Thread #7 finished.
+Thread #13 finished.
+Thread #9 finished.
+Thread #0 finished.
+Thread #14 finished.
+Thread #10 finished.
+Thread #2 finished.
+-------------------------------------------------------------------------------
+Benchmark statistics
+-------------------------------------------------------------------------------
+  Average traversal length: 	15.903653480246232
+  Struct Modifications:     	0
+  Throughput (ops/s):       	1.4516481278082876E7
+  Elapsed time (s):         	10.015
+  Operations:               	145382560	( 100 %)
+    effective updates:     	7256902	( 4.99 %)
+    |--add successful:     	3628417	( 2.50 %)
+    |--remove succ.:       	3628485	( 2.50 %)
+    |--addAll succ.:       	0	( 0.00 %)
+    |--removeAll succ.:    	0	( 0.00 %)
+    size successful:       	0	( 0.00 %)
+    contains succ.:        	65405363	( 44.99 %)
+    unsuccessful ops:      	72720295	( 50.02 %)
+  Final size:              	49932

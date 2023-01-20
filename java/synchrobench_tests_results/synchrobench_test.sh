@@ -25,7 +25,7 @@ for algo in ${algos[@]}; do
     for numWrite in ${numWrites[@]}; do
       for ri in ${!rangeAndSizes[@]}; do
         main=' -cp '$synFolder'bin contention.benchmark.Test -b '$algoFolder$algo
-        args=' -t '$numThread' -u '$numWrite' -r '${rangeAndSizes[ri]}' -d '$timeD' -zipf 1 '
+        args=' -t '$numThread' -u '$numWrite' -r '${rangeAndSizes[ri]}' -d '$timeD' --zipf 1 '
         file=$synFolder$resultFolder$algoFolder$algo'/'$algo'-zipf-1-t'$numThread'-u'$numWrite'-r'${ranges[ri]}'-d'$timeD'.txt'
 
         STest=$main$args
