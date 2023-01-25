@@ -1,7 +1,7 @@
 package contention.benchmark.keygenerators.data;
 
 import contention.abstractions.KeyGeneratorData;
-import contention.benchmark.Parameters;
+import contention.abstractions.Parameters;
 import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,15 +15,15 @@ public class CreakersAndWaveKeyGeneratorData extends KeyGeneratorData {
     AtomicInteger waveBegin;
     AtomicInteger waveEnd;
 
-    public CreakersAndWaveKeyGeneratorData() {
-        super();
+    public CreakersAndWaveKeyGeneratorData(CreakersAndWaveParameters parameters) {
+        super(parameters);
 
         /*
          * data = | ... wave | creakers |
          */
-        creakersLength = (int) (Parameters.range * CreakersAndWaveParameters.CREAKERS_SIZE);
+        creakersLength = (int) (Parameters.range * parameters.CREAKERS_SIZE);
         creakersBegin = Parameters.range - creakersLength;
-        defaultWaveLength = (int) (Parameters.range * CreakersAndWaveParameters.WAVE_SIZE);
+        defaultWaveLength = (int) (Parameters.range * parameters.WAVE_SIZE);
         waveEnd = new AtomicInteger(creakersBegin);
         waveBegin = new AtomicInteger(waveEnd.get() - defaultWaveLength);
         prefillSize = creakersLength + defaultWaveLength;

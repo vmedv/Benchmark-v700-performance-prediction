@@ -1,6 +1,8 @@
 package contention.benchmark.keygenerators.parameters;
 
-public class SkewedSetParameters {
+import contention.abstractions.Parameters;
+
+public class SkewedSetParameters extends Parameters {
     public double HOT_SIZE = 0;
     public double HOT_PROB = 0;
 
@@ -9,4 +11,19 @@ public class SkewedSetParameters {
         this.HOT_PROB = HOT_PROB;
     }
 
+    @Override
+    public void parse(String[] args) {
+        argNumber = 1;
+
+        while (argNumber < args.length) {
+            //todo
+            super.parse(args);
+        }
+    }
+
+    @Override
+    public StringBuilder toStringBuilder() {
+        //todo
+        return new StringBuilder();
+    }
 }

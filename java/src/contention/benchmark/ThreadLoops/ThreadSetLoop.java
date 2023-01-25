@@ -4,7 +4,7 @@ import contention.abstractions.CompositionalIntSet;
 import contention.abstractions.CompositionalMap;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.ThreadLoopAbstract;
-import contention.benchmark.Parameters;
+import contention.abstractions.Parameters;
 
 import java.lang.reflect.Method;
 import java.util.Random;
@@ -42,16 +42,17 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
      */
     int[] cdf = new int[3];
 
-    public ThreadSetLoop(short myThreadNum, CompositionalIntSet bench, Method[] methods, KeyGenerator keygen) {
-        super(keygen);
+    public ThreadSetLoop(short myThreadNum, CompositionalIntSet bench, Method[] methods,
+                         KeyGenerator keygen, Parameters parameters) {
+        super(keygen, parameters);
         this.myThreadNum = myThreadNum;
         this.bench = bench;
         this.methods = methods;
         /* initialize the method boundaries */
-        assert (Parameters.numWrites >= Parameters.numWriteAlls);
-        cdf[0] = 10 * Parameters.numWriteAlls;
-        cdf[1] = 10 * Parameters.numWrites;
-        cdf[2] = cdf[1] + 10 * Parameters.numSnapshots;
+        assert (parameters.numWrites >= parameters.numWriteAlls);
+        cdf[0] = 10 * parameters.numWriteAlls;
+        cdf[1] = 10 * parameters.numWrites;
+        cdf[2] = cdf[1] + 10 * parameters.numSnapshots;
     }
 
     public void printDataStructure() {
@@ -62,7 +63,7 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
     public void run() {
 
         while (!stop) {
-            Integer newInt = rand.nextInt(Parameters.range);
+            Integer newInt = rand.nextInt(parameters.range);
             int coin = rand.nextInt(1000);
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
 
@@ -119,9 +120,9 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
 
     @Override
     public void prefill() {
-        long size = Parameters.size / Parameters.numPrefillThreads;
+        long size = parameters.size / parameters.numPrefillThreads;
         for (long i = size; i > 0; ) {
-            int v = rand.nextInt(Parameters.range);
+            int v = rand.nextInt(parameters.range);
             if (bench.addInt(v)) {
                 i--;
             }

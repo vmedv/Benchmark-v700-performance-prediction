@@ -1,9 +1,25 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.benchmark.Parameters;
+import contention.abstractions.Parameters;
 
 public class SkewedSetsParameters extends Parameters {
-    public static SkewedSetParameters READ = new SkewedSetParameters(0, 0);
-    public static SkewedSetParameters WRITE = new SkewedSetParameters(0, 0);
-    public static double INTERSECTION = 0;
+    public SkewedSetParameters READ = new SkewedSetParameters(0, 0);
+    public SkewedSetParameters WRITE = new SkewedSetParameters(0, 0);
+    public double INTERSECTION = 0;
+
+    @Override
+    public void parse(String[] args) {
+        argNumber = 1;
+
+        while (argNumber < args.length) {
+            //todo
+            super.parse(args);
+        }
+    }
+
+    @Override
+    public StringBuilder toStringBuilder() {
+        //todo
+        return super.toStringBuilder();
+    }
 }

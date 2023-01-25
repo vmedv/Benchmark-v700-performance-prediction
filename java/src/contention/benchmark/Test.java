@@ -74,7 +74,7 @@ public class Test {
      * The instance of the benchmark
      */
     private Type benchType = null;
-    private KeyGeneratorType keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+    private Parameters parameters;
     private CompositionalIntSet setBench = null;
     private CompositionalSortedSet<Integer> sortedBench = null;
     private CompositionalMap<Integer, Integer> mapBench = null;
@@ -102,8 +102,8 @@ public class Test {
 
     //TODO delete parameters
     public void fill(final int range, final long size) throws InterruptedException {
-        Thread[] prefillThreads = new Thread[Parameters.numPrefillThreads];
-        for (int threadNum = 0; threadNum < Parameters.numPrefillThreads; threadNum++) {
+        Thread[] prefillThreads = new Thread[parameters.numPrefillThreads];
+        for (int threadNum = 0; threadNum < parameters.numPrefillThreads; threadNum++) {
             final int finalThreadNum = threadNum;
             prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill());
         }
@@ -154,147 +154,53 @@ public class Test {
      * Creates as many threads as requested
      */
     private void initThreads() {
-        KeyGenerator[] keygens = new KeyGenerator[Parameters.numThreads];
-        switch (keygenType) {
+        KeyGenerator[] keygens = null;// = new KeyGenerator[parameters.numThreads];
+        switch (parameters.keygenType) {
             case SIMPLE_KEYGEN: {
-                switch (SimpleParameters.distributionType) {
-                    case UNIFORM:
-                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                            keygens[threadNum] = new SimpleKeyGenerator(new UniformDistribution(Parameters.range));
-                        }
-                        break;
-                    case ZIPF:
-                    case MUTABLE_ZIPF:
-                        SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
-
-                        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                            keygens[threadNum] = new SimpleKeyGenerator(
-                                    new ZipfDistribution(SimpleParameters.zipfParm, Parameters.range)
-                            );
-                        }
-                        break;
-                    case SKEWED_SETS:
-                        SimpleKeyGenerator.setData(new SimpleKeyGeneratorData());
-
-                        int hotLength = (int) (Parameters.range * SimpleParameters.skewedSetParameters.HOT_SIZE);
-                        for (int threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                            keygens[threadNum] = new SimpleKeyGenerator(
-                                    new SkewedSetsDistribution(
-                                            hotLength,
-                                            SimpleParameters.skewedSetParameters.HOT_PROB,
-                                            new UniformDistribution(hotLength),
-                                            new UniformDistribution(Parameters.range - hotLength)
-                                    )
-                            );
-                        }
-                        break;
-                }
+                keygens = SimpleKeyGenerator.generateKeyGenerators(parameters);
             }
             break;
             case SKEWED_SETS: {
-                int readHotLength = (int) (Parameters.range * SkewedSetsParameters.READ.HOT_SIZE);
-                int writeHotLength = (int) (Parameters.range * SkewedSetsParameters.WRITE.HOT_SIZE);
-                int intersectionLength = (int) (Parameters.range * SkewedSetsParameters.INTERSECTION);
-
-                SkewedSetsKeyGeneratorData data = new SkewedSetsKeyGeneratorData(
-                        readHotLength,
-                        writeHotLength,
-                        intersectionLength
-                );
-
-                SkewedSetsKeyGenerator.setData(data);
-
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    keygens[threadNum] = new SkewedSetsKeyGenerator(
-                            new SkewedSetsDistribution(
-                                    readHotLength,
-                                    SkewedSetsParameters.READ.HOT_PROB,
-                                    new UniformDistribution(readHotLength),
-                                    new UniformDistribution(Parameters.range - readHotLength)
-                            ),
-                            new SkewedSetsDistribution(
-                                    writeHotLength,
-                                    SkewedSetsParameters.WRITE.HOT_PROB,
-                                    new UniformDistribution(writeHotLength),
-                                    new UniformDistribution(Parameters.range - writeHotLength)
-                            )
-                    );
-                }
+                keygens = SkewedSetsKeyGenerator.generateKeyGenerators(parameters);
             }
             break;
             case TEMPORARY_SKEWED: {
-                TemporarySkewedKeyGeneratorData data = new TemporarySkewedKeyGeneratorData(
-                        //todo there all parameters is static and exist in TemporarySkewedParameters
-                );
-
-                TemporarySkewedKeyGenerator.setData(data);
-
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    Distribution[] hotDists = new Distribution[TemporarySkewedParameters.setCount];
-
-                    for (int i = 0; i < TemporarySkewedParameters.setCount; ++i) {
-                        //todo setSize get from data
-                        int setSize = (int) (Parameters.range * TemporarySkewedParameters.setSizes[i]);
-
-                        hotDists[i] = new SkewedSetsDistribution(
-                                setSize,
-                                TemporarySkewedParameters.hotProbs[i],
-                                new UniformDistribution(setSize),
-                                new UniformDistribution(Parameters.range - setSize)
-                        );
-                    }
-
-                    keygens[threadNum] = new TemporarySkewedKeyGenerator(
-                            hotDists, new UniformDistribution(Parameters.range)
-                    );
-                }
+                keygens = TemporarySkewedKeyGenerator.generateKeyGenerators(parameters);
             }
             break;
             case CREAKERS_AND_WAVE: {
-                int creakersLength = (int) (Parameters.range * CreakersAndWaveParameters.CREAKERS_SIZE);
-
-                CreakersAndWaveKeyGeneratorData data = new CreakersAndWaveKeyGeneratorData(
-                        //todo there all parameters is static and exist in TemporarySkewedParameters
-                );
-
-                CreakersAndWaveKeyGenerator.setData(data);
-
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    keygens[threadNum] = new CreakersAndWaveKeyGenerator(
-                            new UniformDistribution(creakersLength),
-                            new ZipfDistribution(CreakersAndWaveParameters.waveZipfParm)
-                    );
-                }
-
+                keygens = CreakersAndWaveKeyGenerator.generateKeyGenerators(parameters);
             }
             break;
         }
 
         switch (benchType) {
             case INTSET: {
-                threadLoops = new ThreadSetLoop[Parameters.numThreads];
-                threads = new Thread[Parameters.numThreads];
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] = new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum]);
+                threadLoops = new ThreadSetLoop[parameters.numThreads];
+                threads = new Thread[parameters.numThreads];
+                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+                    threadLoops[threadNum] =
+                            new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], parameters);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
             break;
             case MAP: {
-                threadLoops = new ThreadMapLoop[Parameters.numThreads];
-                threads = new Thread[Parameters.numThreads];
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] = new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum]);
+                threadLoops = new ThreadMapLoop[parameters.numThreads];
+                threads = new Thread[parameters.numThreads];
+                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+                    threadLoops[threadNum] =
+                            new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
             break;
             case SORTEDSET: {
-                threadLoops = new ThreadSortedSetLoop[Parameters.numThreads];
-                threads = new Thread[Parameters.numThreads];
-                for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] = new ThreadSortedSetLoop(threadNum, sortedBench,
-                            methods, keygens[threadNum]);
+                threadLoops = new ThreadSortedSetLoop[parameters.numThreads];
+                threads = new Thread[parameters.numThreads];
+                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+                    threadLoops[threadNum] =
+                            new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
                     threads[threadNum] = new Thread(threadLoops[threadNum]);
                 }
             }
@@ -316,8 +222,8 @@ public class Test {
             System.err.println("Cannot parse parameters.");
             e.printStackTrace();
         }
-        instanciateAbstraction(Parameters.benchClassName);
-        this.throughput = new double[Parameters.iterations];
+        instanciateAbstraction(parameters.benchClassName);
+        this.throughput = new double[parameters.iterations];
     }
 
     /**
@@ -327,7 +233,7 @@ public class Test {
      */
     private void execute(int milliseconds, boolean maint) throws InterruptedException {
         long startTime;
-        fill(Parameters.range, Parameters.size);
+        fill(parameters.range, parameters.size);
         Thread.sleep(5000);
         startTime = System.currentTimeMillis();
         for (Thread thread : threads)
@@ -365,17 +271,17 @@ public class Test {
         test.printParams();
 
         // warming up the JVM
-        if (Parameters.warmUp != 0) {
+        if (test.parameters.warmUp != 0) {
             try {
                 test.initThreads();
             } catch (Exception e) {
                 System.err.println("Cannot launch operations.");
                 e.printStackTrace();
             }
-            test.execute(Parameters.warmUp * 1000, true);
+            test.execute(test.parameters.warmUp * 1000, true);
             // give time to the JIT
             Thread.sleep(100);
-            if (Parameters.detailedStats)
+            if (test.parameters.detailedStats)
                 test.recordPreliminaryStats();
             test.clear();
             test.resetStats();
@@ -392,7 +298,7 @@ public class Test {
         }
 
         // running the bench
-        for (int i = 0; i < Parameters.iterations; i++) {
+        for (int i = 0; i < test.parameters.iterations; i++) {
             if (!firstIteration) {
                 // give time to the JIT
                 Thread.sleep(100);
@@ -406,7 +312,7 @@ public class Test {
                 System.err.println("Cannot launch operations.");
                 e.printStackTrace();
             }
-            test.execute(Parameters.numMilliseconds, false);
+            test.execute(test.parameters.numMilliseconds, false);
 
             if (test.setBench instanceof MaintenanceAlg) {
                 ((MaintenanceAlg) test.setBench).stopMaintenance();
@@ -425,14 +331,14 @@ public class Test {
             }
 
             test.printBasicStats();
-            if (Parameters.detailedStats)
+            if (test.parameters.detailedStats)
                 test.printDetailedStats();
 
             firstIteration = false;
             test.currentIteration++;
         }
 
-        if (Parameters.iterations > 1) {
+        if (test.parameters.iterations > 1) {
             test.printIterationStats();
         }
     }
@@ -443,82 +349,34 @@ public class Test {
      * Parse the parameters on the command line
      */
     private void parseCommandLineParameters(String[] args) {
-        int argNumber = 0;
 
-        while (argNumber < args.length) {
-            String currentArg = args[argNumber++];
-
-            try {
-                if (currentArg.equals("--help") || currentArg.equals("-h")) {
-                    printUsage();
-                    System.exit(0);
-                } else if (currentArg.equals("--verbose")
-                        || currentArg.equals("-v")) {
-                    Parameters.detailedStats = true;
-                } else {
-                    String optionValue = args[argNumber++];
-                    switch (currentArg) {
-                        case "--thread-nums":
-                        case "-t":
-                            Parameters.numThreads = Integer.parseInt(optionValue);
-                            break;
-                        case "--prefill-thread-nums":
-                        case "-pt":
-                            Parameters.numPrefillThreads = Integer.parseInt(optionValue);
-                            break;
-                        case "--duration":
-                        case "-d":
-                            Parameters.numMilliseconds = Integer
-                                    .parseInt(optionValue);
-                            break;
-                        case "--updates":
-                        case "-u":
-                            Parameters.numWrites = Integer.parseInt(optionValue);
-                            break;
-                        case "--writeAll":
-                        case "-a":
-                            Parameters.numWriteAlls = Integer.parseInt(optionValue);
-                            break;
-                        case "--snapshots":
-                        case "-s":
-                            Parameters.numSnapshots = Integer.parseInt(optionValue);
-                            break;
-                        case "--size":
-                        case "-i":
-                            Parameters.size = Integer.parseInt(optionValue);
-                            break;
-                        case "--range":
-                        case "-r":
-                            Parameters.range = Integer.parseInt(optionValue);
-                            break;
-                        case "--Warmup":
-                        case "-W":
-                            Parameters.warmUp = Integer.parseInt(optionValue);
-                            break;
-                        case "--benchmark":
-                        case "-b":
-                            Parameters.benchClassName = optionValue;
-                            break;
-                        case "--iterations":
-                        case "-n":
-                            Parameters.iterations = Integer.parseInt(optionValue);
-                            break;
-                        case "--zipf":
-                            SimpleParameters.distributionType = DistributionType.ZIPF;
-                            SimpleParameters.zipfParm = Double.parseDouble(optionValue);
-                            break;
-                    }
-                }
-            } catch (IndexOutOfBoundsException e) {
-                System.err.println("Missing value after option: " + currentArg
-                        + ". Ignoring...");
-            } catch (NumberFormatException e) {
-                System.err.println("Number expected after option:  "
-                        + currentArg + ". Ignoring...");
-            }
+        switch (args[0]){
+            case "--help":
+            case "-h":
+                printUsage();
+                System.exit(0);
+            case "-skewed-sets":
+                parameters = new SkewedSetsParameters();
+                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
+                break;
+            case "-creakers-and-wave":
+                parameters = new CreakersAndWaveParameters();
+                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
+                break;
+            case "-temporary-skewed":
+            case "-temp-skewed":
+                parameters = new TemporarySkewedParameters();
+                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
+                break;
+            default:
+                parameters = new SimpleParameters();
+                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+                break;
         }
-        assert (Parameters.range >= Parameters.size);
-        if (Parameters.range != 2 * Parameters.size)
+        parameters.parse(args);
+
+        assert (parameters.range >= parameters.size);
+        if (parameters.range != 2 * parameters.size)
             System.err
                     .println("Note that the value range is not twice "
                             + "the initial size, thus the size expectation varies at runtime.");
@@ -556,37 +414,37 @@ public class Test {
                 + "java synchrobench.benchmark.Test [options] [-- stm-specific options]\n\n"
                 + "Options:\n"
                 + "\t-v            -- print detailed statistics (default: "
-                + Parameters.detailedStats
+                + parameters.detailedStats
                 + ")\n"
                 + "\t-t thread-num -- set the number of threads (default: "
-                + Parameters.numThreads
+                + parameters.numThreads
                 + ")\n"
                 + "\t-d duration   -- set the length of the benchmark, in milliseconds (default: "
-                + Parameters.numMilliseconds
+                + parameters.numMilliseconds
                 + ")\n"
                 + "\t-u updates    -- set the number of threads (default: "
-                + Parameters.numWrites
+                + parameters.numWrites
                 + ")\n"
                 + "\t-a writeAll   -- set the percentage of composite updates (default: "
-                + Parameters.numWriteAlls
+                + parameters.numWriteAlls
                 + ")\n"
                 + "\t-s snapshot   -- set the percentage of composite read-only operations (default: "
-                + Parameters.numSnapshots
+                + parameters.numSnapshots
                 + ")\n"
                 + "\t-r range      -- set the element range (default: "
-                + Parameters.range
+                + parameters.range
                 + ")\n"
                 + "\t-b benchmark  -- set the benchmark (default: "
-                + Parameters.benchClassName
+                + parameters.benchClassName
                 + ")\n"
                 + "\t-i size       -- set the datastructure initial size (default: "
-                + Parameters.size
+                + parameters.size
                 + ")\n"
                 + "\t-n iterations -- set the bench iterations in the same JVM (default: "
-                + Parameters.iterations
+                + parameters.iterations
                 + ")\n"
                 + "\t-W warmup     -- set the JVM warmup length, in seconds (default: "
-                + Parameters.warmUp + ").";
+                + parameters.warmUp + ").";
         System.err.println(syntax);
     }
 
@@ -594,47 +452,49 @@ public class Test {
      * Print the parameters that have been given as an input to the benchmark
      */
     private void printParams() {
-        String params = "Benchmark parameters" + "\n" + "--------------------"
-                + "\n" + "  Detailed stats:          \t"
-                + (Parameters.detailedStats ? "enabled" : "disabled")
-                + "\n"
-                + "  Number of threads:       \t"
-                + Parameters.numThreads
-                + "\n"
-                + "  Length:                  \t"
-                + Parameters.numMilliseconds
-                + " ms\n"
-                + "  Write ratio:             \t"
-                + Parameters.numWrites
-                + " %\n"
-                + "  WriteAll ratio:          \t"
-                + Parameters.numWriteAlls
-                + " %\n"
-                + "  Snapshot ratio:          \t"
-                + Parameters.numSnapshots
-                + " %\n"
-                + "  Size:                    \t"
-                + Parameters.size
-                + " elts\n"
-                + "  Range:                   \t"
-                + Parameters.range
-                + " elts\n"
-                + "  WarmUp:                  \t"
-                + Parameters.warmUp
-                + " s\n"
-                + "  Iterations:              \t"
-                + Parameters.iterations
-                + "\n"
-                + "  Benchmark:               \t"
-                + Parameters.benchClassName
-                + "\n"
-                + "  Distribution:            \t"
-                + SimpleParameters.distributionType;
-        if (SimpleParameters.distributionType == DistributionType.ZIPF) {
-            params += "\n"
-                    + "  Zipf Parm:               \t"
-                    + SimpleParameters.zipfParm;
-        }
+//        String params = "Benchmark parameters" + "\n" + "--------------------"
+//                + "\n" + "  Detailed stats:          \t"
+//                + (parameters.detailedStats ? "enabled" : "disabled")
+//                + "\n"
+//                + "  Number of threads:       \t"
+//                + parameters.numThreads
+//                + "\n"
+//                + "  Length:                  \t"
+//                + parameters.numMilliseconds
+//                + " ms\n"
+//                + "  Write ratio:             \t"
+//                + parameters.numWrites
+//                + " %\n"
+//                + "  WriteAll ratio:          \t"
+//                + parameters.numWriteAlls
+//                + " %\n"
+//                + "  Snapshot ratio:          \t"
+//                + parameters.numSnapshots
+//                + " %\n"
+//                + "  Size:                    \t"
+//                + parameters.size
+//                + " elts\n"
+//                + "  Range:                   \t"
+//                + parameters.range
+//                + " elts\n"
+//                + "  WarmUp:                  \t"
+//                + parameters.warmUp
+//                + " s\n"
+//                + "  Iterations:              \t"
+//                + parameters.iterations
+//                + "\n"
+//                + "  Benchmark:               \t"
+//                + parameters.benchClassName
+//                + "\n"
+//                + "  Distribution:            \t"
+//                + Simpleparameters.distributionType;
+//        if (Simpleparameters.distributionType == DistributionType.ZIPF) {
+//            params += "\n"
+//                    + "  Zipf Parm:               \t"
+//                    + Simpleparameters.zipfParm;
+//        }
+
+        String params = parameters.toStringBuilder().toString();
         System.out.println(params);
     }
 
@@ -709,7 +569,7 @@ public class Test {
                 break;
         }
         System.out.println("  Final size:              \t" + finalSize);
-        assert finalSize == (Parameters.size + numAdd - numRemove) : "Final size does not reflect the modifications.";
+        assert finalSize == (parameters.size + numAdd - numRemove) : "Final size does not reflect the modifications.";
 
         //System.out.println("  Otherupdate_bin.bat size:              \t" + map.size());
 
@@ -790,7 +650,7 @@ public class Test {
      */
     public void resetStats() {
 
-        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
             threadLoops[threadNum].setNumAdd(0);
             threadLoops[threadNum].setNumRemove(0);
             threadLoops[threadNum].setNumAddAll(0);
@@ -1031,7 +891,7 @@ public class Test {
         System.out.println("Iteration statistics");
         printLine('-');
 
-        int n = Parameters.iterations;
+        int n = parameters.iterations;
         System.out.println("  Iterations:                 \t" + n);
         double sum = 0;
         for (int i = 0; i < n; i++) {

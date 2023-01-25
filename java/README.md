@@ -1,98 +1,157 @@
-Java Synchrobench
-=================
-Synchrobench is a micro-benchmark suite used to evaluate synchronization 
-techniques on data structures. Synchrobench is written in C/C++ and Java and
-currently includes arrays, binary trees, hash tables, linked lists, queues and
-skip lists that are synchronized with copy-on-write, locks, read-modify-write, 
-read-copy-update and transactional memory. A non-synchronized version of these 
-data structures is proposed in each language as a baseline to measure the 
-performance gain on multi-(/many-)core machines.
+# Тестирование на новых рабочих нагрузках
 
-If you use Synchrobench, please cite the companion paper: 
-V. Gramoli. More than You Ever Wanted to Know about Synchronization. PPoPP 2015. More information at https://sites.google.com/site/synchrobench/.
+## Запуск бенчмарка
 
-Data structures in Java
------------------------
-The Java version of synchrobench (synchrobench-java) provides variants of the 
-algorithms presented in these papers:
- - V. Aksenov, V. Gramoli, P. Kuznetsov, A. Malova, S. Ravi. A Concurrency-Optimal Binary Search Tree.
-   In Euro-Par, 2017. arXiv:1705.02851
- - V. Gramoli, P. Kuznetsov, S. Ravi, D. Shang. A Concurrency-Optimal List-Based Set. arXiv:1502.01633, 2015.
- - K. Sagonas and K. Winblad. Contention Adapting Search Trees. In ISPDC 2015.
- - V. Gramoli and R. Guerraoui. Reusable Concurrent Data Types. In ECOOP 2014.
- - D. Drachsler, M. Vechev and E. Yahav. Practical concurrent binary search 
-   trees via logical ordering. In PPoPP, pages 343–356, 2014.
- - V. Gramoli and R. Guerraoui. Democratizing Transactional Programming. CACM 
-   57(1):86-93, 2014.
- - T. Crain, V. Gramoli and M. Raynal. A contention-friendly search tree. In 
-   Euro-Par, pages 229–240, 2013.
- - T. Crain, V. Gramoli and M. Raynal. No hot spot non-blocking skip list. In 
-   ICDCS, 2013.
- - T. Crain, V. Gramoli and M. Raynal. A contention-friendly methodology for 
-   search structures. Technical Report RR-1989, INRIA, 2012.
- - F. Ellen, P. Fatourou, E. Ruppert and F. van Breugel. Non-blocking binary 
-   search trees. In PODC, pages 131–140, 2010.
- - N. G. Bronson, J. Casper, H. Chafi and K. Olukotun. A practical 
-   concurrent binary search tree. In PPoPP, 2010.
- - P. Felber, V. Gramoli and R. Guerraoui. Elastic Transactions. In DISC 2009.
- - C. Click. A lock-free hash table. Personal communication. 2007.
- - M. M. Michael and M. L. Scott. Simple, fast, and practical non-blocking and 
-   blocking concurrent queue algorithms. In PODC, 1996.  
-Please check the copyright notice of each implementation.
+```
+java -cp <bin_folder> contention.benchmark.Test <workload_type> <parameters> 
+```
 
-Synchronizations
--------------
-The Java-like algorithms are synchronized with copy-on-write wrappers,
-read-modify-write using exclusively compare-and-swap, transactional memory
-in their software forms using bytecode instrumentation, locks.
+Пример:
+```
+java -cp bin contention.benchmark.Test -skewed-sets 
+    -b trees.lockbased.LockBasedStanfordTreeMap
+    -rp 0.9 -rs 0.1 -wp 0.9 -ws 0.2 -inter 0.05 -i 5 -d 5 -rq 0 
+    --range 100000 --size 50000 --prefill-thread-nums 8 --thread-nums 8 --duration 10000 
+```
 
-The transactional memory algorithm used here is E-STM presented in:
- - P. Felber, V. Gramoli, and R. Guerraoui. Elastic transactions. In DISC, pages
-   93–108, 2009.
+## Виды рабочих нагрузок
 
-Other Transactional Memory implemenations can be tested with Synchrobench
-in Java, by adding the DeuceSTM-based libraries in the directory:
-   synchrobench-java/src/org/deuce/transaction/  
-The transactional memories that were tested successfully with synchrobench in 
-Java are E-STM, LSA, PSTM, SwissTM and TL2 as presented in:
- - P. Felber, V. Gramoli, and R. Guerraoui. Elastic transactions. In DISC, pages
-   93–108, 2009.
- - T. Riegel, P. Felber, and C. Fetzer. A lazy snapshot algorithm with eager 
-   validation. In DISC, 2006.
- - V. Gramoli and R. Guerraoui. Reusable Concurrent Data Types. In ECOOP 2014
- - A. Dragojevic, R. Guerraoui, M. Kapalka. Stretching transactional memory. In
-   PLDI, p.155-165, 2009.
- - D. Dice, O. Shalev and N. Shavit. Transactional locking II. In DISC, 2006.  
+### Стандартная 
 
-Parameters
----------
- - t, the number of application threads to be spawned. Note that this does not necessarily represent all threads, as it excludes JVM implicit threads and extra maintenance threads spawned by some algorithms.
- - i, the initial size of the benchmark. This corresponds to the amount of elements the data structure is initially fed with before the benchmark starts collecting statistics on the performance of operations.
- - r, the range of possible keys from which the parameters of the executed operations are taken from, not necessarily uniformly at random. This parameter is useful to adjust the evolution of the size of the data structure.
- - u, the update ratio that indicates the amount of update operations among all operations (be they effective or attempted updates).
- - U, the unbalance parameter that indicates the extent to which the workload is skewed towards smaller or larger values. This parameter is useful to test balanced structure like trees under unbalancing workloads (not available on all benchmarks).
- - d, the duration of the benchmark in milliseconds.
- - a, the ratio of write-all operations that correspond to composite operations. Note that this parameter has to be smaller or equal to the update ratio given by parameter u.
- - s, the ratio of snapshot operations that scan multiple elements of the data structure. Note that this parameter has to be set to a value lower than or equal to 100-u, where u is the update ratio.
- - W, the warmup of the benchmark corresponds to the time it runs before the statistics start being collected, this option is used in Java to give time to the JIT compiler to compile selected bytecode to native code.
- - n, the number of iterations as part of the same JVM instance.
- - b, the benchmark to use.
+Стандартная рабочая нагрузка, где есть лишь одно распределение ключей на все виды операций. 
+Для его вызова, аргумент `workload_type` необходимо оставить пустым и указать `distibution_type`.
 
-Composite functions
-----------------
-Synchrobench features composite operations to test some appealing features of synchronization techniques, like composition so that a function can invoke existing functions or reusability so that Bob does not have to understand the internals of Alice's library to use it.
+### Skewed sets
 
-There are two types of composite functions:
- - writeAll are composite operation that update the structure. Examples are a move operation that remove an element from one data structure and add it to another structure and a putIfAbsent that adds an element y only if x is absent from the same structure.
- - readAll are composite operations that do not update the structure. Examples are containsAll that checks the presence of multiple elements, returning false if at least one element is absent, and size that counts the number of elements present at some indivisible point (i.e., atomic snapshot) of the execution.
+Аргумент для вызова — `-skewed-sets`
 
-Below is a distribution of operation depending on parameters given. Note that the percentage of writeAll operations (-a) is smaller than the update ratio and the percentage of readAll operations (-s) is smaller than the read-only ratio (100-u).
+Для запросов чтения и записи используются разные распределения.
 
-	/**
-	 * The distribution of functions as an array of percentiles
-	 * 
-	 * 0%           a             u          u+s          100%
-	 * |--writeAll--|--writeSome--|--readAll--|--readSome--|
-	 * |----------update----- --|-------read-only----------| 
-         */
-	
+Примечания:
++ Во время предварительного заполнения, сначала заполняется множество горячего чтения, а после все остальное с равномерным распределением.
+Для классического заполнения, где ключи для вставки и удаления генерируются так же, как и при обычной работе, нужно дописать параметр `-write-prefill-only`. 
++ На данном этапе реализации используются только `skewed-sets` распределения 
+
+[//]: # (При использовании скошенных распределений, )
+[//]: # (для контролирования пересечения "горячих" данных для операций чтения и записи )
+
+### Temporary skewed
+
+Аргумент для вызова — `-temporary-skewed` или `-temp-skewed`
+
+На каждый временной промежуток своё распределение ключей. 
+Есть два типа временных промежутка:
+1. Горячее время — когда элементы из какого-то подмножество
+вызывается чаще остальных
+2. Время отдыха — когда элементы вызываются равновероятно
+
+Примечание:
++ На данном этапе реализации используются только `skewed-sets` распределения
+
+### Сreakers and wave
+
+Аргумент для вызова — `-creakers-and-wave`
+
+Есть два типа данных: старички и волна.  
+Старички (creakers) — данные, которые запрашиваются редко, но на постоянной основе.  
+Волна (wave) — данные, где новые элементы запрашиваются очень часто, 
+но со временем их востребованность падает, после чего и вовсе удаляются.
+
+Примечание: 
++ Параметр `-prefillsize` игнорируется. В структуру заполняются старички и первая волна.
++ В случае, если данные удаляются сначала логически и со временем физически, 
+тестирующий должен подобрать значение количества ключей `N` так, 
+чтобы элемент был гарантировано удалён физически за `N` запросов.
+Иначе велика вероятность, что данные из `wave` станут теми же старичками, 
+и суть рабочей нагрузки пропадёт.
+
+
+
+## Параметры
+
+### Обозначения
+
++ `<p>` — целое число принимающее значение [0, 100]
++ `<n>` — целое число принимающее значение [0, +∞] 
++ `<f>` — дробное число принимающее значение [0, 1]
++ `<d>` — дробное число принимающее значение [0, +∞]
+
+[//]: # (+ `<p>` —)
+
+[//]: # ($+\infty$+∞)
+
+
+### Общие параметры 
+//TODO это параметры setbench
++ `-i <f>` — процентное соотношение операций insert
++ `-d <f>` — процентное соотношение операций delete
++ `-insdel <f1> <f2>` — процентное соотношение операций insert и delete. 
+Равносильно `-i <f1> -d <f2>` 
++ `-rq <>` — todo наверное связано с запросами на промежутке
++ `-rqsize <>` —
++ `-k <n>` — количество ключей 
++ `-nrq <>` —
++ `-nwork <n>` — количество потоков
++ `-nprefill <n>` — количество выделенных потоков для предварительного заполнения 
++ `-prefill-insert` — заполнение контейнера посредством операций insert 
++ `-prefill-mixed` —
++ `-prefill-hybrid-min-ms <>` —
++ `-prefill-hybrid-max-ms <>` —
++ `-prefillsize <n>` — количество ключей для заполнения 
++ `-t <n>` — время работы бенчамрка в миллисекундах 
++ `-pin <....>` — 
+
+### Стандартная рабочая нагрузка
+
++ `<dist_type>` — распределение, 
+которое будет использоваться в стандартной рабочей нагрузке.
+
+  
+### Skewed sets
+
++ `-rs <f>` — размер "горячих" данных для чтения в соотношении ко всему множеству ключей
++ `-ws <f>` — аналогично для операции записи
++ `-rp <f>` — вероятность чтения "горячих" данных
++ `-wp <f>` — аналогично для операции записи
++ `-inter <f>` — размер пересечения "горячих" данных для чтения и записи
+в соотношении ко всему множеству ключей. Важное условие: `inter <= rs` и `inter <= ws`
++ `-write-prefill-only` — меняет тип генерации ключей для предварительного заполнения. 
+
+### Temporary skewed
+
++ `-set-count <n>` — количество подмножеств / распределений, зависимых от времени
++ `-ht <h>` — горячее время по умолчанию (указывается в количествах итераций):
+если горячее время после определенного временного промежутка не будет явно указано,
+то будет использовано значение этого параметра
++ `-rt <n>` — время отдыха по умолчанию (указывается в количествах итераций): 
+если время отдыха после определенного горячего временного промежутка не будет явно указано, 
+то будет использовано значение этого параметра
++ `-si <n> <f>` — размер горячих данных из `n-ого` подмножества 
+в соотношении ко всему множеству ключей
++ `-pi <n> <f>` — вероятность обращения к горячим данным из `n-ого` подмножества
+в соотношении ко всему множеству ключей
++ `-hti <n1> <n2>` — время работы с горячими данными из `n1-ого` подмножества
++ `-rti <n1> <n2>` — время отдыха после работы с горячими данными из `n1-ого` подмножества
+
+### Creakers and wave
+
++ `-gs <f>` || `-cs <f>` — размер подмножества старичков 
+в соотношении ко всему множеству ключей
++ `-gp <f>` || `-cp <f>` — вероятность чтения из множества старичков
++ `-ws <f>` — размер волны в соотношении ко всему множеству ключей
++ `-g-age <n>` || `-c-age <n>` — возраст старичков. 
+Перед началом тестирования, будет произведено `n` запросов чтения 
+из множества старичков
++ `-g-dist <dist_type>` || `-c-dist <dist_type>` — распределение ключей 
+для множества старичков. 
+(Пока доступно только равномерное распределение)
++ `-w-dist <dist_type>` — распределение ключей
+для множества волны. (Пока доступно только распределение Ципфа)
+
+
+### Распределения
+
++ `-dist-zipf <d>` — распределение Ципфа с параметром `d`
++ `-dist-uniform` — равномерное распределение
++ `-dist-skewed-sets ...` — скошенное распределение
+

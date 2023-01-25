@@ -34,19 +34,7 @@
 
 package arrays.sequential;
 
-import java.util.AbstractList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.ConcurrentModificationException;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-import java.util.RandomAccess;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.Spliterator;
+import java.util.*;
 
 import org.deuce.Atomic;
 
@@ -232,7 +220,7 @@ public class SequentialVector<E>
 
 
     public Spliterator<E> spliterator() {
-	return List.super.spliterator();
+	return super.spliterator();
     }    
     
 

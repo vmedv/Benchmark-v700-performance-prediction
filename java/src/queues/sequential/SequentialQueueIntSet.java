@@ -3,10 +3,8 @@ package queues.sequential;
 import java.util.Collection;
 import java.util.Random;
 
-import org.deuce.Atomic;
-
 import contention.abstractions.CompositionalIntSet;
-import contention.benchmark.Parameters;
+import contention.abstractions.Parameters;
 
 
 /**

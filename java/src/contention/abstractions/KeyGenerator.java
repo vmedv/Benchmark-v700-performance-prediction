@@ -8,4 +8,8 @@ public interface KeyGenerator {
     int nextErase();
 
     int nextPrefill();
+
+    static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
+        return null;
+    }
 }

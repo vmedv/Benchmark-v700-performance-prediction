@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import contention.abstractions.CompositionalIntSet;
-import contention.benchmark.Parameters;
+import contention.abstractions.Parameters;
 
 /**
  * Lock-free Queue (linked list) implementation of the integer set

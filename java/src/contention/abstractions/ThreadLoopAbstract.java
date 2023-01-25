@@ -2,6 +2,7 @@ package contention.abstractions;
 
 public abstract class ThreadLoopAbstract implements ThreadLoop {
     protected final KeyGenerator keygen;
+    protected final Parameters parameters;
     /**
      * The stop flag, indicating whether the loop is over
      */
@@ -29,8 +30,9 @@ public abstract class ThreadLoopAbstract implements ThreadLoop {
     public long nodesTraversed;
     public long structMods;
 
-    protected ThreadLoopAbstract(KeyGenerator keygen) {
+    protected ThreadLoopAbstract(KeyGenerator keygen, Parameters parameters) {
         this.keygen = keygen;
+        this.parameters = parameters;
     }
 
     public long getNumAdd() {

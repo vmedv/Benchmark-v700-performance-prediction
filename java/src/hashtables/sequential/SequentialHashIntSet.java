@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.Random;
 
 import contention.abstractions.CompositionalIntSet;
+import contention.abstractions.Parameters;
 
 /**
  * Sequential hash table implementation of integer set
@@ -29,7 +30,7 @@ public class SequentialHashIntSet implements CompositionalIntSet {
     }
 
     public SequentialHashIntSet() {
-        this(contention.benchmark.Parameters.size);
+        this(Parameters.size);
     }
 
 	@Override
@@ -175,7 +176,7 @@ public class SequentialHashIntSet implements CompositionalIntSet {
 	 * No need to do anything for this.
 	 */
 	public void clear() {
-	    tableSize = contention.benchmark.Parameters.size;
+	    tableSize = Parameters.size;
 	    table = new Node[tableSize];
 	}
 
