@@ -15,15 +15,12 @@ public class SimpleParameters extends Parameters {
         while (argNumber < args.length) {
 
             switch (args[argNumber]) {
-                case "-dist-zipf":
+                case "-dist-zipf" -> {
                     distributionType = DistributionType.ZIPF;
                     zipfParm = Double.parseDouble(args[++argNumber]);
-                    break;
-                case "-dist-uniform":
-                    distributionType = DistributionType.UNIFORM;
-                default:
-                    super.parse(args);
-                    break;
+                }
+                case "-dist-uniform" -> distributionType = DistributionType.UNIFORM;
+                default -> super.parse(args);
             }
 
             argNumber++;

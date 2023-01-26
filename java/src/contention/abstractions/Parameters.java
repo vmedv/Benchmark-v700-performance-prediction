@@ -128,6 +128,9 @@ public class Parameters {
                 .append(this.iterations)
                 .append("\n")
                 .append("  Benchmark:               \t")
-                .append(this.benchClassName);
+                .append(this.benchClassName)
+                .append("\n")
+                .append("  Workload:                \t")
+                .append(this.keygenType);
     }
 }
