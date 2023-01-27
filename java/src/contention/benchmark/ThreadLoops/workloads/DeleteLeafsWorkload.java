@@ -12,16 +12,50 @@ import java.util.Queue;
 public class DeleteLeafsWorkload extends ThreadMapLoop {
     public DeleteLeafsWorkload(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods, Parameters parameters) {
         super(myThreadNum, bench, methods, null, parameters);
+
+        int size = parameters.range;
+        vertices = new ArrayList<>(size);
+        Queue<Range> vertQueue = new ArrayDeque<>();
+
+        vertQueue.add(new Range(1, size));
+
+        while (!vertQueue.isEmpty()) {
+            Range next = vertQueue.remove();
+
+            if (next.left > next.right) {
+                continue;
+            }
+
+            int nextVert = (next.left + next.right) / 2;
+
+            vertices.add(nextVert);
+//            bench.putIfAbsent(nextVert, nextVert);
+
+            if (next.left == next.right) {
+                continue;
+            }
+
+            vertQueue.add(new Range(next.left, nextVert - 1));
+            vertQueue.add(new Range(nextVert + 1, next.right));
+        }
+
+        for (int i = 0, deg = 1; i + deg < size; deg <<= 1) {
+//            for (int j = 0; j < deg; j++) {
+//                bench.remove(vertices.get(i + j));
+//            }
+            i += deg;
+            lastLayer = i;
+        }
     }
 
-    private List<Integer> vertices;
-    private int lastLayer;
+    private static List<Integer> vertices;
+    private static int lastLayer;
 
-    private WorkloadEpoch workloadEpoch = WorkloadEpoch.DELETE_LEAF;
+    private WorkloadEpoch workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
 
     @Override
     public void run() {
-        int curIndex = lastLayer;
+        int curIndex = 0;
 
         while (!stop) {
             Integer a, b;
@@ -87,38 +121,8 @@ public class DeleteLeafsWorkload extends ThreadMapLoop {
 
     @Override
     public void prefill() {
-        int size = parameters.range;
-        vertices = new ArrayList<>(size);
-        Queue<Range> vertQueue = new ArrayDeque<>();
-
-        vertQueue.add(new Range(1, size));
-
-        while (!vertQueue.isEmpty()) {
-            Range next = vertQueue.remove();
-
-            if (next.left > next.right) {
-                continue;
-            }
-
-            int nextVert = (next.left + next.right) / 2;
-
-            vertices.add(nextVert);
-            bench.putIfAbsent(nextVert, nextVert);
-
-            if (next.left == next.right) {
-                continue;
-            }
-
-            vertQueue.add(new Range(next.left, nextVert - 1));
-            vertQueue.add(new Range(nextVert + 1, next.right));
-        }
-
-        for (int i = 0, deg = 1; i + deg < size; deg <<= 1) {
-            for (int j = 0; j < deg; j++) {
-                bench.remove(vertices.get(i + j));
-            }
-            i += deg;
-            lastLayer = i;
+        for (int newInt : vertices) {
+            bench.putIfAbsent(newInt, newInt);
         }
     }
 
