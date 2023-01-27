@@ -14,6 +14,10 @@ public abstract class KeyGeneratorData {
         data = dataList.stream().mapToInt(Integer::intValue).toArray();
     }
 
+    protected KeyGeneratorData() {
+        data = null;
+    }
+
     public int get(int index) {
         return data[index];
     }

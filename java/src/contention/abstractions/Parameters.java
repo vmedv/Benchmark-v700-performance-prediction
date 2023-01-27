@@ -17,7 +17,9 @@ public class Parameters {
             range = 2048,
             size = 1024,
             warmUp = 0,
-            iterations = 1;
+            iterations = 1,
+            afterFillRelaxMilliseconds = 5000;
+    ;
 
     public boolean detailedStats = false;
 
@@ -44,51 +46,19 @@ public class Parameters {
             } else {
                 String optionValue = args[argNumber];
                 switch (currentArg) {
-                    case "--thread-nums":
-                    case "-t":
-                        this.numThreads = Integer.parseInt(optionValue);
-                        break;
-                    case "--prefill-thread-nums":
-                    case "-pt":
-                        this.numPrefillThreads = Integer.parseInt(optionValue);
-                        break;
-                    case "--duration":
-                    case "-d":
-                        this.numMilliseconds = Integer
-                                .parseInt(optionValue);
-                        break;
-                    case "--updates":
-                    case "-u":
-                        this.numWrites = Integer.parseInt(optionValue);
-                        break;
-                    case "--writeAll":
-                    case "-a":
-                        this.numWriteAlls = Integer.parseInt(optionValue);
-                        break;
-                    case "--snapshots":
-                    case "-s":
-                        this.numSnapshots = Integer.parseInt(optionValue);
-                        break;
-                    case "--size":
-                    case "-i":
-                        this.size = Integer.parseInt(optionValue);
-                        break;
-                    case "--range":
-                    case "-r":
-                        this.range = Integer.parseInt(optionValue);
-                        break;
-                    case "--Warmup":
-                    case "-W":
-                        this.warmUp = Integer.parseInt(optionValue);
-                        break;
-                    case "--benchmark":
-                    case "-b":
-                        this.benchClassName = optionValue;
-                        break;
-                    case "--iterations":
-                    case "-n":
-                        this.iterations = Integer.parseInt(optionValue);
-                        break;
+                    case "--thread-nums", "-t" -> this.numThreads = Integer.parseInt(optionValue);
+                    case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
+                    case "--duration", "-d" -> this.numMilliseconds = Integer
+                            .parseInt(optionValue);
+                    case "--updates", "-u" -> this.numWrites = Integer.parseInt(optionValue);
+                    case "--writeAll", "-a" -> this.numWriteAlls = Integer.parseInt(optionValue);
+                    case "--snapshots", "-s" -> this.numSnapshots = Integer.parseInt(optionValue);
+                    case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
+                    case "--range", "-r" -> this.range = Integer.parseInt(optionValue);
+                    case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
+                    case "--benchmark", "-b" -> this.benchClassName = optionValue;
+                    case "--iterations", "-n" -> this.iterations = Integer.parseInt(optionValue);
+                    case "--after-fill-relax-time", "-afr" -> this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
                 }
             }
         } catch (IndexOutOfBoundsException e) {
@@ -137,6 +107,9 @@ public class Parameters {
                 .append("  WarmUp:                  \t")
                 .append(this.warmUp)
                 .append(" s\n")
+                .append("  After fill relax time:   \t")
+                .append(this.afterFillRelaxMilliseconds)
+                .append(" ms\n")
                 .append("  Iterations:              \t")
                 .append(this.iterations)
                 .append("\n")

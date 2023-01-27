@@ -158,6 +158,7 @@ public class Test {
             case SKEWED_SETS -> SkewedSetsKeyGenerator.generateKeyGenerators(parameters);
             case TEMPORARY_SKEWED -> TemporarySkewedKeyGenerator.generateKeyGenerators(parameters);
             case CREAKERS_AND_WAVE -> CreakersAndWaveKeyGenerator.generateKeyGenerators(parameters);
+            case LEAF_INSERT -> LeafInsertKeyGenerator.generateKeyGenerators(parameters);
             case NONE -> null;
         };
 
@@ -208,7 +209,7 @@ public class Test {
     private void execute(int milliseconds, boolean maint) throws InterruptedException {
         long startTime;
         fill(parameters.range, parameters.size);
-        Thread.sleep(5000);
+        Thread.sleep(parameters.afterFillRelaxMilliseconds);
 
         startTime = System.currentTimeMillis();
         for (Thread thread : threads)
@@ -350,6 +351,11 @@ public class Test {
                 parameters = new Parameters();
                 parameters.workloadType = WorkloadType.DELETE_LEAFS;
                 parameters.keygenType = KeyGeneratorType.NONE;
+                parameters.setArgNumber(1);
+            }
+            case "-leaf-insert" -> {
+                parameters = new Parameters();
+                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
                 parameters.setArgNumber(1);
             }
             default -> {

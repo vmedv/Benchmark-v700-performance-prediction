@@ -2,6 +2,7 @@ package contention.benchmark.ThreadLoops.workloads;
 
 import contention.abstractions.*;
 import contention.benchmark.ThreadLoops.ThreadMapLoop;
+import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
@@ -10,6 +11,10 @@ import java.util.List;
 import java.util.Queue;
 
 public class DeleteLeafsWorkload extends ThreadMapLoop {
+    private WorkloadEpoch workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
+    private static List<Integer> vertices;
+    private static int lastLayer;
+
     public DeleteLeafsWorkload(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods, Parameters parameters) {
         super(myThreadNum, bench, methods, null, parameters);
 
@@ -47,11 +52,6 @@ public class DeleteLeafsWorkload extends ThreadMapLoop {
             lastLayer = i;
         }
     }
-
-    private static List<Integer> vertices;
-    private static int lastLayer;
-
-    private WorkloadEpoch workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
 
     @Override
     public void run() {
@@ -123,16 +123,6 @@ public class DeleteLeafsWorkload extends ThreadMapLoop {
     public void prefill() {
         for (int newInt : vertices) {
             bench.putIfAbsent(newInt, newInt);
-        }
-    }
-
-    private static class Range {
-        public int left;
-        public int right;
-
-        public Range(int left, int right) {
-            this.left = left;
-            this.right = right;
         }
     }
 

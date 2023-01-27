@@ -1,9 +1,9 @@
 package contention.benchmark.ThreadLoops.workloads;
 
 import contention.abstractions.CompositionalMap;
-import contention.abstractions.KeyGenerator;
 import contention.abstractions.Parameters;
 import contention.benchmark.ThreadLoops.ThreadMapLoop;
+import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -80,16 +80,6 @@ public class DeleteSpeedTest extends ThreadMapLoop {
             }
             i += deg;
             lastLayer = i;
-        }
-    }
-
-    private static class Range {
-        public int left;
-        public int right;
-
-        public Range(int left, int right) {
-            this.left = left;
-            this.right = right;
         }
     }
 }
