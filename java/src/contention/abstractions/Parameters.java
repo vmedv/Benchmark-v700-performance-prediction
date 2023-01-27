@@ -23,6 +23,8 @@ public class Parameters {
 
     public String benchClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
 
+    public WorkloadType workloadType = WorkloadType.REGULAR;
+
     public KeyGeneratorType keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
 
 
@@ -99,7 +101,7 @@ public class Parameters {
     }
 
     public StringBuilder toStringBuilder() {
-        return new StringBuilder()
+        StringBuilder result = new StringBuilder()
                 .append("Benchmark parameters" + "\n" + "--------------------")
                 .append("\n" + "  Detailed stats:          \t")
                 .append((this.detailedStats ? "enabled" : "disabled"))
@@ -132,9 +134,19 @@ public class Parameters {
                 .append(this.iterations)
                 .append("\n")
                 .append("  Benchmark:               \t")
-                .append(this.benchClassName)
-                .append("\n")
-                .append("  Key Generator:           \t")
-                .append(this.keygenType);
+                .append(this.benchClassName);
+
+        if (workloadType != WorkloadType.REGULAR) {
+            result.append("\n")
+                    .append("  Workload:                \t")
+                    .append(this.workloadType);
+        }
+        if (keygenType != KeyGeneratorType.NONE) {
+            result.append("\n")
+                    .append("  Key Generator:           \t")
+                    .append(this.keygenType);
+        }
+
+        return result;
     }
 }

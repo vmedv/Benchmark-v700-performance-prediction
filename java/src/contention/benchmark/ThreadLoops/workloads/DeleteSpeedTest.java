@@ -13,8 +13,8 @@ public class DeleteSpeedTest extends ThreadMapLoop {
         super(myThreadNum, bench, methods, null, parameters);
     }
 
-    static public List<Integer> vertices;
-    static public int lastLayer;
+    private List<Integer> vertices;
+    private int lastLayer;
 
 
     @Override

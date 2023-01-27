@@ -99,8 +99,9 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
 
                     if ((a = bench.remove(newInt)) != null) {
                         numRemove++;
-                    } else
+                    } else {
                         failures++;
+                    }
                 }
                 //
             } else if (coin < cdf[2]) { // 3. should we run a readAll operation?
@@ -116,7 +117,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                     failures++;
             } //else {
 //                sleep(Parameters.sleepTime);
-                // warmup для определения sleepTime
+            // warmup для определения sleepTime
 //            }
             total++;
 

@@ -9,7 +9,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import contention.benchmark.ThreadLoops.*;
-import contention.benchmark.ThreadLoops.workloads.DeleteSpeedTest;
+import contention.benchmark.ThreadLoops.workloads.*;
 import contention.benchmark.keygenerators.*;
 import contention.benchmark.keygenerators.parameters.*;
 
@@ -73,7 +73,6 @@ public class Test {
      * The instance of the benchmark
      */
     private Type benchType = null;
-    private WorkloadType workloadType = WorkloadType.REGULAR;
     private Parameters parameters;
     private CompositionalIntSet setBench = null;
     private CompositionalSortedSet<Integer> sortedBench = null;
@@ -107,9 +106,6 @@ public class Test {
             final int finalThreadNum = threadNum;
             prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill());
         }
-
-//        threadLoops[0].prefill();
-
 
         for (Thread thread : prefillThreads)
             thread.start();
@@ -157,25 +153,13 @@ public class Test {
      * Creates as many threads as requested
      */
     private void initThreads() {
-        KeyGenerator[] keygens = null;// = new KeyGenerator[parameters.numThreads];
-        switch (parameters.keygenType) {
-            case SIMPLE_KEYGEN: {
-                keygens = SimpleKeyGenerator.generateKeyGenerators(parameters);
-            }
-            break;
-            case SKEWED_SETS: {
-                keygens = SkewedSetsKeyGenerator.generateKeyGenerators(parameters);
-            }
-            break;
-            case TEMPORARY_SKEWED: {
-                keygens = TemporarySkewedKeyGenerator.generateKeyGenerators(parameters);
-            }
-            break;
-            case CREAKERS_AND_WAVE: {
-                keygens = CreakersAndWaveKeyGenerator.generateKeyGenerators(parameters);
-            }
-            break;
-        }
+        KeyGenerator[] keygens = switch (parameters.keygenType) {
+            case SIMPLE_KEYGEN -> SimpleKeyGenerator.generateKeyGenerators(parameters);
+            case SKEWED_SETS -> SkewedSetsKeyGenerator.generateKeyGenerators(parameters);
+            case TEMPORARY_SKEWED -> TemporarySkewedKeyGenerator.generateKeyGenerators(parameters);
+            case CREAKERS_AND_WAVE -> CreakersAndWaveKeyGenerator.generateKeyGenerators(parameters);
+            case NONE -> null;
+        };
 
         threads = new Thread[parameters.numThreads];
         threadLoops = new ThreadLoop[parameters.numThreads];
@@ -184,10 +168,10 @@ public class Test {
 
             threadLoops[threadNum] = switch (benchType) {
                 case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], parameters);
-                case MAP -> switch (workloadType) {
+                case MAP -> switch (parameters.workloadType) {
                     case REGULAR -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
-                    case DELETE_SPEED_TEST ->
-                            new DeleteSpeedTest(threadNum, mapBench, methods, parameters);
+                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods, parameters);
+                    case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
                 };
                 case SORTEDSET ->
                         new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
@@ -226,8 +210,6 @@ public class Test {
         fill(parameters.range, parameters.size);
         Thread.sleep(5000);
 
-//        threadLoops[0].run();
-
         startTime = System.currentTimeMillis();
         for (Thread thread : threads)
             thread.start();
@@ -246,15 +228,9 @@ public class Test {
 
     public void clear() {
         switch (benchType) {
-            case INTSET:
-                setBench.clear();
-                break;
-            case MAP:
-                mapBench.clear();
-                break;
-            case SORTEDSET:
-                sortedBench.clear();
-                break;
+            case INTSET -> setBench.clear();
+            case MAP -> mapBench.clear();
+            case SORTEDSET -> sortedBench.clear();
         }
     }
 
@@ -344,38 +320,43 @@ public class Test {
     private void parseCommandLineParameters(String[] args) {
 
         switch (args[0]) {
-            case "--help":
-            case "-h":
+            case "--help", "-h" -> {
                 printUsage();
                 System.exit(0);
-            case "-skewed-sets":
+            }
+            case "-skewed-sets" -> {
                 parameters = new SkewedSetsParameters();
                 parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
                 parameters.setArgNumber(1);
-                break;
-            case "-creakers-and-wave":
+            }
+            case "-creakers-and-wave" -> {
                 parameters = new CreakersAndWaveParameters();
                 parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
                 parameters.setArgNumber(1);
-                break;
-            case "-temporary-skewed":
-            case "-temp-skewed":
+            }
+            case "-temporary-skewed", "-temp-skewed" -> {
                 parameters = new TemporarySkewedParameters();
                 parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
                 parameters.setArgNumber(1);
-                break;
-            case "-delete-speed-test":
-                workloadType = WorkloadType.DELETE_SPEED_TEST;
-                parameters = new SimpleParameters();
-                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+            }
+            case "-delete-speed-test" -> {
+                parameters = new Parameters();
+                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
+                parameters.keygenType = KeyGeneratorType.NONE;
                 parameters.setArgNumber(1);
                 Parameters.numMilliseconds = 0;
-                break;
-            default:
+            }
+            case "-delete-leafs" -> {
+                parameters = new Parameters();
+                parameters.workloadType = WorkloadType.DELETE_LEAFS;
+                parameters.keygenType = KeyGeneratorType.NONE;
+                parameters.setArgNumber(1);
+            }
+            default -> {
                 parameters = new SimpleParameters();
                 parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
                 parameters.setArgNumber(0);
-                break;
+            }
         }
         parameters.parse(args);
 
@@ -519,17 +500,11 @@ public class Test {
         System.out.println("    unsuccessful ops:      \t" + failures + "\t( "
                 + formatDouble(((double) failures / (double) total) * 100)
                 + " %)");
-        switch (benchType) {
-            case INTSET:
-                finalSize = setBench.size();
-                break;
-            case MAP:
-                finalSize = mapBench.size();
-                break;
-            case SORTEDSET:
-                finalSize = sortedBench.size();
-                break;
-        }
+        finalSize = switch (benchType) {
+            case INTSET -> setBench.size();
+            case MAP -> mapBench.size();
+            case SORTEDSET -> sortedBench.size();
+        };
         System.out.println("  Final size:              \t" + finalSize);
         assert finalSize == (parameters.size + numAdd - numRemove) : "Final size does not reflect the modifications.";
 
@@ -555,24 +530,24 @@ public class Test {
         // }
 
         switch (benchType) {
-            case INTSET:
+            case INTSET -> {
                 if (setBench instanceof MaintenanceAlg) {
                     System.out.println("  #nodes (inc. deleted): \t"
                             + ((MaintenanceAlg) setBench).numNodes());
                 }
-                break;
-            case MAP:
+            }
+            case MAP -> {
                 if (mapBench instanceof MaintenanceAlg) {
                     System.out.println("  #nodes (inc. deleted): \t"
                             + ((MaintenanceAlg) mapBench).numNodes());
                 }
-                break;
-            case SORTEDSET:
+            }
+            case SORTEDSET -> {
                 if (mapBench instanceof MaintenanceAlg) {
                     System.out.println("  #nodes (inc. deleted): \t"
                             + ((MaintenanceAlg) sortedBench).numNodes());
                 }
-                break;
+            }
         }
 
     }
