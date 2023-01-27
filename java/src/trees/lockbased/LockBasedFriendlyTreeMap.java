@@ -656,16 +656,6 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 		left = node.left;
 		right = node.right;
 
-		if (!node.removed && node.value == DELETED
-				&& (left == null || right == null) && node != this.root) {
-			if (removeNode(parent, direction)) {
-				return true;
-			}
-		}
-
-		if (stop) {
-			return true;
-		}
 
 		if (!node.removed) {
 			if (left != null) {
@@ -673,6 +663,17 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			if (right != null) {
 				recursivePropagate(node, right, Right);
+			}
+		}
+
+		if (stop) {
+			return true;
+		}
+
+		if (!node.removed && node.value == DELETED
+				&& (left == null || right == null) && node != this.root) {
+			if (removeNode(parent, direction)) {
+				return true;
 			}
 		}
 
