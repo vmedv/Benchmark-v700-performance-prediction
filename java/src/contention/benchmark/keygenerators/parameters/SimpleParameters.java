@@ -9,19 +9,14 @@ public class SimpleParameters extends Parameters {
     public SkewedSetParameters skewedSetParameters = new SkewedSetParameters(0, 0);
 
     @Override
-    public void parse(String[] args) {
-        while (argNumber < args.length) {
-
-            switch (args[argNumber]) {
-                case "-dist-zipf" -> {
-                    distributionType = DistributionType.ZIPF;
-                    zipfParm = Double.parseDouble(args[++argNumber]);
-                }
-                case "-dist-uniform" -> distributionType = DistributionType.UNIFORM;
-                default -> super.parse(args);
+    protected void parseArg(String[] args) {
+        switch (args[argNumber]) {
+            case "-dist-zipf" -> {
+                distributionType = DistributionType.ZIPF;
+                zipfParm = Double.parseDouble(args[++argNumber]);
             }
-
-            argNumber++;
+            case "-dist-uniform" -> distributionType = DistributionType.UNIFORM;
+            default -> super.parseArg(args);
         }
     }
 

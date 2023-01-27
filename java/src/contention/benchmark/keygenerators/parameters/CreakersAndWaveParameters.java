@@ -32,11 +32,9 @@ public class CreakersAndWaveParameters extends Parameters {
     public double waveZipfParm = 1.0;
 
     @Override
-    public void parse(String[] args) {
-        while (argNumber < args.length) {
-            //todo
-            super.parse(args);
-        }
+    protected void parseArg(String[] args) {
+        //todo
+        super.parseArg(args);
     }
 
     @Override

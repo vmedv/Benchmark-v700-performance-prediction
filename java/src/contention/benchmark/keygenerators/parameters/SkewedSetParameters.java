@@ -12,13 +12,9 @@ public class SkewedSetParameters extends Parameters {
     }
 
     @Override
-    public void parse(String[] args) {
-        argNumber = 1;
-
-        while (argNumber < args.length) {
-            //todo
-            super.parse(args);
-        }
+    protected void parseArg(String[] args) {
+        //todo
+        super.parseArg(args);
     }
 
     @Override

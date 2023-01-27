@@ -80,36 +80,16 @@ public class TemporarySkewedParameters extends Parameters {
     }
 
     @Override
-    public void parse(String[] args) {
-        while (argNumber < args.length) {
-            switch (args[argNumber]) {
-                case "-set-count":
-                    setSetCount(Integer.parseInt(args[++argNumber]));
-                    break;
-                case "-rt":
-                    setCommonRelaxTime(Integer.parseInt(args[++argNumber]));
-                    break;
-                case "-ht":
-                    setCommonHotTime(Integer.parseInt(args[++argNumber]));
-                    break;
-                case "-si":
-                    setSetSize(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
-                    break;
-                case "-pi":
-                    setHotProb(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
-                    break;
-                case "-hti":
-                    setHotTime(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
-                    break;
-                case "-rti":
-                    setRelaxTimes(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
-                    break;
-                default:
-                    super.parse(args);
-                    break;
-            }
-
-            argNumber++;
+    protected void parseArg(String[] args) {
+        switch (args[argNumber]) {
+            case "-set-count" -> setSetCount(Integer.parseInt(args[++argNumber]));
+            case "-rt" -> setCommonRelaxTime(Integer.parseInt(args[++argNumber]));
+            case "-ht" -> setCommonHotTime(Integer.parseInt(args[++argNumber]));
+            case "-si" -> setSetSize(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
+            case "-pi" -> setHotProb(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
+            case "-hti" -> setHotTime(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
+            case "-rti" -> setRelaxTimes(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
+            default -> super.parseArg(args);
         }
     }
 

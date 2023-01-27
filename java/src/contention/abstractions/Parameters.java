@@ -34,7 +34,7 @@ public class Parameters {
         this.argNumber = argNumber;
     }
 
-    public void parse(String[] args) {
+    protected void parseArg(String[] args) {
         String currentArg = args[argNumber++];
 
         try {
@@ -97,6 +97,13 @@ public class Parameters {
         } catch (NumberFormatException e) {
             System.err.println("Number expected after option:  "
                     + currentArg + ". Ignoring...");
+        }
+    }
+
+    public void parse(String[] args) {
+        while (argNumber < args.length) {
+            parseArg(args);
+            argNumber++;
         }
     }
 
