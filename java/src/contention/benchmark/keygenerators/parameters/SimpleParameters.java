@@ -10,8 +10,6 @@ public class SimpleParameters extends Parameters {
 
     @Override
     public void parse(String[] args) {
-        argNumber = 0;
-
         while (argNumber < args.length) {
 
             switch (args[argNumber]) {

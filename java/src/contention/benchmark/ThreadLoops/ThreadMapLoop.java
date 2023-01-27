@@ -34,7 +34,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
     /**
      * The random number
      */
-    Random rand = new Random();
+    protected Random rand = new Random();
 
     /**
      * The distribution of methods as an array of percentiles
@@ -43,7 +43,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
      * |--writeAll--|--writeSome--|--readAll--|--readSome--|
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
-    int[] cdf = new int[3];
+    protected int[] cdf = new int[3];
 
     public ThreadMapLoop(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods,
                          KeyGenerator keygen, Parameters parameters) {

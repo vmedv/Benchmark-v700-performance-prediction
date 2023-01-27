@@ -28,6 +28,10 @@ public class Parameters {
 
     protected int argNumber;
 
+    public void setArgNumber(int argNumber) {
+        this.argNumber = argNumber;
+    }
+
     public void parse(String[] args) {
         String currentArg = args[argNumber++];
 
@@ -130,7 +134,7 @@ public class Parameters {
                 .append("  Benchmark:               \t")
                 .append(this.benchClassName)
                 .append("\n")
-                .append("  Workload:                \t")
+                .append("  Key Generator:           \t")
                 .append(this.keygenType);
     }
 }

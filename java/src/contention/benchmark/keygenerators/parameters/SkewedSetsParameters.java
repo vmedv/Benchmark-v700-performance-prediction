@@ -9,8 +9,6 @@ public class SkewedSetsParameters extends Parameters {
 
     @Override
     public void parse(String[] args) {
-        argNumber = 1;
-
         while (argNumber < args.length) {
             //todo
             super.parse(args);

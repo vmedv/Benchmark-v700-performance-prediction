@@ -32,5 +32,9 @@ public interface CompositionalMap<K, V> extends Map<K, V> {
 	public void clear();
 	
 	public int size();
+
+    public default boolean isEmpty() {
+        return true;
+    }
 }
 

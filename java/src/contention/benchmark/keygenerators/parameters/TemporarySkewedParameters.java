@@ -81,8 +81,6 @@ public class TemporarySkewedParameters extends Parameters {
 
     @Override
     public void parse(String[] args) {
-        argNumber = 1;
-
         while (argNumber < args.length) {
             switch (args[argNumber]) {
                 case "-set-count":

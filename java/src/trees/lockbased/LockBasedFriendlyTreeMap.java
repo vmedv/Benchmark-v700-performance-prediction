@@ -135,6 +135,11 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 	int size;
 	private long structMods = 0;
 
+	@Override
+	public boolean isEmpty() {
+		return root.left == null && root.right == null;
+	}
+
 	// Constructors
 	public LockBasedFriendlyTreeMap() {
 		// temporary

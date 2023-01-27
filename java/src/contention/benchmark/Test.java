@@ -9,9 +9,8 @@ import java.util.Locale;
 import java.util.Random;
 
 import contention.benchmark.ThreadLoops.*;
-import contention.benchmark.distributions.*;
+import contention.benchmark.ThreadLoops.workloads.DeleteSpeedTest;
 import contention.benchmark.keygenerators.*;
-import contention.benchmark.keygenerators.data.*;
 import contention.benchmark.keygenerators.parameters.*;
 
 /**
@@ -74,6 +73,7 @@ public class Test {
      * The instance of the benchmark
      */
     private Type benchType = null;
+    private WorkloadType workloadType = WorkloadType.REGULAR;
     private Parameters parameters;
     private CompositionalIntSet setBench = null;
     private CompositionalSortedSet<Integer> sortedBench = null;
@@ -107,6 +107,9 @@ public class Test {
             final int finalThreadNum = threadNum;
             prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill());
         }
+
+//        threadLoops[0].prefill();
+
 
         for (Thread thread : prefillThreads)
             thread.start();
@@ -174,37 +177,24 @@ public class Test {
             break;
         }
 
-        switch (benchType) {
-            case INTSET: {
-                threadLoops = new ThreadSetLoop[parameters.numThreads];
-                threads = new Thread[parameters.numThreads];
-                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] =
-                            new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], parameters);
-                    threads[threadNum] = new Thread(threadLoops[threadNum]);
-                }
-            }
-            break;
-            case MAP: {
-                threadLoops = new ThreadMapLoop[parameters.numThreads];
-                threads = new Thread[parameters.numThreads];
-                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] =
-                            new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
-                    threads[threadNum] = new Thread(threadLoops[threadNum]);
-                }
-            }
-            break;
-            case SORTEDSET: {
-                threadLoops = new ThreadSortedSetLoop[parameters.numThreads];
-                threads = new Thread[parameters.numThreads];
-                for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-                    threadLoops[threadNum] =
-                            new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
-                    threads[threadNum] = new Thread(threadLoops[threadNum]);
-                }
-            }
-            break;
+        threads = new Thread[parameters.numThreads];
+        threadLoops = new ThreadLoop[parameters.numThreads];
+
+        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+
+            threadLoops[threadNum] = switch (benchType) {
+                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], parameters);
+                case MAP -> switch (workloadType) {
+                    case REGULAR -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
+                    case DELETE_SPEED_TEST ->
+                            new DeleteSpeedTest(threadNum, mapBench, methods, parameters);
+                };
+                case SORTEDSET ->
+                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
+
+            };
+
+            threads[threadNum] = new Thread(threadLoops[threadNum]);
         }
     }
 
@@ -235,6 +225,9 @@ public class Test {
         long startTime;
         fill(parameters.range, parameters.size);
         Thread.sleep(5000);
+
+//        threadLoops[0].run();
+
         startTime = System.currentTimeMillis();
         for (Thread thread : threads)
             thread.start();
@@ -350,7 +343,7 @@ public class Test {
      */
     private void parseCommandLineParameters(String[] args) {
 
-        switch (args[0]){
+        switch (args[0]) {
             case "--help":
             case "-h":
                 printUsage();
@@ -358,19 +351,30 @@ public class Test {
             case "-skewed-sets":
                 parameters = new SkewedSetsParameters();
                 parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
+                parameters.setArgNumber(1);
                 break;
             case "-creakers-and-wave":
                 parameters = new CreakersAndWaveParameters();
                 parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
+                parameters.setArgNumber(1);
                 break;
             case "-temporary-skewed":
             case "-temp-skewed":
                 parameters = new TemporarySkewedParameters();
                 parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
+                parameters.setArgNumber(1);
+                break;
+            case "-delete-speed-test":
+                workloadType = WorkloadType.DELETE_SPEED_TEST;
+                parameters = new SimpleParameters();
+                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+                parameters.setArgNumber(1);
+                Parameters.numMilliseconds = 0;
                 break;
             default:
                 parameters = new SimpleParameters();
                 parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+                parameters.setArgNumber(0);
                 break;
         }
         parameters.parse(args);
@@ -452,48 +456,6 @@ public class Test {
      * Print the parameters that have been given as an input to the benchmark
      */
     private void printParams() {
-//        String params = "Benchmark parameters" + "\n" + "--------------------"
-//                + "\n" + "  Detailed stats:          \t"
-//                + (parameters.detailedStats ? "enabled" : "disabled")
-//                + "\n"
-//                + "  Number of threads:       \t"
-//                + parameters.numThreads
-//                + "\n"
-//                + "  Length:                  \t"
-//                + parameters.numMilliseconds
-//                + " ms\n"
-//                + "  Write ratio:             \t"
-//                + parameters.numWrites
-//                + " %\n"
-//                + "  WriteAll ratio:          \t"
-//                + parameters.numWriteAlls
-//                + " %\n"
-//                + "  Snapshot ratio:          \t"
-//                + parameters.numSnapshots
-//                + " %\n"
-//                + "  Size:                    \t"
-//                + parameters.size
-//                + " elts\n"
-//                + "  Range:                   \t"
-//                + parameters.range
-//                + " elts\n"
-//                + "  WarmUp:                  \t"
-//                + parameters.warmUp
-//                + " s\n"
-//                + "  Iterations:              \t"
-//                + parameters.iterations
-//                + "\n"
-//                + "  Benchmark:               \t"
-//                + parameters.benchClassName
-//                + "\n"
-//                + "  Distribution:            \t"
-//                + Simpleparameters.distributionType;
-//        if (Simpleparameters.distributionType == DistributionType.ZIPF) {
-//            params += "\n"
-//                    + "  Zipf Parm:               \t"
-//                    + Simpleparameters.zipfParm;
-//        }
-
         String params = parameters.toStringBuilder().toString();
         System.out.println(params);
     }
