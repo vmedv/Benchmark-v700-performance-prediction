@@ -137,6 +137,7 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 
 	@Override
 	public boolean isEmpty() {
+		// the structure is all empty including logically remote nodes
 		return root.left == null && root.right == null;
 	}
 
