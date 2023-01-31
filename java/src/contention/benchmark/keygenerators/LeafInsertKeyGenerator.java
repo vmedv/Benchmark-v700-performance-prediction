@@ -25,15 +25,12 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
         this.eraseIndex = 0;
     }
 
-    public static void setData(LeafInsertKeyGeneratorData data) {
-        LeafInsertKeyGenerator.data = data;
-    }
-
     @Override
     public int nextRead() {
-        int randLayer = random.nextInt(curInsertLayers);
-        int randIndex = random.nextInt(data.getLayerSize(randLayer));
-        return data.get(randLayer, randIndex);
+//        int randLayer = random.nextInt(curInsertLayers);
+//        int randIndex = random.nextInt(data.getLayerSize(randLayer));
+//        return data.get(randLayer, randIndex);
+        return random.nextInt(parameters.range);
     }
 
     @Override
@@ -79,9 +76,7 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
         LeafInsertKeyGenerator.parameters = parameters;
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
-        LeafInsertKeyGeneratorData data = new LeafInsertKeyGeneratorData(parameters);
-
-        LeafInsertKeyGenerator.setData(data);
+        LeafInsertKeyGenerator.data = new LeafInsertKeyGeneratorData(parameters);
 
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
             keygens[threadNum] = new LeafInsertKeyGenerator();
