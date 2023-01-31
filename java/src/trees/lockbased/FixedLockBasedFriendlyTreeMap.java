@@ -1,14 +1,13 @@
 package trees.lockbased;
 
+import contention.abstractions.CompositionalMap;
+import contention.abstractions.MaintenanceAlg;
+
 import java.util.AbstractMap;
 import java.util.Comparator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
-
-import contention.abstractions.CompositionalMap;
-import contention.abstractions.CompositionalMap.Vars;
-import contention.abstractions.MaintenanceAlg;
 
 /**
  * The contention-friendly tree implementation of map 
@@ -24,7 +23,7 @@ import contention.abstractions.MaintenanceAlg;
  * @param <V>
  */
 
-public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
+public class FixedLockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 		CompositionalMap<K, V>, MaintenanceAlg {
 
 	static final boolean useFairLocks = false;
@@ -35,9 +34,9 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 	final V DELETED = (V) new Object();
 
 	private class MaintenanceThread extends Thread {
-		LockBasedFriendlyTreeMap<K, V> map;
+		FixedLockBasedFriendlyTreeMap<K, V> map;
 
-		MaintenanceThread(LockBasedFriendlyTreeMap<K, V> map) {
+		MaintenanceThread(FixedLockBasedFriendlyTreeMap<K, V> map) {
 			this.map = map;
 		}
 
@@ -142,12 +141,12 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	// Constructors
-	public LockBasedFriendlyTreeMap() {
+	public FixedLockBasedFriendlyTreeMap() {
 		// temporary
 		this.startMaintenance();
 	}
 
-	public LockBasedFriendlyTreeMap(final Comparator<? super K> comparator) {
+	public FixedLockBasedFriendlyTreeMap(final Comparator<? super K> comparator) {
 		// temporary
 		this.startMaintenance();
 		this.comparator = comparator;
@@ -393,7 +392,7 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 	}
 
 	@Override
-	public Set<java.util.Map.Entry<K, V>> entrySet() {
+	public Set<Entry<K, V>> entrySet() {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -656,16 +655,6 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 		left = node.left;
 		right = node.right;
 
-		if (!node.removed && node.value == DELETED
-				&& (left == null || right == null) && node != this.root) {
-			if (removeNode(parent, direction)) {
-				return true;
-			}
-		}
-
-		if (stop) {
-			return true;
-		}
 
 		if (!node.removed) {
 			if (left != null) {
@@ -673,6 +662,17 @@ public class LockBasedFriendlyTreeMap<K, V> extends AbstractMap<K, V> implements
 			}
 			if (right != null) {
 				recursivePropagate(node, right, Right);
+			}
+		}
+
+		if (stop) {
+			return true;
+		}
+
+		if (!node.removed && node.value == DELETED
+				&& (left == null || right == null) && node != this.root) {
+			if (removeNode(parent, direction)) {
+				return true;
 			}
 		}
 
