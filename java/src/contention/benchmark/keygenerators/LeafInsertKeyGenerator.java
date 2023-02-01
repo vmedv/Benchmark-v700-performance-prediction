@@ -7,9 +7,9 @@ import contention.benchmark.keygenerators.data.LeafInsertKeyGeneratorData;
 import java.util.Random;
 
 public class LeafInsertKeyGenerator implements KeyGenerator {
-    private static LeafInsertKeyGeneratorData data;
-    private static Parameters parameters;
+    public static LeafInsertKeyGeneratorData data;
 
+    private final int range;
     private final Random random;
     private int curInsertLayers;
     private int curEraseLayers;
@@ -17,7 +17,8 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
     private int eraseIndex;
 
 
-    public LeafInsertKeyGenerator() {
+    public LeafInsertKeyGenerator(int range) {
+        this.range = range;
         this.random = new Random();
         this.curInsertLayers = 0;
         this.curEraseLayers = 0;
@@ -30,7 +31,7 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
 //        int randLayer = random.nextInt(curInsertLayers);
 //        int randIndex = random.nextInt(data.getLayerSize(randLayer));
 //        return data.get(randLayer, randIndex);
-        return random.nextInt(parameters.range);
+        return random.nextInt(range);
     }
 
     @Override
@@ -72,16 +73,4 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
         return nextInsert();
     }
 
-    public static KeyGenerator[] generateKeyGenerators(Parameters parameters) {
-        LeafInsertKeyGenerator.parameters = parameters;
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
-
-        LeafInsertKeyGenerator.data = new LeafInsertKeyGeneratorData(parameters);
-
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new LeafInsertKeyGenerator();
-        }
-
-        return keygens;
-    }
 }

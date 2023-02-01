@@ -12,6 +12,8 @@ public class Parameters {
             numPrefillThreads = 1,
             numMilliseconds = 5000,
             numWrites = 40,
+            numInsert = 20,
+            numErase = 20,
             numWriteAlls = 0,
             numSnapshots = 0,
             range = 2048,
@@ -31,12 +33,9 @@ public class Parameters {
 
 
     protected int argNumber;
+    protected String[] args;
 
-    public void setArgNumber(int argNumber) {
-        this.argNumber = argNumber;
-    }
-
-    protected void parseArg(String[] args) {
+    protected void parseArg() {
         String currentArg = args[argNumber++];
 
         try {
@@ -50,7 +49,13 @@ public class Parameters {
                     case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
                     case "--duration", "-d" -> this.numMilliseconds = Integer
                             .parseInt(optionValue);
-                    case "--updates", "-u" -> this.numWrites = Integer.parseInt(optionValue);
+                    case "--updates", "-u" -> {
+                        this.numWrites = Integer.parseInt(optionValue);
+                        this.numInsert = this.numWrites / 2;
+                        this.numErase = this.numWrites / 2;
+                    }
+                    case "--insert", "-ui" -> this.numInsert = Integer.parseInt(optionValue);
+                    case "--erase", "-ue" -> this.numErase = Integer.parseInt(optionValue);
                     case "--writeAll", "-a" -> this.numWriteAlls = Integer.parseInt(optionValue);
                     case "--snapshots", "-s" -> this.numSnapshots = Integer.parseInt(optionValue);
                     case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
@@ -58,7 +63,8 @@ public class Parameters {
                     case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
                     case "--benchmark", "-b" -> this.benchClassName = optionValue;
                     case "--iterations", "-n" -> this.iterations = Integer.parseInt(optionValue);
-                    case "--after-fill-relax-time", "-afr" -> this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
+                    case "--after-fill-relax-time", "-afr" ->
+                            this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
                 }
             }
         } catch (IndexOutOfBoundsException e) {
@@ -70,11 +76,15 @@ public class Parameters {
         }
     }
 
-    public void parse(String[] args) {
+    public void parse(String[] args, int startArgNumber) {
+        this.args = args;
+        this.argNumber = startArgNumber;
         while (argNumber < args.length) {
-            parseArg(args);
+            parseArg();
             argNumber++;
         }
+        this.args = null;
+        this.argNumber = 0;
     }
 
     public StringBuilder toStringBuilder() {

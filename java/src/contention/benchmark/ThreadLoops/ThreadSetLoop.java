@@ -40,7 +40,7 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
      * |--writeAll--|--writeSome--|--readAll--|--readSome--|
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
-    int[] cdf = new int[3];
+    int[] cdf = new int[4];
 
     public ThreadSetLoop(short myThreadNum, CompositionalIntSet bench, Method[] methods,
                          KeyGenerator keygen, Parameters parameters) {
@@ -51,8 +51,9 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
         /* initialize the method boundaries */
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = 10 * parameters.numWriteAlls;
-        cdf[1] = 10 * parameters.numWrites;
-        cdf[2] = cdf[1] + 10 * parameters.numSnapshots;
+        cdf[1] = 10 * parameters.numInsert;
+        cdf[2] = cdf[1] + 10 * parameters.numErase;
+        cdf[3] = cdf[2] + 10 * parameters.numSnapshots;
     }
 
     public void printDataStructure() {
@@ -79,28 +80,25 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
                     System.err.println("Unsupported writeAll operations! Leave the default value of the numWriteAlls parameter (0).");
                 }
 
-            } else if (coin < cdf[1]) { // 2. should we run a writeSome
-                // operation?
-
-                if (2 * (coin - cdf[0]) < cdf[1] - cdf[0]) { // add
+            } else if (coin < cdf[1]) { // 2. should we run an add
                     if (bench.addInt((int) newInt)) {
                         numAdd++;
                     } else {
                         failures++;
                     }
-                } else { // remove
+            } else if (coin < cdf[2]) { // 3. should we run a remove
                     if (bench.removeInt((int) newInt)) {
                         numRemove++;
-                    } else
+                    } else {
                         failures++;
-                }
+                    }
 
-            } else if (coin < cdf[2]) { // 3. should we run a readAll operation?
+            } else if (coin < cdf[3]) { // 4. should we run a readAll operation?
 
                 bench.size();
                 numSize++;
 
-            } else { // 4. then we should run a readSome operation
+            } else { // 5. then we should run a readSome operation
 
                 if (bench.containsInt((int) newInt))
                     numContains++;

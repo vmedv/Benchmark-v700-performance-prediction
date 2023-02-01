@@ -11,8 +11,9 @@ import contention.benchmark.keygenerators.data.TemporarySkewedKeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.TemporarySkewedParameters;
 
 public class TemporarySkewedKeyGenerator implements KeyGenerator {
-    private static TemporarySkewedKeyGeneratorData keygenData;
-    private static TemporarySkewedParameters parameters;
+    public static TemporarySkewedKeyGeneratorData data;
+    public static TemporarySkewedParameters parameters;
+
     private Distribution[] hotDists;
     private Distribution relaxDist;
     long time;
@@ -25,10 +26,6 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
         this.time = 0;
         this.pointer = 0;
         this.relaxTime = false;
-    }
-
-    public static void setData(TemporarySkewedKeyGeneratorData keygenData) {
-        TemporarySkewedKeyGenerator.keygenData = keygenData;
     }
 
     private void update_pointer() {
@@ -54,13 +51,13 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
         update_pointer();
         int value;
         if (relaxTime) {
-            value = keygenData.get(relaxDist.next());
+            value = data.get(relaxDist.next());
         } else {
-            int index = keygenData.setsBegins[pointer] + hotDists[pointer].next();
+            int index = data.setsBegins[pointer] + hotDists[pointer].next();
             if (index >= parameters.range) {
                 index -= parameters.range;
             }
-            value = keygenData.get(index);
+            value = data.get(index);
         }
 
         return value;
@@ -83,35 +80,6 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextPrefill() {
-        return keygenData.get(relaxDist.next());
-    }
-
-    public static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        parameters = (TemporarySkewedParameters) rawParameters;
-
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
-
-        TemporarySkewedKeyGeneratorData data = new TemporarySkewedKeyGeneratorData(parameters);
-
-        TemporarySkewedKeyGenerator.setData(data);
-
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            Distribution[] hotDists = new Distribution[parameters.setCount];
-
-            for (int i = 0; i < parameters.setCount; ++i) {
-                hotDists[i] = new SkewedSetsDistribution(
-                        data.setsLengths[i],
-                        parameters.hotProbs[i],
-                        new UniformDistribution(data.setsLengths[i]),
-                        new UniformDistribution(parameters.range - data.setsLengths[i])
-                );
-            }
-
-            keygens[threadNum] = new TemporarySkewedKeyGenerator(
-                    hotDists, new UniformDistribution(parameters.range)
-            );
-        }
-
-        return keygens;
+        return data.get(relaxDist.next());
     }
 }

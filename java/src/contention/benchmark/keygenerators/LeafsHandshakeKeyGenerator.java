@@ -1,0 +1,107 @@
+package contention.benchmark.keygenerators;
+
+import contention.abstractions.Distribution;
+import contention.abstractions.KeyGenerator;
+import contention.abstractions.MutableDistribution;
+import contention.abstractions.Parameters;
+import contention.benchmark.keygenerators.data.SimpleKeyGeneratorData;
+import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
+
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
+public class LeafsHandshakeKeyGenerator implements KeyGenerator {
+    public static SimpleKeyGeneratorData readData = null;
+    public static SimpleKeyGeneratorData eraseData = null;
+
+    private final int range;
+    private final Distribution readDistribution;
+    private final MutableDistribution insertDistribution;
+    private final Distribution eraseDistribution;
+    private final Random random;
+
+    public static AtomicInteger deletedValue = null;
+
+    public LeafsHandshakeKeyGenerator(int range,
+                                      Distribution readDistribution,
+                                      MutableDistribution insertDistribution,
+                                      Distribution eraseDistribution) {
+        this.range =range;
+        this.readDistribution = readDistribution;
+        this.insertDistribution = insertDistribution;
+        this.eraseDistribution = eraseDistribution;
+        this.random = new Random();
+    }
+
+    @Override
+    public int nextRead() {
+        return readDistribution.next();
+    }
+
+    @Override
+    public int nextInsert() {
+        int localDeletedValue = deletedValue.get();
+
+        int value;
+
+        boolean isRight = random.nextDouble() >= 0.5;
+
+        if (localDeletedValue == 0 || (isRight && localDeletedValue != range - 1)) {
+            value = insertDistribution.next(range - 1 - localDeletedValue);
+        } else {
+            value = insertDistribution.next(localDeletedValue - 1);
+        }
+
+        return value;
+    }
+
+    @Override
+    public int nextErase() {
+        int localDeletedValue = deletedValue.get();
+        int index = eraseDistribution.next();
+        int value = eraseData == null ? index : eraseData.get(index);
+
+        //todo learn the difference between all kinds of weakCompareAndSet
+        deletedValue.weakCompareAndSet(localDeletedValue, value);
+
+        return value;
+    }
+
+    @Override
+    public int nextPrefill() {
+        return nextRead();
+    }
+
+//    public static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
+//        parameters = (LeafsHandshakeParameters) rawParameters;
+//        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
+//
+//        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+//            keygens[threadNum] = new LeafsHandshakeKeyGenerator(
+//                    parameters.readDistType.getDistribution(parameters.range),
+//                    parameters.insertDistType.getDistribution(),
+//                    parameters.eraseDistType.getDistribution(parameters.range)
+//            );
+//        }
+//
+//        readData = switch (parameters.readDistType) {
+//            case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
+//            default -> null;
+//        };
+//
+//        // todo think about the intersection of sets
+//        if (parameters.readDistType == parameters.eraseDistType) {
+//            eraseData = readData;
+//        } else {
+//            eraseData = switch (parameters.readDistType) {
+//                case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
+//                default -> null;
+//            };
+//        }
+//
+//        deletedValue = new AtomicInteger(keygens[0].nextErase());
+//
+//        return keygens;
+//    }
+
+}

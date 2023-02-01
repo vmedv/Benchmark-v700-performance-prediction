@@ -80,7 +80,7 @@ public class TemporarySkewedParameters extends Parameters {
     }
 
     @Override
-    protected void parseArg(String[] args) {
+    protected void parseArg() {
         switch (args[argNumber]) {
             case "-set-count" -> setSetCount(Integer.parseInt(args[++argNumber]));
             case "-rt" -> setCommonRelaxTime(Integer.parseInt(args[++argNumber]));
@@ -89,7 +89,7 @@ public class TemporarySkewedParameters extends Parameters {
             case "-pi" -> setHotProb(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
             case "-hti" -> setHotTime(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
             case "-rti" -> setRelaxTimes(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
-            default -> super.parseArg(args);
+            default -> super.parseArg();
         }
     }
 

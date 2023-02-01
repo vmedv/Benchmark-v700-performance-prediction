@@ -10,7 +10,7 @@ import java.util.Random;
 
 import contention.benchmark.ThreadLoops.*;
 import contention.benchmark.ThreadLoops.workloads.*;
-import contention.benchmark.keygenerators.*;
+import contention.benchmark.keygenerators.builders.*;
 import contention.benchmark.keygenerators.parameters.*;
 
 /**
@@ -74,6 +74,7 @@ public class Test {
      */
     private Type benchType = null;
     private Parameters parameters;
+    private KeyGeneratorBuilder keyGeneratorBuilder;
     private CompositionalIntSet setBench = null;
     private CompositionalSortedSet<Integer> sortedBench = null;
     private CompositionalMap<Integer, Integer> mapBench = null;
@@ -153,14 +154,7 @@ public class Test {
      * Creates as many threads as requested
      */
     private void initThreads() {
-        KeyGenerator[] keygens = switch (parameters.keygenType) {
-            case SIMPLE_KEYGEN -> SimpleKeyGenerator.generateKeyGenerators(parameters);
-            case SKEWED_SETS -> SkewedSetsKeyGenerator.generateKeyGenerators(parameters);
-            case TEMPORARY_SKEWED -> TemporarySkewedKeyGenerator.generateKeyGenerators(parameters);
-            case CREAKERS_AND_WAVE -> CreakersAndWaveKeyGenerator.generateKeyGenerators(parameters);
-            case LEAF_INSERT -> LeafInsertKeyGenerator.generateKeyGenerators(parameters);
-            case NONE -> null;
-        };
+        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators(parameters);
 
         threads = new Thread[parameters.numThreads];
         threadLoops = new ThreadLoop[parameters.numThreads];
@@ -320,51 +314,69 @@ public class Test {
      */
     private void parseCommandLineParameters(String[] args) {
 
+        int startArgNumber = 1;
         switch (args[0]) {
             case "--help", "-h" -> {
                 printUsage();
                 System.exit(0);
             }
             case "-skewed-sets" -> {
+                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder();
+
                 parameters = new SkewedSetsParameters();
                 parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
-                parameters.setArgNumber(1);
             }
             case "-creakers-and-wave" -> {
+                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder();
+
                 parameters = new CreakersAndWaveParameters();
                 parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
-                parameters.setArgNumber(1);
             }
             case "-temporary-skewed", "-temp-skewed" -> {
+                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder();
+
                 parameters = new TemporarySkewedParameters();
                 parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
-                parameters.setArgNumber(1);
             }
             case "-delete-speed-test" -> {
+                keyGeneratorBuilder = new KeyGeneratorBuilder();
+
                 parameters = new Parameters();
                 parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
                 parameters.keygenType = KeyGeneratorType.NONE;
-                parameters.setArgNumber(1);
-                Parameters.numMilliseconds = 0;
+                parameters.numMilliseconds = 0;
             }
             case "-delete-leafs" -> {
+                keyGeneratorBuilder = new KeyGeneratorBuilder();
+
                 parameters = new Parameters();
                 parameters.workloadType = WorkloadType.DELETE_LEAFS;
                 parameters.keygenType = KeyGeneratorType.NONE;
-                parameters.setArgNumber(1);
             }
             case "-leaf-insert" -> {
+                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder();
+
                 parameters = new Parameters();
                 parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
-                parameters.setArgNumber(1);
+            }
+            case "-leafs-handshake" -> {
+                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder();
+
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
             }
             default -> {
+                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder();
+
                 parameters = new SimpleParameters();
                 parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
-                parameters.setArgNumber(0);
+                startArgNumber = 0;
             }
         }
-        parameters.parse(args);
+
+//        keyGeneratorBuilder.parse(args);
+
+        parameters.parse(args, startArgNumber);
 
         assert (parameters.range >= parameters.size);
         if (parameters.range != 2 * parameters.size)
@@ -452,7 +464,7 @@ public class Test {
      */
     private void printBasicStats() {
         int finalSize = 0;
-        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
+        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
             numAdd += threadLoops[threadNum].getNumAdd();
             numRemove += threadLoops[threadNum].getNumRemove();
             numAddAll += threadLoops[threadNum].getNumAddAll();

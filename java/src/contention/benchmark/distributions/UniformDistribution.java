@@ -26,4 +26,10 @@ public class UniformDistribution implements MutableDistribution {
     public int next() {
         return random.nextInt(range);
     }
+
+
+    @Override
+    public int next(int range) {
+        return random.nextInt(range);
+    }
 }

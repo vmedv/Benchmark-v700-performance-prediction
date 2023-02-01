@@ -1,7 +1,9 @@
 package contention.benchmark.keygenerators.parameters;
 
+import contention.abstractions.DistributionBuilder;
 import contention.abstractions.DistributionType;
 import contention.abstractions.Parameters;
+import contention.benchmark.distributions.parameters.ZipfParameters;
 
 /**
  * старички + волна
@@ -26,15 +28,14 @@ public class CreakersAndWaveParameters extends Parameters {
     public double CREAKERS_PROB = 0;
     public long CREAKERS_AGE = 0;
     public double WAVE_SIZE = 0;
-    public DistributionType creakersDist = DistributionType.UNIFORM;
-    public DistributionType waveDist = DistributionType.MUTABLE_ZIPF;
-    public double creakersZipfParm = 1.0;
-    public double waveZipfParm = 1.0;
+    public DistributionBuilder creakersDist = new DistributionBuilder();
+    public DistributionBuilder waveDist = new DistributionBuilder(DistributionType.ZIPF)
+            .setParameters(new ZipfParameters(1));
 
     @Override
-    protected void parseArg(String[] args) {
+    protected void parseArg() {
         //todo
-        super.parseArg(args);
+        super.parseArg();
     }
 
     @Override

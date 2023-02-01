@@ -10,14 +10,9 @@ import contention.benchmark.keygenerators.data.CreakersAndWaveKeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
 
 public class CreakersAndWaveKeyGenerator implements KeyGenerator {
-    private static CreakersAndWaveKeyGeneratorData data;
-    private static CreakersAndWaveParameters parameters;
+    public static CreakersAndWaveKeyGeneratorData data;
 
     public CreakersAndWaveKeyGenerator(Distribution creakersDistribution, MutableDistribution waveDistribution) {
-    }
-
-    public static void setData(CreakersAndWaveKeyGeneratorData data) {
-        CreakersAndWaveKeyGenerator.data = data;
     }
 
     @Override
@@ -40,24 +35,4 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
         return 0;
     }
 
-    public static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        parameters = (CreakersAndWaveParameters) rawParameters;
-
-        KeyGenerator[] keygens = new KeyGenerator[Parameters.numThreads];
-
-        int creakersLength = (int) (Parameters.range * parameters.CREAKERS_SIZE);
-
-        CreakersAndWaveKeyGeneratorData data = new CreakersAndWaveKeyGeneratorData(parameters);
-
-        CreakersAndWaveKeyGenerator.setData(data);
-
-        for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new CreakersAndWaveKeyGenerator(
-                    new UniformDistribution(creakersLength),
-                    new ZipfDistribution(parameters.waveZipfParm)
-            );
-        }
-
-        return keygens;
-    }
 }

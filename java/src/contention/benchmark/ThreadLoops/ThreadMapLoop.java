@@ -43,7 +43,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
      * |--writeAll--|--writeSome--|--readAll--|--readSome--|
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
-    protected int[] cdf = new int[3];
+    protected int[] cdf = new int[4];
 
     public ThreadMapLoop(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods,
                          KeyGenerator keygen, Parameters parameters) {
@@ -54,8 +54,9 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
         /* initialize the method boundaries */
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = 10 * parameters.numWriteAlls;
-        cdf[1] = 10 * parameters.numWrites;
-        cdf[2] = cdf[1] + 10 * parameters.numSnapshots;
+        cdf[1] = 10 * parameters.numInsert;
+        cdf[2] = cdf[1] + 10 * parameters.numErase;
+        cdf[3] = cdf[2] + 10 * parameters.numSnapshots;
     }
 
     public void printDataStructure() {
@@ -84,32 +85,31 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 }
 
 
-            } else if (coin < cdf[1]) { // 2. should we run a writeSome
-                // operation?
-                if (2 * (coin - cdf[0]) < cdf[1] - cdf[0]) { // add
-                    newInt = keygen.nextInsert();
+            } else if (coin < cdf[1]) { // 2. should we run an insert
 
-                    if ((a = bench.putIfAbsent(newInt, newInt)) == null) {
-                        numAdd++;
-                    } else {
-                        failures++;
-                    }
-                } else { // remove
-                    newInt = keygen.nextErase();
+                newInt = keygen.nextInsert();
 
-                    if ((a = bench.remove(newInt)) != null) {
-                        numRemove++;
-                    } else {
-                        failures++;
-                    }
+                if ((a = bench.putIfAbsent(newInt, newInt)) == null) {
+                    numAdd++;
+                } else {
+                    failures++;
                 }
-                //
-            } else if (coin < cdf[2]) { // 3. should we run a readAll operation?
+            } else if (coin < cdf[2]) { // 3. should we run a remove
+
+                newInt = keygen.nextErase();
+
+                if ((a = bench.remove(newInt)) != null) {
+                    numRemove++;
+                } else {
+                    failures++;
+                }
+
+            } else if (coin < cdf[3]) { // 4. should we run a readAll operation?
 
                 bench.size();
                 numSize++;
 
-            } else { //if (coin < cdf[3]) { // 4. then we should run a readSome operation
+            } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
 
                 if (bench.get(newInt) != null)
                     numContains++;
