@@ -20,7 +20,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     private final Distribution eraseDistribution;
     private final Random random;
 
-    public static AtomicInteger deletedValue = null;
+    public static AtomicInteger deletedValue = new AtomicInteger(0);
 
     public LeafsHandshakeKeyGenerator(int range,
                                       Distribution readDistribution,
@@ -71,37 +71,5 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     public int nextPrefill() {
         return nextRead();
     }
-
-//    public static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-//        parameters = (LeafsHandshakeParameters) rawParameters;
-//        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
-//
-//        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-//            keygens[threadNum] = new LeafsHandshakeKeyGenerator(
-//                    parameters.readDistType.getDistribution(parameters.range),
-//                    parameters.insertDistType.getDistribution(),
-//                    parameters.eraseDistType.getDistribution(parameters.range)
-//            );
-//        }
-//
-//        readData = switch (parameters.readDistType) {
-//            case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
-//            default -> null;
-//        };
-//
-//        // todo think about the intersection of sets
-//        if (parameters.readDistType == parameters.eraseDistType) {
-//            eraseData = readData;
-//        } else {
-//            eraseData = switch (parameters.readDistType) {
-//                case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
-//                default -> null;
-//            };
-//        }
-//
-//        deletedValue = new AtomicInteger(keygens[0].nextErase());
-//
-//        return keygens;
-//    }
 
 }

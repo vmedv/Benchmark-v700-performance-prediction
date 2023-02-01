@@ -83,6 +83,7 @@ public class Parameters {
             parseArg();
             argNumber++;
         }
+        this.numWrites = this.numInsert + this.numErase;
         this.args = null;
         this.argNumber = 0;
     }
@@ -99,9 +100,9 @@ public class Parameters {
                 .append("  Length:                  \t")
                 .append(this.numMilliseconds)
                 .append(" ms\n")
-//                .append("  Write ratio:             \t")
-//                .append(this.numWrites)
-//                .append(" %\n")
+                .append("  Write ratio:             \t")
+                .append(this.numWrites)
+                .append(" %\n")
                 .append("  Insert ratio:            \t")
                 .append(this.numInsert)
                 .append(" %\n")

@@ -40,6 +40,8 @@ public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
             };
         }
 
+        // to initialize deletedValue
+//        keygens[0].nextErase();
         LeafsHandshakeKeyGenerator.deletedValue = new AtomicInteger(keygens[0].nextErase());
 
         return keygens;
