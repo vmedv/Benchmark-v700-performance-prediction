@@ -47,9 +47,9 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
         boolean isRight = random.nextDouble() >= 0.5;
 
         if (localDeletedValue == 0 || (isRight && localDeletedValue != range - 1)) {
-            value = insertDistribution.next(range - 1 - localDeletedValue);
+            value = localDeletedValue + insertDistribution.next(range - localDeletedValue) + 1;
         } else {
-            value = insertDistribution.next(localDeletedValue - 1);
+            value = localDeletedValue - insertDistribution.next(localDeletedValue) - 1;
         }
 
         return value;

@@ -7,9 +7,9 @@ import contention.benchmark.distributions.parameters.ZipfParameters;
 
 public class LeafsHandshakeParameters extends Parameters {
     public DistributionBuilder readDistBuilder = new DistributionBuilder();
-    public DistributionBuilder insertDistBuilder = new DistributionBuilder();
-    public DistributionBuilder eraseDistBuilder = new DistributionBuilder()
+    public DistributionBuilder insertDistBuilder = new DistributionBuilder()
             .setDistributionType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
+    public DistributionBuilder eraseDistBuilder = new DistributionBuilder();
 
     @Override
     protected void parseArg() {
