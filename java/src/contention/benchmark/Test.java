@@ -365,6 +365,12 @@ public class Test {
                 parameters = new LeafsHandshakeParameters();
                 parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
             }
+            case "-leafs-extension-handshake" -> {
+                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder();
+
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
+            }
             default -> {
                 keyGeneratorBuilder = new SimpleKeyGeneratorBuilder();
 
