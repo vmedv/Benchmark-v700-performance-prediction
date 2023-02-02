@@ -35,7 +35,8 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextRead() {
-        return readDistribution.next();
+        int index = readDistribution.next();
+        return readData == null ? index : readData.get(index);
     }
 
     @Override

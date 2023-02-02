@@ -385,10 +385,10 @@ public class Test {
         parameters.parse(args, startArgNumber);
 
         assert (parameters.range >= parameters.size);
-        if (parameters.range != 2 * parameters.size)
-            System.err
-                    .println("Note that the value range is not twice "
-                            + "the initial size, thus the size expectation varies at runtime.");
+//        if (parameters.range != 2 * parameters.size)
+//            System.err
+//                    .println("Note that the value range is not twice "
+//                            + "the initial size, thus the size expectation varies at runtime.");
     }
 
     /**
