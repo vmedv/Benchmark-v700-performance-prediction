@@ -1,75 +1,62 @@
-package contention.benchmark.ThreadLoops;
+package contention.benchmark.ThreadLoops.workloads;
 
 import contention.abstractions.CompositionalMap;
 import contention.abstractions.KeyGenerator;
-import contention.abstractions.ThreadLoopAbstract;
 import contention.abstractions.Parameters;
+import contention.abstractions.ThreadLoop;
+import contention.benchmark.ThreadLoops.ThreadMapLoop;
+import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
-/**
- * The loop executed by each thread of the map
- * benchmark.
- *
- * @author Vincent Gramoli
- */
-public class ThreadMapLoop extends ThreadLoopAbstract {
+public class TemporaryOperationsWorkload extends ThreadMapLoop {
+    private long time;
+    private int pointer;
+    private TemporaryOperationsParameters parameters;
 
-    /**
-     * The instance of the running benchmark
-     */
-    public CompositionalMap<Integer, Integer> bench;
-    /**
-     * The pool of methods that can run
-     */
-    protected Method[] methods;
-    /**
-     * The number of the current thread
-     */
-    protected final short myThreadNum;
+    private int[][] cdf;
 
-    /**
-     * The random number
-     */
-    protected Random rand = new Random();
+    public TemporaryOperationsWorkload(short myThreadNum,
+                                       CompositionalMap<Integer, Integer> bench,
+                                       Method[] methods,
+                                       KeyGenerator keygen, TemporaryOperationsParameters parameters) {
+        super(myThreadNum, bench, methods, keygen, parameters);
+        this.time = 0;
+        this.pointer = 0;
+        this.parameters = parameters;
 
-    /**
-     * The distribution of methods as an array of percentiles
-     * <p>
-     * 0%        cdf[0]        cdf[2]                     100%
-     * |--writeAll--|--writeSome--|--readAll--|--readSome--|
-     * |-----------write----------|--readAll--|--readSome--| cdf[1]
-     */
-    protected int[] cdf = new int[4];
+        this.cdf = new int[parameters.tempOperCount][4];
 
-    public ThreadMapLoop(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods,
-                         KeyGenerator keygen, Parameters parameters) {
-        super(keygen, parameters);
-        this.myThreadNum = myThreadNum;
-        this.bench = bench;
-        this.methods = methods;
-        /* initialize the method boundaries */
-        assert (parameters.numWrites >= parameters.numWriteAlls);
-        cdf[0] = 10 * parameters.numWriteAlls;
-        cdf[1] = 10 * parameters.numInsert;
-        cdf[2] = cdf[1] + 10 * parameters.numErase;
-        cdf[3] = cdf[2] + 10 * parameters.numSnapshots;
+        for (int i = 0; i < parameters.tempOperCount; i++) {
+            cdf[i][0] = 10 * parameters.numWriteAlls;
+            cdf[i][1] = 10 * parameters.numInserts[i];
+            cdf[i][2] = cdf[i][1] + 10 * parameters.numErases[i];
+            cdf[i][3] = cdf[i][2] + 10 * parameters.numSnapshots;
+        }
     }
 
-    public void printDataStructure() {
-        System.out.println(bench.toString());
+    private void update_pointer() {
+        if (time >= parameters.opTimes[pointer]) {
+            time = 0;
+            ++pointer;
+            if (pointer >= parameters.tempOperCount) {
+                pointer = 0;
+            }
+        }
+        ++time;
     }
 
     @Override
     public void run() {
 
         while (!stop) {
+            update_pointer();
+
             Integer a, b;
             int coin = rand.nextInt(1000);
-            if (coin < cdf[0]) { // 1. should we run a writeAll operation?
+            if (coin < cdf[pointer][0]) { // 1. should we run a writeAll operation?
                 int newInt = rand.nextInt(parameters.range);
 
                 // init a collection
@@ -85,7 +72,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 }
 
 
-            } else if (coin < cdf[1]) { // 2. should we run an insert
+            } else if (coin < cdf[pointer][1]) { // 2. should we run an insert
 
                 int newInt = keygen.nextInsert();
 
@@ -94,7 +81,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 } else {
                     failures++;
                 }
-            } else if (coin < cdf[2]) { // 3. should we run a remove
+            } else if (coin < cdf[pointer][2]) { // 3. should we run a remove
 
                 int newInt = keygen.nextErase();
 
@@ -104,13 +91,15 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                     failures++;
                 }
 
-            } else if (coin < cdf[3]) { // 4. should we run a readAll operation?
+            } else if (coin < cdf[pointer][3]) { // 4. should we run a readAll operation?
 
                 bench.size();
                 numSize++;
 
             } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
+
                 int newInt = keygen.nextRead();
+
                 if (bench.get(newInt) != null)
                     numContains++;
                 else
@@ -124,22 +113,12 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
             assert total == failures + numContains + numSize + numRemove
                     + numAdd + numRemoveAll + numAddAll;
         }
+
         // System.out.println(numAdd + " " + numRemove + " " + failures);
         this.getCount = CompositionalMap.counts.get().getCount;
         this.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
         this.structMods = CompositionalMap.counts.get().structMods;
         System.out.println("Thread #" + myThreadNum + " finished.");
-    }
-
-    @Override
-    public void prefill() {
-        long size = parameters.size / parameters.numPrefillThreads;
-        for (long i = size; i > 0; ) {
-            int v = rand.nextInt(parameters.range);
-            if (bench.putIfAbsent(v, v) == null) {
-                i--;
-            }
-        }
     }
 
 }

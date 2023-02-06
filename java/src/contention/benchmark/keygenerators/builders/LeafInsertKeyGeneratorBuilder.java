@@ -8,8 +8,12 @@ import contention.benchmark.keygenerators.data.LeafInsertKeyGeneratorData;
 
 public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public LeafInsertKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters parameters) {
+    public KeyGenerator[] generateKeyGenerators() {
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
         LeafInsertKeyGenerator.data = new LeafInsertKeyGeneratorData(parameters);

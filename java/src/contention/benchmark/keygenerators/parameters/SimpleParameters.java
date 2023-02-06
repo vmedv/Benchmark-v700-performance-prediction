@@ -22,8 +22,8 @@ public class SimpleParameters extends Parameters {
         StringBuilder params = super.toStringBuilder();
         params.append("\n")
                 .append("  Distribution:            \t")
-                .append(distributionBuilder)
-                .append(distributionBuilder.parameters.toStringBuilder());
+                .append(distributionBuilder.distributionType)
+                .append(distributionBuilder.toStringBuilderParameters());
         return params;
     }
 }

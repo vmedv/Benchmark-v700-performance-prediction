@@ -80,4 +80,8 @@ public class DistributionBuilder {
         };
     }
 
+    public StringBuilder toStringBuilderParameters() {
+        return this.parameters != null ? this.parameters.toStringBuilder() : new StringBuilder();
+    }
+
 }

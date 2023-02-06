@@ -7,9 +7,13 @@ import contention.benchmark.keygenerators.parameters.SkewedSetsParameters;
 
 public class SkewedSetsKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public SkewedSetsKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        SkewedSetsParameters parameters = (SkewedSetsParameters) rawParameters;
+    public KeyGenerator[] generateKeyGenerators() {
+        SkewedSetsParameters parameters = (SkewedSetsParameters) this.parameters;
 
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 

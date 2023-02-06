@@ -9,9 +9,13 @@ import contention.benchmark.keygenerators.parameters.SimpleParameters;
 
 public class SimpleKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public SimpleKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        SimpleParameters parameters = (SimpleParameters) rawParameters;
+    public KeyGenerator[] generateKeyGenerators() {
+        SimpleParameters parameters = (SimpleParameters) this.parameters;
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
         SimpleKeyGenerator.data = switch (parameters.distributionBuilder.distributionType) {

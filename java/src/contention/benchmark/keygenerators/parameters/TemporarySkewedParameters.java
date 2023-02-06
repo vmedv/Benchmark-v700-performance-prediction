@@ -104,8 +104,9 @@ public class TemporarySkewedParameters extends Parameters {
                 .append("  Sets sizes:              \t")
                 .append("\n");
         for (int i = 0; i < setCount; i++) {
-            params.append("    Set size ").append(i).append(":              \t")
-                    .append(this.setSizes[i]).append("\n");
+            params
+                .append("    Set size ").append(i).append(":              \t")
+                .append(this.setSizes[i]).append("\n");
         }
 
         params
@@ -115,19 +116,21 @@ public class TemporarySkewedParameters extends Parameters {
                 .append("  Hot Times:               \t")
                 .append("\n");
         for (int i = 0; i < setCount; i++) {
-            params.append("    Hot Time ").append(i).append(":              \t")
-                    .append(this.setSizes[i]).append("\n");
+            params
+                .append("    Hot Time ").append(i).append(":              \t")
+                .append(this.setSizes[i]).append("\n");
         }
 
         params
                 .append("  Common Relax Time:       \t")
                 .append(this.relaxTime)
                 .append("\n")
-                .append("  Relax Times:             \t")
-                .append("\n");
+                .append("  Relax Times:             \t");
+
         for (int i = 0; i < setCount; i++) {
-            params.append("    Relax Time ").append(i).append(":            \t")
-                    .append(this.setSizes[i]).append("\n");
+            params.append("\n")
+                .append("    Relax Time ").append(i).append(":            \t")
+                .append(this.setSizes[i]);
         }
 
         return params;

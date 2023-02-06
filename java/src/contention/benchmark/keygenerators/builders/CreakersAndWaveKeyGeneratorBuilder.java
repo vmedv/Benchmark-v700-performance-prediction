@@ -9,9 +9,13 @@ import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
 
 public class CreakersAndWaveKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public CreakersAndWaveKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        CreakersAndWaveParameters parameters = (CreakersAndWaveParameters) rawParameters;
+    public KeyGenerator[] generateKeyGenerators() {
+        CreakersAndWaveParameters parameters = (CreakersAndWaveParameters) this.parameters;
 
         KeyGenerator[] keygens = new KeyGenerator[Parameters.numThreads];
 

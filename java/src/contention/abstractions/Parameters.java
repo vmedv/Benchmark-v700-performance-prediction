@@ -1,5 +1,9 @@
 package contention.abstractions;
 
+import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
+import contention.benchmark.keygenerators.builders.*;
+import contention.benchmark.keygenerators.parameters.*;
+
 /**
  * Parameters of the Java version of the
  * Synchrobench benchmark.
@@ -77,8 +81,12 @@ public class Parameters {
     }
 
     public void parse(String[] args, int startArgNumber) {
-        this.args = args;
         this.argNumber = startArgNumber;
+        this.parse(args);
+    }
+
+    public void parse(String[] args) {
+        this.args = args;
         while (argNumber < args.length) {
             parseArg();
             argNumber++;
@@ -86,6 +94,89 @@ public class Parameters {
         this.numWrites = this.numInsert + this.numErase;
         this.args = null;
         this.argNumber = 0;
+    }
+
+    public static KeyGeneratorBuilder parseWorkload(String[] args, int workloadIndex) {
+        Parameters parameters;
+        KeyGeneratorBuilder keyGeneratorBuilder;
+        switch (args[workloadIndex]) {
+            case "-skewed-sets" -> {
+                parameters = new SkewedSetsParameters();
+                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder(parameters);
+            }
+            case "-creakers-and-wave" -> {
+                parameters = new CreakersAndWaveParameters();
+                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder(parameters);
+            }
+            case "-temporary-skewed", "-temp-skewed" -> {
+                parameters = new TemporarySkewedParameters();
+                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder(parameters);
+            }
+            case "-delete-speed-test" -> {
+                parameters = new Parameters();
+                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
+                parameters.keygenType = KeyGeneratorType.NONE;
+                parameters.numMilliseconds = 0;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
+            }
+            case "-delete-leafs" -> {
+                parameters = new Parameters();
+                parameters.workloadType = WorkloadType.DELETE_LEAFS;
+                parameters.keygenType = KeyGeneratorType.NONE;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
+            }
+            case "-leaf-insert" -> {
+                parameters = new Parameters();
+                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder(parameters);
+            }
+            case "-leafs-handshake" -> {
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder(parameters);
+            }
+            case "-leafs-extension-handshake" -> {
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
+                parameters.argNumber = workloadIndex + 1;
+
+                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
+            }
+            case "-temp-oper", "-temporary-operation" -> {
+                keyGeneratorBuilder = Parameters.parseWorkload(args, workloadIndex + 1);
+                parameters = new TemporaryOperationsParameters();
+                parameters.argNumber = keyGeneratorBuilder.parameters.argNumber;
+                parameters.workloadType = WorkloadType.TEMPORARY_OPERATIONS;
+                parameters.keygenType = keyGeneratorBuilder.parameters.keygenType;
+
+                keyGeneratorBuilder.parameters = parameters;
+            }
+            default -> {
+                parameters = new SimpleParameters();
+                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+                parameters.argNumber = workloadIndex;
+
+                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder(parameters);
+            }
+        }
+        return keyGeneratorBuilder;
     }
 
     public StringBuilder toStringBuilder() {
@@ -99,7 +190,9 @@ public class Parameters {
                 .append("\n")
                 .append("  Length:                  \t")
                 .append(this.numMilliseconds)
-                .append(" ms\n")
+                .append(" ms\n");
+        if (workloadType != WorkloadType.TEMPORARY_OPERATIONS) {
+            result
                 .append("  Write ratio:             \t")
                 .append(this.numWrites)
                 .append(" %\n")
@@ -111,7 +204,9 @@ public class Parameters {
                 .append(" %\n")
                 .append("  WriteAll ratio:          \t")
                 .append(this.numWriteAlls)
-                .append(" %\n")
+                .append(" %\n");
+        }
+        result
                 .append("  Snapshot ratio:          \t")
                 .append(this.numSnapshots)
                 .append(" %\n")
@@ -138,11 +233,11 @@ public class Parameters {
                     .append("  Workload:                \t")
                     .append(this.workloadType);
         }
-        if (keygenType != KeyGeneratorType.NONE) {
-            result.append("\n")
-                    .append("  Key Generator:           \t")
-                    .append(this.keygenType);
-        }
+//        if (keygenType != KeyGeneratorType.NONE) {
+//            result.append("\n")
+//                    .append("  Key Generator:           \t")
+//                    .append(this.keygenType);
+//        }
 
         return result;
     }

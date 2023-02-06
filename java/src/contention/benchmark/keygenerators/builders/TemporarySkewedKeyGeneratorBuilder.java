@@ -12,9 +12,13 @@ import contention.benchmark.keygenerators.parameters.TemporarySkewedParameters;
 
 public class TemporarySkewedKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public TemporarySkewedKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        TemporarySkewedParameters parameters = (TemporarySkewedParameters) rawParameters;
+    public KeyGenerator[] generateKeyGenerators() {
+        TemporarySkewedParameters parameters = (TemporarySkewedParameters) this.parameters;
 
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 

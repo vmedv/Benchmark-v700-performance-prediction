@@ -16,9 +16,9 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
 
     private Distribution[] hotDists;
     private Distribution relaxDist;
-    long time;
-    int pointer;
-    boolean relaxTime;
+    private long time;
+    private int pointer;
+    private boolean relaxTime;
 
     public TemporarySkewedKeyGenerator(Distribution[] hotDists, Distribution relaxDist) {
         this.hotDists = hotDists;

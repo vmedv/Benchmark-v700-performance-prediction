@@ -21,4 +21,25 @@ public class LeafsHandshakeParameters extends Parameters {
         }
     }
 
+    @Override
+    public StringBuilder toStringBuilder() {
+        StringBuilder result = super.toStringBuilder();
+        result.append("\n")
+                .append("  Key Generator:           \t")
+                .append(this.keygenType)
+                .append("\n")
+                .append("  Read distribution:       \t")
+                .append(readDistBuilder.distributionType)
+                .append(readDistBuilder.toStringBuilderParameters())
+                .append("\n")
+                .append("  Insert distribution:     \t")
+                .append(insertDistBuilder.distributionType)
+                .append(insertDistBuilder.toStringBuilderParameters())
+                .append("\n")
+                .append("  Erase distribution:      \t")
+                .append(eraseDistBuilder.distributionType)
+                .append(eraseDistBuilder.toStringBuilderParameters());
+        return result;
+    }
+
 }

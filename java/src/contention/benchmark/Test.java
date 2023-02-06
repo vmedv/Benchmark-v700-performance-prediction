@@ -10,8 +10,7 @@ import java.util.Random;
 
 import contention.benchmark.ThreadLoops.*;
 import contention.benchmark.ThreadLoops.workloads.*;
-import contention.benchmark.keygenerators.builders.*;
-import contention.benchmark.keygenerators.parameters.*;
+import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -154,7 +153,7 @@ public class Test {
      * Creates as many threads as requested
      */
     private void initThreads() {
-        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators(parameters);
+        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
 
         threads = new Thread[parameters.numThreads];
         threadLoops = new ThreadLoop[parameters.numThreads];
@@ -167,6 +166,8 @@ public class Test {
                     case REGULAR -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
                     case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods, parameters);
                     case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
+                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsWorkload(threadNum, mapBench, methods,
+                            keygens[threadNum], (TemporaryOperationsParameters) parameters);
                 };
                 case SORTEDSET ->
                         new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
@@ -314,75 +315,78 @@ public class Test {
      */
     private void parseCommandLineParameters(String[] args) {
 
-        int startArgNumber = 1;
         switch (args[0]) {
             case "--help", "-h" -> {
                 printUsage();
                 System.exit(0);
             }
-            case "-skewed-sets" -> {
-                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder();
-
-                parameters = new SkewedSetsParameters();
-                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
-            }
-            case "-creakers-and-wave" -> {
-                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder();
-
-                parameters = new CreakersAndWaveParameters();
-                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
-            }
-            case "-temporary-skewed", "-temp-skewed" -> {
-                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder();
-
-                parameters = new TemporarySkewedParameters();
-                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
-            }
-            case "-delete-speed-test" -> {
-                keyGeneratorBuilder = new KeyGeneratorBuilder();
-
-                parameters = new Parameters();
-                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
-                parameters.keygenType = KeyGeneratorType.NONE;
-                parameters.numMilliseconds = 0;
-            }
-            case "-delete-leafs" -> {
-                keyGeneratorBuilder = new KeyGeneratorBuilder();
-
-                parameters = new Parameters();
-                parameters.workloadType = WorkloadType.DELETE_LEAFS;
-                parameters.keygenType = KeyGeneratorType.NONE;
-            }
-            case "-leaf-insert" -> {
-                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder();
-
-                parameters = new Parameters();
-                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
-            }
-            case "-leafs-handshake" -> {
-                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder();
-
-                parameters = new LeafsHandshakeParameters();
-                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
-            }
-            case "-leafs-extension-handshake" -> {
-                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder();
-
-                parameters = new LeafsHandshakeParameters();
-                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
-            }
-            default -> {
-                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder();
-
-                parameters = new SimpleParameters();
-                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
-                startArgNumber = 0;
-            }
+//            case "-skewed-sets" -> {
+//                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder();
+//
+//                parameters = new SkewedSetsParameters();
+//                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
+//            }
+//            case "-creakers-and-wave" -> {
+//                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder();
+//
+//                parameters = new CreakersAndWaveParameters();
+//                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
+//            }
+//            case "-temporary-skewed", "-temp-skewed" -> {
+//                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder();
+//
+//                parameters = new TemporarySkewedParameters();
+//                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
+//            }
+//            case "-delete-speed-test" -> {
+//                keyGeneratorBuilder = new KeyGeneratorBuilder();
+//
+//                parameters = new Parameters();
+//                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
+//                parameters.keygenType = KeyGeneratorType.NONE;
+//                parameters.numMilliseconds = 0;
+//            }
+//            case "-delete-leafs" -> {
+//                keyGeneratorBuilder = new KeyGeneratorBuilder();
+//
+//                parameters = new Parameters();
+//                parameters.workloadType = WorkloadType.DELETE_LEAFS;
+//                parameters.keygenType = KeyGeneratorType.NONE;
+//            }
+//            case "-leaf-insert" -> {
+//                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder();
+//
+//                parameters = new Parameters();
+//                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
+//            }
+//            case "-leafs-handshake" -> {
+//                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder();
+//
+//                parameters = new LeafsHandshakeParameters();
+//                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
+//            }
+//            case "-leafs-extension-handshake" -> {
+//                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder();
+//
+//                parameters = new LeafsHandshakeParameters();
+//                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
+//            }
+//            default -> {
+//                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder();
+//
+//                parameters = new SimpleParameters();
+//                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+//                startArgNumber = 0;
+//            }
         }
 
 //        keyGeneratorBuilder.parse(args);
 
-        parameters.parse(args, startArgNumber);
+        keyGeneratorBuilder = Parameters.parseWorkload(args, 0);
+
+        parameters = keyGeneratorBuilder.parameters;
+
+        parameters.parse(args);
 
         assert (parameters.range >= parameters.size);
 //        if (parameters.range != 2 * parameters.size)

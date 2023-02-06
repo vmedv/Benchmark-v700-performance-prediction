@@ -11,9 +11,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
+    public LeafsHandshakeKeyGeneratorBuilder(Parameters parameters) {
+        super(parameters);
+    }
+
     @Override
-    public KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        LeafsHandshakeParameters parameters = (LeafsHandshakeParameters) rawParameters;
+    public KeyGenerator[] generateKeyGenerators() {
+        LeafsHandshakeParameters parameters = (LeafsHandshakeParameters) this.parameters;
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {

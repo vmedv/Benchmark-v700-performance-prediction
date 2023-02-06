@@ -67,9 +67,9 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
     public void run() {
 
         while (!stop) {
-            Integer newInt = rand.nextInt(parameters.range);
             int coin = rand.nextInt(1000);
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
+                int newInt = rand.nextInt(parameters.range);
 
                 // init a collection
                 Vector<Integer> vec = new Vector<Integer>(newInt);
@@ -84,6 +84,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
                 }
 
             } else if (coin < cdf[1]) { // 2. should we run an add
+                int newInt = keygen.nextInsert();
 
                 if (bench.add(newInt)) {
                     numAdd++;
@@ -91,6 +92,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
                     failures++;
                 }
             } else if (coin < cdf[2]) { // 3. should we run a remove
+                int newInt = keygen.nextErase();
 
                 if (bench.remove(newInt)) {
                     numRemove++;
@@ -103,6 +105,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
                 numSize++;
 
             } else { // 5. then we should run a readSome operation
+                int newInt = keygen.nextRead();
 
                 if (bench.contains(newInt))
                     numContains++;

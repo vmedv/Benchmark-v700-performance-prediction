@@ -64,9 +64,9 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
     public void run() {
 
         while (!stop) {
-            Integer newInt = rand.nextInt(parameters.range);
             int coin = rand.nextInt(1000);
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
+                int newInt = rand.nextInt(parameters.range);
 
                 // init a collection
                 Vector<Integer> vec = new Vector<Integer>(newInt);
@@ -81,17 +81,21 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
                 }
 
             } else if (coin < cdf[1]) { // 2. should we run an add
-                    if (bench.addInt((int) newInt)) {
-                        numAdd++;
-                    } else {
-                        failures++;
-                    }
+                int newInt = keygen.nextInsert();
+
+                if (bench.addInt(newInt)) {
+                    numAdd++;
+                } else {
+                    failures++;
+                }
             } else if (coin < cdf[2]) { // 3. should we run a remove
-                    if (bench.removeInt((int) newInt)) {
-                        numRemove++;
-                    } else {
-                        failures++;
-                    }
+                int newInt = keygen.nextErase();
+
+                if (bench.removeInt(newInt)) {
+                    numRemove++;
+                } else {
+                    failures++;
+                }
 
             } else if (coin < cdf[3]) { // 4. should we run a readAll operation?
 
@@ -99,8 +103,9 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
                 numSize++;
 
             } else { // 5. then we should run a readSome operation
+                int newInt = keygen.nextRead();
 
-                if (bench.containsInt((int) newInt))
+                if (bench.containsInt(newInt))
                     numContains++;
                 else
                     failures++;

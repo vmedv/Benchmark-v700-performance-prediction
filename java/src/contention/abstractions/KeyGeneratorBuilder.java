@@ -1,17 +1,13 @@
 package contention.abstractions;
 
-import contention.benchmark.keygenerators.*;
-import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
-import contention.benchmark.keygenerators.parameters.SimpleParameters;
-import contention.benchmark.keygenerators.parameters.SkewedSetsParameters;
-import contention.benchmark.keygenerators.parameters.TemporarySkewedParameters;
-
-public class KeyGeneratorBuilder {
+public abstract class KeyGeneratorBuilder {
 //    public KeyGeneratorType keyGeneratorType;
-//    public Parameters parameters;
+    public Parameters parameters;
 
-    public KeyGenerator[] generateKeyGenerators(Parameters parameters) {
-        return null;
+    public KeyGeneratorBuilder(Parameters parameters) {
+        this.parameters = parameters;
     }
+
+    public abstract KeyGenerator[] generateKeyGenerators();
 
 }
