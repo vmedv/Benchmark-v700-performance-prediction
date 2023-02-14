@@ -1549,8 +1549,8 @@ int main(int argc, char **argv) {
     WORK_THREADS = 4;
     RQSIZE = 0;
     RQ = 0;
-    INS_FRAC = 0.1;
-    DEL_FRAC = 0.1;
+    INS_FRAC = 0;
+    DEL_FRAC = 0;
     MAXKEY = 100000;
     PREFILL_HYBRID_MIN_MS = 1000;
     PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes

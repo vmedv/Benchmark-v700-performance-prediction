@@ -30,6 +30,15 @@ LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -skewed-sets
     -prefillsize 100000 -nprefill 8 -t 10000 -nrq 0 -nwork 8 -prefill-insert 
 ```
 
+Если после запуска что-то ломается, или возникает такая проблема: 
+```
+PAPI ERROR: thread 0 unable to add event PAPI_L2_DCM: Permission level does not permit operation
+```
+, то может помочь следующее: 
+```
+sudo sysctl kernel.perf_event_paranoid=1
+```
+
 ## Виды рабочих нагрузок
 
 ### Стандартная 
