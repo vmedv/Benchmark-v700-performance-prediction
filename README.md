@@ -163,8 +163,6 @@ sudo sysctl kernel.perf_event_paranoid=1
 + `-sbi` <n> <f> — левая граница горячих данных из `n-ого` подмножества
   в соотношении ко всему множеству ключей (работает лишь при включенном режиме `non-shuffle`)
 
-LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -temp-skewed -set-count 3 -ht 1000 -rt 1000 -si 0 0.3 -si 1 0.2 -si 2 0.4 -pi 0 0.9 -pi 1 0.7 -pi 2 0.8 -i 0.4 -d 0.05 -rq 0 -k 100000 -prefillsize 100000 -nprefill 8 -t 10000 -nrq 0 -nwork 8 -prefill-insert -non-shuffle -sbi 0 0 -sbi 1 0.6 -sbi 2 0.3
-
 ### Creakers and wave
 
 + `-gs <f>` || `-cs <f>` — размер подмножества старичков 
