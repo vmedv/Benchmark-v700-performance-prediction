@@ -26,7 +26,7 @@ LD_PRELOAD=../lib/libjemalloc.so ./bin/<data_structure_name>.debra <workload_typ
 Пример:
 ```
 LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -skewed-sets 
-    -rp 0.9 -rs 0.1 -wp 0.9 -ws 0.2 -inter 0.05 -i 5 -d 5 -rq 0 -k 100000 
+    -rp 0.9 -rs 0.1 -wp 0.9 -ws 0.2 -inter 0.05 -i 0.05 -d 0.05 -rq 0 -k 100000 
     -prefillsize 100000 -nprefill 8 -t 10000 -nrq 0 -nwork 8 -prefill-insert 
 ```
 
@@ -148,6 +148,13 @@ LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -skewed-sets
 в соотношении ко всему множеству ключей
 + `-hti <n1> <n2>` — время работы с горячими данными из `n1-ого` подмножества
 + `-rti <n1> <n2>` — время отдыха после работы с горячими данными из `n1-ого` подмножества
+
+#### Дополнительные параметры:
++ `-non-shuffle` — включения режима без перемешивания ключей
++ `-sbi` <n> <f> — левая граница горячих данных из `n-ого` подмножества
+  в соотношении ко всему множеству ключей (работает лишь при включенном режиме `non-shuffle`)
+
+LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -temp-skewed -set-count 3 -ht 1000 -rt 1000 -si 0 0.3 -si 1 0.2 -si 2 0.4 -pi 0 0.9 -pi 1 0.7 -pi 2 0.8 -i 0.4 -d 0.05 -rq 0 -k 100000 -prefillsize 100000 -nprefill 8 -t 10000 -nrq 0 -nwork 8 -prefill-insert -non-shuffle -sbi 0 0 -sbi 1 0.6 -sbi 2 0.3
 
 ### Creakers and wave
 

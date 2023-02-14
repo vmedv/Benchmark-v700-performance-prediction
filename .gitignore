@@ -35,7 +35,7 @@ data*.txt
 plot*.txt
 output_*.txt
 _output_backup
-data
+#data
 macrobench/bin
 log.*
 Makefile.var

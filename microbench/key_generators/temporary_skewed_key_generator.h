@@ -11,49 +11,14 @@
 #include "key_generator.h"
 #include "distributions/distribution.h"
 #include "parameters/temporary_skewed_parameters.h"
+#include "data/temporary_skewed_key_generator_data.h"
 
-
-class TemporarySkewedKeyGeneratorData : public KeyGeneratorData {
-public:
-    PAD;
-    size_t maxKey;
-
-    int *data;
-    size_t *setLengths;
-    size_t *setBegins;
-    TemporarySkewedParameters *TSParm;
-    PAD;
-
-    TemporarySkewedKeyGeneratorData(const size_t _maxKey, TemporarySkewedParameters *_TSParm)
-            : maxKey(_maxKey), TSParm(_TSParm) {
-        data = new int[maxKey];
-        for (int i = 0; i < maxKey; i++) {
-            data[i] = i + 1;
-        }
-
-        std::random_shuffle(data, data + maxKey - 1);
-
-        setLengths = new size_t[TSParm->setCount + 1];
-        setBegins = new size_t[TSParm->setCount + 1];
-        setBegins[0] = 0;
-        for (int i = 0; i < TSParm->setCount; i++) {
-            setLengths[i] = (size_t) (maxKey * TSParm->setSizes[i]);
-            setBegins[i + 1] = setBegins[i] + setLengths[i];
-        }
-    }
-
-    ~TemporarySkewedKeyGeneratorData() {
-        delete[] data;
-        delete[] setLengths;
-        delete[] setBegins;
-    }
-};
 
 template<typename K>
 class TemporarySkewedKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
-    TemporarySkewedKeyGeneratorData *keygenData;
+    TemporarySkewedKeyGeneratorData<K> *keygenData;
     Distribution **hotDists;
     Distribution *relaxDist;
     size_t time;
@@ -81,7 +46,7 @@ private:
     }
 
 public:
-    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData *_keygenData,
+    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData<K> *_keygenData,
                                 Distribution *_relaxDist, Distribution **_hotDists)
             : keygenData(_keygenData), relaxDist(_relaxDist), hotDists(_hotDists) {
         time = 0;
@@ -92,14 +57,16 @@ public:
     K next() {
         update_pointer();
         K value;
+
         if (relaxTime) {
-            value = keygenData->data[relaxDist->next()];
+            value = keygenData->get(relaxDist->next());
         } else {
             size_t index = keygenData->setBegins[pointer] + hotDists[pointer]->next();
             if (index >= keygenData->maxKey) {
                 index -= keygenData->maxKey;
             }
-            value = keygenData->data[index];
+
+            value = keygenData->get(index);
         }
 
         return value;
@@ -122,7 +89,7 @@ public:
     }
 
     K next_prefill() {
-        return keygenData->data[relaxDist->next()];
+        return keygenData->get(relaxDist->next());
     }
 };
 

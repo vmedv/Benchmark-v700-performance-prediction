@@ -36,7 +36,21 @@ public:
     virtual K next_prefill() = 0;
 };
 
+template<typename K>
 class KeyGeneratorData {
+public:
+    virtual K get(size_t index) = 0;
+
+};
+
+template<typename K>
+class KeyGeneratorBuilder {
+public:
+    KeyGeneratorBuilder() = default;
+
+    KeyGeneratorType keyGeneratorType = KeyGeneratorType::SIMPLE_KEYGEN;
+
+    virtual KeyGenerator<K> **generateKeyGenerators(size_t maxkeyToGenerate, Random64 * rngs) = 0;
 
 };
 

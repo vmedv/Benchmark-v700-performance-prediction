@@ -11,48 +11,14 @@
 #include "key_generator.h"
 #include "distributions/distribution.h"
 #include "parameters/skewed_sets_parameters.h"
+#include "data/skewed_sets_key_generator_data.h"
 
-class SkewedSetsKeyGeneratorData : public KeyGeneratorData {
-public:
-    PAD;
-    size_t maxKey;
-    size_t readSetLength;
-    size_t writeSetLength;
-
-    size_t writeSetBegin;
-    size_t writeSetEnd;
-
-    int *data;
-    PAD;
-
-    SkewedSetsKeyGeneratorData(const size_t _maxKey,
-                               const double _readSetSize, const double _writeSetSize, const double _interSetSize) {
-        maxKey = _maxKey;
-        data = new int[maxKey];
-        for (int i = 0; i < maxKey; i++) {
-            data[i] = i + 1;
-        }
-
-        std::random_shuffle(data, data + maxKey - 1);
-
-        readSetLength = (size_t) (maxKey * _readSetSize);
-        writeSetLength = (size_t) (maxKey * _writeSetSize);
-        size_t interSetLength = (size_t) (maxKey * _interSetSize);
-
-        writeSetBegin = readSetLength - interSetLength;
-        writeSetEnd = writeSetBegin + writeSetLength;
-    }
-
-    ~SkewedSetsKeyGeneratorData() {
-        delete[] data;
-    }
-};
 
 template<typename K>
 class SkewedSetsKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
-    SkewedSetsKeyGeneratorData *keygenData;
+    SkewedSetsKeyGeneratorData<K> *keygenData;
     Random64 *rng;
     Distribution *readDist;
     Distribution *writeDist;
@@ -60,17 +26,17 @@ private:
     bool writePrefillOnly;
     PAD;
 public:
-    SkewedSetsKeyGenerator(SkewedSetsKeyGeneratorData *_keygenData, Random64 *_rng,
+    SkewedSetsKeyGenerator(SkewedSetsKeyGeneratorData<K> *_keygenData, Random64 *_rng,
                            Distribution *_readDist, Distribution *_writeDist, bool _writePrefillOnly)
             : keygenData(_keygenData), rng(_rng), readDist(_readDist), writeDist(_writeDist),
               writePrefillOnly(_writePrefillOnly) {}
 
     K next_read() {
-        return keygenData->data[readDist->next()];
+        return keygenData->get(readDist->next());
     }
 
     K next_write() {
-        return keygenData->data[(keygenData->writeSetBegin + writeDist->next()) % keygenData->maxKey];
+        return keygenData->get((keygenData->writeSetBegin + writeDist->next()) % keygenData->maxKey);
     }
 
     K next_erase() {
@@ -88,10 +54,10 @@ public:
         }
         else {
             if (prefillSize < keygenData->readSetLength) {
-                value = keygenData->data[prefillSize++];
+                value = keygenData->get(prefillSize++);
             } else {
-                value = keygenData->data[keygenData->readSetLength +
-                                         rng->next(keygenData->maxKey - keygenData->readSetLength)];
+                value = keygenData->get(keygenData->readSetLength +
+                                         rng->next(keygenData->maxKey - keygenData->readSetLength));
             }
         }
         return value;

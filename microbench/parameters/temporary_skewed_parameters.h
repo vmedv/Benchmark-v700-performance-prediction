@@ -28,12 +28,20 @@ public:
     int hotTime = -1;
     int relaxTime = -1;
 
+    double *setBegins;
+    bool isNotShuffle;
+
     void setSetCount(const size_t _setCount) {
         setCount = _setCount;
         setSizes = new double[setCount];
         hotProbs = new double[setCount];
         hotTimes = new int[setCount];
         relaxTimes = new int[setCount];
+
+        if (isNotShuffle) {
+            setBegins = new double[setCount];
+            std::fill(setBegins, setBegins + setCount, 0);
+        }
 
         /**
          * if hotTimes[i] == -1, we will use hotTime
@@ -93,6 +101,17 @@ public:
                 relaxTimes[i] = relaxTime;
             }
         }
+    }
+
+    void setNotShuffle() {
+        isNotShuffle = true;
+        setBegins = new double[setCount];
+        std::fill(setBegins, setBegins + setCount, 0);
+    }
+
+    void setSetBegin(const size_t i, const double _setBegin) {
+        assert(i < setCount);
+        setBegins[i] = _setBegin;
     }
 
     ~TemporarySkewedParameters() {

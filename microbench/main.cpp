@@ -113,6 +113,11 @@ PAD;
 #include "key_generators/temporary_skewed_key_generator.h"
 #include "key_generators/creakers_and_wave_key_generator.h"
 
+#include "key_generators/builder/creakers_and_wave_key_generator_builder.h"
+#include "key_generators/builder/simple_key_generator_builder.h"
+#include "key_generators/builder/skewed_sets_key_generator_builder.h"
+#include "key_generators/builder/temporary_skewed_key_generator_builder.h"
+
 #include "distributions/distribution.h"
 #include "distributions/mutable_zipf_distribution.h"
 #include "distributions/skewed_sets_distribution.h"
@@ -314,17 +319,20 @@ struct globals_t {
     DS_ADAPTER_T *dsAdapter; // the data structure
     PAD;
     KeyGeneratorType keygenType;
+    PAD;
+    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder;
 
-    ZipfDistributionData *zipfKeygenData;
-    ZipfRejectionInversionSamplerData *zipfFastKeygenData;
-    SkewedSetsKeyGeneratorData *skewedSetsKeygenData;
-    TemporarySkewedKeyGeneratorData *temporarySkewedKeygenData;
-    CreakersAndWaveKeyGeneratorData *creakersAndWaveKeygenData;
-    KeyGenerator<test_type> *keygens[MAX_THREADS_POW2];
+//    ZipfDistributionData *zipfKeygenData;
+//    ZipfRejectionInversionSamplerData *zipfFastKeygenData;
+//    SkewedSetsKeyGeneratorData<test_type> *skewedSetsKeygenData;
+//    TemporarySkewedKeyGeneratorData<test_type> *temporarySkewedKeygenData;
+//    CreakersAndWaveKeyGeneratorData<test_type> *creakersAndWaveKeygenData;
+    KeyGenerator<test_type> **keygens;
     PAD;
     // We want to prefill with uniform because  Zipf generation is slow for large key ranges (and either way the
     // probability of a given key being in the data structure is 50%).
-    KeyGenerator<test_type> *prefillKeygens[MAX_THREADS_POW2];
+//    KeyGenerator<test_type> *prefillKeygens[MAX_THREADS_POW2];
+    KeyGenerator<test_type> **prefillKeygens;
     PAD;
     Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
 //    PAD; // not needed because of padding at the end of rngs
@@ -337,115 +345,22 @@ struct globals_t {
     volatile bool debug_print;
     PAD;
 
-    globals_t(size_t maxkeyToGenerate, KeyGeneratorType _keygenType)
+    globals_t(size_t maxkeyToGenerate, KeyGeneratorBuilder<test_type> *_keyGeneratorBuilder)
             : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
             , KEY_MAX(std::numeric_limits<test_type>::max() - 1), PREFILL_INTERVAL_MILLIS(200),
-              keygenType(_keygenType) {
+              keyGeneratorBuilder(_keyGeneratorBuilder),
+              keygenType(_keyGeneratorBuilder->keyGeneratorType) {
         debug_print = 0;
-        zipfKeygenData = NULL;
-        zipfFastKeygenData = NULL;
+//        zipfKeygenData = NULL;
+//        zipfFastKeygenData = NULL;
         srand(time(0));
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             rngs[i].setSeed(rand());
         }
 
-        switch (keygenType) {
-            case KeyGeneratorType::SIMPLE_KEYGEN: {
-                switch (SParm->distributionType) {
+        prefillKeygens = new KeyGenerator<test_type> *[MAX_THREADS_POW2];
 
-                    case DistributionType::ZIPF: {
-                        zipfKeygenData = new ZipfDistributionData(maxkeyToGenerate, ZIPF_PARAM);
-#pragma omp parallel for
-                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                            keygens[i] = new SimpleKeyGenerator<test_type>(
-                                    new ZipfDistribution(zipfKeygenData, &rngs[i]));
-                        }
-                    }
-                        break;
-                    case DistributionType::ZIPF_FAST: {
-                        zipfFastKeygenData = new ZipfRejectionInversionSamplerData((int) maxkeyToGenerate);
-#pragma omp parallel for
-                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                            keygens[i] = new SimpleKeyGenerator<test_type>(
-                                    new ZipfRejectionInversionSampler(
-                                            zipfFastKeygenData, SParm->zipf_parm, &rngs[i]));
-                        }
-                    }
-                        break;
-                    case DistributionType::UNIFORM: {
-                        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                            keygens[i] = new SimpleKeyGenerator<test_type>(
-                                    new UniformDistribution(&rngs[i], maxkeyToGenerate));
-                        }
-                    }
-                        break;
-                    default: {
-                        setbench_error("invalid case");
-                    }
-                        break;
-                }
-            }
-                break;
-            case KeyGeneratorType::SKEWED_SETS: {
-                skewedSetsKeygenData = new SkewedSetsKeyGeneratorData(maxkeyToGenerate,
-                                                                      SkeSParm->READ_HOT_SIZE,
-                                                                      SkeSParm->WRITE_HOT_SIZE,
-                                                                      SkeSParm->INTERSECTION);
-#pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    size_t readHotSize = (size_t) (maxkeyToGenerate * SkeSParm->READ_HOT_SIZE);
-                    size_t writeHotSize = (size_t) (maxkeyToGenerate * SkeSParm->WRITE_HOT_SIZE);
-                    keygens[i] = new SkewedSetsKeyGenerator<test_type>(
-                            skewedSetsKeygenData, &rngs[i],
-                            new SkewedSetsDistribution(
-                                    new UniformDistribution(&rngs[i], readHotSize),
-                                    new UniformDistribution(&rngs[i], maxkeyToGenerate - readHotSize),
-                                    &rngs[i], SkeSParm->READ_HOT_PROB, readHotSize),
-                            new SkewedSetsDistribution(
-                                    new UniformDistribution(&rngs[i], writeHotSize),
-                                    new UniformDistribution(&rngs[i], maxkeyToGenerate - writeHotSize),
-                                    &rngs[i], SkeSParm->WRITE_HOT_PROB, writeHotSize),
-                            SkeSParm->writePrefillOnly
-                    );
-                }
-            }
-                break;
-            case KeyGeneratorType::TEMPORARY_SKEWED: {
-                temporarySkewedKeygenData = new TemporarySkewedKeyGeneratorData(maxkeyToGenerate, TSParm);
-#pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    Distribution **hotDists = new Distribution *[TSParm->setCount];
-                    //static_cast<Distribution<test_type> **>(malloc(TSParm->setCount * sizeof(void *)));
-                    for (int j = 0; j < TSParm->setCount; ++j) {
-                        size_t setSize = (size_t) (maxkeyToGenerate * TSParm->setSizes[j]);
-
-                        hotDists[j] = new SkewedSetsDistribution(
-                                new UniformDistribution(&rngs[i], setSize),
-                                new UniformDistribution(&rngs[i], maxkeyToGenerate - setSize),
-                                &rngs[i], TSParm->hotProbs[j], setSize);
-                    }
-                    keygens[i] = new TemporarySkewedKeyGenerator<test_type>(
-                            temporarySkewedKeygenData, new UniformDistribution(&rngs[i], maxkeyToGenerate), hotDists);
-                }
-            }
-                break;
-            case KeyGeneratorType::CREAKERS_AND_WAVE: {
-                creakersAndWaveKeygenData = new CreakersAndWaveKeyGeneratorData(maxkeyToGenerate, CWParm);
-#pragma omp parallel for
-                for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-                    keygens[i] = new CreakersAndWaveKeyGenerator<test_type>(
-                            creakersAndWaveKeygenData, &rngs[i],
-                            new UniformDistribution(&rngs[i], creakersAndWaveKeygenData->creakersLength),
-                            new MutableZipfDistribution(&rngs[i], CWParm->waveZipfParm)
-                    );
-                }
-            }
-                break;
-            default: {
-                setbench_error("invalid case");
-            }
-                break;
-        }
+        keygens = keyGeneratorBuilder->generateKeyGenerators(maxkeyToGenerate, rngs);
 
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             switch (keygenType) {
@@ -479,14 +394,17 @@ struct globals_t {
 
     ~globals_t() {
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-            delete prefillKeygens[i];
-            if (keygens[i]) delete keygens[i];
+            if (prefillKeygens[i]) {
+                delete prefillKeygens[i];
+            }
+
+            if (keygens[i]) {
+                delete keygens[i];
+            }
+
         }
-        delete zipfKeygenData;
-        delete zipfFastKeygenData;
-        delete skewedSetsKeygenData;
-        delete temporarySkewedKeygenData;
-        delete creakersAndWaveKeygenData;
+
+        delete keyGeneratorBuilder;
     }
 };
 
@@ -502,6 +420,7 @@ void thread_timed(GlobalsT *g, int __tid) {
         double op = g->rngs[tid].next(100000000) / 1000000.;
         if (op < INS_FRAC) {
             key = g->keygens[tid]->next_insert();
+
             TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
             if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
                 TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
@@ -523,22 +442,35 @@ void thread_timed(GlobalsT *g, int __tid) {
             }
             GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS_FRAC + DEL_FRAC + RQ) {
-            key = g->keygens[tid]->next_read();
-            // TODO: make this respect KeyGenerators for non-uniform distributions
-            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-            assert(_key >= 1);
-            assert(_key <= MAXKEY);
-            assert(_key <= std::max(1, MAXKEY - RQSIZE));
-            assert(MAXKEY > RQSIZE || _key == 0);
-            key = (test_type) _key;
+            test_type leftKey = g->keygens[tid]->next_read();
+            test_type rightKey = g->keygens[tid]->next_read();
+            if (leftKey > rightKey) {
+                std::swap(leftKey, rightKey);
+            }
             ++rq_cnt;
             size_t rqcnt;
-            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+            if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
                                                   (VALUE_TYPE*) rqResultValues))) {
                 garbage += rqResultKeys[0] +
                            rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
             }
             GSTATS_ADD(tid, num_rq, 1);
+
+//            // TODO: make this respect KeyGenerators for non-uniform distributions
+//            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
+//            assert(_key >= 1);
+//            assert(_key <= MAXKEY);
+//            assert(_key <= std::max(1, MAXKEY - RQSIZE));
+//            assert(MAXKEY > RQSIZE || _key == 0);
+//            key = (test_type) _key;
+//            ++rq_cnt;
+//            size_t rqcnt;
+//            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+//                                                  (VALUE_TYPE*) rqResultValues))) {
+//                garbage += rqResultKeys[0] +
+//                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
+//            }
+//            GSTATS_ADD(tid, num_rq, 1);
         } else {
             key = g->keygens[tid]->next_read();
             if (g->dsAdapter->contains(tid, key)) {
@@ -555,20 +487,33 @@ template<class GlobalsT>
 void thread_rq(GlobalsT *g, int __tid) {
     THREAD_MEASURED_PRE;
     while (!g->done) {
-        // TODO: make this respect KeyGenerators for non-uniform distributions
-        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-        assert(_key >= 1);
-        assert(_key <= MAXKEY);
-        assert(_key <= std::max(1, MAXKEY - RQSIZE));
-        assert(MAXKEY > RQSIZE || _key == 0);
-        test_type key = (test_type) _key;
+        test_type leftKey = g->keygens[tid]->next_read();
+        test_type rightKey = g->keygens[tid]->next_read();
+        if (leftKey > rightKey) {
+            std::swap(leftKey, rightKey);
+        }
+
         size_t rqcnt;
-        TIMELINE_START(tid);
-        if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+        if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
                                               (VALUE_TYPE*) rqResultValues))) {
             garbage += rqResultKeys[0] +
                        rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
         }
+//
+//        // TODO: make this respect KeyGenerators for non-uniform distributions
+//        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
+//        assert(_key >= 1);
+//        assert(_key <= MAXKEY);
+//        assert(_key <= std::max(1, MAXKEY - RQSIZE));
+//        assert(MAXKEY > RQSIZE || _key == 0);
+//        test_type key = (test_type) _key;
+//        size_t rqcnt;
+//        TIMELINE_START(tid);
+//        if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+//                                              (VALUE_TYPE*) rqResultValues))) {
+//            garbage += rqResultKeys[0] +
+//                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
+//        }
         TIMELINE_END(tid, "RQThreadOperation");
         GSTATS_ADD(tid, num_rq, 1);
         GSTATS_ADD(tid, num_operations, 1);
@@ -958,7 +903,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     }
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
-        expectedSize = g->creakersAndWaveKeygenData->prefillSize;
+        expectedSize = ((CreakersAndWaveKeyGenerator<test_type> *) g->keygens[0])->keygenData->prefillSize;
     }
 
     if (expectedSize == -1) {
@@ -1030,7 +975,8 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
         CreakersAndWaveKeyGenerator<test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator<test_type> *>(g->keygens[0]);
-        for (int i = 0; i < g->creakersAndWaveKeygenData->CWParm->CREAKERS_AGE; ++i) {
+        int creakersAge = ((CreakersAndWaveKeyGenerator<test_type> *) g->keygens[0])->keygenData->CWParm->CREAKERS_AGE;
+        for (int i = 0; i < creakersAge; ++i) {
             test_type key = keygen->next_warming();
             g->dsAdapter->contains(tid, key);
         }
@@ -1476,7 +1422,7 @@ void parseSkewedSetsParameters(size_t i, size_t argc, char **argv) {
 void parseTemporarySkewedParameters(size_t i, size_t argc, char **argv) {
     for (; i < argc; ++i) {
         if (strcmp(argv[i], "-set-count") == 0) {
-            TSParm->setSetCount(atof(argv[++i]));
+            TSParm->setSetCount(atoi(argv[++i]));
         } else if (strcmp(argv[i], "-rt") == 0) {
             TSParm->setCommonRelaxTime(atof(argv[++i]));
         } else if (strcmp(argv[i], "-ht") == 0) {
@@ -1484,17 +1430,22 @@ void parseTemporarySkewedParameters(size_t i, size_t argc, char **argv) {
 //        } else if (std::regex_match(argv[i], std::regex(R"(ht\d+)"))) {
 //            TSParm.setHotTime(atof(argv[i].substr(2, 4)), atof(argv[++i]));
         } else if (strcmp(argv[i], "-si") == 0) {
-            int pointer = atof(argv[++i]);
+            int pointer = atoi(argv[++i]);
             TSParm->setSetSize(pointer, atof(argv[++i]));
         } else if (strcmp(argv[i], "-pi") == 0) {
-            int pointer = atof(argv[++i]);
+            int pointer = atoi(argv[++i]);
             TSParm->setHotProb(pointer, atof(argv[++i]));
         } else if (strcmp(argv[i], "-hti") == 0) {
-            int pointer = atof(argv[++i]);
+            int pointer = atoi(argv[++i]);
             TSParm->setHotTime(pointer, atof(argv[++i]));
         } else if (strcmp(argv[i], "-rti") == 0) {
-            int pointer = atof(argv[++i]);
+            int pointer = atoi(argv[++i]);
             TSParm->setRelaxTimes(pointer, atof(argv[++i]));
+        } else if (strcmp(argv[i], "-non-shuffle") == 0) {
+            TSParm->setNotShuffle();
+        } else if (TSParm->isNotShuffle && strcmp(argv[i], "-sbi") == 0) {
+            int pointer = atoi(argv[++i]);
+            TSParm->setSetBegin(pointer, atof(argv[++i]));
         } else {
             parseCommonParameters(i, argc, argv);
         }
@@ -1533,31 +1484,33 @@ void parseSimpleParameters(size_t i, size_t argc, char **argv) {
     }
 }
 
-KeyGeneratorType parseParameters(size_t argc, char **argv) {
-    KeyGeneratorType keygenType;
+KeyGeneratorBuilder<test_type> *parseParameters(size_t argc, char **argv) {
+    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder;
+
     if (strcmp(argv[1], "-skewed-sets") == 0) {
-        keygenType = KeyGeneratorType::SKEWED_SETS;
         SkeSParm = new SkewedSetsParameters();
+        keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder<test_type>(SkeSParm);
 
         parseSkewedSetsParameters(2, argc, argv);
     } else if (strcmp(argv[1], "-temporary-skewed") == 0
                || strcmp(argv[1], "-temp-skewed") == 0) {
-        keygenType = KeyGeneratorType::TEMPORARY_SKEWED;
         TSParm = new TemporarySkewedParameters();
+        keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<test_type>(TSParm);
 
         parseTemporarySkewedParameters(2, argc, argv);
     } else if (strcmp(argv[1], "-creakers-and-wave") == 0) {
-        keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
         CWParm = new CreakersAndWaveParameters();
+        keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder<test_type>(CWParm);
 
         parseCreakersAndWaveParameters(2, argc, argv);
     } else {
-        keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
         SParm = new SimpleParameters();
+        keyGeneratorBuilder = new SimpleKeyGeneratorBuilder<test_type>(SParm);
 
         parseSimpleParameters(1, argc, argv);
     }
-    return keygenType;
+
+    return keyGeneratorBuilder;
 }
 
 template<typename K>
@@ -1604,14 +1557,15 @@ int main(int argc, char **argv) {
     // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
     DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
     // to get NO prefilling, set -nprefill 0
-    KeyGeneratorType keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
+    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder;
 
     PREFILL_TYPE = PREFILL_MIXED;
 
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
 
-    keygenType = parseParameters(argc, argv);
+    keyGeneratorBuilder = parseParameters(argc, argv);
+    KeyGeneratorType keygenType = keyGeneratorBuilder->keyGeneratorType;
 
     TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
 
@@ -1674,6 +1628,10 @@ int main(int argc, char **argv) {
             PRINTI(TSParm->hotTime);
             PRINTI(TSParm->relaxTime);
             printf("SET_SIZES=%s\n", printArray(TSParm->setCount, TSParm->setSizes).c_str());
+            if (TSParm->isNotShuffle) {
+                printf("STORAGE MODE=NON_SHUFFLE");
+                printf("SET_BEGINS=%s\n", printArray(TSParm->setCount, TSParm->setBegins).c_str());
+            }
             printf("HOT_PROBS=%s\n", printArray(TSParm->setCount, TSParm->hotProbs).c_str());
             printf("HOT_TIMES=%s\n", printArray(TSParm->setCount, TSParm->hotTimes).c_str());
             printf("RELAX_TIMES=%s\n", printArray(TSParm->setCount, TSParm->relaxTimes).c_str());
@@ -1701,7 +1659,7 @@ int main(int argc, char **argv) {
 
 
     //    KeyGeneratorDistribution *keyGeneratorDistribution;
-    main_continued_with_globals(new globals_t(MAXKEY, keygenType));
+    main_continued_with_globals(new globals_t(MAXKEY, keyGeneratorBuilder));
 
     //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distributions));
 

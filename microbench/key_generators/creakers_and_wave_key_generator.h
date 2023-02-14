@@ -13,64 +13,15 @@
 #include "distributions/distribution.h"
 #include "distributions/skewed_sets_distribution.h"
 #include "parameters/creakers_and_wave_parameters.h"
+#include "data/creakers_and_wave_key_generator_data.h"
 
-class CreakersAndWaveKeyGeneratorData : public KeyGeneratorData {
-public:
-    PAD;
-    size_t maxKey;
-
-    size_t creakersLength;
-    size_t defaultWaveLength;
-    size_t creakersBegin;
-    size_t prefillSize;
-
-    std::atomic<size_t> waveBegin;
-    std::atomic<size_t> waveEnd;
-    CreakersAndWaveParameters *CWParm;
-
-    size_t *data;
-    PAD;
-
-    CreakersAndWaveKeyGeneratorData(const size_t _maxKey, CreakersAndWaveParameters *_CWParm) : CWParm(_CWParm) {
-        maxKey = _maxKey;
-        data = new size_t[maxKey];
-        for (size_t i = 0; i < maxKey; i++) {
-            data[i] = i;
-        }
-
-        std::random_shuffle(data, data + maxKey - 1);
-
-        /*
-         * first version where
-         * data = | creakers | wave ... |
-            creakersLength = (size_t) (maxKey * CWParm->CREAKERS_SIZE);
-            defaultWaveLength = (size_t) (maxKey * CWParm->WAVE_SIZE);
-            waveEnd = maxKey;
-            waveBegin = maxKey - defaultWaveLength;
-            nonCreakerLength = maxKey - creakersLength;
-        */
-
-        /*
-         * data = | ... wave | creakers |
-         */
-        creakersLength = (size_t) (maxKey * CWParm->CREAKERS_SIZE);
-        creakersBegin = maxKey - creakersLength;
-        defaultWaveLength = (size_t) (maxKey * CWParm->WAVE_SIZE);
-        waveEnd = creakersBegin;
-        waveBegin = waveEnd - defaultWaveLength;
-        prefillSize = creakersLength + defaultWaveLength;
-    }
-
-    ~CreakersAndWaveKeyGeneratorData() {
-        delete[] data;
-    }
-};
 
 template<typename K>
 class CreakersAndWaveKeyGenerator : public KeyGenerator<K> {
-private:
+public:
     PAD;
-    CreakersAndWaveKeyGeneratorData *keygenData;
+    CreakersAndWaveKeyGeneratorData<K> *keygenData;
+private:
     Random64 *rng;
     Distribution *creakersDist;
     MutableDistribution *waveDist;
@@ -95,7 +46,7 @@ private:
     }
 
 public:
-    CreakersAndWaveKeyGenerator(CreakersAndWaveKeyGeneratorData *_keygenData, Random64 *_rng,
+    CreakersAndWaveKeyGenerator(CreakersAndWaveKeyGeneratorData<K> *_keygenData, Random64 *_rng,
                                 Distribution *_creakersDist, MutableDistribution *_waveDist)
             : keygenData(_keygenData), rng(_rng), creakersDist(_creakersDist), waveDist(_waveDist) {
 //        CWDist = new SkewedSetsDistribution<K>(_creakersDist, _waveDist, rng,
@@ -157,6 +108,7 @@ public:
     K next_warming() {
         return keygenData->data[keygenData->creakersBegin + creakersDist->next()];
     }
+
 };
 
 
