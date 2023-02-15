@@ -442,8 +442,8 @@ void thread_timed(GlobalsT *g, int __tid) {
             }
             GSTATS_ADD(tid, num_deletes, 1);
         } else if (op < INS_FRAC + DEL_FRAC + RQ) {
-            test_type leftKey = g->keygens[tid]->next_read();
-            test_type rightKey = g->keygens[tid]->next_read();
+            test_type leftKey = g->keygens[tid]->next_range();
+            test_type rightKey = g->keygens[tid]->next_range();
             if (leftKey > rightKey) {
                 std::swap(leftKey, rightKey);
             }
@@ -487,8 +487,8 @@ template<class GlobalsT>
 void thread_rq(GlobalsT *g, int __tid) {
     THREAD_MEASURED_PRE;
     while (!g->done) {
-        test_type leftKey = g->keygens[tid]->next_read();
-        test_type rightKey = g->keygens[tid]->next_read();
+        test_type leftKey = g->keygens[tid]->next_range();
+        test_type rightKey = g->keygens[tid]->next_range();
         if (leftKey > rightKey) {
             std::swap(leftKey, rightKey);
         }

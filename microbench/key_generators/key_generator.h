@@ -33,6 +33,8 @@ public:
 
     virtual K next_insert() = 0;
 
+    virtual K next_range() = 0;
+
     virtual K next_prefill() = 0;
 };
 

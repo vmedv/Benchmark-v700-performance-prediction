@@ -24,6 +24,7 @@ private:
     size_t time;
     size_t pointer;
     bool relaxTime;
+    bool isLeftRange = true;
     PAD;
 
     void update_pointer() {
@@ -91,6 +92,17 @@ public:
     K next_prefill() {
         return keygenData->get(relaxDist->next());
     }
+
+
+    K next_range() {
+        K value = next();
+        if (isLeftRange) {
+            time--;
+        }
+        isLeftRange = !isLeftRange;
+        return value;
+    }
+
 };
 
 
