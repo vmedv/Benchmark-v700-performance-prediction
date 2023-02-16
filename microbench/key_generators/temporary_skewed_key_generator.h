@@ -89,11 +89,6 @@ public:
         return this->next_write();
     }
 
-    K next_prefill() {
-        return keygenData->get(relaxDist->next());
-    }
-
-
     K next_range() {
         K value = next();
         if (isLeftRange) {
@@ -103,6 +98,9 @@ public:
         return value;
     }
 
+    K next_prefill() {
+        return keygenData->get(relaxDist->next());
+    }
 };
 
 

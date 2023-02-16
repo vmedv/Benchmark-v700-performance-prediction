@@ -371,7 +371,8 @@ struct globals_t {
                     break;
                 default:
                     prefillKeygens[i] = new SimpleKeyGenerator<test_type>(
-                            new UniformDistribution(&rngs[i], maxkeyToGenerate));
+                            new UniformDistribution(&rngs[i], maxkeyToGenerate)
+                    );
             }
         }
 

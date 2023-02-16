@@ -47,6 +47,10 @@ public:
         return this->next_write();
     }
 
+    K next_range() {
+        return this->next_read();
+    }
+
     K next_prefill() {
         K value = 0;
         if (writePrefillOnly) {
