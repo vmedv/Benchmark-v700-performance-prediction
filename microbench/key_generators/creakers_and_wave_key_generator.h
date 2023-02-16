@@ -101,6 +101,10 @@ public:
         return newWaveBegin;
     }
 
+    K next_range() {
+        return this->next_read();
+    }
+
     K next_prefill() {
         return keygenData->data[keygenData->waveBegin + prefillSize++];
     }

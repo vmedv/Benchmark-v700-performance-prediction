@@ -30,6 +30,10 @@ public:
         return distribution->next();
     }
 
+    K next_range() {
+        return distribution->next();
+    }
+
     K next_prefill() {
         return distribution->next();
     }
