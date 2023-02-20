@@ -5,15 +5,15 @@ import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
 public class TemporaryOperationsParameters extends LeafsHandshakeParameters {
     public int tempOperCount = 0;
     public int[] opTimes;
-    public int[] numInserts;
-    public int[] numErases;
+    public double[] numInserts;
+    public double[] numErases;
 
 
     public void setTempOperCount(final int tempOperCount) {
         this.tempOperCount = tempOperCount;
         opTimes = new int[tempOperCount];
-        numErases = new int[tempOperCount];
-        numInserts = new int[tempOperCount];
+        numErases = new double[tempOperCount];
+        numInserts = new double[tempOperCount];
     }
 
     @Override
@@ -21,8 +21,8 @@ public class TemporaryOperationsParameters extends LeafsHandshakeParameters {
         switch (args[argNumber]) {
             case "-temp-oper-count" -> setTempOperCount(Integer.parseInt(args[++argNumber]));
             case "-ot" -> opTimes[Integer.parseInt(args[++argNumber])] = Integer.parseInt(args[++argNumber]);
-            case "-uii" -> numInserts[Integer.parseInt(args[++argNumber])] = Integer.parseInt(args[++argNumber]);
-            case "-uei" -> numErases[Integer.parseInt(args[++argNumber])] = Integer.parseInt(args[++argNumber]);
+            case "-uii" -> numInserts[Integer.parseInt(args[++argNumber])] = Double.parseDouble(args[++argNumber]);
+            case "-uei" -> numErases[Integer.parseInt(args[++argNumber])] = Double.parseDouble(args[++argNumber]);
             default -> super.parseArg();
         }
     }

@@ -15,16 +15,17 @@ public class Parameters {
     public static int numThreads = 1,
             numPrefillThreads = 1,
             numMilliseconds = 5000,
-            numWrites = 40,
-            numInsert = 20,
-            numErase = 20,
-            numWriteAlls = 0,
-            numSnapshots = 0,
             range = 2048,
             size = 1024,
             warmUp = 0,
             iterations = 1,
             afterFillRelaxMilliseconds = 5000;
+    public double
+            numWrites = 0.4,
+            numInsert = 0.2,
+            numErase = 0.2,
+            numWriteAlls = 0,
+            numSnapshots = 0;
 
 
     public boolean detailedStats = false;
@@ -55,14 +56,14 @@ public class Parameters {
                         case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
                         case "--duration", "-d" -> this.numMilliseconds = Integer.parseInt(optionValue);
                         case "--updates", "-u" -> {
-                            this.numWrites = Integer.parseInt(optionValue);
+                            this.numWrites = Double.parseDouble(optionValue);
                             this.numInsert = this.numWrites / 2;
                             this.numErase = this.numWrites / 2;
                         }
-                        case "--insert", "-ui" -> this.numInsert = Integer.parseInt(optionValue);
-                        case "--erase", "-ue" -> this.numErase = Integer.parseInt(optionValue);
-                        case "--writeAll", "-a" -> this.numWriteAlls = Integer.parseInt(optionValue);
-                        case "--snapshots", "-s" -> this.numSnapshots = Integer.parseInt(optionValue);
+                        case "--insert", "-ui" -> this.numInsert = Double.parseDouble(optionValue);
+                        case "--erase", "-ue" -> this.numErase = Double.parseDouble(optionValue);
+                        case "--writeAll", "-a" -> this.numWriteAlls = Double.parseDouble(optionValue);
+                        case "--snapshots", "-s" -> this.numSnapshots = Double.parseDouble(optionValue);
                         case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
                         case "--range", "-r" -> this.range = Integer.parseInt(optionValue);
                         case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
@@ -198,16 +199,16 @@ public class Parameters {
             result
                     .append("  Write ratio:             \t")
                     .append(this.numWrites)
-                    .append(" %\n")
+                    .append(" \n")
                     .append("  Insert ratio:            \t")
                     .append(this.numInsert)
-                    .append(" %\n")
+                    .append(" \n")
                     .append("  Erase ratio:             \t")
                     .append(this.numErase)
-                    .append(" %\n")
+                    .append(" \n")
                     .append("  WriteAll ratio:          \t")
                     .append(this.numWriteAlls)
-                    .append(" %\n");
+                    .append(" \n");
         }
         result
                 .append("  Snapshot ratio:          \t")

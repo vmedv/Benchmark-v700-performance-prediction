@@ -40,7 +40,7 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
      * |--writeAll--|--writeSome--|--readAll--|--readSome--|
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
-    int[] cdf = new int[4];
+    double[] cdf = new double[4];
 
     public ThreadSetLoop(short myThreadNum, CompositionalIntSet bench, Method[] methods,
                          KeyGenerator keygen, Parameters parameters) {
@@ -50,10 +50,10 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
         this.methods = methods;
         /* initialize the method boundaries */
         assert (parameters.numWrites >= parameters.numWriteAlls);
-        cdf[0] = 10 * parameters.numWriteAlls;
-        cdf[1] = 10 * parameters.numInsert;
-        cdf[2] = cdf[1] + 10 * parameters.numErase;
-        cdf[3] = cdf[2] + 10 * parameters.numSnapshots;
+        cdf[0] = parameters.numWriteAlls;
+        cdf[1] = parameters.numInsert;
+        cdf[2] = cdf[1] + parameters.numErase;
+        cdf[3] = cdf[2] + parameters.numSnapshots;
     }
 
     public void printDataStructure() {
@@ -64,7 +64,7 @@ public class ThreadSetLoop extends ThreadLoopAbstract {
     public void run() {
 
         while (!stop) {
-            int coin = rand.nextInt(1000);
+            double coin = rand.nextDouble();
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
                 int newInt = rand.nextInt(parameters.range);
 

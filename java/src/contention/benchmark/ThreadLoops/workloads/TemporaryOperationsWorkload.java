@@ -16,7 +16,7 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
     private int pointer;
     private TemporaryOperationsParameters parameters;
 
-    private int[][] cdf;
+    private double[][] cdf;
 
     public TemporaryOperationsWorkload(short myThreadNum,
                                        CompositionalMap<Integer, Integer> bench,
@@ -27,13 +27,13 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
         this.pointer = 0;
         this.parameters = parameters;
 
-        this.cdf = new int[parameters.tempOperCount][4];
+        this.cdf = new double[parameters.tempOperCount][4];
 
         for (int i = 0; i < parameters.tempOperCount; i++) {
-            cdf[i][0] = 10 * parameters.numWriteAlls;
-            cdf[i][1] = 10 * parameters.numInserts[i];
-            cdf[i][2] = cdf[i][1] + 10 * parameters.numErases[i];
-            cdf[i][3] = cdf[i][2] + 10 * parameters.numSnapshots;
+            cdf[i][0] = parameters.numWriteAlls;
+            cdf[i][1] = parameters.numInserts[i];
+            cdf[i][2] = cdf[i][1] + parameters.numErases[i];
+            cdf[i][3] = cdf[i][2] + parameters.numSnapshots;
         }
     }
 
@@ -55,7 +55,7 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
             update_pointer();
 
             Integer a, b;
-            int coin = rand.nextInt(1000);
+            double coin = rand.nextDouble();
             if (coin < cdf[pointer][0]) { // 1. should we run a writeAll operation?
                 int newInt = rand.nextInt(parameters.range);
 
