@@ -213,7 +213,7 @@ public class Parameters {
         result
                 .append("  Snapshot ratio:          \t")
                 .append(this.numSnapshots)
-                .append(" %\n")
+                .append(" \n")
                 .append("  Size:                    \t")
                 .append(this.size)
                 .append(" elts\n")
@@ -236,6 +236,12 @@ public class Parameters {
             result.append("\n")
                     .append("  Workload:                \t")
                     .append(this.workloadType);
+        }
+
+        if (isNonShuffle) {
+            result.append("\n")
+                    .append("  Data type:                \t")
+                    .append("non-shuffle");
         }
 //        if (keygenType != KeyGeneratorType.NONE) {
 //            result.append("\n")

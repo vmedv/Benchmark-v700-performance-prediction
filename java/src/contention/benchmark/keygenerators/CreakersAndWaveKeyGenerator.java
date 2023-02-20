@@ -3,6 +3,7 @@ package contention.benchmark.keygenerators;
 import contention.abstractions.Distribution;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.MutableDistribution;
+import contention.abstractions.Parameters;
 import contention.benchmark.keygenerators.data.CreakersAndWaveKeyGeneratorData;
 
 import java.util.Random;
@@ -77,7 +78,8 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextPrefill() {
-        return data.get(data.waveBegin.get() + prefillSize++);
+        return data.get(random.nextInt(Parameters.size));
+//        return data.get(data.waveBegin.get() + prefillSize++);
     }
 
     public int next_warming() {

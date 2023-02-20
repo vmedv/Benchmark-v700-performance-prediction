@@ -60,6 +60,9 @@ public class CreakersAndWaveParameters extends Parameters {
         StringBuilder params = super.toStringBuilder();
         params
                 .append("\n")
+                .append("  Key Generator:           \t")
+                .append(this.keygenType)
+                .append("\n")
                 .append("  Creakers size:           \t")
                 .append(this.CREAKERS_SIZE)
                 .append("\n")

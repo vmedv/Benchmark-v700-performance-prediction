@@ -98,6 +98,9 @@ public class TemporarySkewedParameters extends Parameters {
         StringBuilder params = super.toStringBuilder();
         params
                 .append("\n")
+                .append("  Key Generator:           \t")
+                .append(this.keygenType)
+                .append("\n")
                 .append("  Number of Sets:          \t")
                 .append(this.setCount)
                 .append("\n")
