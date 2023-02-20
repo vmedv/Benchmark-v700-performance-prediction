@@ -28,19 +28,48 @@ public class CreakersAndWaveParameters extends Parameters {
     public double CREAKERS_PROB = 0;
     public long CREAKERS_AGE = 0;
     public double WAVE_SIZE = 0;
-    public DistributionBuilder creakersDist = new DistributionBuilder();
-    public DistributionBuilder waveDist = new DistributionBuilder(DistributionType.ZIPF)
+    public DistributionBuilder creakersDistBuilder = new DistributionBuilder();
+    public DistributionBuilder waveDistBuilder = new DistributionBuilder(DistributionType.ZIPF)
             .setParameters(new ZipfParameters(1));
 
     @Override
     protected void parseArg() {
-        //todo
-        super.parseArg();
+        switch (args[argNumber]) {
+            case "-gs", "-cs" -> this.CREAKERS_SIZE = Double.parseDouble(args[++argNumber]);
+            case "-gp", "-cp" -> this.CREAKERS_PROB = Double.parseDouble(args[++argNumber]);
+            case "-ws" -> this.WAVE_SIZE = Double.parseDouble(args[++argNumber]);
+            case "-g-age", "-c-age" -> this.CREAKERS_AGE = Integer.parseInt(args[++argNumber]);
+            case "-g-dist", "-c-dist" -> argNumber = this.creakersDistBuilder.parseDistribution(args, argNumber);
+            case "-w-dist" -> argNumber = this.waveDistBuilder.parseDistribution(args, argNumber);
+            default -> super.parseArg();
+        }
     }
 
     @Override
     public StringBuilder toStringBuilder() {
-        //todo
-        return super.toStringBuilder();
+        StringBuilder params = super.toStringBuilder();
+        params
+                .append("\n")
+                .append("  Creakers size:           \t")
+                .append(this.CREAKERS_SIZE)
+                .append("\n")
+                .append("  Wave size:               \t")
+                .append(this.WAVE_SIZE)
+                .append("\n")
+                .append("  Creakers probability:    \t")
+                .append(this.CREAKERS_PROB)
+                .append("\n")
+                .append("  Creakers age:            \t")
+                .append(this.CREAKERS_AGE)
+                .append("\n")
+                .append("  Creakers distribution:   \t")
+                .append(creakersDistBuilder.distributionType)
+                .append(creakersDistBuilder.toStringBuilderParameters())
+                .append("\n")
+                .append("  Wave distribution:       \t")
+                .append(waveDistBuilder.distributionType)
+                .append(waveDistBuilder.toStringBuilderParameters());
+
+        return params;
     }
 }

@@ -25,9 +25,11 @@ public class Parameters {
             warmUp = 0,
             iterations = 1,
             afterFillRelaxMilliseconds = 5000;
-    ;
+
 
     public boolean detailedStats = false;
+
+    public boolean isNonShuffle = false;
 
     public String benchClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
 
@@ -40,35 +42,36 @@ public class Parameters {
     protected String[] args;
 
     protected void parseArg() {
-        String currentArg = args[argNumber++];
+        String currentArg = args[argNumber];
 
         try {
-            if (currentArg.equals("--verbose")
-                    || currentArg.equals("-v")) {
-                this.detailedStats = true;
-            } else {
-                String optionValue = args[argNumber];
-                switch (currentArg) {
-                    case "--thread-nums", "-t" -> this.numThreads = Integer.parseInt(optionValue);
-                    case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
-                    case "--duration", "-d" -> this.numMilliseconds = Integer
-                            .parseInt(optionValue);
-                    case "--updates", "-u" -> {
-                        this.numWrites = Integer.parseInt(optionValue);
-                        this.numInsert = this.numWrites / 2;
-                        this.numErase = this.numWrites / 2;
+            switch (currentArg) {
+                case "--verbose", "-v" -> this.detailedStats = true;
+                case "--non-shuffle" -> this.isNonShuffle = true;
+                default -> {
+                    String optionValue = args[++argNumber];
+                    switch (currentArg) {
+                        case "--thread-nums", "-t" -> this.numThreads = Integer.parseInt(optionValue);
+                        case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
+                        case "--duration", "-d" -> this.numMilliseconds = Integer.parseInt(optionValue);
+                        case "--updates", "-u" -> {
+                            this.numWrites = Integer.parseInt(optionValue);
+                            this.numInsert = this.numWrites / 2;
+                            this.numErase = this.numWrites / 2;
+                        }
+                        case "--insert", "-ui" -> this.numInsert = Integer.parseInt(optionValue);
+                        case "--erase", "-ue" -> this.numErase = Integer.parseInt(optionValue);
+                        case "--writeAll", "-a" -> this.numWriteAlls = Integer.parseInt(optionValue);
+                        case "--snapshots", "-s" -> this.numSnapshots = Integer.parseInt(optionValue);
+                        case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
+                        case "--range", "-r" -> this.range = Integer.parseInt(optionValue);
+                        case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
+                        case "--benchmark", "-b" -> this.benchClassName = optionValue;
+                        case "--iterations", "-n" -> this.iterations = Integer.parseInt(optionValue);
+                        case "--after-fill-relax-time", "-afr" ->
+                                this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
+                        default -> System.err.println("Unexpected option: " + currentArg + ". Ignoring...");
                     }
-                    case "--insert", "-ui" -> this.numInsert = Integer.parseInt(optionValue);
-                    case "--erase", "-ue" -> this.numErase = Integer.parseInt(optionValue);
-                    case "--writeAll", "-a" -> this.numWriteAlls = Integer.parseInt(optionValue);
-                    case "--snapshots", "-s" -> this.numSnapshots = Integer.parseInt(optionValue);
-                    case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
-                    case "--range", "-r" -> this.range = Integer.parseInt(optionValue);
-                    case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
-                    case "--benchmark", "-b" -> this.benchClassName = optionValue;
-                    case "--iterations", "-n" -> this.iterations = Integer.parseInt(optionValue);
-                    case "--after-fill-relax-time", "-afr" ->
-                            this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
                 }
             }
         } catch (IndexOutOfBoundsException e) {
@@ -193,18 +196,18 @@ public class Parameters {
                 .append(" ms\n");
         if (workloadType != WorkloadType.TEMPORARY_OPERATIONS) {
             result
-                .append("  Write ratio:             \t")
-                .append(this.numWrites)
-                .append(" %\n")
-                .append("  Insert ratio:            \t")
-                .append(this.numInsert)
-                .append(" %\n")
-                .append("  Erase ratio:             \t")
-                .append(this.numErase)
-                .append(" %\n")
-                .append("  WriteAll ratio:          \t")
-                .append(this.numWriteAlls)
-                .append(" %\n");
+                    .append("  Write ratio:             \t")
+                    .append(this.numWrites)
+                    .append(" %\n")
+                    .append("  Insert ratio:            \t")
+                    .append(this.numInsert)
+                    .append(" %\n")
+                    .append("  Erase ratio:             \t")
+                    .append(this.numErase)
+                    .append(" %\n")
+                    .append("  WriteAll ratio:          \t")
+                    .append(this.numWriteAlls)
+                    .append(" %\n");
         }
         result
                 .append("  Snapshot ratio:          \t")

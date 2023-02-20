@@ -23,8 +23,8 @@ public class CreakersAndWaveKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
         for (short threadNum = 0; threadNum < Parameters.numThreads; threadNum++) {
             keygens[threadNum] = new CreakersAndWaveKeyGenerator(
-                    parameters.creakersDist.getDistribution(parameters.range),
-                    parameters.waveDist.getDistribution()
+                    parameters.creakersDistBuilder.getDistribution(parameters.range),
+                    parameters.waveDistBuilder.getDistribution()
             );
         }
 

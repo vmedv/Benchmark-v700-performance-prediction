@@ -1,9 +1,7 @@
 package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.DistributionBuilder;
-import contention.abstractions.DistributionType;
 import contention.abstractions.Parameters;
-import contention.benchmark.distributions.parameters.SkewedSetParameters;
 
 public class SimpleParameters extends Parameters {
     public DistributionBuilder distributionBuilder = new DistributionBuilder();
@@ -14,6 +12,8 @@ public class SimpleParameters extends Parameters {
 
         if (newArgNumber == argNumber) {
             super.parseArg();
+        } else {
+            argNumber = newArgNumber;
         }
     }
 
