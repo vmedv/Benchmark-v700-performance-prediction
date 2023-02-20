@@ -60,7 +60,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
             newWaveBegin = localWaveBegin - 1;
         }
         data.waveBegin.weakCompareAndSet(localWaveBegin, newWaveBegin);
-        return newWaveBegin;
+        return data.get(newWaveBegin);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
             newWaveEnd = localWaveEnd - 1;
         }
         data.waveEnd.weakCompareAndSet(localWaveEnd, newWaveEnd);
-        return newWaveEnd;
+        return data.get(newWaveEnd);
     }
 
     @Override
