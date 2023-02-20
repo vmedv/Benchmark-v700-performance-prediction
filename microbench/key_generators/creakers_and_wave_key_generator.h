@@ -86,7 +86,7 @@ public:
             newWaveEnd = localWaveEnd - 1;
         }
         keygenData->waveEnd.compare_exchange_weak(localWaveEnd, newWaveEnd);
-        return newWaveEnd;
+        return keygenData->data[newWaveEnd];
     }
 
     K next_insert() {
@@ -98,7 +98,7 @@ public:
             newWaveBegin = localWaveBegin - 1;
         }
         keygenData->waveBegin.compare_exchange_weak(localWaveBegin, newWaveBegin);
-        return newWaveBegin;
+        return keygenData->data[newWaveBegin];
     }
 
     K next_range() {
