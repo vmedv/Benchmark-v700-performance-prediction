@@ -41,8 +41,18 @@ public class CreakersAndWaveParameters extends Parameters {
             case "-g-age", "-c-age" -> this.CREAKERS_AGE = Integer.parseInt(args[++argNumber]);
             case "-g-dist", "-c-dist" -> argNumber = this.creakersDistBuilder.parseDistribution(args, argNumber);
             case "-w-dist" -> argNumber = this.waveDistBuilder.parseDistribution(args, argNumber);
+            case "--size", "-i" -> {
+                ++argNumber;
+                System.err.println("CreakersAndWave key generator does not accept prefill size argument. Ignoring...");
+            }
             default -> super.parseArg();
         }
+    }
+
+    @Override
+    public void parse(String[] args) {
+        super.parse(args);
+        this.size = (int) (this.range * this.CREAKERS_SIZE) + (int) (this.range * this.WAVE_SIZE);
     }
 
     @Override
