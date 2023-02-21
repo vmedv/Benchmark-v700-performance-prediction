@@ -81,7 +81,7 @@ public:
         size_t localWaveEnd = keygenData->waveEnd;
         size_t newWaveEnd;
         if (localWaveEnd == 0) {
-            newWaveEnd = keygenData->creakersBegin;
+            newWaveEnd = keygenData->creakersBegin - 1;
         } else {
             newWaveEnd = localWaveEnd - 1;
         }
@@ -93,7 +93,7 @@ public:
         size_t localWaveBegin = keygenData->waveBegin;
         size_t newWaveBegin;
         if (localWaveBegin == 0) {
-            newWaveBegin = keygenData->creakersBegin;
+            newWaveBegin = keygenData->creakersBegin - 1;
         } else {
             newWaveBegin = localWaveBegin - 1;
         }
