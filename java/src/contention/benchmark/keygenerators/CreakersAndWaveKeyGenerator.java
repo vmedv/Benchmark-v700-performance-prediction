@@ -55,7 +55,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
         int localWaveBegin = data.waveBegin.get();
         int newWaveBegin;
         if (localWaveBegin == 0) {
-            newWaveBegin = data.creakersBegin;
+            newWaveBegin = data.creakersBegin - 1;
         } else {
             newWaveBegin = localWaveBegin - 1;
         }
@@ -68,7 +68,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
         int localWaveEnd = data.waveEnd.get();
         int newWaveEnd;
         if (localWaveEnd == 0) {
-            newWaveEnd = data.creakersBegin;
+            newWaveEnd = data.creakersBegin - 1;
         } else {
             newWaveEnd = localWaveEnd - 1;
         }
