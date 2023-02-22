@@ -36,7 +36,7 @@ public:
         maxKey = _maxKey;
         data = new size_t[maxKey];
         for (size_t i = 0; i < maxKey; i++) {
-            data[i] = i;
+            data[i] = i + 1;
         }
 
         std::random_shuffle(data, data + maxKey - 1);
