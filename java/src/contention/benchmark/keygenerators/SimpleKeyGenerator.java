@@ -20,7 +20,7 @@ public class SimpleKeyGenerator implements KeyGenerator {
 
     private int next() {
         int value = distribution.next();
-        return data == null ? value : data.get(value);
+        return data.get(value);
     }
 
     @Override

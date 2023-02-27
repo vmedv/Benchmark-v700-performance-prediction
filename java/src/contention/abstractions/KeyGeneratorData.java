@@ -7,8 +7,9 @@ import java.util.stream.IntStream;
 
 public abstract class KeyGeneratorData {
     protected final int[] data;
-
+    private final boolean isNonShuffle;
     public KeyGeneratorData(Parameters parameters) {
+        isNonShuffle = parameters.isNonShuffle;
         if (!parameters.isNonShuffle) {
             List<Integer> dataList = IntStream.range(0, parameters.range).boxed().collect(Collectors.toList());
             Collections.shuffle(dataList);
@@ -20,9 +21,10 @@ public abstract class KeyGeneratorData {
 
     protected KeyGeneratorData() {
         data = null;
+        isNonShuffle = true;
     }
 
     public int get(int index) {
-        return data != null ? data[index] : index;
+        return !isNonShuffle ? data[index] : index + 1;
     }
 }

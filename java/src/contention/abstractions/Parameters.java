@@ -243,11 +243,12 @@ public class Parameters {
                     .append("  Data type:                \t")
                     .append("non-shuffle");
         }
-//        if (keygenType != KeyGeneratorType.NONE) {
-//            result.append("\n")
-//                    .append("  Key Generator:           \t")
-//                    .append(this.keygenType);
-//        }
+
+        if (keygenType == KeyGeneratorType.LEAF_INSERT) {
+            result.append("\n")
+                    .append("  Key Generator:           \t")
+                    .append(this.keygenType);
+        }
 
         return result;
     }

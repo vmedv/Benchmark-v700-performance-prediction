@@ -9,7 +9,4 @@ public interface KeyGenerator {
 
     int nextPrefill();
 
-    static KeyGenerator[] generateKeyGenerators(Parameters rawParameters) {
-        return null;
-    }
 }

@@ -26,7 +26,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
                                       Distribution readDistribution,
                                       MutableDistribution insertDistribution,
                                       Distribution eraseDistribution) {
-        this.range =range;
+        this.range = range;
         this.readDistribution = readDistribution;
         this.insertDistribution = insertDistribution;
         this.eraseDistribution = eraseDistribution;
