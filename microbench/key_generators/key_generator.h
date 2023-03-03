@@ -5,11 +5,15 @@
 #ifndef SETBENCH_KEY_GENERATOR_H
 #define SETBENCH_KEY_GENERATOR_H
 
+#include "common.h"
+#include "random_xoshiro256p.h"
+//#include "parameters.h"
+
 enum class KeyGeneratorType {
     SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE
 };
 
-char *keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
+std::string keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
     switch (keyGeneratorType) {
         case KeyGeneratorType::SIMPLE_KEYGEN:
             return "SIMPLE";
@@ -23,8 +27,7 @@ char *keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
 }
 
 template<typename K>
-class KeyGenerator {
-public:
+struct KeyGenerator {
     KeyGenerator() = default;
 
     virtual K next_read() = 0;
@@ -36,24 +39,62 @@ public:
     virtual K next_range() = 0;
 
     virtual K next_prefill() = 0;
+
+    virtual ~KeyGenerator() = default;
 };
 
 template<typename K>
 class KeyGeneratorData {
+private:
+    K * data = nullptr;
+    bool isNonShuffle = true;
+
 public:
-    virtual K get(size_t index) = 0;
+    KeyGeneratorData(Parameters * _parameters) : isNonShuffle(_parameters->isNonShuffle) {
+        if (!isNonShuffle) {
+            data = new K[_parameters->MAXKEY];
+            for (size_t i = 0; i < _parameters->MAXKEY; i++) {
+                data[i] = i + 1;
+            }
+
+            std::random_shuffle(data, data + _parameters->MAXKEY - 1);
+        }
+    }
+
+    KeyGeneratorData(int maxKey, bool _isNonShuffle) : isNonShuffle(_isNonShuffle) {
+        if (!isNonShuffle) {
+            data = new K[maxKey];
+            for (size_t i = 0; i < maxKey; i++) {
+                data[i] = i + 1;
+            }
+
+            std::random_shuffle(data, data + maxKey - 1);
+        }
+    }
+
+    K get(size_t index) {
+        return !isNonShuffle ? data[index] : index + 1;
+    }
+
+    virtual ~KeyGeneratorData() {
+        delete[] data;
+    }
 
 };
 
 template<typename K>
-class KeyGeneratorBuilder {
-public:
-    KeyGeneratorBuilder() = default;
+struct KeyGeneratorBuilder {
+    Parameters * parameters;
+
+    KeyGeneratorBuilder(Parameters * _parameters) : parameters(_parameters) {};
 
     KeyGeneratorType keyGeneratorType = KeyGeneratorType::SIMPLE_KEYGEN;
 
     virtual KeyGenerator<K> **generateKeyGenerators(size_t maxkeyToGenerate, Random64 * rngs) = 0;
 
+    virtual ~KeyGeneratorBuilder() {}
+
 };
+
 
 #endif //SETBENCH_KEY_GENERATOR_H

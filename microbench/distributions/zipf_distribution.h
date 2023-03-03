@@ -11,63 +11,51 @@
 #include "plaf.h"
 #include "distribution.h"
 
-class ZipfDistributionData {
-public:
-    PAD;
-    size_t maxKey;
-    double c = 0; // Normalization constant
-    double *sum_probs; // Pre-calculated sum of probabilities
-    PAD;
-
-    ZipfDistributionData(const size_t _maxKey, const double _alpha) {
-        maxKey = _maxKey;
-        // Compute normalization constant c for implied key range: [1, maxKey]
-        for (int i = 1; i <= _maxKey; i++) {
-            c += ((double) 1) / pow((double) i, _alpha);
-        }
-        double *probs = new double[_maxKey + 1];
-        for (int i = 1; i <= _maxKey; i++) {
-            probs[i] = (((double) 1) / pow((double) i, _alpha)) / c;
-        }
-        // Random should be seeded already (in main)
-        std::random_shuffle(probs + 1, probs + maxKey);
-        sum_probs = new double[_maxKey + 1];
-        sum_probs[0] = 0;
-        for (int i = 1; i <= _maxKey; i++) {
-            sum_probs[i] = sum_probs[i - 1] + probs[i];
-        }
-
-        delete[] probs;
-    }
-
-    ~ZipfDistributionData() {
-        delete[] sum_probs;
-    }
-};
-
-class ZipfDistribution : public Distribution {
+class ZipfDistribution : public MutableDistribution {
 private:
     PAD;
-    ZipfDistributionData *data;
     Random64 *rng;
+    size_t maxKey;
+    double area;
+    double alpha;
     PAD;
 public:
-    ZipfDistribution(ZipfDistributionData *_data, Random64 *_rng)
-            : data(_data), rng(_rng) {}
 
-    size_t next() {
-        double z; // Uniform random number (0 < z < 1)
-        int zipf_value = 0; // Computed exponential value to be returned
-        // Pull a uniform random number (0 < z < 1)
-        do {
-            z = ((double) rng->next() / (double) rng->max_value);
-        } while ((z == 0) || (z == 1));
-        zipf_value = std::upper_bound(data->sum_probs + 1, data->sum_probs + data->maxKey + 1, z) - data->sum_probs;
-        // Assert that zipf_value is between 1 and N
-        assert((zipf_value >= 1) && (zipf_value <= data->maxKey));
-        // GSTATS_ADD_IX(tid, key_gen_histogram, 1, zipf_value);
-        return (zipf_value);
+    ZipfDistribution(Random64 *_rng, double _alpha = 1.0, size_t _maxkey = 0)
+            : rng(_rng), maxKey(_maxkey), area(0), alpha(_alpha) {}
+
+    void setMaxKey(size_t _maxKey) override {
+        maxKey = _maxKey;
+        if (alpha == 1.0) {
+            area = log(maxKey);
+        } else {
+            area = pow((double) maxKey, 1.0 - alpha) / (1.0 - alpha);
+        }
     }
+
+    size_t next() override {
+        double z; // Uniform random number (0 < z < 1)
+        do {
+            z = (rng->next() / (double) rng->max_value);
+        } while ((z == 0) || (z == 1));
+
+        size_t zipf_value = 0;
+        double s = area * z;
+        if (alpha == 1.0) {
+            zipf_value = (size_t) exp(s);
+        } else {
+            zipf_value = (size_t) pow(s * (1 - alpha), 1 / (1 - alpha));
+        }
+        return zipf_value;
+    }
+
+    size_t next(size_t _maxKey) override {
+        setMaxKey(_maxKey);
+        return next();
+    }
+
+    ~ZipfDistribution() {}
 };
+
 
 #endif //SETBENCH_ZIPF_DISTRIBUTION_H

@@ -40,6 +40,11 @@ public:
         }
         return value;
     }
+
+    ~SkewedSetsDistribution() {
+        delete hotDistribution;
+        delete coldDistribution;
+    }
 };
 
 

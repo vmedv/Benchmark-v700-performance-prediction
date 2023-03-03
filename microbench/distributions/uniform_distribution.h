@@ -17,7 +17,7 @@ private:
     size_t maxKey;
     PAD;
 public:
-    UniformDistribution(Random64 *_rng, const size_t _maxKey) : rng(_rng), maxKey(_maxKey) {}
+    UniformDistribution(Random64 *_rng, const size_t _maxKey = 0) : rng(_rng), maxKey(_maxKey) {}
 
     void setMaxKey(size_t _maxKey) {
         maxKey = _maxKey;
@@ -32,6 +32,8 @@ public:
         setMaxKey(_maxKey);
         return next();
     }
+
+    ~UniformDistribution() {}
 };
 
 #endif //SETBENCH_UNIFORM_DISTRIBUTION_H

@@ -6,39 +6,35 @@
 #define SETBENCH_DISTRIBUTION_H
 
 enum class DistributionType {
-    UNIFORM, ZIPF, ZIPF_FAST, MUTABLE_ZIPF, SKEWED_SETS
+    UNIFORM, ZIPF, SKEWED_SETS
 };
 
-char * distributionTypeToString(DistributionType distributionType) {
-
+std::string distributionTypeToString(DistributionType distributionType) {
     switch (distributionType) {
         case DistributionType::UNIFORM:
             return "UNIFORM";
         case DistributionType::ZIPF:
             return "ZIPF";
-        case DistributionType::ZIPF_FAST:
-            return "ZIPF_FAST";
-        case DistributionType::MUTABLE_ZIPF:
-            return "MUTABLE_ZIPF";
         case DistributionType::SKEWED_SETS:
-            break;
+            return "SKEWED_SETS";
     }
 }
 
-class Distribution {
-public:
-    Distribution() = default;
-
+struct Distribution {
     virtual size_t next() = 0;
+
+    virtual ~Distribution() {}
 };
 
-class MutableDistribution : public Distribution {
-public:
-    MutableDistribution() = default;
-
+struct MutableDistribution : public Distribution {
     virtual void setMaxKey(size_t _maxKey) = 0;
 
-    virtual size_t next(size_t _maxKey) = 0;
+    virtual size_t next(size_t _maxKey) {
+        setMaxKey(_maxKey);
+        return Distribution::next();
+    }
+
+    virtual ~MutableDistribution() {};
 };
 
 

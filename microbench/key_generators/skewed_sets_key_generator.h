@@ -8,17 +8,14 @@
 #include <algorithm>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "key_generator.h"
-#include "distributions/distribution.h"
-#include "parameters/skewed_sets_parameters.h"
-#include "data/skewed_sets_key_generator_data.h"
+#include "common.h"
 
 
 template<typename K>
 class SkewedSetsKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
-    SkewedSetsKeyGeneratorData<K> *keygenData;
+    SkewedSetsKeyGeneratorData<K> *data;
     Random64 *rng;
     Distribution *readDist;
     Distribution *writeDist;
@@ -26,17 +23,17 @@ private:
     bool writePrefillOnly;
     PAD;
 public:
-    SkewedSetsKeyGenerator(SkewedSetsKeyGeneratorData<K> *_keygenData, Random64 *_rng,
+    SkewedSetsKeyGenerator(SkewedSetsKeyGeneratorData<K> *_data, Random64 *_rng,
                            Distribution *_readDist, Distribution *_writeDist, bool _writePrefillOnly)
-            : keygenData(_keygenData), rng(_rng), readDist(_readDist), writeDist(_writeDist),
+            : data(_data), rng(_rng), readDist(_readDist), writeDist(_writeDist),
               writePrefillOnly(_writePrefillOnly) {}
 
     K next_read() {
-        return keygenData->get(readDist->next());
+        return data->get(readDist->next());
     }
 
     K next_write() {
-        return keygenData->get((keygenData->writeSetBegin + writeDist->next()) % keygenData->maxKey);
+        return data->get((data->writeSetBegin + writeDist->next()) % data->maxKey);
     }
 
     K next_erase() {
@@ -57,14 +54,20 @@ public:
             value = next_write();
         }
         else {
-            if (prefillSize < keygenData->readSetLength) {
-                value = keygenData->get(prefillSize++);
+            if (prefillSize < data->readSetLength) {
+                value = data->get(prefillSize++);
             } else {
-                value = keygenData->get(keygenData->readSetLength +
-                                         rng->next(keygenData->maxKey - keygenData->readSetLength));
+                value = data->get(data->readSetLength +
+                                  rng->next(data->maxKey - data->readSetLength));
             }
         }
         return value;
+    }
+
+    ~SkewedSetsKeyGenerator() {
+//        todo delete keygenData;
+        delete readDist;
+        delete writeDist;
     }
 };
 

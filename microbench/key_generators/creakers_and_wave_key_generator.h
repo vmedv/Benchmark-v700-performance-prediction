@@ -9,25 +9,18 @@
 #include <atomic>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "key_generator.h"
-#include "distributions/distribution.h"
-#include "distributions/skewed_sets_distribution.h"
-#include "parameters/creakers_and_wave_parameters.h"
-#include "data/creakers_and_wave_key_generator_data.h"
+#include "common.h"
 
 
 template<typename K>
 class CreakersAndWaveKeyGenerator : public KeyGenerator<K> {
 public:
     PAD;
-    CreakersAndWaveKeyGeneratorData<K> *keygenData;
+    CreakersAndWaveKeyGeneratorData<K> *data;
 private:
     Random64 *rng;
     Distribution *creakersDist;
     MutableDistribution *waveDist;
-//    Distribution<K> *CWDist;
-//    size_t waveBegin;
-//    size_t waveLength;
     size_t prefillSize;
     PAD;
 
@@ -42,33 +35,28 @@ private:
             z = (rng->next() / (double) rng->max_value);
         } while ((z == 0) || (z == 1));
 
-        return z < keygenData->CWParm->CREAKERS_PROB;
+        return z < data->parameters->CREAKERS_PROB;
     }
 
 public:
-    CreakersAndWaveKeyGenerator(CreakersAndWaveKeyGeneratorData<K> *_keygenData, Random64 *_rng,
+    CreakersAndWaveKeyGenerator(CreakersAndWaveKeyGeneratorData<K> *_data, Random64 *_rng,
                                 Distribution *_creakersDist, MutableDistribution *_waveDist)
-            : keygenData(_keygenData), rng(_rng), creakersDist(_creakersDist), waveDist(_waveDist) {
-//        CWDist = new SkewedSetsDistribution<K>(_creakersDist, _waveDist, rng,
-//                                               keygenData->CWParm->CREAKERS_PROB, keygenData->creakersLength);
-//        waveBegin = keygenData->waveBegin;
-//        waveLength = keygenData->defaultWaveLength;
-    }
+            : data(_data), rng(_rng), creakersDist(_creakersDist), waveDist(_waveDist) {}
 
     K next_read() {
         K value;
         if (next_coin()) {
-            value = keygenData->data[keygenData->creakersBegin + creakersDist->next()];
+            value = data->get(data->creakersBegin + creakersDist->next());
         } else {
             /**
              * In waveDist the first indexes have a higher probability
              */
-            size_t localWaveBegin = keygenData->waveBegin;
-            size_t localWaveEnd = keygenData->waveEnd;
+            size_t localWaveBegin = data->waveBegin;
+            size_t localWaveEnd = data->waveEnd;
             size_t localWaveLength =
-                    (localWaveEnd - localWaveBegin + keygenData->creakersBegin) % keygenData->creakersBegin;
-            size_t index = (localWaveBegin + waveDist->next(localWaveLength)) % keygenData->creakersBegin;
-            value = keygenData->data[index];
+                    (localWaveEnd - localWaveBegin + data->creakersBegin) % data->creakersBegin;
+            size_t index = (localWaveBegin + waveDist->next(localWaveLength)) % data->creakersBegin;
+            value = data->get(index);
         }
         return value;
     }
@@ -78,27 +66,27 @@ public:
     }
 
     K next_erase() {
-        size_t localWaveEnd = keygenData->waveEnd;
+        size_t localWaveEnd = data->waveEnd;
         size_t newWaveEnd;
         if (localWaveEnd == 0) {
-            newWaveEnd = keygenData->creakersBegin - 1;
+            newWaveEnd = data->creakersBegin - 1;
         } else {
             newWaveEnd = localWaveEnd - 1;
         }
-        keygenData->waveEnd.compare_exchange_weak(localWaveEnd, newWaveEnd);
-        return keygenData->data[newWaveEnd];
+        data->waveEnd.compare_exchange_weak(localWaveEnd, newWaveEnd);
+        return data->get(newWaveEnd);
     }
 
     K next_insert() {
-        size_t localWaveBegin = keygenData->waveBegin;
+        size_t localWaveBegin = data->waveBegin;
         size_t newWaveBegin;
         if (localWaveBegin == 0) {
-            newWaveBegin = keygenData->creakersBegin - 1;
+            newWaveBegin = data->creakersBegin - 1;
         } else {
             newWaveBegin = localWaveBegin - 1;
         }
-        keygenData->waveBegin.compare_exchange_weak(localWaveBegin, newWaveBegin);
-        return keygenData->data[newWaveBegin];
+        data->waveBegin.compare_exchange_weak(localWaveBegin, newWaveBegin);
+        return data->get(newWaveBegin);
     }
 
     K next_range() {
@@ -106,11 +94,17 @@ public:
     }
 
     K next_prefill() {
-        return keygenData->data[keygenData->waveBegin + prefillSize++];
+        return data->get(data->waveBegin + prefillSize++);
     }
 
     K next_warming() {
-        return keygenData->data[keygenData->creakersBegin + creakersDist->next()];
+        return data->get(data->creakersBegin + creakersDist->next());
+    }
+
+    ~CreakersAndWaveKeyGenerator() {
+        // todo delete data
+        delete creakersDist;
+        delete waveDist;
     }
 
 };

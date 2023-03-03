@@ -9,14 +9,10 @@
 #include <atomic>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "key_generators/key_generator.h"
-#include "distributions/distribution.h"
-#include "distributions/skewed_sets_distribution.h"
-#include "parameters/creakers_and_wave_parameters.h"
+#include "common.h"
 
 template<typename K>
-class CreakersAndWaveKeyGeneratorData : public KeyGeneratorData<K> {
-public:
+struct CreakersAndWaveKeyGeneratorData : public KeyGeneratorData<K> {
     PAD;
     size_t maxKey;
 
@@ -27,20 +23,12 @@ public:
 
     std::atomic<size_t> waveBegin;
     std::atomic<size_t> waveEnd;
-    CreakersAndWaveParameters *CWParm;
+    CreakersAndWaveParameters *parameters;
 
-    size_t *data;
     PAD;
 
-    CreakersAndWaveKeyGeneratorData(const size_t _maxKey, CreakersAndWaveParameters *_CWParm) : CWParm(_CWParm) {
-        maxKey = _maxKey;
-        data = new size_t[maxKey];
-        for (size_t i = 0; i < maxKey; i++) {
-            data[i] = i + 1;
-        }
-
-        std::random_shuffle(data, data + maxKey - 1);
-
+    CreakersAndWaveKeyGeneratorData(CreakersAndWaveParameters *_parameters)
+            : KeyGeneratorData<K>(_parameters), maxKey(_parameters->MAXKEY), parameters(_parameters) {
         /*
          * first version where
          * data = | creakers | wave ... |
@@ -54,21 +42,14 @@ public:
         /*
          * data = | ... wave | creakers |
          */
-        creakersLength = (size_t) (maxKey * CWParm->CREAKERS_SIZE);
+        creakersLength = (size_t) (maxKey * parameters->CREAKERS_SIZE);
         creakersBegin = maxKey - creakersLength;
-        defaultWaveLength = (size_t) (maxKey * CWParm->WAVE_SIZE);
+        defaultWaveLength = (size_t) (maxKey * parameters->WAVE_SIZE);
         waveEnd = creakersBegin;
         waveBegin = waveEnd - defaultWaveLength;
         prefillSize = creakersLength + defaultWaveLength;
     }
 
-    K get(size_t index) {
-        return data[index];
-    }
-
-    ~CreakersAndWaveKeyGeneratorData() {
-        delete[] data;
-    }
 };
 
 

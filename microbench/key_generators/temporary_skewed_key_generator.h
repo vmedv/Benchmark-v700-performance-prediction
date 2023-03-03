@@ -8,17 +8,14 @@
 #include <algorithm>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "key_generator.h"
-#include "distributions/distribution.h"
-#include "parameters/temporary_skewed_parameters.h"
-#include "data/temporary_skewed_key_generator_data.h"
+#include "common.h"
 
 
 template<typename K>
 class TemporarySkewedKeyGenerator : public KeyGenerator<K> {
 private:
     PAD;
-    TemporarySkewedKeyGeneratorData<K> *keygenData;
+    TemporarySkewedKeyGeneratorData<K> *data;
     Distribution **hotDists;
     Distribution *relaxDist;
     size_t time;
@@ -29,16 +26,16 @@ private:
 
     void update_pointer() {
         if (!relaxTime) {
-            if (time >= keygenData->TSParm->hotTimes[pointer]) {
+            if (time >= data->parameters->hotTimes[pointer]) {
                 time = 0;
                 relaxTime = true;
             }
         } else {
-            if (time >= keygenData->TSParm->relaxTimes[pointer]) {
+            if (time >= data->parameters->relaxTimes[pointer]) {
                 time = 0;
                 relaxTime = false;
                 ++pointer;
-                if (pointer >= keygenData->TSParm->setCount) {
+                if (pointer >= data->parameters->setCount) {
                     pointer = 0;
                 }
             }
@@ -47,9 +44,9 @@ private:
     }
 
 public:
-    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData<K> *_keygenData,
+    TemporarySkewedKeyGenerator(TemporarySkewedKeyGeneratorData<K> *_data,
                                 Distribution *_relaxDist, Distribution **_hotDists)
-            : keygenData(_keygenData), relaxDist(_relaxDist), hotDists(_hotDists) {
+            : data(_data), relaxDist(_relaxDist), hotDists(_hotDists) {
         time = 0;
         pointer = 0;
         relaxTime = false;
@@ -60,14 +57,14 @@ public:
         K value;
 
         if (relaxTime) {
-            value = keygenData->get(relaxDist->next());
+            value = data->get(relaxDist->next());
         } else {
-            size_t index = keygenData->setBegins[pointer] + hotDists[pointer]->next();
-            if (index >= keygenData->maxKey) {
-                index -= keygenData->maxKey;
+            size_t index = data->setBegins[pointer] + hotDists[pointer]->next();
+            if (index >= data->maxKey) {
+                index -= data->maxKey;
             }
 
-            value = keygenData->get(index);
+            value = data->get(index);
         }
 
         return value;
@@ -99,7 +96,13 @@ public:
     }
 
     K next_prefill() {
-        return keygenData->get(relaxDist->next());
+        return data->get(relaxDist->next());
+    }
+
+    ~TemporarySkewedKeyGenerator() {
+        // todo delete data
+        delete relaxDist;
+        delete[] hotDists;
     }
 };
 
