@@ -4,7 +4,7 @@ import contention.abstractions.Distribution;
 
 import java.util.Random;
 
-public class SkewedSetsDistribution implements Distribution {
+public class SkewedUniformDistribution implements Distribution {
     private final int hotLength;
     private final double hotProb;
     private final Distribution hotDistribution;
@@ -12,9 +12,9 @@ public class SkewedSetsDistribution implements Distribution {
     private final Random random;
 
 
-    public SkewedSetsDistribution(int hotLength, double hotProb,
-                                  Distribution hotDistribution,
-                                  Distribution coldDistribution) {
+    public SkewedUniformDistribution(int hotLength, double hotProb,
+                                     Distribution hotDistribution,
+                                     Distribution coldDistribution) {
         this.hotLength = hotLength;
         this.hotProb = hotProb;
         this.hotDistribution = hotDistribution;

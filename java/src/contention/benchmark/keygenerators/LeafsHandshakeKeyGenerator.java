@@ -1,32 +1,30 @@
 package contention.benchmark.keygenerators;
 
-import contention.abstractions.Distribution;
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.MutableDistribution;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.data.SimpleKeyGeneratorData;
+import contention.abstractions.*;
+import contention.benchmark.keygenerators.data.KeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
 
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeafsHandshakeKeyGenerator implements KeyGenerator {
-    public static SimpleKeyGeneratorData readData = null;
-    public static SimpleKeyGeneratorData eraseData = null;
+    private final KeyGeneratorData readData;
+    private final KeyGeneratorData eraseData;
 
-    private final int range;
+    private final LeafsHandshakeParameters parameters;
     private final Distribution readDistribution;
     private final MutableDistribution insertDistribution;
     private final Distribution eraseDistribution;
     private final Random random;
 
-    public static AtomicInteger deletedValue = new AtomicInteger(0);
-
-    public LeafsHandshakeKeyGenerator(int range,
+    public LeafsHandshakeKeyGenerator(KeyGeneratorData readData,
+                                      KeyGeneratorData eraseData,
+                                      LeafsHandshakeParameters parameters,
                                       Distribution readDistribution,
                                       MutableDistribution insertDistribution,
                                       Distribution eraseDistribution) {
-        this.range = range;
+        this.readData = readData;
+        this.eraseData = eraseData;
+        this.parameters = parameters;
         this.readDistribution = readDistribution;
         this.insertDistribution = insertDistribution;
         this.eraseDistribution = eraseDistribution;
@@ -41,14 +39,14 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextInsert() {
-        int localDeletedValue = deletedValue.get();
+        int localDeletedValue = parameters.deletedValue.get();
 
         int value;
 
         boolean isRight = random.nextDouble() >= 0.5;
 
-        if (localDeletedValue == 0 || (isRight && localDeletedValue != range - 1)) {
-            value = localDeletedValue + insertDistribution.next(range - localDeletedValue) + 1;
+        if (localDeletedValue == 0 || (isRight && localDeletedValue != parameters.range - 1)) {
+            value = localDeletedValue + insertDistribution.next(parameters.range - localDeletedValue) + 1;
         } else {
             value = localDeletedValue - insertDistribution.next(localDeletedValue) - 1;
         }
@@ -58,12 +56,12 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextErase() {
-        int localDeletedValue = deletedValue.get();
+        int localDeletedValue = parameters.deletedValue.get();
         int index = eraseDistribution.next();
         int value = eraseData == null ? index : eraseData.get(index);
 
         //todo learn the difference between all kinds of weakCompareAndSet
-        deletedValue.weakCompareAndSet(localDeletedValue, value);
+        parameters.deletedValue.weakCompareAndSet(localDeletedValue, value);
 
         return value;
     }

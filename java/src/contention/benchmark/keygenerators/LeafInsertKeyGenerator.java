@@ -1,13 +1,12 @@
 package contention.benchmark.keygenerators;
 
 import contention.abstractions.KeyGenerator;
-import contention.abstractions.Parameters;
 import contention.benchmark.keygenerators.data.LeafInsertKeyGeneratorData;
 
 import java.util.Random;
 
 public class LeafInsertKeyGenerator implements KeyGenerator {
-    public static LeafInsertKeyGeneratorData data;
+    private final LeafInsertKeyGeneratorData data;
 
     private final int range;
     private final Random random;
@@ -17,7 +16,8 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
     private int eraseIndex;
 
 
-    public LeafInsertKeyGenerator(int range) {
+    public LeafInsertKeyGenerator(LeafInsertKeyGeneratorData data, int range) {
+        this.data = data;
         this.range = range;
         this.random = new Random();
         this.curInsertLayers = 0;

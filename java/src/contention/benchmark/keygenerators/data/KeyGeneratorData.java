@@ -1,11 +1,13 @@
-package contention.abstractions;
+package contention.benchmark.keygenerators.data;
+
+import contention.abstractions.Parameters;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public abstract class KeyGeneratorData {
+public class KeyGeneratorData {
     protected final int[] data;
     private final boolean isNonShuffle;
     public KeyGeneratorData(Parameters parameters) {

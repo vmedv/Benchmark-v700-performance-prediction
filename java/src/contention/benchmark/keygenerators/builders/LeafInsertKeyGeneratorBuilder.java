@@ -16,10 +16,10 @@ public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
     public KeyGenerator[] generateKeyGenerators() {
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
-        LeafInsertKeyGenerator.data = new LeafInsertKeyGeneratorData(parameters);
+        LeafInsertKeyGeneratorData data = new LeafInsertKeyGeneratorData(parameters);
 
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new LeafInsertKeyGenerator(parameters.range);
+            keygens[threadNum] = new LeafInsertKeyGenerator(data, parameters.range);
         }
 
         return keygens;

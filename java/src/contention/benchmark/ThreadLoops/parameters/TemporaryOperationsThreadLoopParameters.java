@@ -1,8 +1,9 @@
-package contention.benchmark.ThreadLoops.workloads.parameters;
+package contention.benchmark.ThreadLoops.parameters;
 
-import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
+import contention.abstractions.ParseArgument;
+import contention.abstractions.ThreadLoopParameters;
 
-public class TemporaryOperationsParameters extends LeafsHandshakeParameters {
+public class TemporaryOperationsThreadLoopParameters implements ThreadLoopParameters {
     public int tempOperCount = 0;
     public int[] opTimes;
     public double[] numInserts;
@@ -17,21 +18,32 @@ public class TemporaryOperationsParameters extends LeafsHandshakeParameters {
     }
 
     @Override
-    protected void parseArg() {
-        switch (args[argNumber]) {
-            case "-temp-oper-count" -> setTempOperCount(Integer.parseInt(args[++argNumber]));
-            case "-ot" -> opTimes[Integer.parseInt(args[++argNumber])] = Integer.parseInt(args[++argNumber]);
-            case "-uii" -> numInserts[Integer.parseInt(args[++argNumber])] = Double.parseDouble(args[++argNumber]);
-            case "-uei" -> numErases[Integer.parseInt(args[++argNumber])] = Double.parseDouble(args[++argNumber]);
-            default -> super.parseArg();
+    public void build() {
+
+    }
+
+    @Override
+    public boolean parseArg(ParseArgument args) {
+        switch (args.getCurrent()) {
+            case "-temp-oper-count" -> setTempOperCount(Integer.parseInt(args.getNext()));
+            case "-ot" -> opTimes[Integer.parseInt(args.getNext())] = Integer.parseInt(args.getNext());
+            case "-uii" -> numInserts[Integer.parseInt(args.getNext())] = Double.parseDouble(args.getNext());
+            case "-uei" -> numErases[Integer.parseInt(args.getNext())] = Double.parseDouble(args.getNext());
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
     public StringBuilder toStringBuilder() {
-        StringBuilder result = super.toStringBuilder();
-        result.append("\n")
-                .append("  Number of temp Operations:\t")
+        StringBuilder result = new StringBuilder();
+        result
+                .append("  Thread loop:             \t")
+                .append("Temporary Operations")
+                .append("\n")
+                .append("  Number of temps:         \t")
                 .append(this.tempOperCount)
                 .append("\n")
                 .append("  Writes ratios:           \t");
@@ -44,13 +56,13 @@ public class TemporaryOperationsParameters extends LeafsHandshakeParameters {
                 .append(" op.\n")
                 .append("    Write ratio of ").append(i).append(":      \t")
                 .append(this.numInserts[i] + this.numErases[i])
-                .append(" %\n")
+                .append("\n")
                 .append("    Insert ratio of ").append(i).append(":     \t")
                 .append(this.numInserts[i])
-                .append(" %\n")
+                .append("\n")
                 .append("    Erase ratio of ").append(i).append(":      \t")
                 .append(this.numErases[i])
-                .append(" %\n");
+                .append("\n");
         }
         return result;
     }

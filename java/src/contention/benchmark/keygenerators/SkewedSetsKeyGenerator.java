@@ -1,18 +1,18 @@
 package contention.benchmark.keygenerators;
 
 import contention.abstractions.*;
-import contention.benchmark.distributions.SkewedSetsDistribution;
-import contention.benchmark.distributions.UniformDistribution;
-import contention.benchmark.keygenerators.data.SkewedSetsKeyGeneratorData;
+import contention.benchmark.keygenerators.data.KeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.SkewedSetsParameters;
 
 public class SkewedSetsKeyGenerator implements KeyGenerator {
-    public static SkewedSetsKeyGeneratorData data;
-
+    private final KeyGeneratorData data;
+private final SkewedSetsParameters parameters;
     private final Distribution readDistribution;
     private final Distribution writeDistribution;
 
-    public SkewedSetsKeyGenerator(Distribution readDistribution, Distribution writeDistribution) {
+    public SkewedSetsKeyGenerator(KeyGeneratorData data, SkewedSetsParameters parameters,Distribution readDistribution, Distribution writeDistribution) {
+        this.data = data;
+        this.parameters = parameters;
         this.readDistribution = readDistribution;
         this.writeDistribution = writeDistribution;
     }

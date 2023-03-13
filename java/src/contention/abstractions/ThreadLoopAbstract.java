@@ -1,8 +1,18 @@
 package contention.abstractions;
 
+import java.lang.reflect.Method;
+
 public abstract class ThreadLoopAbstract implements ThreadLoop {
     protected final KeyGenerator keygen;
-    protected final Parameters parameters;
+
+    /**
+     * The number of the current thread
+     */
+    protected final short myThreadNum;
+    /**
+     * The pool of methods that can run
+     */
+    protected Method[] methods;
     /**
      * The stop flag, indicating whether the loop is over
      */
@@ -30,9 +40,10 @@ public abstract class ThreadLoopAbstract implements ThreadLoop {
     public long nodesTraversed;
     public long structMods;
 
-    protected ThreadLoopAbstract(KeyGenerator keygen, Parameters parameters) {
+    protected ThreadLoopAbstract(short myThreadNum, Method[] methods, KeyGenerator keygen) {
+        this.myThreadNum = myThreadNum;
+        this.methods = methods;
         this.keygen = keygen;
-        this.parameters = parameters;
     }
 
     public long getNumAdd() {

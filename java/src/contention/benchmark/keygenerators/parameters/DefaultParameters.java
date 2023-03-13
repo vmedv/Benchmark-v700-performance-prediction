@@ -2,18 +2,15 @@ package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.DistributionBuilder;
 import contention.abstractions.Parameters;
+import contention.abstractions.ParseArgument;
 
-public class SimpleParameters extends Parameters {
+public class DefaultParameters extends Parameters {
     public DistributionBuilder distributionBuilder = new DistributionBuilder();
 
     @Override
-    protected void parseArg() {
-        int newArgNumber = distributionBuilder.parseDistribution(args, argNumber);
-
-        if (newArgNumber == argNumber) {
-            super.parseArg();
-        } else {
-            argNumber = newArgNumber;
+    protected void parseArg(ParseArgument args) {
+        if (!distributionBuilder.parseDistribution(args)) {
+            super.parseArg(args);
         }
     }
 

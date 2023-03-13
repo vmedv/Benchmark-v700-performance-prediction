@@ -165,8 +165,9 @@ public class SequentialQueueIntSet implements CompositionalIntSet {
      * always successful, as opposed to its remove.
      */
     public void clear() {
-	m_last = m_first; 
-	fill(Parameters.range, Parameters.size);
+	    m_last = m_first;
+        // todo: fill after clear ??
+//    	fill(Parameters.range, Parameters.size);
     	return;	
     }
     

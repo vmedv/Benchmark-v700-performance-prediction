@@ -2,12 +2,10 @@ package contention.benchmark.keygenerators.builders;
 
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.keygenerators.data.KeyGeneratorData;
 import contention.abstractions.Parameters;
 import contention.benchmark.keygenerators.*;
-import contention.benchmark.keygenerators.data.SimpleKeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
@@ -20,33 +18,36 @@ public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
         LeafsHandshakeParameters parameters = (LeafsHandshakeParameters) this.parameters;
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
+
+        KeyGeneratorData readData = switch (parameters.readDistBuilder.distributionType) {
+            case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
+            default -> null;
+        };
+        KeyGeneratorData eraseData;
+        // todo think about the intersection of sets
+        if (parameters.readDistBuilder.distributionType == parameters.eraseDistBuilder.distributionType) {
+            eraseData = readData;
+        } else {
+            eraseData = switch (parameters.readDistBuilder.distributionType) {
+                case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
+                default -> null;
+            };
+        }
+
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
             keygens[threadNum] = new LeafsHandshakeKeyGenerator(
-                    parameters.range,
+                    readData,
+                    eraseData,
+                    parameters,
                     parameters.readDistBuilder.getDistribution(parameters.range),
                     parameters.insertDistBuilder.getDistribution(),
                     parameters.eraseDistBuilder.getDistribution(parameters.range)
             );
         }
 
-        LeafsHandshakeKeyGenerator.readData = switch (parameters.readDistBuilder.distributionType) {
-            case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
-            default -> null;
-        };
-
-        // todo think about the intersection of sets
-        if (parameters.readDistBuilder.distributionType == parameters.eraseDistBuilder.distributionType) {
-            LeafsHandshakeKeyGenerator.eraseData = LeafsHandshakeKeyGenerator.readData;
-        } else {
-            LeafsHandshakeKeyGenerator.eraseData = switch (parameters.readDistBuilder.distributionType) {
-                case ZIPF, SKEWED_SETS -> new SimpleKeyGeneratorData(parameters);
-                default -> null;
-            };
-        }
-
         // to initialize deletedValue
 //        keygens[0].nextErase();
-        LeafsHandshakeKeyGenerator.deletedValue = new AtomicInteger(keygens[0].nextErase());
+//        LeafsHandshakeKeyGenerator.deletedValue = new AtomicInteger(keygens[0].nextErase());
 
         return keygens;
     }

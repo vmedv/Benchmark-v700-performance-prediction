@@ -3,7 +3,10 @@ package contention.benchmark.keygenerators.parameters;
 import contention.abstractions.DistributionBuilder;
 import contention.abstractions.DistributionType;
 import contention.abstractions.Parameters;
+import contention.abstractions.ParseArgument;
 import contention.benchmark.distributions.parameters.ZipfParameters;
+
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LeafsHandshakeParameters extends Parameters {
     public DistributionBuilder readDistBuilder = new DistributionBuilder();
@@ -11,13 +14,25 @@ public class LeafsHandshakeParameters extends Parameters {
             .setDistributionType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
     public DistributionBuilder eraseDistBuilder = new DistributionBuilder();
 
+    public AtomicInteger deletedValue;
+
+    // for LeafsExtensionHandshakeKeyGenerator
+    public AtomicInteger curRange;
+
+    public void build() {
+        super.build();
+        deletedValue = new AtomicInteger(range/2);
+        // for LeafsExtensionHandshakeKeyGenerator
+        curRange = new AtomicInteger(Math.max(10, size));
+    }
+
     @Override
-    protected void parseArg() {
-        switch (args[argNumber]) {
-            case "-read-dist" -> argNumber = readDistBuilder.parseDistribution(args, argNumber);
-            case "-insert-dist" -> argNumber = insertDistBuilder.parseDistribution(args, argNumber);
-            case "-erase-dist" -> argNumber = eraseDistBuilder.parseDistribution(args, argNumber);
-            default -> super.parseArg();
+    protected void parseArg(ParseArgument args) {
+        switch (args.getCurrent()) {
+            case "-read-dist" -> readDistBuilder.parseDistribution(args);
+            case "-insert-dist" -> insertDistBuilder.parseDistribution(args);
+            case "-erase-dist" -> eraseDistBuilder.parseDistribution(args);
+            default -> super.parseArg(args);
         }
     }
 
@@ -25,9 +40,9 @@ public class LeafsHandshakeParameters extends Parameters {
     public StringBuilder toStringBuilder() {
         StringBuilder result = super.toStringBuilder();
         result.append("\n")
-                .append("  Key Generator:           \t")
-                .append(this.keygenType)
-                .append("\n")
+//                .append("  Key Generator:           \t")
+//                .append(this.keygenType)
+//                .append("\n")
                 .append("  Read distribution:       \t")
                 .append(readDistBuilder.distributionType)
                 .append(readDistBuilder.toStringBuilderParameters())

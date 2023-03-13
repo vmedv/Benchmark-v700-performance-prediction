@@ -29,9 +29,9 @@ public class SequentialHashIntSet implements CompositionalIntSet {
         table = new Node[tableSize];
     }
 
-    public SequentialHashIntSet() {
-        this(Parameters.size);
-    }
+//    public SequentialHashIntSet() {
+//        this(Parameters.size);
+//    }
 
 	@Override
 	public void fill(final int range, final long size) {
@@ -176,7 +176,8 @@ public class SequentialHashIntSet implements CompositionalIntSet {
 	 * No need to do anything for this.
 	 */
 	public void clear() {
-	    tableSize = Parameters.size;
+        // todo: tableSize doesn't change
+//	    tableSize = Parameters.size;
 	    table = new Node[tableSize];
 	}
 

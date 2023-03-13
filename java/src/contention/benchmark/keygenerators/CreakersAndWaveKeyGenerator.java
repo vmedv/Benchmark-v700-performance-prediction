@@ -1,26 +1,24 @@
 package contention.benchmark.keygenerators;
 
-import contention.abstractions.Distribution;
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.MutableDistribution;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.data.CreakersAndWaveKeyGeneratorData;
+import contention.abstractions.*;
+import contention.benchmark.keygenerators.data.KeyGeneratorData;
+import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
 
 import java.util.Random;
 
 public class CreakersAndWaveKeyGenerator implements KeyGenerator {
-    public static CreakersAndWaveKeyGeneratorData data;
+    private final KeyGeneratorData data;
+    private final CreakersAndWaveParameters parameters;
     private Distribution creakersDist;
     private MutableDistribution waveDist;
     private final Random random;
 
-    private int prefillSize;
-
-    public CreakersAndWaveKeyGenerator(Distribution creakersDistribution, MutableDistribution waveDistribution) {
+    public CreakersAndWaveKeyGenerator(KeyGeneratorData data, CreakersAndWaveParameters parameters, Distribution creakersDistribution, MutableDistribution waveDistribution) {
+        this.data = data;
+        this.parameters = parameters;
         this.random = new Random();
         this.creakersDist = creakersDistribution;
         this.waveDist = waveDistribution;
-        this.prefillSize = 0;
     }
 
     /**
@@ -28,23 +26,23 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
      * @return true - creakers, false - wave
      */
     private boolean nextCoin() {
-        return random.nextDouble() < data.parameters.CREAKERS_PROB;
+        return random.nextDouble() < parameters.CREAKERS_PROB;
     }
 
     @Override
     public int nextRead() {
         int value;
         if (nextCoin()) {
-            value = data.get(data.creakersBegin + creakersDist.next());
+            value = data.get(parameters.creakersBegin + creakersDist.next());
         } else {
             /**
              * In waveDist the first indexes have a higher probability
              */
-            int localWaveBegin = data.waveBegin.get();
-            int localWaveEnd = data.waveEnd.get();
+            int localWaveBegin = parameters.waveBegin.get();
+            int localWaveEnd = parameters.waveEnd.get();
             int localWaveLength =
-                    (localWaveEnd - localWaveBegin + data.creakersBegin) % data.creakersBegin;
-            int index = (localWaveBegin + waveDist.next(localWaveLength)) % data.creakersBegin;
+                    (localWaveEnd - localWaveBegin + parameters.creakersBegin) % parameters.creakersBegin;
+            int index = (localWaveBegin + waveDist.next(localWaveLength)) % parameters.creakersBegin;
             value = data.get(index);
         }
         return value;
@@ -52,38 +50,38 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextInsert() {
-        int localWaveBegin = data.waveBegin.get();
+        int localWaveBegin = parameters.waveBegin.get();
         int newWaveBegin;
         if (localWaveBegin == 0) {
-            newWaveBegin = data.creakersBegin - 1;
+            newWaveBegin = parameters.creakersBegin - 1;
         } else {
             newWaveBegin = localWaveBegin - 1;
         }
-        data.waveBegin.weakCompareAndSet(localWaveBegin, newWaveBegin);
+        parameters.waveBegin.weakCompareAndSet(localWaveBegin, newWaveBegin);
         return data.get(newWaveBegin);
     }
 
     @Override
     public int nextErase() {
-        int localWaveEnd = data.waveEnd.get();
+        int localWaveEnd = parameters.waveEnd.get();
         int newWaveEnd;
         if (localWaveEnd == 0) {
-            newWaveEnd = data.creakersBegin - 1;
+            newWaveEnd = parameters.creakersBegin - 1;
         } else {
             newWaveEnd = localWaveEnd - 1;
         }
-        data.waveEnd.weakCompareAndSet(localWaveEnd, newWaveEnd);
+        parameters.waveEnd.weakCompareAndSet(localWaveEnd, newWaveEnd);
         return data.get(newWaveEnd);
     }
 
     @Override
     public int nextPrefill() {
-        return data.get(random.nextInt(Parameters.size));
+        return data.get(random.nextInt(parameters.size));
 //        return data.get(data.waveBegin.get() + prefillSize++);
     }
 
     public int next_warming() {
-        return data.get(data.creakersBegin + creakersDist.next());
+        return data.get(parameters.creakersBegin + creakersDist.next());
     }
 
 }

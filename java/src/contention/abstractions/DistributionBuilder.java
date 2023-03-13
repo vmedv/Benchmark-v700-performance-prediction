@@ -1,6 +1,6 @@
 package contention.abstractions;
 
-import contention.benchmark.distributions.SkewedSetsDistribution;
+import contention.benchmark.distributions.SkewedUniformDistribution;
 import contention.benchmark.distributions.UniformDistribution;
 import contention.benchmark.distributions.ZipfDistribution;
 import contention.benchmark.distributions.parameters.*;
@@ -27,27 +27,24 @@ public class DistributionBuilder {
         return this;
     }
 
-//    public DistributionBuilder parseDistribution(String[] args, int argNumber) {
-//        return switch (args[argNumber]) {
-//            case "-dist-zipf" -> this.setDistributionType(DistributionType.ZIPF)
-//                    .setParameters(new ZipfParameters(Double.parseDouble(args[++argNumber])));
-//            case "-dist-skewed-sets" ->
-//                    this.setDistributionType(DistributionType.SKEWED_SETS); //todo add parameters parse
-//            case "-dist-uniform" -> this.setDistributionType(DistributionType.UNIFORM);
-//            default -> null;
-//        };
-//    }
-
-
-    public int parseDistribution(String[] args, int argNumber) {
-        switch (args[argNumber]) {
+    /**
+     * @return true if distribution is parsed
+     */
+    public boolean parseDistribution(ParseArgument args) {
+        switch (args.getCurrent()) {
             case "-dist-zipf" -> this.setDistributionType(DistributionType.ZIPF)
-                    .setParameters(new ZipfParameters(Double.parseDouble(args[++argNumber])));
-            case "-dist-skewed-sets" ->
-                    this.setDistributionType(DistributionType.SKEWED_SETS); //todo add parameters parse
+                    .setParameters(new ZipfParameters(Double.parseDouble(args.getNext())));
+            case "-dist-skewed-uniform" -> this.setDistributionType(DistributionType.SKEWED_UNIFORM)
+                    .setParameters(new SkewedUniformParameters(
+                            Double.parseDouble(args.getNext()),
+                            Double.parseDouble(args.getNext()))
+                    );
             case "-dist-uniform" -> this.setDistributionType(DistributionType.UNIFORM);
+            default -> {
+                return false;
+            }
         }
-        return argNumber;
+        return true;
     }
 
     public Distribution getDistribution(int range) {
@@ -57,13 +54,13 @@ public class DistributionBuilder {
                 ZipfParameters zipfParameters = (ZipfParameters) parameters;
                 yield new ZipfDistribution(zipfParameters.alpha, range);
             }
-            case SKEWED_SETS -> {
-                SkewedSetParameters skewedSetParameters = (SkewedSetParameters) parameters;
-                yield new SkewedSetsDistribution(
-                        skewedSetParameters.getHotLength(),
-                        skewedSetParameters.HOT_PROB,
-                        skewedSetParameters.hotDistType.getDistribution(skewedSetParameters.getHotLength()),
-                        skewedSetParameters.coldDistType.getDistribution(skewedSetParameters.getColdLength())
+            case SKEWED_UNIFORM -> {
+                SkewedUniformParameters skewedUniformParameters = (SkewedUniformParameters) parameters;
+                yield new SkewedUniformDistribution(
+                        skewedUniformParameters.getHotLength(range),
+                        skewedUniformParameters.HOT_PROB,
+                        skewedUniformParameters.hotDistBuilder.getDistribution(skewedUniformParameters.getHotLength(range)),
+                        skewedUniformParameters.coldDistBuilder.getDistribution(skewedUniformParameters.getColdLength(range))
                 );
             }
         };

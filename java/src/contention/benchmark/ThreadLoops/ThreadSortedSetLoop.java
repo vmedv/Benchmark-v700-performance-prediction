@@ -5,10 +5,12 @@ import contention.abstractions.CompositionalSortedSet;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.ThreadLoopAbstract;
 import contention.abstractions.Parameters;
+import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 
 import java.lang.reflect.Method;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The loop executed by each thread of the sorted set
@@ -22,14 +24,6 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
      * The instance of the running benchmark
      */
     public CompositionalSortedSet<Integer> bench;
-    /**
-     * The pool of methods that can run
-     */
-    protected Method[] methods;
-    /**
-     * The number of the current thread
-     */
-    protected final short myThreadNum;
 
     /**
      * The random number
@@ -46,11 +40,9 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
     double[] cdf = new double[4];
 
     public ThreadSortedSetLoop(short myThreadNum, CompositionalSortedSet<Integer> bench, Method[] methods,
-                               KeyGenerator keygen, Parameters parameters) {
-        super(keygen, parameters);
-        this.myThreadNum = myThreadNum;
+                               KeyGenerator keygen, DefaultThreadLoopParameters parameters) {
+        super(myThreadNum, methods, keygen);
         this.bench = bench;
-        this.methods = methods;
         /* initialize the method boundaries */
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = parameters.numWriteAlls;
@@ -69,7 +61,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
         while (!stop) {
             double coin = rand.nextDouble();
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
-                int newInt = rand.nextInt(parameters.range);
+                int newInt = keygen.nextRead(); // todo nextWriteAll
 
                 // init a collection
                 Vector<Integer> vec = new Vector<Integer>(newInt);
@@ -124,13 +116,12 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
     }
 
     @Override
-    public void prefill() {
-        long size = parameters.size / parameters.numPrefillThreads;
-        for (long i = size; i > 0; ) {
-//            int v = rand.nextInt(parameters.range);
+    public void prefill(AtomicInteger prefillSize) {
+        while (prefillSize.get() > 0) {
+            int curPrefillSize = prefillSize.decrementAndGet();
             int v = keygen.nextPrefill();
-            if (bench.add(v)) {
-                i--;
+            if (curPrefillSize < 0 || !bench.add(v)) {
+                prefillSize.incrementAndGet();
             }
         }
     }

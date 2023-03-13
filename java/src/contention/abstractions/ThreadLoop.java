@@ -1,5 +1,7 @@
 package contention.abstractions;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 public interface ThreadLoop extends Runnable {
     long getNumAdd();
 
@@ -53,5 +55,5 @@ public interface ThreadLoop extends Runnable {
 
     void run();
 
-    void prefill();
+    void prefill(AtomicInteger prefillSize);
 }

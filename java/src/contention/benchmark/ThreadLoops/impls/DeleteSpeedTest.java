@@ -1,16 +1,24 @@
-package contention.benchmark.ThreadLoops.workloads;
+package contention.benchmark.ThreadLoops.impls;
 
 import contention.abstractions.CompositionalMap;
-import contention.abstractions.Parameters;
-import contention.benchmark.ThreadLoops.ThreadMapLoop;
+import contention.abstractions.ThreadLoopAbstract;
 import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class DeleteSpeedTest extends ThreadMapLoop {
-    public DeleteSpeedTest(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods, Parameters parameters) {
-        super(myThreadNum, bench, methods, null, parameters);
+public class DeleteSpeedTest extends ThreadLoopAbstract {
+    /**
+     * The instance of the running benchmark
+     */
+    public CompositionalMap<Integer, Integer> bench;
+
+    public DeleteSpeedTest(short myThreadNum, CompositionalMap<Integer, Integer> bench,
+                           Method[] methods) {
+        super(myThreadNum, methods, null);
+        this.bench = bench;
+
     }
 
     private List<Integer> vertices;
@@ -47,8 +55,8 @@ public class DeleteSpeedTest extends ThreadMapLoop {
     }
 
     @Override
-    public void prefill() {
-        int size = parameters.size;
+    public void prefill(AtomicInteger prefillSize) {
+        int size = prefillSize.get();
         vertices = new ArrayList<>(size);
         Queue<Range> vertQueue = new ArrayDeque<>();
 

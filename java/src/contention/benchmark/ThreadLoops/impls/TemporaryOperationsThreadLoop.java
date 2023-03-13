@@ -1,28 +1,37 @@
-package contention.benchmark.ThreadLoops.workloads;
+package contention.benchmark.ThreadLoops.impls;
 
 import contention.abstractions.CompositionalMap;
 import contention.abstractions.KeyGenerator;
-import contention.abstractions.Parameters;
-import contention.abstractions.ThreadLoop;
-import contention.benchmark.ThreadLoops.ThreadMapLoop;
-import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
+import contention.abstractions.ThreadLoopAbstract;
+import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class TemporaryOperationsWorkload extends ThreadMapLoop {
+public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
+    /**
+     * The instance of the running benchmark
+     */
+    public final CompositionalMap<Integer, Integer> bench;
     private long time;
     private int pointer;
-    private TemporaryOperationsParameters parameters;
+    private final TemporaryOperationsThreadLoopParameters parameters;
 
-    private double[][] cdf;
+    /**
+     * The random number
+     */
+    protected Random rand = new Random();
+    private final double[][] cdf;
 
-    public TemporaryOperationsWorkload(short myThreadNum,
-                                       CompositionalMap<Integer, Integer> bench,
-                                       Method[] methods,
-                                       KeyGenerator keygen, TemporaryOperationsParameters parameters) {
-        super(myThreadNum, bench, methods, keygen, parameters);
+    public TemporaryOperationsThreadLoop(short myThreadNum,
+                                         CompositionalMap<Integer, Integer> bench,
+                                         Method[] methods,
+                                         KeyGenerator keygen, TemporaryOperationsThreadLoopParameters parameters) {
+        super(myThreadNum, methods, keygen);
+        this.bench = bench;
         this.time = 0;
         this.pointer = 0;
         this.parameters = parameters;
@@ -30,10 +39,10 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
         this.cdf = new double[parameters.tempOperCount][4];
 
         for (int i = 0; i < parameters.tempOperCount; i++) {
-            cdf[i][0] = parameters.numWriteAlls;
+            cdf[i][0] = 0;//parameters.numWriteAlls;
             cdf[i][1] = parameters.numInserts[i];
             cdf[i][2] = cdf[i][1] + parameters.numErases[i];
-            cdf[i][3] = cdf[i][2] + parameters.numSnapshots;
+            cdf[i][3] = cdf[i][2];// + parameters.numSnapshots;
         }
     }
 
@@ -57,13 +66,14 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
             Integer a, b;
             double coin = rand.nextDouble();
             if (coin < cdf[pointer][0]) { // 1. should we run a writeAll operation?
-                int newInt = rand.nextInt(parameters.range);
+                int newInt = keygen.nextRead();
 
                 // init a collection
                 Map<Integer, Integer> hm = new HashMap<Integer, Integer>(newInt, newInt);
                 hm.put(newInt / 2, newInt / 2); // accepts duplicate
 
                 try {
+                    // todo something very strange
                     if (bench.keySet().removeAll(hm.keySet()))
                         numRemoveAll++;
                     else failures++;
@@ -119,6 +129,17 @@ public class TemporaryOperationsWorkload extends ThreadMapLoop {
         this.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
         this.structMods = CompositionalMap.counts.get().structMods;
         System.out.println("Thread #" + myThreadNum + " finished.");
+    }
+
+    @Override
+    public void prefill(AtomicInteger prefillSize) {
+        while (prefillSize.get() > 0) {
+            int curPrefillSize = prefillSize.decrementAndGet();
+            int v = keygen.nextPrefill();
+            if (curPrefillSize < 0 || bench.putIfAbsent(v, v) != null) {
+                prefillSize.incrementAndGet();
+            }
+        }
     }
 
 }

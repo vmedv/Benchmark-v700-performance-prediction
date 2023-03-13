@@ -7,10 +7,12 @@ import java.lang.reflect.Method;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import contention.benchmark.ThreadLoops.*;
-import contention.benchmark.ThreadLoops.workloads.*;
-import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
+import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
+import contention.benchmark.ThreadLoops.impls.*;
+import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -102,9 +104,10 @@ public class Test {
     //TODO delete parameters
     public void fill(final int range, final long size) throws InterruptedException {
         Thread[] prefillThreads = new Thread[parameters.numPrefillThreads];
+        AtomicInteger prefillSize = new AtomicInteger(parameters.size);
         for (int threadNum = 0; threadNum < parameters.numPrefillThreads; threadNum++) {
             final int finalThreadNum = threadNum;
-            prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill());
+            prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill(prefillSize));
         }
 
         for (Thread thread : prefillThreads)
@@ -161,16 +164,16 @@ public class Test {
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
 
             threadLoops[threadNum] = switch (benchType) {
-                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], parameters);
-                case MAP -> switch (parameters.workloadType) {
-                    case REGULAR -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], parameters);
-                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods, parameters);
+                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+                case MAP -> switch (parameters.threadLoopType) {
+                    case DEFAULT -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods);
                     case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
-                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsWorkload(threadNum, mapBench, methods,
-                            keygens[threadNum], (TemporaryOperationsParameters) parameters);
+                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, mapBench, methods,
+                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
                 };
                 case SORTEDSET ->
-                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], parameters);
+                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
 
             };
 
@@ -320,73 +323,11 @@ public class Test {
                 printUsage();
                 System.exit(0);
             }
-//            case "-skewed-sets" -> {
-//                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder();
-//
-//                parameters = new SkewedSetsParameters();
-//                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
-//            }
-//            case "-creakers-and-wave" -> {
-//                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder();
-//
-//                parameters = new CreakersAndWaveParameters();
-//                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
-//            }
-//            case "-temporary-skewed", "-temp-skewed" -> {
-//                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder();
-//
-//                parameters = new TemporarySkewedParameters();
-//                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
-//            }
-//            case "-delete-speed-test" -> {
-//                keyGeneratorBuilder = new KeyGeneratorBuilder();
-//
-//                parameters = new Parameters();
-//                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
-//                parameters.keygenType = KeyGeneratorType.NONE;
-//                parameters.numMilliseconds = 0;
-//            }
-//            case "-delete-leafs" -> {
-//                keyGeneratorBuilder = new KeyGeneratorBuilder();
-//
-//                parameters = new Parameters();
-//                parameters.workloadType = WorkloadType.DELETE_LEAFS;
-//                parameters.keygenType = KeyGeneratorType.NONE;
-//            }
-//            case "-leaf-insert" -> {
-//                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder();
-//
-//                parameters = new Parameters();
-//                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
-//            }
-//            case "-leafs-handshake" -> {
-//                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder();
-//
-//                parameters = new LeafsHandshakeParameters();
-//                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
-//            }
-//            case "-leafs-extension-handshake" -> {
-//                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder();
-//
-//                parameters = new LeafsHandshakeParameters();
-//                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
-//            }
-//            default -> {
-//                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder();
-//
-//                parameters = new SimpleParameters();
-//                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
-//                startArgNumber = 0;
-//            }
         }
 
-//        keyGeneratorBuilder.parse(args);
-
-        keyGeneratorBuilder = Parameters.parseWorkload(args, 0);
+        keyGeneratorBuilder = Parameters.parse(args);
 
         parameters = keyGeneratorBuilder.parameters;
-
-        parameters.parse(args);
 
         assert (parameters.range >= parameters.size);
 //        if (parameters.range != 2 * parameters.size)
@@ -435,14 +376,20 @@ public class Test {
                 + "\t-d duration   -- set the length of the benchmark, in milliseconds (default: "
                 + parameters.numMilliseconds
                 + ")\n"
-                + "\t-u updates    -- set the number of threads (default: "
-                + parameters.numWrites
+                + "\t-u updates    -- set the percentage of updates (default: "
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWrites
+                + ")\n"
+                + "\t-ue inserts   -- set the percentage of threads (default: "
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numInsert
+                + ")\n"
+                + "\t-ui erases    -- set the percentage of erases (default: "
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numErase
                 + ")\n"
                 + "\t-a writeAll   -- set the percentage of composite updates (default: "
-                + parameters.numWriteAlls
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWriteAlls
                 + ")\n"
                 + "\t-s snapshot   -- set the percentage of composite read-only operations (default: "
-                + parameters.numSnapshots
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numSnapshots
                 + ")\n"
                 + "\t-r range      -- set the element range (default: "
                 + parameters.range

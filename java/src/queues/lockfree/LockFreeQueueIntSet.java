@@ -77,7 +77,8 @@ public class LockFreeQueueIntSet implements CompositionalIntSet {
 	 */
 	public void clear() {
 		queue.clear();
-		fill(Parameters.range, Parameters.size);
+		// todo: fill after clear ??
+		// fill(Parameters.range, Parameters.size);
     	return;	
 	}
 

@@ -2,17 +2,12 @@ package contention.benchmark.keygenerators;
 
 import contention.abstractions.Distribution;
 import contention.abstractions.KeyGenerator;
-import contention.abstractions.Parameters;
-import contention.benchmark.distributions.SkewedSetsDistribution;
-import contention.benchmark.distributions.UniformDistribution;
-import contention.benchmark.distributions.ZipfDistribution;
-import contention.benchmark.keygenerators.data.SimpleKeyGeneratorData;
-import contention.benchmark.keygenerators.data.TemporarySkewedKeyGeneratorData;
+import contention.benchmark.keygenerators.data.KeyGeneratorData;
 import contention.benchmark.keygenerators.parameters.TemporarySkewedParameters;
 
 public class TemporarySkewedKeyGenerator implements KeyGenerator {
-    public static TemporarySkewedKeyGeneratorData data;
-    public static TemporarySkewedParameters parameters;
+    private final KeyGeneratorData data;
+    private final TemporarySkewedParameters parameters;
 
     private Distribution[] hotDists;
     private Distribution relaxDist;
@@ -20,7 +15,10 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
     private int pointer;
     private boolean relaxTime;
 
-    public TemporarySkewedKeyGenerator(Distribution[] hotDists, Distribution relaxDist) {
+    public TemporarySkewedKeyGenerator(KeyGeneratorData data, TemporarySkewedParameters parameters,
+                                       Distribution[] hotDists, Distribution relaxDist) {
+        this.data = data;
+        this.parameters = parameters;
         this.hotDists = hotDists;
         this.relaxDist = relaxDist;
         this.time = 0;
@@ -53,7 +51,7 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
         if (relaxTime) {
             value = data.get(relaxDist.next());
         } else {
-            int index = data.setsBegins[pointer] + hotDists[pointer].next();
+            int index = parameters.setsBegins[pointer] + hotDists[pointer].next();
             if (index >= parameters.range) {
                 index -= parameters.range;
             }

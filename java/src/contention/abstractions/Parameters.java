@@ -1,6 +1,7 @@
 package contention.abstractions;
 
-import contention.benchmark.ThreadLoops.workloads.parameters.TemporaryOperationsParameters;
+import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
+import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
 import contention.benchmark.keygenerators.builders.*;
 import contention.benchmark.keygenerators.parameters.*;
 
@@ -12,7 +13,7 @@ import contention.benchmark.keygenerators.parameters.*;
  */
 public class Parameters {
 
-    public static int numThreads = 1,
+    public int numThreads = 1,
             numPrefillThreads = 1,
             numMilliseconds = 5000,
             range = 2048,
@@ -20,13 +21,6 @@ public class Parameters {
             warmUp = 0,
             iterations = 1,
             afterFillRelaxMilliseconds = 5000;
-    public double
-            numWrites = 0.4,
-            numInsert = 0.2,
-            numErase = 0.2,
-            numWriteAlls = 0,
-            numSnapshots = 0;
-
 
     public boolean detailedStats = false;
 
@@ -34,154 +28,12 @@ public class Parameters {
 
     public String benchClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
 
-    public WorkloadType workloadType = WorkloadType.REGULAR;
+    public ThreadLoopType threadLoopType = ThreadLoopType.DEFAULT;
 
-    public KeyGeneratorType keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
+    public KeyGeneratorType keygenType = KeyGeneratorType.DEFAULT_KEYGEN;
 
+    public ThreadLoopParameters threadLoopParameters;
 
-    protected int argNumber;
-    protected String[] args;
-
-    protected void parseArg() {
-        String currentArg = args[argNumber];
-
-        try {
-            switch (currentArg) {
-                case "--verbose", "-v" -> this.detailedStats = true;
-                case "--non-shuffle" -> this.isNonShuffle = true;
-                default -> {
-                    String optionValue = args[++argNumber];
-                    switch (currentArg) {
-                        case "--thread-nums", "-t" -> this.numThreads = Integer.parseInt(optionValue);
-                        case "--prefill-thread-nums", "-pt" -> this.numPrefillThreads = Integer.parseInt(optionValue);
-                        case "--duration", "-d" -> this.numMilliseconds = Integer.parseInt(optionValue);
-                        case "--updates", "-u" -> {
-                            this.numWrites = Double.parseDouble(optionValue);
-                            this.numInsert = this.numWrites / 2;
-                            this.numErase = this.numWrites / 2;
-                        }
-                        case "--insert", "-ui" -> this.numInsert = Double.parseDouble(optionValue);
-                        case "--erase", "-ue" -> this.numErase = Double.parseDouble(optionValue);
-                        case "--writeAll", "-a" -> this.numWriteAlls = Double.parseDouble(optionValue);
-                        case "--snapshots", "-s" -> this.numSnapshots = Double.parseDouble(optionValue);
-                        case "--size", "-i" -> this.size = Integer.parseInt(optionValue);
-                        case "--range", "-r" -> this.range = Integer.parseInt(optionValue);
-                        case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(optionValue);
-                        case "--benchmark", "-b" -> this.benchClassName = optionValue;
-                        case "--iterations", "-n" -> this.iterations = Integer.parseInt(optionValue);
-                        case "--after-fill-relax-time", "-afr" ->
-                                this.afterFillRelaxMilliseconds = Integer.parseInt(optionValue);
-                        default -> System.err.println("Unexpected option: " + currentArg + ". Ignoring...");
-                    }
-                }
-            }
-        } catch (IndexOutOfBoundsException e) {
-            System.err.println("Missing value after option: " + currentArg
-                    + ". Ignoring...");
-        } catch (NumberFormatException e) {
-            System.err.println("Number expected after option:  "
-                    + currentArg + ". Ignoring...");
-        }
-    }
-
-    public void parse(String[] args, int startArgNumber) {
-        this.argNumber = startArgNumber;
-        this.parse(args);
-    }
-
-    public void parse(String[] args) {
-        this.args = args;
-        while (argNumber < args.length) {
-            parseArg();
-            argNumber++;
-        }
-        this.numWrites = this.numInsert + this.numErase;
-        this.args = null;
-        this.argNumber = 0;
-    }
-
-    public static KeyGeneratorBuilder parseWorkload(String[] args, int workloadIndex) {
-        Parameters parameters;
-        KeyGeneratorBuilder keyGeneratorBuilder;
-        switch (args[workloadIndex]) {
-            case "-skewed-sets" -> {
-                parameters = new SkewedSetsParameters();
-                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder(parameters);
-            }
-            case "-creakers-and-wave" -> {
-                parameters = new CreakersAndWaveParameters();
-                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder(parameters);
-            }
-            case "-temporary-skewed", "-temp-skewed" -> {
-                parameters = new TemporarySkewedParameters();
-                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder(parameters);
-            }
-            case "-delete-speed-test" -> {
-                parameters = new Parameters();
-                parameters.workloadType = WorkloadType.DELETE_SPEED_TEST;
-                parameters.keygenType = KeyGeneratorType.NONE;
-                parameters.numMilliseconds = 0;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
-            }
-            case "-delete-leafs" -> {
-                parameters = new Parameters();
-                parameters.workloadType = WorkloadType.DELETE_LEAFS;
-                parameters.keygenType = KeyGeneratorType.NONE;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
-            }
-            case "-leaf-insert" -> {
-                parameters = new Parameters();
-                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder(parameters);
-            }
-            case "-leafs-handshake" -> {
-                parameters = new LeafsHandshakeParameters();
-                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder(parameters);
-            }
-            case "-leafs-extension-handshake" -> {
-                parameters = new LeafsHandshakeParameters();
-                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
-                parameters.argNumber = workloadIndex + 1;
-
-                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
-            }
-            case "-temp-oper", "-temporary-operation" -> {
-                keyGeneratorBuilder = Parameters.parseWorkload(args, workloadIndex + 1);
-                parameters = new TemporaryOperationsParameters();
-                parameters.argNumber = keyGeneratorBuilder.parameters.argNumber;
-                parameters.workloadType = WorkloadType.TEMPORARY_OPERATIONS;
-                parameters.keygenType = keyGeneratorBuilder.parameters.keygenType;
-
-                keyGeneratorBuilder.parameters = parameters;
-            }
-            default -> {
-                parameters = new SimpleParameters();
-                parameters.keygenType = KeyGeneratorType.SIMPLE_KEYGEN;
-                parameters.argNumber = workloadIndex;
-
-                keyGeneratorBuilder = new SimpleKeyGeneratorBuilder(parameters);
-            }
-        }
-        return keyGeneratorBuilder;
-    }
 
     public StringBuilder toStringBuilder() {
         StringBuilder result = new StringBuilder()
@@ -194,32 +46,14 @@ public class Parameters {
                 .append("\n")
                 .append("  Length:                  \t")
                 .append(this.numMilliseconds)
-                .append(" ms\n");
-        if (workloadType != WorkloadType.TEMPORARY_OPERATIONS) {
-            result
-                    .append("  Write ratio:             \t")
-                    .append(this.numWrites)
-                    .append(" \n")
-                    .append("  Insert ratio:            \t")
-                    .append(this.numInsert)
-                    .append(" \n")
-                    .append("  Erase ratio:             \t")
-                    .append(this.numErase)
-                    .append(" \n")
-                    .append("  WriteAll ratio:          \t")
-                    .append(this.numWriteAlls)
-                    .append(" \n");
-        }
-        result
-                .append("  Snapshot ratio:          \t")
-                .append(this.numSnapshots)
-                .append(" \n")
+                .append(" ms\n")
                 .append("  Size:                    \t")
                 .append(this.size)
                 .append(" elts\n")
                 .append("  Range:                   \t")
                 .append(this.range)
                 .append(" elts\n")
+                .append(threadLoopParameters.toStringBuilder())
                 .append("  WarmUp:                  \t")
                 .append(this.warmUp)
                 .append(" s\n")
@@ -232,24 +66,145 @@ public class Parameters {
                 .append("  Benchmark:               \t")
                 .append(this.benchClassName);
 
-        if (workloadType != WorkloadType.REGULAR) {
-            result.append("\n")
-                    .append("  Workload:                \t")
-                    .append(this.workloadType);
-        }
-
         if (isNonShuffle) {
             result.append("\n")
                     .append("  Data type:                \t")
                     .append("non-shuffle");
         }
 
-        if (keygenType == KeyGeneratorType.LEAF_INSERT) {
-            result.append("\n")
-                    .append("  Key Generator:           \t")
-                    .append(this.keygenType);
-        }
+        result.append("\n")
+                .append("  Key Generator:           \t")
+                .append(this.keygenType);
 
         return result;
     }
+
+    public void build() {
+        threadLoopParameters.build();
+    }
+
+    protected void parseArg(ParseArgument args) {
+        String currentArg = args.getCurrent();
+
+        try {
+            switch (currentArg) {
+                case "--verbose", "-v" -> this.detailedStats = true;
+                case "--non-shuffle" -> this.isNonShuffle = true;
+                default -> {
+//                    String optionValue = args[++argNumber];
+                    switch (currentArg) {
+                        case "--thread-nums", "-t" -> this.numThreads = Integer.parseInt(args.getNext());
+                        case "--prefill-thread-nums", "-pt" ->
+                                this.numPrefillThreads = Integer.parseInt(args.getNext());
+                        case "--duration", "-d" -> this.numMilliseconds = Integer.parseInt(args.getNext());
+                        case "--size", "-i" -> this.size = Integer.parseInt(args.getNext());
+                        case "--range", "-r" -> this.range = Integer.parseInt(args.getNext());
+                        case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(args.getNext());
+                        case "--benchmark", "-b" -> this.benchClassName = args.getNext();
+                        case "--iterations", "-n" -> this.iterations = Integer.parseInt(args.getNext());
+                        case "--after-fill-relax-time", "-afr" ->
+                                this.afterFillRelaxMilliseconds = Integer.parseInt(args.getNext());
+                        default -> {
+                            if (threadLoopParameters != null && !threadLoopParameters.parseArg(args)) {
+                                System.err.println("Unexpected option: " + currentArg + ". Ignoring...");
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (IndexOutOfBoundsException e) {
+            System.err.println("Missing value after option: " + currentArg
+                    + ". Ignoring...");
+        } catch (NumberFormatException e) {
+            System.err.println("Number expected after option:  "
+                    + currentArg + ". Ignoring...");
+        }
+    }
+
+    public static KeyGeneratorBuilder parse(String[] rowArgs) {
+        ParseArgument args = new ParseArgument(rowArgs);
+        KeyGeneratorBuilder keyGeneratorBuilder = parseThreadLoop(args);
+        while (args.hasNext()) {
+            keyGeneratorBuilder.parameters.parseArg(args);
+            args.next();
+        }
+        keyGeneratorBuilder.parameters.build();
+        return keyGeneratorBuilder;
+    }
+
+    private static KeyGeneratorBuilder parseKeyGenerator(ParseArgument args) {
+        Parameters parameters;
+        KeyGeneratorBuilder keyGeneratorBuilder;
+        switch (args.getCurrent()) {
+            case "-skewed-sets" -> {
+                parameters = new SkewedSetsParameters();
+                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
+
+                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder(parameters);
+            }
+            case "-creakers-and-wave" -> {
+                parameters = new CreakersAndWaveParameters();
+                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
+
+                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder(parameters);
+            }
+            case "-temporary-skewed", "-temp-skewed" -> {
+                parameters = new TemporarySkewedParameters();
+                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
+
+                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder(parameters);
+            }
+            case "-leaf-insert" -> {
+                parameters = new Parameters();
+                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
+
+                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder(parameters);
+            }
+            case "-leafs-handshake" -> {
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
+
+                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder(parameters);
+            }
+            case "-leafs-extension-handshake" -> {
+                parameters = new LeafsHandshakeParameters();
+                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
+
+                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
+            }
+            default -> {
+                parameters = new DefaultParameters();
+                parameters.keygenType = KeyGeneratorType.DEFAULT_KEYGEN;
+
+                keyGeneratorBuilder = new DefaultKeyGeneratorBuilder(parameters);
+            }
+        }
+        args.next();
+        return keyGeneratorBuilder;
+    }
+
+    private static KeyGeneratorBuilder parseThreadLoop(ParseArgument args) {
+        KeyGeneratorBuilder keyGeneratorBuilder;
+        switch (args.getCurrent()) {
+            case "-delete-leafs" -> {
+                Parameters parameters = new Parameters();
+                parameters.threadLoopType = ThreadLoopType.DELETE_LEAFS;
+                parameters.keygenType = KeyGeneratorType.NONE;
+
+                keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
+            }
+            case "-temp-oper", "-temporary-operation" -> {
+                args.next();
+                keyGeneratorBuilder = parseKeyGenerator(args);
+                keyGeneratorBuilder.parameters.threadLoopParameters = new TemporaryOperationsThreadLoopParameters();
+                keyGeneratorBuilder.parameters.threadLoopType = ThreadLoopType.TEMPORARY_OPERATIONS;
+            }
+            default -> {
+                keyGeneratorBuilder = parseKeyGenerator(args);
+                keyGeneratorBuilder.parameters.threadLoopParameters = new DefaultThreadLoopParameters();
+            }
+        }
+        return keyGeneratorBuilder;
+    }
+
 }

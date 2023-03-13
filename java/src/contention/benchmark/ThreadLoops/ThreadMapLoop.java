@@ -4,11 +4,13 @@ import contention.abstractions.CompositionalMap;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.ThreadLoopAbstract;
 import contention.abstractions.Parameters;
+import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The loop executed by each thread of the map
@@ -26,10 +28,6 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
      * The pool of methods that can run
      */
     protected Method[] methods;
-    /**
-     * The number of the current thread
-     */
-    protected final short myThreadNum;
 
     /**
      * The random number
@@ -43,14 +41,12 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
      * |--writeAll--|--writeSome--|--readAll--|--readSome--|
      * |-----------write----------|--readAll--|--readSome--| cdf[1]
      */
-    protected double[] cdf = new double[4];
+    private double[] cdf = new double[4];
 
     public ThreadMapLoop(short myThreadNum, CompositionalMap<Integer, Integer> bench, Method[] methods,
-                         KeyGenerator keygen, Parameters parameters) {
-        super(keygen, parameters);
-        this.myThreadNum = myThreadNum;
+                         KeyGenerator keygen, DefaultThreadLoopParameters parameters) {
+        super(myThreadNum, methods, keygen);
         this.bench = bench;
-        this.methods = methods;
         /* initialize the method boundaries */
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = parameters.numWriteAlls;
@@ -70,13 +66,14 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
             Integer a, b;
             double coin = rand.nextDouble();
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
-                int newInt = rand.nextInt(parameters.range);
+                int newInt = keygen.nextRead();
 
                 // init a collection
                 Map<Integer, Integer> hm = new HashMap<Integer, Integer>(newInt, newInt);
                 hm.put(newInt / 2, newInt / 2); // accepts duplicate
 
                 try {
+                    // todo something very strange
                     if (bench.keySet().removeAll(hm.keySet()))
                         numRemoveAll++;
                     else failures++;
@@ -132,13 +129,12 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
     }
 
     @Override
-    public void prefill() {
-        long size = parameters.size / parameters.numPrefillThreads;
-        for (long i = size; i > 0; ) {
-//            int v = rand.nextInt(parameters.range);
+    public void prefill(AtomicInteger prefillSize) {
+        while (prefillSize.get() > 0) {
+            int curPrefillSize = prefillSize.decrementAndGet();
             int v = keygen.nextPrefill();
-            if (bench.putIfAbsent(v, v) == null) {
-                i--;
+            if (curPrefillSize < 0 || bench.putIfAbsent(v, v) != null) {
+                prefillSize.incrementAndGet();
             }
         }
     }

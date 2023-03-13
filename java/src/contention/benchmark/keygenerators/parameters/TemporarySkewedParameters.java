@@ -1,6 +1,7 @@
 package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.Parameters;
+import contention.abstractions.ParseArgument;
 
 import java.util.Arrays;
 
@@ -79,17 +80,34 @@ public class TemporarySkewedParameters extends Parameters {
         }
     }
 
+    public int[] setsLengths;
+    public int[] setsBegins;
+
     @Override
-    protected void parseArg() {
-        switch (args[argNumber]) {
-            case "-set-count" -> setSetCount(Integer.parseInt(args[++argNumber]));
-            case "-rt" -> setCommonRelaxTime(Integer.parseInt(args[++argNumber]));
-            case "-ht" -> setCommonHotTime(Integer.parseInt(args[++argNumber]));
-            case "-si" -> setSetSize(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
-            case "-pi" -> setHotProb(Integer.parseInt(args[++argNumber]), Double.parseDouble(args[++argNumber]));
-            case "-hti" -> setHotTime(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
-            case "-rti" -> setRelaxTimes(Integer.parseInt(args[++argNumber]), Integer.parseInt(args[++argNumber]));
-            default -> super.parseArg();
+    public void build() {
+        super.build();
+        setsLengths = new int[setCount + 1];
+        setsBegins = new int[setCount + 1];
+        setsBegins[0] = 0;
+
+        for (int i = 0; i < setCount; i++) {
+            setsLengths[i] = (int) (range * setSizes[i]);
+            setsBegins[i + 1] = setsBegins[i] + setsLengths[i];
+        }
+    }
+
+
+    @Override
+    protected void parseArg(ParseArgument args) {
+        switch (args.getCurrent()) {
+            case "-set-count" -> setSetCount(Integer.parseInt(args.getNext()));
+            case "-rt" -> setCommonRelaxTime(Integer.parseInt(args.getNext()));
+            case "-ht" -> setCommonHotTime(Integer.parseInt(args.getNext()));
+            case "-si" -> setSetSize(Integer.parseInt(args.getNext()), Double.parseDouble(args.getNext()));
+            case "-pi" -> setHotProb(Integer.parseInt(args.getNext()), Double.parseDouble(args.getNext()));
+            case "-hti" -> setHotTime(Integer.parseInt(args.getNext()), Integer.parseInt(args.getNext()));
+            case "-rti" -> setRelaxTimes(Integer.parseInt(args.getNext()), Integer.parseInt(args.getNext()));
+            default -> super.parseArg(args);
         }
     }
 
@@ -97,9 +115,9 @@ public class TemporarySkewedParameters extends Parameters {
     public StringBuilder toStringBuilder() {
         StringBuilder params = super.toStringBuilder();
         params
-                .append("\n")
-                .append("  Key Generator:           \t")
-                .append(this.keygenType)
+//                .append("\n")
+//                .append("  Key Generator:           \t")
+//                .append(this.keygenType)
                 .append("\n")
                 .append("  Number of Sets:          \t")
                 .append(this.setCount)
@@ -122,6 +140,15 @@ public class TemporarySkewedParameters extends Parameters {
             params
                 .append("    Hot Time ").append(i).append(":              \t")
                 .append(this.setSizes[i]).append("\n");
+        }
+
+        params
+                .append("  Hot Probabilities:       \t")
+                .append("\n");
+        for (int i = 0; i < setCount; i++) {
+            params
+                 .append("    Hot Probability ").append(i).append(":      \t")
+                 .append(this.setSizes[i]).append("\n");
         }
 
         params

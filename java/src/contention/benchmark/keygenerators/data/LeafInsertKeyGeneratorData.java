@@ -1,17 +1,13 @@
 package contention.benchmark.keygenerators.data;
 
-import contention.abstractions.KeyGeneratorData;
 import contention.abstractions.Parameters;
 import contention.benchmark.tools.Range;
-import contention.benchmark.ThreadLoops.workloads.DeleteLeafsWorkload;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 
-public class LeafInsertKeyGeneratorData extends KeyGeneratorData {
-    private static List<int[]> layers;
+public class LeafInsertKeyGeneratorData {
+    private final List<int[]> layers;
 
     public LeafInsertKeyGeneratorData(Parameters parameters) {
         int size = parameters.range;
@@ -45,11 +41,6 @@ public class LeafInsertKeyGeneratorData extends KeyGeneratorData {
 
             verts = nextLayerVerts;
         }
-    }
-
-    @Override
-    public int get(int index) {
-        return -1;
     }
 
     public int get(int layer, int index) {
