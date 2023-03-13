@@ -736,7 +736,7 @@ public class ConcurrencyOptimalTreeMap<K, V> extends AbstractMap<K, V>
         if (v == null) {
             return 0;
         }
-        return (v.value == null ? d : 0) + sumDepth(v.l, d + 1) + sumDepth(v.r, d + 1);
+        return (v.value != null ? d : 0) + sumDepth(v.l, d + 1) + sumDepth(v.r, d + 1);
     }
 
     public int averageDepth() {
