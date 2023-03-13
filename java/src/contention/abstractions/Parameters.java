@@ -176,7 +176,7 @@ public class Parameters {
                 parameters = new DefaultParameters();
                 parameters.keygenType = KeyGeneratorType.DEFAULT_KEYGEN;
 
-                keyGeneratorBuilder = new DefaultKeyGeneratorBuilder(parameters);
+                return new DefaultKeyGeneratorBuilder(parameters);
             }
         }
         args.next();
