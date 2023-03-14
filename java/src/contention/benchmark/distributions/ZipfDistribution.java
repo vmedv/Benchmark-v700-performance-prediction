@@ -22,10 +22,11 @@ public class ZipfDistribution implements MutableDistribution {
 
     @Override
     public void setRange(int range) {
+        range++;
         if (alpha == 1.0) {
             area = Math.log(range);
         } else {
-            area = Math.pow(range, 1.0 - alpha) / (1.0 - alpha);
+            area = (Math.pow(range, 1.0 - alpha) - 1.0) / (1.0 - alpha);
         }
     }
 
@@ -38,8 +39,8 @@ public class ZipfDistribution implements MutableDistribution {
         if (alpha == 1.0) {
             value = (int) Math.exp(s);
         } else {
-            value = (int) Math.pow(s * (1 - alpha), 1 / (1 - alpha));
+            value = (int) Math.pow(s * (1.0 - alpha) + 1.0, 1.0 / (1.0 - alpha));
         }
-        return value;
+        return value - 1;
     }
 }

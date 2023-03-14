@@ -34,7 +34,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     @Override
     public int nextRead() {
         int index = readDistribution.next();
-        return readData == null ? index : readData.get(index);
+        return readData.get(index);
     }
 
     @Override
@@ -46,7 +46,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
         boolean isRight = random.nextDouble() >= 0.5;
 
         if (localDeletedValue == 0 || (isRight && localDeletedValue != parameters.range - 1)) {
-            value = localDeletedValue + insertDistribution.next(parameters.range - localDeletedValue) + 1;
+            value = localDeletedValue + insertDistribution.next(parameters.range - 1 - localDeletedValue) + 1;
         } else {
             value = localDeletedValue - insertDistribution.next(localDeletedValue) - 1;
         }
@@ -58,7 +58,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     public int nextErase() {
         int localDeletedValue = parameters.deletedValue.get();
         int index = eraseDistribution.next();
-        int value = eraseData == null ? index : eraseData.get(index);
+        int value = eraseData.get(index);
 
         //todo learn the difference between all kinds of weakCompareAndSet
         parameters.deletedValue.weakCompareAndSet(localDeletedValue, value);

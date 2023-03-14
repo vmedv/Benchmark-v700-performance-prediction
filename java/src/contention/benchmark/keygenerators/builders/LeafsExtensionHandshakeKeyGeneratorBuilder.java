@@ -19,19 +19,13 @@ public class LeafsExtensionHandshakeKeyGeneratorBuilder extends KeyGeneratorBuil
         KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
 
-        KeyGeneratorData readData = switch (parameters.readDistBuilder.distributionType) {
-            case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-            default -> null;
-        };
+        KeyGeneratorData readData = new KeyGeneratorData(parameters);
         KeyGeneratorData eraseData;
         // todo think about the intersection of sets
         if (parameters.readDistBuilder.distributionType == parameters.eraseDistBuilder.distributionType) {
             eraseData = readData;
         } else {
-            eraseData = switch (parameters.readDistBuilder.distributionType) {
-                case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-                default -> null;
-            };
+            eraseData = new KeyGeneratorData(parameters);
         }
 
 
