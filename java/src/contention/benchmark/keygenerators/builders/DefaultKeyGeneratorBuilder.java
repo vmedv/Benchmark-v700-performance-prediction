@@ -20,10 +20,7 @@ public class DefaultKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
         KeyGeneratorData data = switch (parameters.distributionBuilder.distributionType) {
             case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-            default -> {
-                parameters.isNonShuffle = true;
-                yield new KeyGeneratorData(parameters);
-            }
+            default -> new KeyGeneratorData();
         };
 
         for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {

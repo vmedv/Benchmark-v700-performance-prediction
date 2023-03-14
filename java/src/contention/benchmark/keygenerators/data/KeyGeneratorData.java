@@ -21,7 +21,7 @@ public class KeyGeneratorData {
         }
     }
 
-    protected KeyGeneratorData() {
+    public KeyGeneratorData() {
         data = null;
         isNonShuffle = true;
     }

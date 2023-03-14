@@ -54,7 +54,7 @@ public class LeafsExtensionHandshakeKeyGenerator implements KeyGenerator {
         boolean isRight = random.nextDouble() >= 0.5;
 
         if (localDeletedValue == 0 || (isRight && localDeletedValue != parameters.range - 1)) {
-            value = localDeletedValue + insertDistribution.next(parameters.range - localDeletedValue) + 1;
+            value = localDeletedValue + insertDistribution.next(parameters.range - 1- localDeletedValue) + 1;
         } else {
             value = localDeletedValue - insertDistribution.next(localDeletedValue) - 1;
         }
