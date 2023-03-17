@@ -495,7 +495,7 @@ public class ConcurrencyOptimalTreeMap<K, V> extends AbstractMap<K, V>
                 }
                 if (prev.deleted) {
                     window.reset();
-                } else {
+                } else if (window.gprev != null) {
                     window.set(window.prev, window.gprev);
                 }
             }
