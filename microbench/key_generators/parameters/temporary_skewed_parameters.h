@@ -39,24 +39,36 @@ struct TemporarySkewedParameters : public Parameters {
 
         params += "SETS_SIZES:\n";
         for (int i = 0; i < setCount; i++) {
-            params += "    SET_SIZE_" + std::to_string(i) + "                : " + std::to_string(setSizes[i]) + "\n";
+            params += "    SET_SIZE_" + std::to_string(i) + "                : "
+                      + std::to_string(setSizes[i]) + "\n";
         }
 
         params += "COMMON_HOT_TIME               : " + std::to_string(hotTime) + "\n";
         params += "HOT_TIMES:\n";
         for (int i = 0; i < setCount; i++) {
-            params += "    HOT_TIMES_" + std::to_string(i) + "               : " + std::to_string(hotTimes[i]) + "\n";
+            params += "    HOT_TIMES_" + std::to_string(i) + "               : "
+                      + std::to_string(hotTimes[i]) + "\n";
         }
 
         params += "HOT_PROBABILITIES:\n";
         for (int i = 0; i < setCount; i++) {
-            params += "    HOT_PROBABILITY_" + std::to_string(i) + "         : " + std::to_string(hotProbs[i]) + "\n";
+            params += "    HOT_PROBABILITY_" + std::to_string(i) + "         : "
+                      + std::to_string(hotProbs[i]) + "\n";
         }
 
         params += "COMMON_RELAX_TIME             : " + std::to_string(relaxTime) + "\n";
         params += "RELAX_TIMES:\n";
         for (int i = 0; i < setCount; i++) {
-            params += "    RELAX_TIME_" + std::to_string(i) + "              : " + std::to_string(relaxTimes[i]) + "\n";
+            params += "    RELAX_TIME_" + std::to_string(i) + "              : "
+                      + std::to_string(relaxTimes[i]) + "\n";
+        }
+
+        if (isNonShuffle) {
+            params += "SETS_BEGINS:\n";
+            for (int i = 0; i < setCount; i++) {
+                params += "    SET_BEGIN_" + std::to_string(i) + "               : "
+                          + std::to_string(setBegins[i]) + "\n";
+            }
         }
 
         return params;

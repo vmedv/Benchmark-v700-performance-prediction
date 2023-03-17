@@ -29,7 +29,7 @@ public:
         if (alpha == 1.0) {
             area = log(maxKey);
         } else {
-            area = pow((double) maxKey, 1.0 - alpha) / (1.0 - alpha);
+            area = (pow((double) maxKey, 1.0 - alpha) - 1.0) / (1.0 - alpha);
         }
     }
 
@@ -44,7 +44,7 @@ public:
         if (alpha == 1.0) {
             zipf_value = (size_t) exp(s);
         } else {
-            zipf_value = (size_t) pow(s * (1 - alpha), 1 / (1 - alpha));
+            zipf_value = (size_t) pow(s * (1.0 - alpha) + 1.0, 1.0 / (1.0 - alpha));
         }
         return zipf_value;
     }
