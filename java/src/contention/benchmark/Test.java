@@ -104,7 +104,15 @@ public class Test {
     //TODO delete parameters
     public void fill(final int range, final long size) throws InterruptedException {
         Thread[] prefillThreads = new Thread[parameters.numPrefillThreads];
-        AtomicInteger prefillSize = new AtomicInteger(parameters.size);
+
+        // TODO crutch
+        int crutch = 10;
+        AtomicInteger crutchPrefillSize = new AtomicInteger(crutch);
+        threadLoops[0].prefill(crutchPrefillSize);
+
+
+        AtomicInteger prefillSize = new AtomicInteger(parameters.size - crutch);
+
         for (int threadNum = 0; threadNum < parameters.numPrefillThreads; threadNum++) {
             final int finalThreadNum = threadNum;
             prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill(prefillSize));
