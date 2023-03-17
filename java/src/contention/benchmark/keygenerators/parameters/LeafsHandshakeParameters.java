@@ -29,9 +29,9 @@ public class LeafsHandshakeParameters extends Parameters {
     @Override
     protected void parseArg(ParseArgument args) {
         switch (args.getCurrent()) {
-            case "-read-dist" -> readDistBuilder.parseDistribution(args);
-            case "-insert-dist" -> insertDistBuilder.parseDistribution(args);
-            case "-erase-dist" -> eraseDistBuilder.parseDistribution(args);
+            case "-read-dist" -> readDistBuilder.parseDistribution(args.next());
+            case "-insert-dist" -> insertDistBuilder.parseDistribution(args.next());
+            case "-erase-dist" -> eraseDistBuilder.parseDistribution(args.next());
             default -> super.parseArg(args);
         }
     }

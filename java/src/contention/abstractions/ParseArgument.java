@@ -17,8 +17,9 @@ public class ParseArgument {
         return args[++pointer];
     }
 
-    public void next() {
+    public ParseArgument next() {
         pointer++;
+        return this;
     }
 
     public boolean hasNext() {
