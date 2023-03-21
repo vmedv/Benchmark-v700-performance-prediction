@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
+public class TemporaryOperations2ThreadLoop extends ThreadLoopAbstract {
     /**
      * The instance of the running benchmark
      */
@@ -26,10 +26,10 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
     protected Random rand = new Random();
     private final double[][] cdf;
 
-    public TemporaryOperationsThreadLoop(short myThreadNum,
-                                         CompositionalMap<Integer, Integer> bench,
-                                         Method[] methods,
-                                         KeyGenerator keygen, TemporaryOperationsThreadLoopParameters parameters) {
+    public TemporaryOperations2ThreadLoop(short myThreadNum,
+                                          CompositionalMap<Integer, Integer> bench,
+                                          Method[] methods,
+                                          KeyGenerator keygen, TemporaryOperationsThreadLoopParameters parameters) {
         super(myThreadNum, methods, keygen);
         this.bench = bench;
         this.time = 0;
@@ -61,7 +61,6 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
     public void run() {
 
         while (!stop) {
-            update_pointer();
 
             Integer a, b;
             double coin = rand.nextDouble();
@@ -74,8 +73,10 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
 
                 try {
                     // todo something very strange
-                    if (bench.keySet().removeAll(hm.keySet()))
+                    if (bench.keySet().removeAll(hm.keySet())) {
                         numRemoveAll++;
+                        update_pointer();
+                    }
                     else failures++;
                 } catch (Exception e) {
                     System.err.println("Unsupported writeAll operations! Leave the default value of the numWriteAlls parameter (0).");
@@ -88,6 +89,7 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
 
                 if ((a = bench.putIfAbsent(newInt, newInt)) == null) {
                     numAdd++;
+                    update_pointer();
                 } else {
                     failures++;
                 }
@@ -97,6 +99,7 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
 
                 if ((a = bench.remove(newInt)) != null) {
                     numRemove++;
+                    update_pointer();
                 } else {
                     failures++;
                 }
@@ -104,6 +107,8 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
             } else if (coin < cdf[pointer][3]) { // 4. should we run a readAll operation?
 
                 bench.size();
+                update_pointer();
+
                 numSize++;
 
             } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
@@ -114,6 +119,8 @@ public class TemporaryOperationsThreadLoop extends ThreadLoopAbstract {
                     numContains++;
                 else
                     failures++;
+                update_pointer();
+
             } //else {
 //                sleep(Parameters.sleepTime);
             // warmup для определения sleepTime

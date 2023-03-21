@@ -3,7 +3,6 @@ package contention.benchmark.ThreadLoops;
 import contention.abstractions.CompositionalMap;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.ThreadLoopAbstract;
-import contention.abstractions.Parameters;
 import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 
 import java.lang.reflect.Method;
@@ -51,7 +50,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = parameters.numWriteAlls;
         cdf[1] = parameters.numInsert;
-        cdf[2] = cdf[1] + parameters.numErase;
+        cdf[2] = cdf[1] + parameters.numRemove;
         cdf[3] = cdf[2] + parameters.numSnapshots;
     }
 
@@ -66,7 +65,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
             Integer a, b;
             double coin = rand.nextDouble();
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
-                int newInt = keygen.nextRead();
+                int newInt = keygen.nextGet();
 
                 // init a collection
                 Map<Integer, Integer> hm = new HashMap<Integer, Integer>(newInt, newInt);
@@ -93,7 +92,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 }
             } else if (coin < cdf[2]) { // 3. should we run a remove
 
-                int newInt = keygen.nextErase();
+                int newInt = keygen.nextRemove();
 
                 if ((a = bench.remove(newInt)) != null) {
                     numRemove++;
@@ -107,7 +106,7 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
                 numSize++;
 
             } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
-                int newInt = keygen.nextRead();
+                int newInt = keygen.nextGet();
                 if (bench.get(newInt) != null)
                     numContains++;
                 else
@@ -133,8 +132,13 @@ public class ThreadMapLoop extends ThreadLoopAbstract {
         while (prefillSize.get() > 0) {
             int curPrefillSize = prefillSize.decrementAndGet();
             int v = keygen.nextPrefill();
+            try {
             if (curPrefillSize < 0 || bench.putIfAbsent(v, v) != null) {
                 prefillSize.incrementAndGet();
+            }} catch (NullPointerException e) {
+                System.out.println(v);
+                System.out.println(curPrefillSize);
+                throw e;
             }
         }
     }

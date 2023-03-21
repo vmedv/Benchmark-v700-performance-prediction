@@ -30,7 +30,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextRead() {
+    public int nextGet() {
         int value;
         if (nextCoin()) {
             value = data.get(parameters.creakersBegin + creakersDist.next());
@@ -62,7 +62,7 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextErase() {
+    public int nextRemove() {
         int localWaveEnd = parameters.waveEnd.get();
         int newWaveEnd;
         if (localWaveEnd == 0) {

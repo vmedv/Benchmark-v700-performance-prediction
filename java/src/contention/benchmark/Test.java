@@ -179,6 +179,8 @@ public class Test {
                     case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
                     case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, mapBench, methods,
                             keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
+                    case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, mapBench, methods,
+                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
                 };
                 case SORTEDSET ->
                         new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
@@ -390,8 +392,8 @@ public class Test {
                 + "\t-ue inserts   -- set the percentage of threads (default: "
                 + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numInsert
                 + ")\n"
-                + "\t-ui erases    -- set the percentage of erases (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numErase
+                + "\t-ui removes   -- set the percentage of erases (default: "
+                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numRemove
                 + ")\n"
                 + "\t-a writeAll   -- set the percentage of composite updates (default: "
                 + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWriteAlls

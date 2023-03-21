@@ -32,7 +32,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextRead() {
+    public int nextGet() {
         int index = readDistribution.next();
         return readData.get(index);
     }
@@ -55,7 +55,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextErase() {
+    public int nextRemove() {
         int localDeletedValue = parameters.deletedValue.get();
         int index = eraseDistribution.next();
         int value = eraseData.get(index);
@@ -68,7 +68,7 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
 
     @Override
     public int nextPrefill() {
-        return nextRead();
+        return nextGet();
     }
 
 }

@@ -4,7 +4,6 @@ import contention.abstractions.CompositionalMap;
 import contention.abstractions.CompositionalSortedSet;
 import contention.abstractions.KeyGenerator;
 import contention.abstractions.ThreadLoopAbstract;
-import contention.abstractions.Parameters;
 import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 
 import java.lang.reflect.Method;
@@ -47,7 +46,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
         assert (parameters.numWrites >= parameters.numWriteAlls);
         cdf[0] = parameters.numWriteAlls;
         cdf[1] = parameters.numInsert;
-        cdf[2] = cdf[1] + parameters.numErase;
+        cdf[2] = cdf[1] + parameters.numRemove;
         cdf[3] = cdf[2] + parameters.numSnapshots;
     }
 
@@ -61,7 +60,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
         while (!stop) {
             double coin = rand.nextDouble();
             if (coin < cdf[0]) { // 1. should we run a writeAll operation?
-                int newInt = keygen.nextRead(); // todo nextWriteAll
+                int newInt = keygen.nextGet(); // todo nextWriteAll
 
                 // init a collection
                 Vector<Integer> vec = new Vector<Integer>(newInt);
@@ -84,7 +83,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
                     failures++;
                 }
             } else if (coin < cdf[2]) { // 3. should we run a remove
-                int newInt = keygen.nextErase();
+                int newInt = keygen.nextRemove();
 
                 if (bench.remove(newInt)) {
                     numRemove++;
@@ -97,7 +96,7 @@ public class ThreadSortedSetLoop extends ThreadLoopAbstract {
                 numSize++;
 
             } else { // 5. then we should run a readSome operation
-                int newInt = keygen.nextRead();
+                int newInt = keygen.nextGet();
 
                 if (bench.contains(newInt))
                     numContains++;

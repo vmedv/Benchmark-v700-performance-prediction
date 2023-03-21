@@ -198,6 +198,11 @@ public class Parameters {
                 keyGeneratorBuilder = parseKeyGenerator(args);
                 keyGeneratorBuilder.parameters.threadLoopParameters = new TemporaryOperationsThreadLoopParameters();
                 keyGeneratorBuilder.parameters.threadLoopType = ThreadLoopType.TEMPORARY_OPERATIONS;
+            } case "-temp-oper-2", "-temporary-operation-2" -> {
+                args.next();
+                keyGeneratorBuilder = parseKeyGenerator(args);
+                keyGeneratorBuilder.parameters.threadLoopParameters = new TemporaryOperationsThreadLoopParameters();
+                keyGeneratorBuilder.parameters.threadLoopType = ThreadLoopType.TEMPORARY_OPERATIONS_2;
             }
             default -> {
                 keyGeneratorBuilder = parseKeyGenerator(args);

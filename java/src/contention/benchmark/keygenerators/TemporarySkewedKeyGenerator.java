@@ -62,7 +62,7 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextRead() {
+    public int nextGet() {
         return next();
     }
 
@@ -72,7 +72,7 @@ public class TemporarySkewedKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextErase() {
+    public int nextRemove() {
         return next();
     }
 

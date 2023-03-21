@@ -60,7 +60,7 @@ public class TemporaryOperationsThreadLoopParameters implements ThreadLoopParame
                 .append("    Insert ratio of ").append(i).append(":     \t")
                 .append(this.numInserts[i])
                 .append("\n")
-                .append("    Erase ratio of ").append(i).append(":      \t")
+                .append("    Remove ratio of ").append(i).append(":     \t")
                 .append(this.numErases[i])
                 .append("\n");
         }

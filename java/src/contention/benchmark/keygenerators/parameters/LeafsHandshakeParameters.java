@@ -12,7 +12,7 @@ public class LeafsHandshakeParameters extends Parameters {
     public DistributionBuilder readDistBuilder = new DistributionBuilder();
     public DistributionBuilder insertDistBuilder = new DistributionBuilder()
             .setDistributionType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
-    public DistributionBuilder eraseDistBuilder = new DistributionBuilder();
+    public DistributionBuilder removeDistBuilder = new DistributionBuilder();
 
     public AtomicInteger deletedValue;
 
@@ -31,7 +31,7 @@ public class LeafsHandshakeParameters extends Parameters {
         switch (args.getCurrent()) {
             case "-read-dist" -> readDistBuilder.parseDistribution(args.next());
             case "-insert-dist" -> insertDistBuilder.parseDistribution(args.next());
-            case "-erase-dist" -> eraseDistBuilder.parseDistribution(args.next());
+            case "-erase-dist" -> removeDistBuilder.parseDistribution(args.next());
             default -> super.parseArg(args);
         }
     }
@@ -52,8 +52,8 @@ public class LeafsHandshakeParameters extends Parameters {
                 .append(insertDistBuilder.toStringBuilderParameters())
                 .append("\n")
                 .append("  Erase distribution:      \t")
-                .append(eraseDistBuilder.distributionType)
-                .append(eraseDistBuilder.toStringBuilderParameters());
+                .append(removeDistBuilder.distributionType)
+                .append(removeDistBuilder.toStringBuilderParameters());
         return result;
     }
 

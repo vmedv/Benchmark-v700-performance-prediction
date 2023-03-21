@@ -18,7 +18,7 @@ private final SkewedSetsParameters parameters;
     }
 
     @Override
-    public int nextRead() {
+    public int nextGet() {
         return 0;
     }
 
@@ -28,7 +28,7 @@ private final SkewedSetsParameters parameters;
     }
 
     @Override
-    public int nextErase() {
+    public int nextRemove() {
         return 0;
     }
 

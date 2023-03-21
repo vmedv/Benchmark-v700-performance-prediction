@@ -1,11 +1,11 @@
 package contention.abstractions;
 
 public interface KeyGenerator {
-    int nextRead();
+    int nextGet();
 
     int nextInsert();
 
-    int nextErase();
+    int nextRemove();
 
     int nextPrefill();
 

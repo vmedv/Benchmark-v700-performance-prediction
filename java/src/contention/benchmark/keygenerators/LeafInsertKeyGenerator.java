@@ -27,7 +27,7 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextRead() {
+    public int nextGet() {
 //        int randLayer = random.nextInt(curInsertLayers);
 //        int randIndex = random.nextInt(data.getLayerSize(randLayer));
 //        return data.get(randLayer, randIndex);
@@ -51,7 +51,7 @@ public class LeafInsertKeyGenerator implements KeyGenerator {
     }
 
     @Override
-    public int nextErase() {
+    public int nextRemove() {
         int value = data.get(curEraseLayers, eraseIndex++);
 
         if (eraseIndex > insertIndex && curEraseLayers == curInsertLayers) {

@@ -25,7 +25,7 @@ public class LeafsExtensionHandshakeKeyGeneratorBuilder extends KeyGeneratorBuil
         };
         KeyGeneratorData eraseData;
         // todo think about the intersection of sets
-        if (parameters.readDistBuilder.distributionType == parameters.eraseDistBuilder.distributionType) {
+        if (parameters.readDistBuilder.distributionType == parameters.removeDistBuilder.distributionType) {
             eraseData = readData;
         } else {
             eraseData = switch (parameters.readDistBuilder.distributionType) {
@@ -42,7 +42,7 @@ public class LeafsExtensionHandshakeKeyGeneratorBuilder extends KeyGeneratorBuil
                     parameters,
                     parameters.readDistBuilder.getDistribution(),
                     parameters.insertDistBuilder.getDistribution(),
-                    parameters.eraseDistBuilder.getDistribution()
+                    parameters.removeDistBuilder.getDistribution()
             );
         }
 
