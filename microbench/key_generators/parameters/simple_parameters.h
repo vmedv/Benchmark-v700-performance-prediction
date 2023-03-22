@@ -32,10 +32,7 @@ protected:
     SimpleParameters *localParameters;
 
     virtual void parseArg() {
-        size_t oldPoint = point;
-        localParameters->distributionBuilder->parse(argc, argv, point);
-
-        if (point == oldPoint) {
+        if (!localParameters->distributionBuilder->parse(argc, argv, point)) {
             ParametersParser::parseArg();
         }
     }

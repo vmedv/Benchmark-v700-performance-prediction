@@ -25,7 +25,7 @@ struct DistributionBuilder {
         return this;
     }
 
-    size_t parse(size_t &argc, char **argv, size_t &point);
+    bool parse(size_t &argc, char **argv, size_t &point);
 
     Distribution *getDistribution(Random64 *rng, size_t range);
 
@@ -43,7 +43,8 @@ struct DistributionBuilder {
 
 #include "distributions/parameters/distribution_parameters_impls.h"
 
-size_t DistributionBuilder::parse(size_t &argc, char **argv, size_t &point) {
+bool DistributionBuilder::parse(size_t &argc, char **argv, size_t &point) {
+    bool parsed = true;
     if (strcmp(argv[point], "-dist-zipf") == 0) {
         setType(DistributionType::ZIPF);
         setParameters(new ZipfParameters(atof(argv[++point])));
@@ -52,9 +53,11 @@ size_t DistributionBuilder::parse(size_t &argc, char **argv, size_t &point) {
         //todo add parameters parse
     } else if (strcmp(argv[point], "-dist-uniform") == 0) {
         setType(DistributionType::UNIFORM);
+    } else {
+        parsed = false;
     }
 
-    return point;
+    return parsed;
 }
 
 Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) {

@@ -32,7 +32,6 @@ void printCallback(void * nothing, const char * data) {
 
 
 
-
 /******************************************************************************
  * Configure global statistics tracking & output using GSTATS (common/gstats)
  * Note: it is crucial that this import occurs before any user headers
@@ -48,8 +47,20 @@ void printCallback(void * nothing, const char * data) {
 #include "gstats_global.h" // include the GSTATS code and macros (crucial this happens after GSTATS_HANDLE_STATS is defined)
 // Note: any statistics trackers created by headers included below have to be handled separately... we do this below.
 
+#ifdef KEY_DEPTH_TOTAL_STAT
+int64_t key_depth_total_sum__;
+int64_t key_depth_total_cnt__;
+#endif
 
+#ifdef KEY_DEPTH_STAT
+int64_t* key_depth_sum__ = nullptr;
+int64_t* key_depth_cnt__ = nullptr;
+#endif
 
+#ifdef KEY_SEARCH_TOTAL_STAT
+int64_t key_search_total_iters_cnt__;
+int64_t key_search_total_cnt__;
+#endif
 
 // each thread saves its own thread-id (should be used primarily within this file--could be eliminated to improve software engineering)
 __thread int tid = 0;
@@ -317,7 +328,7 @@ struct globals_t {
 
     globals_t(size_t maxkeyToGenerate, KeyGeneratorBuilder<test_type> *_keyGeneratorBuilder)
             : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
-            , KEY_MAX(std::numeric_limits<test_type>::max() - 1), PREFILL_INTERVAL_MILLIS(200),
+            , KEY_MAX(maxkeyToGenerate), PREFILL_INTERVAL_MILLIS(200),
               keyGeneratorBuilder(_keyGeneratorBuilder),
               keygenType(_keyGeneratorBuilder->keyGeneratorType) {
         debug_print = 0;
@@ -333,6 +344,7 @@ struct globals_t {
         keygens = keyGeneratorBuilder->generateKeyGenerators(maxkeyToGenerate, rngs);
 
         for (size_t i = 0; i < MAX_THREADS_POW2; ++i) {
+            // (1)
             prefillKeygens[i] = keygens[i];
         }
 
@@ -359,9 +371,10 @@ struct globals_t {
                 delete prefillKeygens[i];
             }
 
-            if (keygens[i]) {
-                delete keygens[i];
-            }
+            // (1) double-free
+            // if (keygens[i]) {
+            //     delete keygens[i];
+            // }
 
         }
 
@@ -954,6 +967,21 @@ void trial(GlobalsT *g) {
     using namespace std::chrono;
     papi_init_program(parameters->TOTAL_THREADS);
 
+#ifdef KEY_DEPTH_TOTAL_STAT
+    key_depth_total_sum__ = 0;
+    key_depth_total_cnt__ = 0;
+#endif
+
+#ifdef KEY_DEPTH_STAT
+    key_depth_sum__ = new int64_t[g->KEY_MAX + 1];
+    key_depth_cnt__ = new int64_t[g->KEY_MAX + 1];
+#endif
+
+#ifdef KEY_SEARCH_TOTAL_STAT
+    key_search_total_iters_cnt__ = 0;
+    key_search_total_cnt__ = 0;
+#endif
+
     // create the actual data structure and prefill it to match the expected steady state
     createAndPrefillDataStructure(g, parameters->DESIRED_PREFILL_SIZE);
 
@@ -1096,6 +1124,39 @@ void printExecutionTime(GlobalsT *g) {
 template<class GlobalsT>
 void printOutput(GlobalsT *g) {
     std::cout << "PRODUCING OUTPUT" << std::endl;
+
+#ifdef KEY_DEPTH_TOTAL_STAT
+    std::cout << "\nKEY_DEPTH_TOTAL_STAT START" << std::endl;
+    if (key_depth_total_cnt__ > 0) {
+        std::cout << "TOTAL_ACCESSES=" << key_depth_total_cnt__ << '\n';
+        std::cout << "TOTAL_AVG_DEPTH=" << (key_depth_total_sum__ / static_cast<double>(key_depth_total_cnt__)) << '\n';
+    }
+    std::cout << "KEY_DEPTH_TOTAL_STAT END" << std::endl; 
+#endif
+
+#ifdef KEY_DEPTH_STAT
+    std::cout << "\nKEY_DEPTH_STAT START" << std::endl;
+    for (int key = g->KEY_MIN; key <= g->KEY_MAX; ++key) {
+        if (key_depth_cnt__[key] == 0) {
+            continue;
+        }
+        std::cout << "KEY=" << key << "; ";
+        std::cout << "ACCESSES=" << key_depth_cnt__[key] << "; ";
+        std::cout << "AVG_DEPTH=" << (key_depth_sum__[key] / static_cast<double>(key_depth_cnt__[key])) << ";\n";
+    }
+    std::cout << "KEY_DEPTH_STAT END" << std::endl;
+#endif
+
+#ifdef KEY_SEARCH_TOTAL_STAT
+    std::cout << "\nKEY_SEARCH_TOTAL_STAT START" << std::endl;
+    if (key_search_total_cnt__ > 0) {
+        std::cout << "TOTAL_SEARCH_ITERS=" << key_search_total_iters_cnt__ << '\n';
+        std::cout << "TOTAL_SEARCH_CNT=" << key_search_total_cnt__ << '\n';
+        std::cout << "AVG_SEARCH_ITERS=" << (key_search_total_iters_cnt__ / static_cast<double>(key_search_total_cnt__)) << '\n';
+    }
+    std::cout << "KEY_SEARCH_TOTAL_STAT END" << std::endl; 
+#endif
+
 #ifdef USE_TREE_STATS
     auto timeBeforeTreeStats = std::chrono::high_resolution_clock::now();
     auto treeStats = g->dsAdapter->createTreeStats(g->KEY_MIN, g->KEY_MAX);
@@ -1223,7 +1284,10 @@ void printOutput(GlobalsT *g) {
     }
     std::cout << "end delete ds." << std::endl;
 #endif
-
+#ifdef KEY_DEPTH_STAT
+    delete[] key_depth_sum__;
+    delete[] key_depth_cnt__;
+#endif
     papi_print_counters(totalAll);
 #ifdef USE_TREE_STATS
     if (treeStats) delete treeStats;
@@ -1298,7 +1362,6 @@ void main_continued_with_globals(GlobalsT *g) {
     delete g;
 }
 
-
 template<typename K>
 std::string printArray(size_t size, K *array) {
     std::string result = "[";
@@ -1332,7 +1395,6 @@ int main(int argc, char **argv) {
 
     KeyGeneratorBuilder<test_type> *keyGeneratorBuilder = p.first;
     ParametersParser * parametersParser = p.second;
-
 
 //    keyGeneratorBuilder = Parameters::parseWorkload<test_type>(argc, argv);
 
@@ -1466,6 +1528,7 @@ int main(int argc, char **argv) {
 
     //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distributions));
 
+    delete parametersParser;
 
     printUptimeStampForPERF("MAIN_END");
     return 0;

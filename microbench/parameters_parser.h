@@ -124,9 +124,9 @@ public:
 template<typename K>
 std::pair<KeyGeneratorBuilder<K> *, ParametersParser *>
 ParametersParser::parseKeyGeneratorType(size_t _argc, char **_argv, size_t point) {
-    ParametersParser *parameterParser;
+    ParametersParser *parameterParser = nullptr;
 //    Parameters *parameters;
-    KeyGeneratorBuilder<K> *keyGeneratorBuilder;
+    KeyGeneratorBuilder<K> *keyGeneratorBuilder = nullptr;
     if (strcmp(_argv[point], "-skewed-sets") == 0) {
 //        parameters = new SkewedSetsParameters();
         parameterParser = new SkewedSetsParametersParser(_argc, _argv, ++point);
