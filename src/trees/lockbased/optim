@@ -1,0 +1,170 @@
+C:\Users\Huawei\.jdks\openjdk-17.0.1\bin\java.exe --enable-preview -javaagent:C:\Users\Huawei\AppData\Local\JetBrains\Toolbox\apps\IDEA-U\ch-0\223.8836.41\lib\idea_rt.jar=52148:C:\Users\Huawei\AppData\Local\JetBrains\Toolbox\apps\IDEA-U\ch-0\223.8836.41\bin -Dfile.encoding=UTF-8 -classpath C:\Users\Huawei\OneDrive\Документы\ИТМО\LAB\synchrobench\java\out\production\synchrobench;C:\Users\Huawei\OneDrive\Документы\ИТМО\LAB\synchrobench\java\lib\deuceAgent-1.3.0.jar;C:\Users\Huawei\OneDrive\Документы\ИТМО\LAB\synchrobench\java\lib\junit.jar contention.benchmark.Test -b  -t 2 -pt 1 -ui 1 -r 10000 -i 0 -d 250 -afr 50
+-------------------------------------------------------------------------------
+Synchrobench-java
+A benchmark-suite to evaluate synchronization techniques
+-------------------------------------------------------------------------------
+
+Benchmark parameters
+--------------------
+  Detailed stats:          	disabled
+  Number of threads:       	2
+  Length:                  	250 ms
+  Size:                    	0 elts
+  Range:                   	10000 elts
+  Write ratio:             	1.2
+  Insert ratio:            	1.0
+  Remove ratio:            	0.2
+  WriteAll ratio:          	0.0
+  Snapshot ratio:          	0.0
+  WarmUp:                  	0 s
+  After fill relax time:   	50 ms
+  Iterations:              	1
+  Benchmark:
+  Key Generator:           	DEFAULT_KEYGEN
+  Distribution:            	UNIFORM
+
+"putwin: " + window + " "+ window.curr + " " + window.prev);
+"fir curr: " + window + " " + window.curr + " " + ROOT + " " + ROOT.l);
+
+putwin: $Window@d810740 null $Node@6c2fade4
+putwin: $Window@7160b9c2 null $Node@6c2fade4
+fir curr: $Window@7160b9c2 null $Node@6c2fade4 null
+fir curr: $Window@d810740 null $Node@6c2fade4 null
+putwin: $Window@2add5f37 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@2add5f37 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+fir curr: $Window@d810740 $Node@6c2fade4 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@55d1dc24 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@55d1dc24 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@2a804bf5 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@2a804bf5 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6ae49d75 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6ae49d75 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@375470e3 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@375470e3 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6cbfaad1 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6cbfaad1 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@44c89b50 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@44c89b50 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@a09b989 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@a09b989 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@1ece0343 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@1ece0343 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@fb6cb69 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@fb6cb69 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@f24d3d4 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@f24d3d4 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@48a6e648 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@48a6e648 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@261c2004 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@261c2004 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@1fc84a2d $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@1fc84a2d $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@365b8073 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@365b8073 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@49b0b456 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@49b0b456 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@e6ba164 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@e6ba164 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@53af0ba6 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@53af0ba6 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@391d51b8 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@391d51b8 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@75c340c9 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@75c340c9 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@2670bf94 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@2670bf94 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@d2972c7 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@d2972c7 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@5e6a624b $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5e6a624b $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@3140a447 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@3140a447 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@126f21e4 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@126f21e4 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@5416d624 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5416d624 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@59638ed7 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@59638ed7 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6db56b20 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6db56b20 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6be0773 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6be0773 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@647b5676 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@647b5676 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@21ab7918 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@21ab7918 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6781ea66 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6781ea66 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@11f2fc7a $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@11f2fc7a $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@2f84c0d4 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@2f84c0d4 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@551d1f85 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@551d1f85 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@3da70d9a $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@3da70d9a $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@3bb02778 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@3bb02778 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@323bd2ba $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@323bd2ba $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@fe7124f $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@fe7124f $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@aa915f4 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@aa915f4 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@3018783e $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@3018783e $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@5cdad285 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5cdad285 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@6b18c63b $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@6b18c63b $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+ERROR: 0
+putwin: $Window@295c6819 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@295c6819 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@5a762c84 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5a762c84 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@50b293b5 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@50b293b5 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@7db6be86 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@7db6be86 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@37e01d89 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@37e01d89 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@5c1915fd $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5c1915fd $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@18720af0 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@18720af0 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+curr: $Node@6c2fade4
+putwin: $Window@5078c5f6 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@5078c5f6 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@67c39625 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@67c39625 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@73e1c1dd $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@73e1c1dd $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@7b4c60db $Node@40c3a5d7 $Node@6c2fade4
+curr deleted: false
+fir curr: $Window@7b4c60db $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+curr key: null
+putwin: $Window@6d8d5d31 $Node@40c3a5d7 $Node@6c2fade4
+curr value: null
+fir curr: $Window@6d8d5d31 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+window: $Window@d810740
+putwin: $Window@16049c1b $Node@40c3a5d7 $Node@6c2fade4
+window er: $Window@d810740
+fir curr: $Window@16049c1b $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+window curr: $Node@6c2fade4
+putwin: $Window@6b96482f $Node@40c3a5d7 $Node@6c2fade4
+window curr key: null
+fir curr: $Window@6b96482f $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+window prev: null
+putwin: $Window@7344a73e $Node@40c3a5d7 $Node@6c2fade4
+window gp: null
+fir curr: $Window@7344a73e $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+ROOT: $Node@6c2fade4
+putwin: $Window@742718b2 $Node@40c3a5d7 $Node@6c2fade4
+ROOT l: $Node@40c3a5d7
+fir curr: $Window@742718b2 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@4671b669 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@4671b669 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+putwin: $Window@1fff49b8 $Node@40c3a5d7 $Node@6c2fade4
+fir curr: $Window@1fff49b8 $Node@40c3a5d7 $Node@6c2fade4 $Node@40c3a5d7
+
+Process finished with exit code 1
