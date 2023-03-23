@@ -32,7 +32,8 @@ struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
             keygens[i] = new SimpleKeyGenerator<K>(
                     data,
-                    parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate)
+                    parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
+                    (new DistributionBuilder)->getDistribution(&rngs[i], maxkeyToGenerate)
             );
         }
 

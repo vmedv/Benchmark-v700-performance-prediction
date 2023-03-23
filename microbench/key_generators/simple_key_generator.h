@@ -14,6 +14,7 @@ private:
     PAD;
     Distribution *distribution;
     KeyGeneratorData<K> *data;
+    Distribution *prefillDistribution;
     PAD;
 
     K next() {
@@ -22,8 +23,9 @@ private:
     }
 
 public:
-    SimpleKeyGenerator(KeyGeneratorData<K> *_data, Distribution *_distribution)
-            : data(_data), distribution(_distribution) {}
+    SimpleKeyGenerator(KeyGeneratorData<K> *_data, Distribution *_distribution, Distribution *_prefillDistribution)
+            : data(_data), distribution(_distribution), prefillDistribution(_prefillDistribution) {
+    }
 
 
     K next_read() {
@@ -43,7 +45,7 @@ public:
     }
 
     K next_prefill() {
-        return next();
+        return data->get(prefillDistribution->next());
     }
 
     ~SimpleKeyGenerator() {
