@@ -25,8 +25,8 @@ extern int64_t* key_depth_cnt__;
 template <typename K, typename V, size_t kMinKeys>
 class SABT {
 public:
-    static constexpr int64_t kMinRebuildBound = 100;
-    static constexpr double kRebuildFactor = 1.25;
+    static constexpr int64_t kMinRebuildBound = 250;
+    static constexpr double kRebuildFactor = 2;
 
     static_assert(kMinKeys > 0, "kMinKeys must be > 0");
     static constexpr int kMaxKeys = 2 * kMinKeys;

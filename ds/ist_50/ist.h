@@ -25,9 +25,9 @@ extern int64_t* key_depth_cnt__;
 template <typename K, typename V>
 class IST {
 public:
-    static constexpr int kLeafSize = 16;
-    static constexpr int kMinRebuildBound = 100;
-    static constexpr double kRebuildFactor = 0.25;
+    static constexpr int kLeafSize = 32;
+    static constexpr int kMinRebuildBound = 225;
+    static constexpr double kRebuildFactor = 0.75;
 
     using NODE = ISTNode<K, V>;
     using NodeHandler = ISTNodeHandler<K, V>;
