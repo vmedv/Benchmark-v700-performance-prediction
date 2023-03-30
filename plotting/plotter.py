@@ -10,11 +10,26 @@ import logging
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# Tex rendering
+plt.rcParams.update({
+    "text.usetex": True,
+    "font.family": "sans-serif",
+    "font.sans-serif": "Helvetica",
+})
 
-DEFAULT_COLORS = ["blue", "green", "red", "purple", "gold", "azure", "orange", "pink", "black", "brown", "lime", "cyan"]
+
 DEFAULT_OUTPUT_DIR_NAME = "plotter-output"
 DEFAULT_TIMEOUT = 90
 
+DEFAULT_COLORS = ["blue", "green", "red", "purple", "gold", "azure", "orange", "pink", "black", "brown", "lime", "cyan"]
+DEFAULT_COLORS_DS_MAPPER = {
+    "sabt": "green",
+    "bt": "blue",
+    "saist": "purple",
+    "ist": "red",
+    "sat": "gold",
+    "splay": "orange"
+}
 
 LOG_FILE = "log.txt"
 
@@ -35,6 +50,13 @@ TOTAL_UPDATES = "total-updates"
 TOTAL_OPS = "total-ops"
 
 OPERATIONS_STATS = {TOTAL_FIND, TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS}
+
+# Throughput stats:
+THROUGHPUT_FIND = "find-throughput"
+THROUGHPUT_UPDATE = "update-throughput"
+THROUGHPUT_TOTAL = "total-throughput"
+
+THROUGHPUT_STATS = {THROUGHPUT_FIND, THROUGHPUT_UPDATE, THROUGHPUT_TOTAL}
 
 # Depth stats:
 TOTAL_KEY_DEPTH = "total-key-depth"
@@ -60,12 +82,14 @@ PREFILL_STRATEGY_MAPPER = {
 
 
 def to_file_name(stat):
-    return "_".join(stat.replace("/", " ").split())
+    return "_".join(stat.lower().replace("/", " ").split())
 
 
 def get_label_by_stat(stat):
     if stat in OPERATIONS_STATS:
         return "#operations"
+    elif stat in THROUGHPUT_STATS:
+        return "throughput (\\frac{#operations}{work_time})"
     elif stat in DEPTH_STATS:
         return "depth"
     elif stat in ITER_STATS:
@@ -108,18 +132,20 @@ class AvgStatAggregator(StatAggregator):
         self.stat = stat
         self.vals_by_key = defaultdict(list)
 
+    def get_extract_stat_name(self):
+        return self.stat
+
     def extract_value(self, log):
         if log is None:
             return None
-        m = re.search(f"{self.stat}\s* : (\d+)", log)
-        return None if m is None else int(m.group(1))
+        m = re.search(f"{self.get_extract_stat_name()}=([\d\.]+)", log)
+        return None if m is None else float(m.group(1))
 
     def extract(self, keys_cnt, log):
         value = self.extract_value(log)
         if value is None:
             self.logger.warning(f"keys_cnt={keys_cnt} - extract None")
-        self.vals_by_key[keys_cnt].append(
-            numpy.inf if value is None else value)
+        self.vals_by_key[keys_cnt].append(numpy.inf if value is None else value)
 
     def aggregate(self):
         self.keys = []
@@ -140,52 +166,72 @@ class AvgStatAggregator(StatAggregator):
                 ouf.write(f"avg_val={avg_val}\n\n")
 
 
+# Operations aggregators:
+
 class TotalFindAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
-        super().__init__("total find", **kwargs)
+        super().__init__("total_find", **kwargs)
 
 
 class TotalInsertsAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
-        super().__init__("total inserts", **kwargs)
+        super().__init__("total_inserts", **kwargs)
 
 
 class TotalDeletesAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
-        super().__init__("total deletes", **kwargs)
-
+        super().__init__("total_deletes", **kwargs)
 
 class TotalUpdatesAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
-        super().__init__("total updates", **kwargs)
+        super().__init__("total_updates", **kwargs)
 
 
 class TotalOpsAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
-        super().__init__("total ops", **kwargs)
+        super().__init__("total_ops", **kwargs)
 
+
+# Throughput aggregators:
+
+class ThroughputFindAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("find_throughput", **kwargs)
+
+
+class ThroughputUpdateAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("update_throughput", **kwargs)
+
+
+class ThroughputTotalAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("total_throughput", **kwargs)
+
+
+# Depth aggregators:
 
 class TotalKeyDepthAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
         super().__init__("total key depth", **kwargs)
-
-    def extract_value(self, log):
-        m = re.search(r"TOTAL_AVG_DEPTH=([\d\.]+)", log)
-        return None if m is None else float(m.group(1))
-
-
-class TotalKeySearchAggregator(AvgStatAggregator):
-    def __init__(self, **kwargs):
-        super().__init__("total key search", **kwargs)
-
-    def extract_value(self, log):
-        m = re.search(r"AVG_SEARCH_ITERS=([\d\.]+)", log)
-        return None if m is None else float(m.group(1))
+    
+    def get_extract_stat_name(self):
+        return "TOTAL_AVG_DEPTH"
 
 
 # TODO
 class KeyDepthAggregator(StatAggregator):
     pass
+
+
+# Iters aggregators:
+
+class TotalKeySearchAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("total key search", **kwargs)
+    
+    def get_extract_stat_name(self):
+        return "AVG_SEARCH_ITERS"
 
 
 AGGREGATOR_BY_STAT = {
@@ -194,9 +240,15 @@ AGGREGATOR_BY_STAT = {
     TOTAL_DELETES: TotalDeletesAggregator,
     TOTAL_UPDATES: TotalUpdatesAggregator,
     TOTAL_OPS: TotalOpsAggregator,
+
+    THROUGHPUT_FIND: ThroughputFindAggregator,
+    THROUGHPUT_UPDATE: ThroughputUpdateAggregator,
+    THROUGHPUT_TOTAL: ThroughputTotalAggregator,
+    
     TOTAL_KEY_DEPTH: TotalKeyDepthAggregator,
     KEY_DEPTH: KeyDepthAggregator,
-    TOTAL_KEY_SEARCH: TotalKeySearchAggregator,
+
+    TOTAL_KEY_SEARCH: TotalKeySearchAggregator
 }
 
 
@@ -211,6 +263,7 @@ def plot_avg_all(stat, title, ylabel, aggregators, output_dir):
     ax.grid(True)
     ax.legend()
     fig.savefig(output_dir / f"{to_file_name(stat)}.{FIG_FORMAT}")
+    plt.close(fig)
 
 
 def plot_all(stat, title, aggregators, output_dir):
@@ -260,6 +313,8 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
                               f"-nwork {args.nwork} -nprefill {args.nprefill} {PREFILL_STRATEGY_MAPPER[args.prefill_strategy]}"
                 if args.non_shuffle:
                     run_command += "-non-shuffle"
+                if args.prefill_sequential:
+                    run_command += "-prefill-sequential"
 
                 ld_preload = f"../lib/{args.allocator}.so"
                 task_logger.info(f"Running LD_PRELOAD={ld_preload} {run_command}")
@@ -311,11 +366,23 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
             aggregators.out(ds_dict[ds])
 
 
+def get_colors(ds):
+    colors = []
+    for i, ds_in in enumerate(ds):
+        for ds_out, color in DEFAULT_COLORS_DS_MAPPER.items():
+            if ds_out in ds_in:
+                colors.append(color)
+                break
+        if len(colors) == i:
+            colors.append(DEFAULT_COLORS[i])
+    return colors
+
+
 def start(args):
     args.output_dir.mkdir(exist_ok=True)
 
     if not args.color:
-        args.color = DEFAULT_COLORS[:len(args.ds)]
+        args.color = get_colors(args.ds)
 
     tasks = []
     for insdel in args.insdel:
@@ -325,8 +392,7 @@ def start(args):
             top_dir = args.output_dir / to_file_name(workload_name) / to_file_name(insdel)
             top_dir.mkdir(parents=True, exist_ok=True)
             stats = [stat for stat in args.stat if not (fp == 1 and stat in ONLY_INS_DEL_STATS)]
-            tasks.append((top_dir, ip, dp, fp, workload,
-                         workload_name, stats, args))
+            tasks.append((top_dir, ip, dp, fp, workload, workload_name, stats, args))
 
     print("START PLOTTING")
 
@@ -393,6 +459,7 @@ if __name__ == "__main__":
     setbench_group.add_argument("--nprefill", type=int, default=1, help="How many threads will prefill each data structure? Stands for -nprefill setbench arg")
     setbench_group.add_argument("--prefill-strategy", choices=[*PREFILL_STRATEGY_MAPPER], default=PREFILL_STRATEGY_INSERT, help="Strategy to use to prefill each DS")
     setbench_group.add_argument("--non-shuffle", action="store_true", help="-non-shuffle setbench arg")
+    setbench_group.add_argument("--prefill-sequential", action="store_true", help="-prefill-sequential setbench arg")
     setbench_group.add_argument("--allocator", default="libjemalloc", help="Allocator used while benchmarking")
 
     args = parser.parse_args()
