@@ -124,39 +124,39 @@ public:
 template<typename K>
 std::pair<KeyGeneratorBuilder<K> *, ParametersParser *>
 ParametersParser::parseKeyGeneratorType(size_t _argc, char **_argv, size_t point) {
-    ParametersParser *parameterParser = nullptr;
+    ParametersParser *parametersParser = nullptr;
 //    Parameters *parameters;
     KeyGeneratorBuilder<K> *keyGeneratorBuilder = nullptr;
     if (strcmp(_argv[point], "-skewed-sets") == 0) {
 //        parameters = new SkewedSetsParameters();
-        parameterParser = new SkewedSetsParametersParser(_argc, _argv, ++point);
+        parametersParser = new SkewedSetsParametersParser(_argc, _argv, ++point);
 //            parameters->keygenType = KeyGeneratorType::SKEWED_SETS;
 //        parameterParser->point = ++point;
 //        parameterParser->parameters = parameters;
 
         keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder<K>(
-                (SkewedSetsParameters *) parameterParser->parameters
+                (SkewedSetsParameters *) parametersParser->parameters
         );
     } else if (strcmp(_argv[point], "-creakers-and-wave") == 0) {
 //        parameters = new CreakersAndWaveParameters();
-        parameterParser = new CreakersAndWaveParametersParser(_argc, _argv, ++point);
+        parametersParser = new CreakersAndWaveParametersParser(_argc, _argv, ++point);
 //            parameters->keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
 //        parameterParser->point = ++point;
 //        parameterParser->parameters = parameters;
 
         keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder<K>(
-                (CreakersAndWaveParameters *) parameterParser->parameters
+                (CreakersAndWaveParameters *) parametersParser->parameters
         );
     } else if (strcmp(_argv[point], "-temporary-skewed") == 0
                || strcmp(_argv[point], "-temp-skewed") == 0) {
 //        parameters = new TemporarySkewedParameters();
-        parameterParser = new TemporarySkewedParametersParser(_argc, _argv, ++point);
+        parametersParser = new TemporarySkewedParametersParser(_argc, _argv, ++point);
 //            parameters->keygenType = KeyGeneratorType::TEMPORARY_SKEWED;
 //        parameterParser->point = ++point;
 //        parameterParser->parameters = parameters;
 
         keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<K>(
-                (TemporarySkewedParameters *) parameterParser->parameters
+                (TemporarySkewedParameters *) parametersParser->parameters
         );
     } else if (strcmp(_argv[point], "-delete-speed-test") == 0) {
         // todo add workloads
@@ -206,17 +206,17 @@ ParametersParser::parseKeyGeneratorType(size_t _argc, char **_argv, size_t point
 //            keyGeneratorBuilder.parameters = parameters;
     } else {
 //        parameters = new SimpleParameters();
-        parameterParser = new SimpleParametersParser(_argc, _argv, point);
+        parametersParser = new SimpleParametersParser(_argc, _argv, point);
 //            parameters->keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
 //        parameterParser->point = point;
 //        parameterParser->parameters = parameters;
 
         keyGeneratorBuilder = new SimpleKeyGeneratorBuilder<K>(
-                (SimpleParameters *) parameterParser->parameters
+                (SimpleParameters *) parametersParser->parameters
         );
     }
 
-    return {keyGeneratorBuilder, parameterParser};
+    return {keyGeneratorBuilder, parametersParser};
 }
 
 #endif //SETBENCH_PARAMETERS_PARSER_H
