@@ -10,15 +10,6 @@ import logging
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Tex rendering
-plt.rcParams.update({
-    "text.usetex": True,
-    "font.family": "sans-serif",
-    "font.sans-serif": "Helvetica",
-    "font.size": 12
-})
-
-
 DEFAULT_OUTPUT_DIR_NAME = "plotter-output"
 DEFAULT_TIMEOUT = 90
 
@@ -88,9 +79,9 @@ def to_file_name(stat):
 
 def get_label_by_stat(stat):
     if stat in OPERATIONS_STATS:
-        return "\\#operations"
+        return "#operations"
     elif stat in THROUGHPUT_STATS:
-        return "throughput ($\\frac{\\#operations}{work_time}$)"
+        return "throughput (#operations / work_time)"
     elif stat in DEPTH_STATS:
         return "depth"
     elif stat in ITER_STATS:
@@ -258,7 +249,7 @@ def plot_avg_all(stat, title, ylabel, aggregators, output_dir):
     fig.suptitle(title)
     for aggregator in aggregators:
         aggregator.plot(ax)
-    ax.set_xlabel("\\#keys (log-scale)")
+    ax.set_xlabel("#keys (log-scale)")
     ax.set_xscale("log")
     ax.set_ylabel(ylabel)
     ax.grid(True)
