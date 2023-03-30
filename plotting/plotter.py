@@ -15,6 +15,7 @@ plt.rcParams.update({
     "text.usetex": True,
     "font.family": "sans-serif",
     "font.sans-serif": "Helvetica",
+    "font.size": 12
 })
 
 
@@ -87,9 +88,9 @@ def to_file_name(stat):
 
 def get_label_by_stat(stat):
     if stat in OPERATIONS_STATS:
-        return "#operations"
+        return "\\#operations"
     elif stat in THROUGHPUT_STATS:
-        return "throughput (\\frac{#operations}{work_time})"
+        return "throughput ($\\frac{\\#operations}{work_time}$)"
     elif stat in DEPTH_STATS:
         return "depth"
     elif stat in ITER_STATS:
@@ -257,7 +258,7 @@ def plot_avg_all(stat, title, ylabel, aggregators, output_dir):
     fig.suptitle(title)
     for aggregator in aggregators:
         aggregator.plot(ax)
-    ax.set_xlabel("#keys (log-scale)")
+    ax.set_xlabel("\\#keys (log-scale)")
     ax.set_xscale("log")
     ax.set_ylabel(ylabel)
     ax.grid(True)
@@ -312,9 +313,9 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
                               f"-k {key} -prefillsize {prefill_size} -t {args.time} "\
                               f"-nwork {args.nwork} -nprefill {args.nprefill} {PREFILL_STRATEGY_MAPPER[args.prefill_strategy]}"
                 if args.non_shuffle:
-                    run_command += "-non-shuffle"
+                    run_command += " -non-shuffle"
                 if args.prefill_sequential:
-                    run_command += "-prefill-sequential"
+                    run_command += " -prefill-sequential"
 
                 ld_preload = f"../lib/{args.allocator}.so"
                 task_logger.info(f"Running LD_PRELOAD={ld_preload} {run_command}")
