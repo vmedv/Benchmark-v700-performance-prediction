@@ -170,7 +170,7 @@ class TotalKeyDepthAggregator(AvgStatAggregator):
         super().__init__("total key depth", **kwargs)
 
     def extract_value(self, log):
-        m = re.search(r"TOTAL_AVG_DEPTH=(\S+)", log)
+        m = re.search(r"TOTAL_AVG_DEPTH=([\d\.]+)", log)
         return None if m is None else float(m.group(1))
 
 
@@ -179,7 +179,7 @@ class TotalKeySearchAggregator(AvgStatAggregator):
         super().__init__("total key search", **kwargs)
 
     def extract_value(self, log):
-        m = re.search(r"AVG_SEARCH_ITERS=(\S+)", log)
+        m = re.search(r"AVG_SEARCH_ITERS=([\d\.]+)", log)
         return None if m is None else float(m.group(1))
 
 
