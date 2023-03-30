@@ -1374,27 +1374,27 @@ std::string printArray(size_t size, K *array) {
     return result + "]";
 }
 
+void printUsageExample(std::ostream& out, const std::string& binary) {
+    out << std::endl;
+    out << "Example usage:" << std::endl;
+    out << "LD_PRELOAD=/path/to/libjemalloc.so " << binary << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63" << std::endl;
+    out << std::endl;
+    out << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)" << std::endl;
+    out << std::endl;
+}
+
 int main(int argc, char **argv) {
-    printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
-        std::cout << std::endl;
-        std::cout << "Example usage:" << std::endl;
-        std::cout << "LD_PRELOAD=/path/to/libjemalloc.so " << argv[0]
-                  << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
-                  << std::endl;
-        std::cout << std::endl;
-        std::cout
-                << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"
-                << std::endl;
+        printUsageExample(std::cout, argv[0]);
         return 1;
     }
 
+    printUptimeStampForPERF("MAIN_START");
+
     std::cout << "binary=" << argv[0] << std::endl;
 
-    auto p = ParametersParser::parseKeyGeneratorType<test_type>(argc, argv, 1);
+    auto [keyGeneratorBuilder, parametersParser] = ParametersParser::parseKeyGeneratorType<test_type>(argc, argv, 1);
 
-    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder = p.first;
-    ParametersParser * parametersParser = p.second;
 
 //    keyGeneratorBuilder = Parameters::parseWorkload<test_type>(argc, argv);
 
