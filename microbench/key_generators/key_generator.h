@@ -50,15 +50,8 @@ private:
     bool isNonShuffle = true;
 
 public:
-    KeyGeneratorData(Parameters * _parameters) : isNonShuffle(_parameters->isNonShuffle) {
-        if (!isNonShuffle) {
-            data = new K[_parameters->MAXKEY];
-            for (size_t i = 0; i < _parameters->MAXKEY; i++) {
-                data[i] = i + 1;
-            }
-
-            std::random_shuffle(data, data + _parameters->MAXKEY - 1);
-        }
+    KeyGeneratorData(Parameters * _parameters) 
+        : KeyGeneratorData(_parameters->MAXKEY, _parameters->isNonShuffle) {
     }
 
     KeyGeneratorData(int maxKey, bool _isNonShuffle) : isNonShuffle(_isNonShuffle) {

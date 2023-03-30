@@ -92,14 +92,8 @@ public:
         argc = _argc;
         argv = _argv;
 
-        while (point < argc) {
-            parseArg();
-            ++point;
-        }
+        parse();
 
-        argc = 0;
-        argv = nullptr;
-        point = 0;
         return parameters;
     }
 
