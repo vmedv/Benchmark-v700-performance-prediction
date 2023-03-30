@@ -26,9 +26,9 @@ extern int64_t* key_depth_cnt__;
 template <typename K, typename V>
 class SAIST {
 public:
-    static constexpr int kLeafSize = 32;
-    static constexpr int64_t kMinRebuildBound = 225;
-    static constexpr double kRebuildFactor = 1.75;
+    static constexpr int kLeafSize = 16;
+    static constexpr int64_t kMinRebuildBound = 100;
+    static constexpr double kRebuildFactor = 1.25;
 
     using NODE = SAISTNode<K, V>;
     using NodeHandler = SAISTNodeHandler<K, V>;

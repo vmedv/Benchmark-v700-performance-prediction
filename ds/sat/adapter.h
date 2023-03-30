@@ -14,17 +14,13 @@ using namespace std;
 
 #include "../../common/sat/defines.h"
 
-#include "bt.h"
-
-#ifndef BT_FACTOR
-#define BT_FACTOR 8
-#endif
+#include "sat.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
-#define DATA_STRUCTURE_T BT<K, V, BT_FACTOR>
+#define DATA_STRUCTURE_T SAT<K, V>
 
 template<typename K, typename V>
-using Node = BTNode<K, V, 2 * BT_FACTOR>;
+using Node = SATNode<K, V>;
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -39,7 +35,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, 200, 1.75))
     { }
 
     ~ds_adapter() {
