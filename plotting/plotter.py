@@ -79,13 +79,13 @@ def to_file_name(stat):
 
 def get_label_by_stat(stat):
     if stat in OPERATIONS_STATS:
-        return "#operations"
+        return "operations"
     elif stat in THROUGHPUT_STATS:
-        return "throughput (#operations / work_time)"
+        return "operations per second"
     elif stat in DEPTH_STATS:
         return "depth"
     elif stat in ITER_STATS:
-        return "iter"
+        return "iters"
     else:
         return "stat"
 
