@@ -9,7 +9,7 @@
 
 struct DistributionBuilder {
     DistributionType distributionType;
-    DistributionParameters *parameters;
+    DistributionParameters *parameters = nullptr;
 
     DistributionBuilder() : distributionType(DistributionType::UNIFORM) {};
 
