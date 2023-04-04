@@ -898,7 +898,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     auto present = prefillArray(g, expectedSize);
     TIMING_START("constructing data structure");
     g->dsAdapter = new DS_ADAPTER_T(
-            std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
+            std::max(parameters->PREFILL_THREADS, parameters->TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
             (test_type const *) present, (VALUE_TYPE const *) present, expectedSize, rand());
     TIMING_STOP;
     delete[] present;
