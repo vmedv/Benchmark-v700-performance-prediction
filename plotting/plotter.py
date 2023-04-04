@@ -13,13 +13,13 @@ import seaborn as sns
 DEFAULT_OUTPUT_DIR_NAME = "plotter-output"
 DEFAULT_TIMEOUT = 90
 
-DEFAULT_COLORS = ["blue", "green", "red", "purple", "gold", "azure", "orange", "pink", "black", "brown", "lime", "cyan"]
+DEFAULT_COLORS = ["blue", "green", "red", "purple", "maroon", "azure", "orange", "pink", "black", "brown", "lime", "cyan"]
 DEFAULT_COLORS_DS_MAPPER = {
     "sabt": "green",
     "bt": "blue",
     "saist": "purple",
     "ist": "red",
-    "sat": "gold",
+    "sat": "maroon",
     "splay": "orange"
 }
 
