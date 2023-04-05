@@ -25,7 +25,7 @@ DEFAULT_COLORS_DS_MAPPER = {
 
 LOG_FILE = "log.txt"
 
-FIGSIZE = (15, 8)
+DEFAULT_FIG_SIZE = "15,8"
 LAYOUT = "constrained"
 FIG_FORMAT = "png"
 
@@ -60,7 +60,7 @@ DEPTH_STATS = {TOTAL_KEY_DEPTH, KEY_DEPTH}
 TOTAL_KEY_SEARCH = "total-key-search"
 ITER_STATS = {TOTAL_KEY_SEARCH}
 
-ONLY_INS_DEL_STATS = {TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS}
+ONLY_INS_DEL_STATS = {TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS, THROUGHPUT_UPDATE, THROUGHPUT_TOTAL}
 
 
 ### Supported prefill strategies ###
@@ -244,12 +244,12 @@ AGGREGATOR_BY_STAT = {
 }
 
 
-def plot_avg_all(stat, title, ylabel, aggregators, output_dir):
-    fig, ax = plt.subplots(figsize=FIGSIZE, layout=LAYOUT)
+def plot_avg_all(stat, title, ylabel, aggregators, output_dir, fig_size):
+    fig, ax = plt.subplots(figsize=fig_size, layout=LAYOUT)
     fig.suptitle(title)
     for aggregator in aggregators:
         aggregator.plot(ax)
-    ax.set_xlabel("#keys (log-scale)")
+    ax.set_xlabel("keys (log-scale)")
     ax.set_xscale("log")
     ax.set_ylabel(ylabel)
     ax.grid(True)
@@ -258,13 +258,13 @@ def plot_avg_all(stat, title, ylabel, aggregators, output_dir):
     plt.close(fig)
 
 
-def plot_all(stat, title, aggregators, output_dir):
+def plot_all(stat, title, aggregators, output_dir, fig_size):
     if not aggregators:
         return
     ylabel = get_label_by_stat(stat)
     first = next(iter(aggregators))
     if isinstance(first, AvgStatAggregator):
-        plot_avg_all(stat, title, ylabel, aggregators, output_dir)
+        plot_avg_all(stat, title, ylabel, aggregators, output_dir, fig_size)
     elif isinstance(first, KeyDepthAggregator):
         # TODO
         pass
@@ -345,7 +345,7 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
 
     for stat, aggregators_dict in stats_info.items():
         title = f"stat: {stat} | workload: {workload_name} | i={ip} d={dp} f={fp}"
-        plot_all(stat, title, aggregators_dict.values(), top_dir)
+        plot_all(stat, title, aggregators_dict.values(), top_dir, args.fig_size)
 
     ds_dict = {}
     for ds in args.ds:
@@ -438,6 +438,7 @@ if __name__ == "__main__":
     plotter_group.add_argument("-c", "--color", nargs="*", action="extend", help="Colors for data structures. Supports all colors which can render matplotlib. If not specified, using DEFAULT_COLORS")
     plotter_group.add_argument("--avg", type=int, default=3, help="Number used for averaging results.")
     plotter_group.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Timeout in seconds for waiting results of each benchmark.")
+    plotter_group.add_argument("--fig-size", type=str, default=DEFAULT_FIG_SIZE, help="figsize of plots")
 
     setbench_group = parser.add_argument_group("setbench args")
     setbench_group.add_argument("--ds", nargs="+", required=True, action="extend", help="Data structures to benchmark")
@@ -455,5 +456,7 @@ if __name__ == "__main__":
     setbench_group.add_argument("--allocator", default="libjemalloc", help="Allocator used while benchmarking")
 
     args = parser.parse_args()
+    args.fig_size = eval(args.fig_size)
+
     check_args(args)
     start(args)
