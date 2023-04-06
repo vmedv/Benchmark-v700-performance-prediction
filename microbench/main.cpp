@@ -32,7 +32,6 @@ void printCallback(void * nothing, const char * data) {
 
 
 
-
 /******************************************************************************
  * Configure global statistics tracking & output using GSTATS (common/gstats)
  * Note: it is crucial that this import occurs before any user headers
@@ -48,8 +47,20 @@ void printCallback(void * nothing, const char * data) {
 #include "gstats_global.h" // include the GSTATS code and macros (crucial this happens after GSTATS_HANDLE_STATS is defined)
 // Note: any statistics trackers created by headers included below have to be handled separately... we do this below.
 
+#ifdef KEY_DEPTH_TOTAL_STAT
+int64_t key_depth_total_sum__;
+int64_t key_depth_total_cnt__;
+#endif
 
+#ifdef KEY_DEPTH_STAT
+int64_t* key_depth_sum__ = nullptr;
+int64_t* key_depth_cnt__ = nullptr;
+#endif
 
+#ifdef KEY_SEARCH_TOTAL_STAT
+int64_t key_search_total_iters_cnt__;
+int64_t key_search_total_cnt__;
+#endif
 
 // each thread saves its own thread-id (should be used primarily within this file--could be eliminated to improve software engineering)
 __thread int tid = 0;
@@ -317,7 +328,7 @@ struct globals_t {
 
     globals_t(size_t maxkeyToGenerate, KeyGeneratorBuilder<test_type> *_keyGeneratorBuilder)
             : NO_VALUE(NULL), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
-            , KEY_MAX(std::numeric_limits<test_type>::max() - 1), PREFILL_INTERVAL_MILLIS(200),
+            , KEY_MAX(maxkeyToGenerate), PREFILL_INTERVAL_MILLIS(200),
               keyGeneratorBuilder(_keyGeneratorBuilder),
               keygenType(_keyGeneratorBuilder->keyGeneratorType) {
         debug_print = 0;
@@ -333,6 +344,7 @@ struct globals_t {
         keygens = keyGeneratorBuilder->generateKeyGenerators(maxkeyToGenerate, rngs);
 
         for (size_t i = 0; i < MAX_THREADS_POW2; ++i) {
+            // (1)
             prefillKeygens[i] = keygens[i];
         }
 
@@ -359,9 +371,10 @@ struct globals_t {
                 delete prefillKeygens[i];
             }
 
-            if (keygens[i]) {
-                delete keygens[i];
-            }
+            // (1) double-free
+            // if (keygens[i]) {
+            //     delete keygens[i];
+            // }
 
         }
 
@@ -885,7 +898,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     auto present = prefillArray(g, expectedSize);
     TIMING_START("constructing data structure");
     g->dsAdapter = new DS_ADAPTER_T(
-            std::max(PREFILL_THREADS, TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
+            std::max(parameters->PREFILL_THREADS, parameters->TOTAL_THREADS), g->KEY_MIN, g->KEY_MAX, g->NO_VALUE, g->rngs,
             (test_type const *) present, (VALUE_TYPE const *) present, expectedSize, rand());
     TIMING_STOP;
     delete[] present;
@@ -953,6 +966,21 @@ template<class GlobalsT>
 void trial(GlobalsT *g) {
     using namespace std::chrono;
     papi_init_program(parameters->TOTAL_THREADS);
+
+#ifdef KEY_DEPTH_TOTAL_STAT
+    key_depth_total_sum__ = 0;
+    key_depth_total_cnt__ = 0;
+#endif
+
+#ifdef KEY_DEPTH_STAT
+    key_depth_sum__ = new int64_t[g->KEY_MAX + 1];
+    key_depth_cnt__ = new int64_t[g->KEY_MAX + 1];
+#endif
+
+#ifdef KEY_SEARCH_TOTAL_STAT
+    key_search_total_iters_cnt__ = 0;
+    key_search_total_cnt__ = 0;
+#endif
 
     // create the actual data structure and prefill it to match the expected steady state
     createAndPrefillDataStructure(g, parameters->DESIRED_PREFILL_SIZE);
@@ -1096,6 +1124,39 @@ void printExecutionTime(GlobalsT *g) {
 template<class GlobalsT>
 void printOutput(GlobalsT *g) {
     std::cout << "PRODUCING OUTPUT" << std::endl;
+
+#ifdef KEY_DEPTH_TOTAL_STAT
+    std::cout << "\nKEY_DEPTH_TOTAL_STAT START" << std::endl;
+    if (key_depth_total_cnt__ > 0) {
+        std::cout << "TOTAL_ACCESSES=" << key_depth_total_cnt__ << '\n';
+        std::cout << "TOTAL_AVG_DEPTH=" << (key_depth_total_sum__ / static_cast<double>(key_depth_total_cnt__)) << '\n';
+    }
+    std::cout << "KEY_DEPTH_TOTAL_STAT END" << std::endl; 
+#endif
+
+#ifdef KEY_DEPTH_STAT
+    std::cout << "\nKEY_DEPTH_STAT START" << std::endl;
+    for (int key = g->KEY_MIN; key <= g->KEY_MAX; ++key) {
+        if (key_depth_cnt__[key] == 0) {
+            continue;
+        }
+        std::cout << "KEY=" << key << "; ";
+        std::cout << "ACCESSES=" << key_depth_cnt__[key] << "; ";
+        std::cout << "AVG_DEPTH=" << (key_depth_sum__[key] / static_cast<double>(key_depth_cnt__[key])) << ";\n";
+    }
+    std::cout << "KEY_DEPTH_STAT END" << std::endl;
+#endif
+
+#ifdef KEY_SEARCH_TOTAL_STAT
+    std::cout << "\nKEY_SEARCH_TOTAL_STAT START" << std::endl;
+    if (key_search_total_cnt__ > 0) {
+        std::cout << "TOTAL_SEARCH_ITERS=" << key_search_total_iters_cnt__ << '\n';
+        std::cout << "TOTAL_SEARCH_CNT=" << key_search_total_cnt__ << '\n';
+        std::cout << "AVG_SEARCH_ITERS=" << (key_search_total_iters_cnt__ / static_cast<double>(key_search_total_cnt__)) << '\n';
+    }
+    std::cout << "KEY_SEARCH_TOTAL_STAT END" << std::endl; 
+#endif
+
 #ifdef USE_TREE_STATS
     auto timeBeforeTreeStats = std::chrono::high_resolution_clock::now();
     auto treeStats = g->dsAdapter->createTreeStats(g->KEY_MIN, g->KEY_MAX);
@@ -1223,7 +1284,10 @@ void printOutput(GlobalsT *g) {
     }
     std::cout << "end delete ds." << std::endl;
 #endif
-
+#ifdef KEY_DEPTH_STAT
+    delete[] key_depth_sum__;
+    delete[] key_depth_cnt__;
+#endif
     papi_print_counters(totalAll);
 #ifdef USE_TREE_STATS
     if (treeStats) delete treeStats;
@@ -1298,7 +1362,6 @@ void main_continued_with_globals(GlobalsT *g) {
     delete g;
 }
 
-
 template<typename K>
 std::string printArray(size_t size, K *array) {
     std::string result = "[";
@@ -1311,27 +1374,26 @@ std::string printArray(size_t size, K *array) {
     return result + "]";
 }
 
+void printUsageExample(std::ostream& out, const std::string& binary) {
+    out << std::endl;
+    out << "Example usage:" << std::endl;
+    out << "LD_PRELOAD=/path/to/libjemalloc.so " << binary << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63" << std::endl;
+    out << std::endl;
+    out << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)" << std::endl;
+    out << std::endl;
+}
+
 int main(int argc, char **argv) {
-    printUptimeStampForPERF("MAIN_START");
     if (argc == 1) {
-        std::cout << std::endl;
-        std::cout << "Example usage:" << std::endl;
-        std::cout << "LD_PRELOAD=/path/to/libjemalloc.so " << argv[0]
-                  << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
-                  << std::endl;
-        std::cout << std::endl;
-        std::cout
-                << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"
-                << std::endl;
+        printUsageExample(std::cout, argv[0]);
         return 1;
     }
 
+    printUptimeStampForPERF("MAIN_START");
+
     std::cout << "binary=" << argv[0] << std::endl;
 
-    auto p = ParametersParser::parseKeyGeneratorType<test_type>(argc, argv, 1);
-
-    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder = p.first;
-    ParametersParser * parametersParser = p.second;
+    auto [keyGeneratorBuilder, parametersParser] = ParametersParser::parseKeyGeneratorType<test_type>(argc, argv, 1);
 
 
 //    keyGeneratorBuilder = Parameters::parseWorkload<test_type>(argc, argv);
@@ -1466,6 +1528,7 @@ int main(int argc, char **argv) {
 
     //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distributions));
 
+    delete parametersParser;
 
     printUptimeStampForPERF("MAIN_END");
     return 0;

@@ -28,11 +28,18 @@ struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
 
         KeyGeneratorData<K> *data = new KeyGeneratorData<K>(parameters);
 
+
 #pragma omp parallel for
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
+            Distribution *prefillDistribution = parameters->prefill_sequential ? nullptr :
+                                                (new DistributionBuilder())->getDistribution(
+                                                        &rngs[i], maxkeyToGenerate);
+
             keygens[i] = new SimpleKeyGenerator<K>(
                     data,
-                    parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate)
+                    parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
+                    prefillDistribution,
+                    parameters->prefill_sequential
             );
         }
 

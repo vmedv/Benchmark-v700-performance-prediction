@@ -10,6 +10,7 @@
 
 struct SimpleParameters : public Parameters {
     DistributionBuilder *distributionBuilder = new DistributionBuilder();
+    bool prefill_sequential = false;
 
     ~SimpleParameters() {
         delete distributionBuilder;
@@ -22,7 +23,8 @@ struct SimpleParameters : public Parameters {
         params += "DISTRIBUTION                  : " + distributionTypeToString(distributionBuilder->distributionType) +
                   "\n";
         params += distributionBuilder->toStringBuilderParameters();
-
+        if (prefill_sequential)
+            params += "PREFILL TYPE                  : SEQUENTIAL\n";
         return params;
     }
 };
@@ -32,10 +34,9 @@ protected:
     SimpleParameters *localParameters;
 
     virtual void parseArg() {
-        size_t oldPoint = point;
-        localParameters->distributionBuilder->parse(argc, argv, point);
-
-        if (point == oldPoint) {
+        if (strcmp(argv[point], "-prefill-sequential") == 0) {
+            localParameters->prefill_sequential = true;
+        } else if (!localParameters->distributionBuilder->parse(argc, argv, point)) {
             ParametersParser::parseArg();
         }
     }

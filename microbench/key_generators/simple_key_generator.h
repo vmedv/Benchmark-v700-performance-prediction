@@ -14,6 +14,9 @@ private:
     PAD;
     Distribution *distribution;
     KeyGeneratorData<K> *data;
+    Distribution *prefillDistribution;
+    bool prefill_sequential;
+    size_t prefillPointer;
     PAD;
 
     K next() {
@@ -22,8 +25,13 @@ private:
     }
 
 public:
-    SimpleKeyGenerator(KeyGeneratorData<K> *_data, Distribution *_distribution)
-            : data(_data), distribution(_distribution) {}
+    SimpleKeyGenerator(KeyGeneratorData<K> *_data,
+                       Distribution *_distribution,
+                       Distribution *_prefillDistribution,
+                       bool prefill_sequential = false)
+            : data(_data), distribution(_distribution), prefillDistribution(_prefillDistribution),
+              prefill_sequential(prefill_sequential), prefillPointer(0) {
+    }
 
 
     K next_read() {
@@ -43,7 +51,7 @@ public:
     }
 
     K next_prefill() {
-        return next();
+        return data->get(prefill_sequential ? prefillPointer++ : prefillDistribution->next());
     }
 
     ~SimpleKeyGenerator() {
