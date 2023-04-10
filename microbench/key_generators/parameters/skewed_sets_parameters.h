@@ -32,41 +32,25 @@ struct SkewedSetsParameters : public Parameters {
 
         return params;
     }
-};
 
-class SkewedSetsParametersParser : public ParametersParser {
-protected:
-    SkewedSetsParameters *localParameters;
-
-    virtual void parseArg() {
-        if (strcmp(argv[point], "-rs") == 0) {
-            localParameters->READ_HOT_SIZE = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-rp") == 0) {
-            localParameters->READ_HOT_PROB = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-ws") == 0) {
-            localParameters->WRITE_HOT_SIZE = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-wp") == 0) {
-            localParameters->WRITE_HOT_PROB = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-inter") == 0) {
-            localParameters->INTERSECTION = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-write-prefill-only") == 0) {
-            localParameters->writePrefillOnly = true;
+    virtual void parseArg(ParseArgument * args) {
+        if (strcmp(args->getCurrent(), "-rs") == 0) {
+            this->READ_HOT_SIZE = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-rp") == 0) {
+            this->READ_HOT_PROB = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-ws") == 0) {
+            this->WRITE_HOT_SIZE = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-wp") == 0) {
+            this->WRITE_HOT_PROB = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-inter") == 0) {
+            this->INTERSECTION = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-write-prefill-only") == 0) {
+            this->writePrefillOnly = true;
         } else {
-            ParametersParser::parseArg();
+            Parameters::parseArg(args);
         }
 
         //todo with skewed set distributions
-    }
-
-public:
-
-    SkewedSetsParametersParser(size_t _argc, char **_argv, size_t _point = 0) {
-        argc = _argc;
-        argv = _argv;
-        point = _point;
-
-        localParameters = new SkewedSetsParameters();
-        parameters = localParameters;
     }
 };
 

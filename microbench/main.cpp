@@ -81,24 +81,7 @@ const char *PrefillTypeStrings[] = {
 #include "plaf.h"
 #include "common.h"
 
-
 PAD;
-//double INS_FRAC;
-//double DEL_FRAC;
-//double RQ;
-//int RQSIZE;
-//int MAXKEY = 0;
-//int MILLIS_TO_RUN;
-//int DESIRED_PREFILL_SIZE;
-//bool PREFILL;
-//int PREFILL_THREADS;
-//int WORK_THREADS;
-//int RQ_THREADS;
-//int TOTAL_THREADS;
-//double ZIPF_PARAM;
-//PrefillType PREFILL_TYPE;
-//int PREFILL_HYBRID_MIN_MS;
-//int PREFILL_HYBRID_MAX_MS;
 
 Parameters *parameters;
 
@@ -223,8 +206,15 @@ rlu_thread_data_t * rlu_tdata = NULL;
     __RLU_DEINIT_THREAD; \
     g->garbage += garbage;
 
+PAD;
 
+//#include "common.h"
+#include "parameters_parser.h"
+#include "thread_loops/thread_loop_impls.h"
 
+PAD;
+
+//Parameters *parameters;
 
 /******************************************************************************
  * Define global variables to store the numerical IDs of all GSTATS global
@@ -275,9 +265,6 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #define RQS_BETWEEN_TIME_CHECKS 10
 #endif
 
-//enum KeyGeneratorDistribution {
-//    UNIFORM, ZIPF, ZIPF_FAST, SKEWED_SETS, TEMPORARY_SKEWED
-//};
 
 struct globals_t {
     PAD;
@@ -367,8 +354,8 @@ struct globals_t {
 
     ~globals_t() {
         for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-            if (prefillKeygens[i]) {
-                delete prefillKeygens[i];
+            if (keygens[i]) {
+                delete keygens[i];
             }
 
             // (1) double-free
@@ -1005,9 +992,33 @@ void trial(GlobalsT *g) {
 
     // start all threads
     std::thread *threads[MAX_THREADS_POW2];
+    ThreadLoop<GlobalsT> *threadLoops[MAX_THREADS_POW2];
     for (int i = 0; i < parameters->TOTAL_THREADS; ++i) {
         if (i < parameters->WORK_THREADS) {
-            threads[i] = new std::thread(thread_timed<GlobalsT>, g, i);
+//            threads[i] = new std::thread(thread_timed<GlobalsT>, g, i);
+            switch (parameters->threadLoopParameters->threadLoopType) {
+                case ThreadLoopType::DEFAULT: {
+                    threadLoops[i] = new DefaultThreadLoop<GlobalsT>(
+                            g, i,
+                            (DefaultThreadLoopParameters *) parameters->threadLoopParameters
+                    );
+                    threads[i] = new std::thread(
+                            &ThreadLoop<GlobalsT>::run, threadLoops[i]
+                    );
+                }
+                    break;
+                case ThreadLoopType::TEMPORARY_OPERATION: {
+                    threadLoops[i] = new TemporaryOperationThreadLoop<GlobalsT>(
+                            g, i,
+                            (TemporaryOperationThreadLoopParameters *) parameters->threadLoopParameters
+                    );
+                    threads[i] = new std::thread(
+                            &ThreadLoop<GlobalsT>::run, threadLoops[i]
+                    );
+                }
+                    break;
+            }
+
         } else {
             threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);
         }
@@ -1044,6 +1055,7 @@ void trial(GlobalsT *g) {
 
     if (parameters->MILLIS_TO_RUN > 0) {
         nanosleep(&tsExpected, NULL);
+        std::cout << "hello5\n";
         SOFTWARE_BARRIER;
         g->done = true;
         __sync_synchronize();
@@ -1131,7 +1143,7 @@ void printOutput(GlobalsT *g) {
         std::cout << "TOTAL_ACCESSES=" << key_depth_total_cnt__ << '\n';
         std::cout << "TOTAL_AVG_DEPTH=" << (key_depth_total_sum__ / static_cast<double>(key_depth_total_cnt__)) << '\n';
     }
-    std::cout << "KEY_DEPTH_TOTAL_STAT END" << std::endl; 
+    std::cout << "KEY_DEPTH_TOTAL_STAT END" << std::endl;
 #endif
 
 #ifdef KEY_DEPTH_STAT
@@ -1154,7 +1166,7 @@ void printOutput(GlobalsT *g) {
         std::cout << "TOTAL_SEARCH_CNT=" << key_search_total_cnt__ << '\n';
         std::cout << "AVG_SEARCH_ITERS=" << (key_search_total_iters_cnt__ / static_cast<double>(key_search_total_cnt__)) << '\n';
     }
-    std::cout << "KEY_SEARCH_TOTAL_STAT END" << std::endl; 
+    std::cout << "KEY_SEARCH_TOTAL_STAT END" << std::endl;
 #endif
 
 #ifdef USE_TREE_STATS
@@ -1374,12 +1386,16 @@ std::string printArray(size_t size, K *array) {
     return result + "]";
 }
 
-void printUsageExample(std::ostream& out, const std::string& binary) {
+void printUsageExample(std::ostream &out, const std::string &binary) {
     out << std::endl;
     out << "Example usage:" << std::endl;
-    out << "LD_PRELOAD=/path/to/libjemalloc.so " << binary << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63" << std::endl;
+    out << "LD_PRELOAD=/path/to/libjemalloc.so " << binary
+        << " -nwork 64 -nprefill 64 -i 0.05 -d 0.05 -rq 0 -rqsize 1 -k 2000000 -nrq 0 -t 3000 -pin 0-15,32-47,16-31,48-63"
+        << std::endl;
     out << std::endl;
-    out << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)" << std::endl;
+    out
+            << "This command will benchmark the data structure corresponding to this binary with 64 threads repeatedly performing 5% key-inserts and 5% key-deletes and 90% key-searches (and 0% range queries with range query size set to a dummy value of 1 key), on random keys from the key range [0, 2000000), for 3000 ms. The data structure is initially prefilled by 64 threads to contain half of the key range. The -pin argument causes threads to be pinned. The specified thread pinning order is for one particular 64 thread system. (Try running ``lscpu'' and looking at ``NUMA node[0-9]'' for a reasonable pinning order.)"
+            << std::endl;
     out << std::endl;
 }
 
@@ -1393,7 +1409,9 @@ int main(int argc, char **argv) {
 
     std::cout << "binary=" << argv[0] << std::endl;
 
-    auto [keyGeneratorBuilder, parametersParser] = ParametersParser::parseKeyGeneratorType<test_type>(argc, argv, 1);
+    ParseArgument *args = (new ParseArgument(argc, argv))->next();
+
+    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder = ParametersParser::parse<test_type>(args);
 
 
 //    keyGeneratorBuilder = Parameters::parseWorkload<test_type>(argc, argv);
@@ -1401,34 +1419,32 @@ int main(int argc, char **argv) {
     parameters = keyGeneratorBuilder->parameters;
 
     // setup default args
-    parameters->PREFILL_THREADS = 0;
-    parameters->MILLIS_TO_RUN = 1000;
-    parameters->RQ_THREADS = 0;
-    parameters->WORK_THREADS = 4;
-    parameters->RQSIZE = 0;
-    parameters->RQ = 0;
-    parameters->INS_FRAC = 0;
-    parameters->DEL_FRAC = 0;
-    parameters->MAXKEY = 100000;
-    parameters->PREFILL_HYBRID_MIN_MS = 1000;
-    parameters->PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
+//    parameters->PREFILL_THREADS = 0;
+//    parameters->MILLIS_TO_RUN = 1000;
+//    parameters->RQ_THREADS = 0;
+//    parameters->WORK_THREADS = 4;
+//    parameters->RQSIZE = 0;
+//    parameters->RQ = 0;
+//    parameters->INS_FRAC = 0;
+//    parameters->DEL_FRAC = 0;
+//    parameters->MAXKEY = 100000;
+//    parameters->PREFILL_HYBRID_MIN_MS = 1000;
+//    parameters->PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
     // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
-    parameters->DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
+//    parameters->DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
     // to get NO prefilling, set -nprefill 0
 
-
-    parameters->PREFILL_TYPE = PREFILL_MIXED;
+//    parameters->PREFILL_TYPE = PREFILL_MIXED;
 
     // read command line args
     // example args: -i 25 -d 25 -k 10000 -rq 0 -rqsize 1000 -nprefill 8 -t 1000 -nrq 0 -nwork 8
 
 
-    parametersParser->parse();
 
 //    keyGeneratorBuilder = parseParameters(argc, argv);
     KeyGeneratorType keygenType = keyGeneratorBuilder->keyGeneratorType;
 
-    parameters->TOTAL_THREADS = parameters->WORK_THREADS + parameters->RQ_THREADS;
+//    parameters->TOTAL_THREADS = parameters->WORK_THREADS + parameters->RQ_THREADS;
 
 
     // print used args
@@ -1444,80 +1460,8 @@ int main(int argc, char **argv) {
     PRINTS(CPU_FREQ_GHZ);
 
 
-    std::cout<<parameters->toString();
+    std::cout << parameters->toString();
 
-//    printf("KEYGEN_TYPE=%s\n", keyGeneratorTypeToString(keygenType));
-//    switch (keygenType) {
-//        case KeyGeneratorType::SIMPLE_KEYGEN: {
-//            printf("DISTRIBUTION_TYPE=%s\n", distributionTypeToString(SParm->distributionBuilder));
-//
-//            if (SParm->distributionBuilder == DistributionType::ZIPF
-//                || SParm->distributionBuilder == DistributionType::ZIPF_FAST
-//                || SParm->distributionBuilder == DistributionType::MUTABLE_ZIPF) {
-//                PRINTI(SParm->zipf_parm);
-//            }
-//        }
-//            break;
-//        case KeyGeneratorType::CREAKERS_AND_WAVE: {
-//            PRINTI(CWParm->CREAKERS_SIZE);
-//            PRINTI(CWParm->CREAKERS_PROB);
-//            PRINTI(CWParm->CREAKERS_AGE);
-//            PRINTI(CWParm->WAVE_SIZE);
-//            printf("CREAKERS_DISTRIBUTION_TYPE=%s\n", distributionTypeToString(CWParm->creakersDistBuilder));
-//
-//            if (CWParm->creakersDistBuilder == DistributionType::ZIPF
-//                || CWParm->creakersDistBuilder == DistributionType::ZIPF_FAST
-//                || CWParm->creakersDistBuilder == DistributionType::MUTABLE_ZIPF) {
-//                PRINTI(CWParm->creakersZipfParm);
-//            }
-//
-//            printf("WAVE_DISTRIBUTION_TYPE=%s\n", distributionTypeToString(CWParm->waveDistBuilder));
-//            if (CWParm->waveDistBuilder == DistributionType::ZIPF
-//                || CWParm->waveDistBuilder == DistributionType::ZIPF_FAST
-//                || CWParm->waveDistBuilder == DistributionType::MUTABLE_ZIPF) {
-//                PRINTI(CWParm->waveZipfParm);
-//            }
-//        }
-//            break;
-//        case KeyGeneratorType::SKEWED_SETS: {
-//            PRINTI(SkeSParm->READ_HOT_SIZE);
-//            PRINTI(SkeSParm->READ_HOT_PROB);
-//            PRINTI(SkeSParm->WRITE_HOT_SIZE);
-//            PRINTI(SkeSParm->WRITE_HOT_PROB);
-//            PRINTI(SkeSParm->INTERSECTION);
-//        }
-//            break;
-//        case KeyGeneratorType::TEMPORARY_SKEWED: {
-//            PRINTI(TSParm->setCount);
-//            PRINTI(TSParm->hotTime);
-//            PRINTI(TSParm->relaxTime);
-//            printf("SET_SIZES=%s\n", printArray(TSParm->setCount, TSParm->setSizes).c_str());
-//            if (TSParm->isNotShuffle) {
-//                printf("STORAGE MODE=NON_SHUFFLE");
-//                printf("SET_BEGINS=%s\n", printArray(TSParm->setCount, TSParm->setBegins).c_str());
-//            }
-//            printf("HOT_PROBS=%s\n", printArray(TSParm->setCount, TSParm->hotProbs).c_str());
-//            printf("HOT_TIMES=%s\n", printArray(TSParm->setCount, TSParm->hotTimes).c_str());
-//            printf("RELAX_TIMES=%s\n", printArray(TSParm->setCount, TSParm->relaxTimes).c_str());
-//        }
-//            break;
-//    }
-
-//    PRINTI(parameters->MILLIS_TO_RUN);
-//    PRINTI(parameters->INS_FRAC);
-//    PRINTI(parameters->DEL_FRAC);
-//    PRINTI(parameters->RQ);
-//    PRINTI(parameters->RQSIZE);
-//    PRINTI(parameters->MAXKEY);
-//    PRINTI(parameters->PREFILL_THREADS);
-//    PRINTI(parameters->DESIRED_PREFILL_SIZE);
-//    PRINTI(parameters->TOTAL_THREADS);
-//    PRINTI(parameters->WORK_THREADS);
-//    PRINTI(parameters->RQ_THREADS);
-
-//    printf("KEY_GENERATOR_TYPE=%s\n", keyGeneratorTypeToString(keygenType));
-
-//    printf("INS_DEL_FRAC=%.1f %.1f\n", parameters->INS_FRAC, parameters->DEL_FRAC);
     printf("PREFILL_TYPE=%s\n", PrefillTypeStrings[parameters->PREFILL_TYPE]);
     PRINTI(parameters->PREFILL_HYBRID_MIN_MS);
     PRINTI(parameters->PREFILL_HYBRID_MAX_MS);
@@ -1527,8 +1471,6 @@ int main(int argc, char **argv) {
     main_continued_with_globals(new globals_t(parameters->MAXKEY, keyGeneratorBuilder));
 
     //    main_continued_with_globals(new globals_t<ZipfRejectionInversionSampler>(MAXKEY, distributions));
-
-    delete parametersParser;
 
     printUptimeStampForPERF("MAIN_END");
     return 0;

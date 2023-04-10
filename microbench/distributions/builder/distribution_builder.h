@@ -7,6 +7,8 @@
 
 #include "common.h"
 
+#include "parse_argument.h"
+
 struct DistributionBuilder {
     DistributionType distributionType;
     DistributionParameters *parameters = nullptr;
@@ -25,7 +27,7 @@ struct DistributionBuilder {
         return this;
     }
 
-    bool parse(size_t &argc, char **argv, size_t &point);
+    bool parse(ParseArgument * args);
 
     Distribution *getDistribution(Random64 *rng, size_t range);
 
@@ -40,24 +42,21 @@ struct DistributionBuilder {
     }
 
 };
-
 #include "distributions/parameters/distribution_parameters_impls.h"
 
-bool DistributionBuilder::parse(size_t &argc, char **argv, size_t &point) {
-    bool parsed = true;
-    if (strcmp(argv[point], "-dist-zipf") == 0) {
+bool DistributionBuilder::parse(ParseArgument * args) {
+    if (strcmp(args->getCurrent(), "-dist-zipf") == 0) {
         setType(DistributionType::ZIPF);
-        setParameters(new ZipfParameters(atof(argv[++point])));
-    } else if (strcmp(argv[point], "-dist-skewed-sets") == 0) {
+        setParameters(new ZipfParameters(atof(args->getNext())));
+    } else if (strcmp(args->getCurrent(), "-dist-skewed-sets") == 0) {
         setType(DistributionType::SKEWED_SETS);
         //todo add parameters parse
-    } else if (strcmp(argv[point], "-dist-uniform") == 0) {
+    } else if (strcmp(args->getCurrent(), "-dist-uniform") == 0) {
         setType(DistributionType::UNIFORM);
     } else {
-        parsed = false;
+        return false;
     }
-
-    return parsed;
+    return true;
 }
 
 Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) {

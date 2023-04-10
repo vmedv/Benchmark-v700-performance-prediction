@@ -27,29 +27,16 @@ struct SimpleParameters : public Parameters {
             params += "PREFILL TYPE                  : SEQUENTIAL\n";
         return params;
     }
-};
 
-class SimpleParametersParser : public ParametersParser {
-protected:
-    SimpleParameters *localParameters;
 
-    virtual void parseArg() {
-        if (strcmp(argv[point], "-prefill-sequential") == 0) {
-            localParameters->prefill_sequential = true;
-        } else if (!localParameters->distributionBuilder->parse(argc, argv, point)) {
-            ParametersParser::parseArg();
+    virtual void parseArg(ParseArgument * args) {
+        if (strcmp(args->getCurrent(), "-prefill-sequential") == 0) {
+            this->prefill_sequential = true;
+        } else if (!this->distributionBuilder->parse(args)) {
+            Parameters::parseArg(args);
         }
     }
-
-public:
-    SimpleParametersParser(size_t _argc, char **_argv, size_t _point = 0) {
-        argc = _argc;
-        argv = _argv;
-        point = _point;
-
-        localParameters = new SimpleParameters();
-        parameters = localParameters;
-    }
 };
+
 
 #endif //SETBENCH_SIMPLE_PARAMETERS_H
