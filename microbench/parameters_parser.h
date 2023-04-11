@@ -115,10 +115,10 @@ public:
 
 };
 
-#include "key_generators/parameters/key_generator_parameters_impls.h"
+#include "key_generators/key_generator_parameters_impls.h"
 
-#include "key_generators/builder/key_generator_builder_impls.h"
-#include "thread_loops/thread_loop_parameters_impls.h"
+#include "key_generators/key_generator_builder_impls.h"
+#include "thread_loops/thread_loop_builder.h"
 
 template<typename K>
 KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args) {
@@ -127,14 +127,14 @@ KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args)
 
     KeyGeneratorBuilder<K> *keyGeneratorBuilder = nullptr;
     if (strcmp(args->getCurrent(), "-skewed-sets") == 0) {
-        SkewedSetsParameters* parameters = new SkewedSetsParameters();
+        SkewedSetsParameters *parameters = new SkewedSetsParameters();
         keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder<K>(parameters);
     } else if (strcmp(args->getCurrent(), "-creakers-and-wave") == 0) {
         CreakersAndWaveParameters *parameters = new CreakersAndWaveParameters();
         keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder<K>(parameters);
     } else if (strcmp(args->getCurrent(), "-temporary-skewed") == 0
                || strcmp(args->getCurrent(), "-temp-skewed") == 0) {
-        TemporarySkewedParameters* parameters = new TemporarySkewedParameters();
+        TemporarySkewedParameters *parameters = new TemporarySkewedParameters();
         keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<K>(parameters);
     } else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
 //            parameters = new Parameters(_argc, _argv);
@@ -155,8 +155,8 @@ KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args)
 //
 //            keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
     } else {
-        SimpleParameters *parameters = new SimpleParameters();
-        return new SimpleKeyGeneratorBuilder<K>(parameters);
+        DefaultParameters *parameters = new DefaultParameters();
+        return new DefaultKeyGeneratorBuilder<K>(parameters);
     }
 
     args->next();
@@ -169,10 +169,13 @@ KeyGeneratorBuilder<K> *ParametersParser::parseThreadLoop(ParseArgument *args) {
     if (strcmp(args->getCurrent(), "-temp-oper") == 0
         || strcmp(args->getCurrent(), "-temporary-operation") == 0) {
         keyGeneratorBuilder = parseKeyGenerator<K>(args->next());
-        keyGeneratorBuilder->parameters->threadLoopParameters = new TemporaryOperationThreadLoopParameters();
+        keyGeneratorBuilder->parameters->threadLoopBuilder =
+                new ThreadLoopBuilder(new TemporaryOperationThreadLoopParameters());
+//        keyGeneratorBuilder->parameters->threadLoopParameters = new TemporaryOperationThreadLoopParameters();
     } else {
         keyGeneratorBuilder = parseKeyGenerator<K>(args);
-        keyGeneratorBuilder->parameters->threadLoopParameters = new DefaultThreadLoopParameters();
+        keyGeneratorBuilder->parameters->threadLoopBuilder = new ThreadLoopBuilder();
+//        keyGeneratorBuilder->parameters->threadLoopParameters = new DefaultThreadLoopParameters();
     }
     return keyGeneratorBuilder;
 }

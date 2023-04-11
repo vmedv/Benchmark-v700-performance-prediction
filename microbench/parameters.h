@@ -7,7 +7,7 @@
 
 //#include "common.h"
 #include "binding.h"
-#include "thread_loops/thread_loop_parameters.h"
+#include "thread_loops/thread_loop_builder.h"
 
 struct Parameters {
     bool isNonShuffle = false;
@@ -31,7 +31,8 @@ struct Parameters {
 
 //    KeyGeneratorType keygenType;
 
-    ThreadLoopParameters *threadLoopParameters;
+    ThreadLoopBuilder *threadLoopBuilder;
+//    ThreadLoopParameters *threadLoopParameters;
 
     Parameters() {
         this->PREFILL_THREADS = 0;
@@ -57,14 +58,14 @@ struct Parameters {
 
     virtual void build() {
         TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
-        threadLoopParameters->build();
+        threadLoopBuilder->build();
     }
 
     virtual std::string toString() {
         std::string params;
 
         params += "MILLIS_TO_RUN                 : " + std::to_string(MILLIS_TO_RUN) + "\n";
-        params += threadLoopParameters->toString();
+        params += threadLoopBuilder->toString();
 //        params+="INS_FRAC                      : " + std::to_string(INS_FRAC) + "\n";
 //        params+="DEL_FRAC                      : " + std::to_string(DEL_FRAC) + "\n";
 //        params+="RQ                            : " + std::to_string(RQ) + "\n";
@@ -84,16 +85,6 @@ struct Parameters {
     }
 
     virtual void parseArg(ParseArgument *args) {
-//        if (strcmp(args->getCurrent(), "-i") == 0) {
-//            this->INS_FRAC = atof(args->getNext()) * 100;
-//        } else if (strcmp(args->getCurrent(), "-d") == 0) {
-//            this->DEL_FRAC = atof(args->getNext()) * 100;
-//        } else if (strcmp(args->getCurrent(), "-insdel") == 0) {
-//            this->INS_FRAC = atof(args->getNext()) * 100;
-//            this->DEL_FRAC = atof(args->getNext()) * 100;
-//        } else if (strcmp(args->getCurrent(), "-rq") == 0) {
-//            this->RQ = atof(args->getNext());
-//        } else
         if (strcmp(args->getCurrent(), "-rqsize") == 0) {
             this->RQSIZE = atoi(args->getNext());
         } else if (strcmp(args->getCurrent(), "-k") == 0) {
@@ -126,7 +117,7 @@ struct Parameters {
         } else if (strcmp(args->getCurrent(), "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
             binding_parseCustom(args->getNext()); // e.g., "1.2.3.8-11.4-7.0"
             std::cout << "parsed custom binding: " << args->getCurrent() << std::endl;
-        } else if (!this->threadLoopParameters->parseArg(args)) {
+        } else if (!this->threadLoopBuilder->parseArg(args)) {
             std::cout << "bad argument: " << args->getCurrent() << "\nindex: " << args->pointer << std::endl;
             exit(1);
         }

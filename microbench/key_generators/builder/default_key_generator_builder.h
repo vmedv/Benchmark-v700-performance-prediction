@@ -2,18 +2,18 @@
 // Created by Ravil Galiev on 10.02.2023.
 //
 
-#ifndef SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
-#define SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
+#ifndef SETBENCH_DEFAULT_KEY_GENERATOR_BUILDER_H
+#define SETBENCH_DEFAULT_KEY_GENERATOR_BUILDER_H
 
 #include "errors.h"
 #include "plaf.h"
 #include "common.h"
 
 template<typename K>
-struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
-    SimpleParameters *parameters;
+struct DefaultKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
+    DefaultParameters *parameters;
 
-    SimpleKeyGeneratorBuilder(SimpleParameters *_parameters)
+    DefaultKeyGeneratorBuilder(DefaultParameters *_parameters)
             : KeyGeneratorBuilder<K>(_parameters), parameters(_parameters) {
         this->keyGeneratorType = KeyGeneratorType::SIMPLE_KEYGEN;
     }
@@ -35,7 +35,7 @@ struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
                                                 (new DistributionBuilder())->getDistribution(
                                                         &rngs[i], maxkeyToGenerate);
 
-            keygens[i] = new SimpleKeyGenerator<K>(
+            keygens[i] = new DefaultKeyGenerator<K>(
                     data,
                     parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
                     prefillDistribution,
@@ -49,4 +49,4 @@ struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
 
 };
 
-#endif //SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
+#endif //SETBENCH_DEFAULT_KEY_GENERATOR_BUILDER_H

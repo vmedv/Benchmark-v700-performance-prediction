@@ -2,17 +2,17 @@
 // Created by Ravil Galiev on 02.09.2022.
 //
 
-#ifndef SETBENCH_SIMPLE_PARAMETERS_H
-#define SETBENCH_SIMPLE_PARAMETERS_H
+#ifndef SETBENCH_DEFAULT_PARAMETERS_H
+#define SETBENCH_DEFAULT_PARAMETERS_H
 
 #include "common.h"
 //#include "builder/distribution_builder.h"
 
-struct SimpleParameters : public Parameters {
+struct DefaultParameters : public Parameters {
     DistributionBuilder *distributionBuilder = new DistributionBuilder();
     bool prefill_sequential = false;
 
-    ~SimpleParameters() {
+    ~DefaultParameters() {
         delete distributionBuilder;
     }
 
@@ -39,4 +39,4 @@ struct SimpleParameters : public Parameters {
 };
 
 
-#endif //SETBENCH_SIMPLE_PARAMETERS_H
+#endif //SETBENCH_DEFAULT_PARAMETERS_H

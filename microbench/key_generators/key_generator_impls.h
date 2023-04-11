@@ -6,7 +6,7 @@
 #define SETBENCH_KEY_GENERATOR_IMPLS_H
 
 #include "impls/creakers_and_wave_key_generator.h"
-#include "impls/simple_key_generator.h"
+#include "impls/default_key_generator.h"
 #include "impls/skewed_sets_key_generator.h"
 #include "impls/temporary_skewed_key_generator.h"
 

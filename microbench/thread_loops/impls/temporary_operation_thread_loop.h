@@ -53,7 +53,7 @@ public:
             test_type key;
 
 //            double op = g->rngs[tid].next(100000000) / 1000000.;
-            double op = g->rngs[tid].next() / (double) g->rngs[tid].max_value;
+            double op = g->rngs[tid].nextDouble();
             if (op < cdf[pointer][0]) { // insert
                 key = g->keygens[tid]->next_insert();
 

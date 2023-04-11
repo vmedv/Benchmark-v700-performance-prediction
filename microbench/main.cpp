@@ -79,13 +79,7 @@ const char *PrefillTypeStrings[] = {
 // some read-only globals (could be encapsulated in a struct and passed around to improve software engineering)
 
 #include "plaf.h"
-#include "common.h"
 
-PAD;
-
-Parameters *parameters;
-
-PAD;
 
 #include "globals_extern.h"
 #include "random_xoshiro256p.h"
@@ -152,39 +146,49 @@ rlu_thread_data_t * rlu_tdata = NULL;
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
 
-#define THREAD_MEASURED_PRE \
-    tid = __tid; \
-    binding_bindThread(tid); \
-    test_type garbage = 0; \
-    test_type * rqResultKeys = new test_type[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
-    VALUE_TYPE * rqResultValues = new VALUE_TYPE[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
-    __RLU_INIT_THREAD; \
-    __RCU_INIT_THREAD; \
-    g->dsAdapter->initThread(tid); \
-    papi_create_eventset(tid); \
-    __sync_fetch_and_add(&g->running, 1); \
-    __sync_synchronize(); \
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } \
-    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
-    papi_start_counters(tid); \
-    int cnt = 0; \
-    int rq_cnt = 0; \
-    DURATION_START(tid);
 
-#define THREAD_MEASURED_POST \
-    __sync_fetch_and_add(&g->running, -1); \
-    DURATION_END(tid, duration_all_ops); \
-    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
-    SOFTWARE_BARRIER; \
-    papi_stop_counters(tid); \
-    SOFTWARE_BARRIER; \
-    while (g->running) { SOFTWARE_BARRIER; } \
-    g->dsAdapter->deinitThread(tid); \
-    __RCU_DEINIT_THREAD; \
-    __RLU_DEINIT_THREAD; \
-    delete[] rqResultKeys; \
-    delete[] rqResultValues; \
-    g->garbage += garbage;
+#include "common.h"
+
+PAD;
+
+Parameters *parameters;
+
+PAD;
+
+
+//#define THREAD_MEASURED_PRE \
+//    tid = __tid; \
+//    binding_bindThread(tid); \
+//    test_type garbage = 0; \
+//    test_type * rqResultKeys = new test_type[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
+//    VALUE_TYPE * rqResultValues = new VALUE_TYPE[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
+//    __RLU_INIT_THREAD; \
+//    __RCU_INIT_THREAD; \
+//    g->dsAdapter->initThread(tid); \
+//    papi_create_eventset(tid); \
+//    __sync_fetch_and_add(&g->running, 1); \
+//    __sync_synchronize(); \
+//    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } \
+//    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
+//    papi_start_counters(tid); \
+//    int cnt = 0; \
+//    int rq_cnt = 0; \
+//    DURATION_START(tid);
+//
+//#define THREAD_MEASURED_POST \
+//    __sync_fetch_and_add(&g->running, -1); \
+//    DURATION_END(tid, duration_all_ops); \
+//    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
+//    SOFTWARE_BARRIER; \
+//    papi_stop_counters(tid); \
+//    SOFTWARE_BARRIER; \
+//    while (g->running) { SOFTWARE_BARRIER; } \
+//    g->dsAdapter->deinitThread(tid); \
+//    __RCU_DEINIT_THREAD; \
+//    __RLU_DEINIT_THREAD; \
+//    delete[] rqResultKeys; \
+//    delete[] rqResultValues; \
+//    g->garbage += garbage;
 
 #define THREAD_PREFILL_PRE \
     tid = __tid; \
@@ -370,79 +374,79 @@ struct globals_t {
 };
 
 
-template<class GlobalsT>
-void thread_timed(GlobalsT *g, int __tid) {
-    THREAD_MEASURED_PRE;
-    int tid = __tid;
-    while (!g->done) {
-        ++cnt;
-        VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
-        test_type key;
-        double op = g->rngs[tid].next(100000000) / 1000000.;
-        if (op < parameters->INS_FRAC) {
-            key = g->keygens[tid]->next_insert();
-
-            TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
-            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
-                GSTATS_ADD(tid, key_checksum, key);
-                // GSTATS_ADD(tid, size_checksum, 1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-            }
-            GSTATS_ADD(tid, num_inserts, 1);
-        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC) {
-            key = g->keygens[tid]->next_erase();
-            TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
-                GSTATS_ADD(tid, key_checksum, -key);
-                // GSTATS_ADD(tid, size_checksum, -1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-            }
-            GSTATS_ADD(tid, num_deletes, 1);
-        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC + parameters->RQ) {
-            test_type leftKey = g->keygens[tid]->next_range();
-            test_type rightKey = g->keygens[tid]->next_range();
-            if (leftKey > rightKey) {
-                std::swap(leftKey, rightKey);
-            }
-            ++rq_cnt;
-            size_t rqcnt;
-            if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
-                                                  (VALUE_TYPE*) rqResultValues))) {
-                garbage += rqResultKeys[0] +
-                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-            }
-            GSTATS_ADD(tid, num_rq, 1);
-
-//            // TODO: make this respect KeyGenerators for non-uniform distributions
-//            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-//            assert(_key >= 1);
-//            assert(_key <= MAXKEY);
-//            assert(_key <= std::max(1, MAXKEY - RQSIZE));
-//            assert(MAXKEY > RQSIZE || _key == 0);
-//            key = (test_type) _key;
+//template<class GlobalsT>
+//void thread_timed(GlobalsT *g, int __tid) {
+//    THREAD_MEASURED_PRE;
+//    int tid = __tid;
+//    while (!g->done) {
+//        ++cnt;
+//        VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
+//        test_type key;
+//        double op = g->rngs[tid].next(100000000) / 1000000.;
+//        if (op < parameters->INS_FRAC) {
+//            key = g->keygens[tid]->next_insert();
+//
+//            TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
+//            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
+//                TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
+//                GSTATS_ADD(tid, key_checksum, key);
+//                // GSTATS_ADD(tid, size_checksum, 1);
+//            } else {
+//                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
+//            }
+//            GSTATS_ADD(tid, num_inserts, 1);
+//        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC) {
+//            key = g->keygens[tid]->next_erase();
+//            TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
+//            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
+//                TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
+//                GSTATS_ADD(tid, key_checksum, -key);
+//                // GSTATS_ADD(tid, size_checksum, -1);
+//            } else {
+//                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
+//            }
+//            GSTATS_ADD(tid, num_deletes, 1);
+//        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC + parameters->RQ) {
+//            test_type leftKey = g->keygens[tid]->next_range();
+//            test_type rightKey = g->keygens[tid]->next_range();
+//            if (leftKey > rightKey) {
+//                std::swap(leftKey, rightKey);
+//            }
 //            ++rq_cnt;
 //            size_t rqcnt;
-//            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+//            if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
 //                                                  (VALUE_TYPE*) rqResultValues))) {
 //                garbage += rqResultKeys[0] +
 //                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
 //            }
 //            GSTATS_ADD(tid, num_rq, 1);
-        } else {
-            key = g->keygens[tid]->next_read();
-            if (g->dsAdapter->contains(tid, key)) {
-                garbage += key; // prevent optimizing out
-            }
-            GSTATS_ADD(tid, num_searches, 1);
-        }
-        // GSTATS_ADD(tid, num_operations, 1);
-    }
-    THREAD_MEASURED_POST;
-}
+//
+////            // TODO: make this respect KeyGenerators for non-uniform distributions
+////            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
+////            assert(_key >= 1);
+////            assert(_key <= MAXKEY);
+////            assert(_key <= std::max(1, MAXKEY - RQSIZE));
+////            assert(MAXKEY > RQSIZE || _key == 0);
+////            key = (test_type) _key;
+////            ++rq_cnt;
+////            size_t rqcnt;
+////            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
+////                                                  (VALUE_TYPE*) rqResultValues))) {
+////                garbage += rqResultKeys[0] +
+////                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
+////            }
+////            GSTATS_ADD(tid, num_rq, 1);
+//        } else {
+//            key = g->keygens[tid]->next_read();
+//            if (g->dsAdapter->contains(tid, key)) {
+//                garbage += key; // prevent optimizing out
+//            }
+//            GSTATS_ADD(tid, num_searches, 1);
+//        }
+//        // GSTATS_ADD(tid, num_operations, 1);
+//    }
+//    THREAD_MEASURED_POST;
+//}
 
 template<class GlobalsT>
 void thread_rq(GlobalsT *g, int __tid) {
@@ -866,7 +870,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     }
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
-        expectedSize = ((CreakersAndWaveKeyGenerator<test_type> *) g->keygens[0])->data->prefillSize;
+        expectedSize = ((CreakersAndWaveKeyGenerator <test_type> *) g->keygens[0])->data->prefillSize;
     }
 
     if (expectedSize == -1) {
@@ -940,7 +944,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
       */
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
-        CreakersAndWaveKeyGenerator<test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator<test_type> *>(g->keygens[0]);
+        CreakersAndWaveKeyGenerator <test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator <test_type> *>(g->keygens[0]);
         int creakersAge = keygen->data->parameters->CREAKERS_AGE;
         for (int i = 0; i < creakersAge; ++i) {
             test_type key = keygen->next_warming();
@@ -996,28 +1000,27 @@ void trial(GlobalsT *g) {
     for (int i = 0; i < parameters->TOTAL_THREADS; ++i) {
         if (i < parameters->WORK_THREADS) {
 //            threads[i] = new std::thread(thread_timed<GlobalsT>, g, i);
-            switch (parameters->threadLoopParameters->threadLoopType) {
-                case ThreadLoopType::DEFAULT: {
-                    threadLoops[i] = new DefaultThreadLoop<GlobalsT>(
-                            g, i,
-                            (DefaultThreadLoopParameters *) parameters->threadLoopParameters
-                    );
-                    threads[i] = new std::thread(
-                            &ThreadLoop<GlobalsT>::run, threadLoops[i]
-                    );
-                }
-                    break;
-                case ThreadLoopType::TEMPORARY_OPERATION: {
-                    threadLoops[i] = new TemporaryOperationThreadLoop<GlobalsT>(
-                            g, i,
-                            (TemporaryOperationThreadLoopParameters *) parameters->threadLoopParameters
-                    );
-                    threads[i] = new std::thread(
-                            &ThreadLoop<GlobalsT>::run, threadLoops[i]
-                    );
-                }
-                    break;
-            }
+//            switch (parameters->threadLoopParameters->threadLoopType) {
+//                case ThreadLoopType::DEFAULT: {
+//                    threadLoops[i] = new DefaultThreadLoop<GlobalsT>(
+//                            g, i,
+//                            (DefaultThreadLoopParameters *) parameters->threadLoopParameters
+//                    );
+//                }
+//                    break;
+//                case ThreadLoopType::TEMPORARY_OPERATION: {
+//                    threadLoops[i] = new TemporaryOperationThreadLoop<GlobalsT>(
+//                            g, i,
+//                            (TemporaryOperationThreadLoopParameters *) parameters->threadLoopParameters
+//                    );
+//                }
+//                    break;
+//            }
+
+            threadLoops[i] = parameters->threadLoopBuilder->getThreadLoop<GlobalsT>(g, i);
+            threads[i] = new std::thread(
+                    &ThreadLoop<GlobalsT>::run, threadLoops[i]
+            );
 
         } else {
             threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);

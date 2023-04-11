@@ -13,7 +13,7 @@ struct DistributionBuilder {
     DistributionType distributionType;
     DistributionParameters *parameters = nullptr;
 
-    DistributionBuilder() : distributionType(DistributionType::UNIFORM) {};
+    DistributionBuilder() : distributionType(DistributionType::UNIFORM) {}
 
     DistributionBuilder(DistributionType _distributionType) : distributionType(_distributionType) {}
 
@@ -42,7 +42,7 @@ struct DistributionBuilder {
     }
 
 };
-#include "distributions/parameters/distribution_parameters_impls.h"
+#include "distributions/distribution_parameters_impls.h"
 
 bool DistributionBuilder::parse(ParseArgument * args) {
     if (strcmp(args->getCurrent(), "-dist-zipf") == 0) {

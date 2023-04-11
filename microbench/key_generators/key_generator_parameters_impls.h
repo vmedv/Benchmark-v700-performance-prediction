@@ -5,9 +5,9 @@
 #ifndef SETBENCH_KEY_GENERATOR_PARAMETERS_IMPLS_H
 #define SETBENCH_KEY_GENERATOR_PARAMETERS_IMPLS_H
 
-#include "creakers_and_wave_parameters.h"
-#include "simple_parameters.h"
-#include "skewed_sets_parameters.h"
-#include "temporary_skewed_parameters.h"
+#include "parameters/creakers_and_wave_parameters.h"
+#include "parameters/default_parameters.h"
+#include "parameters/skewed_sets_parameters.h"
+#include "parameters/temporary_skewed_parameters.h"
 
 #endif //SETBENCH_KEY_GENERATOR_PARAMETERS_IMPLS_H

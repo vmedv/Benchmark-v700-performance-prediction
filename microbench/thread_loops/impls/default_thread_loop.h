@@ -25,8 +25,6 @@ public:
     }
 
     virtual void run() {
-        std::cout << "def_hello\n";
-
         THREAD_MEASURED_PRE;
         while (!g->done) {
             ++cnt;
