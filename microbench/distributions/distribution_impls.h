@@ -7,6 +7,6 @@
 
 #include "impls/zipf_distribution.h"
 #include "impls/uniform_distribution.h"
-#include "impls/skewed_sets_distribution.h"
+#include "impls/skewed_uniform_distribution.h"
 
 #endif //SETBENCH_DISTRIBUTION_IMPLS_H

@@ -11,9 +11,8 @@
 template<class GlobalsT>
 class TemporaryOperationThreadLoop : public ThreadLoop<GlobalsT> {
 private:
-    int __tid;
     double **cdf;
-    GlobalsT *g;
+
     TemporaryOperationThreadLoopParameters *loopParameters;
 
     size_t time;
@@ -32,7 +31,7 @@ private:
 
 public:
     TemporaryOperationThreadLoop(GlobalsT *_g, int _tid, TemporaryOperationThreadLoopParameters *threadLoopParameters)
-            : g(_g), __tid(_tid), loopParameters(threadLoopParameters) {
+            : ThreadLoop<GlobalsT>(_g, _tid, threadLoopParameters->RQ_RANGE), loopParameters(threadLoopParameters) {
         cdf = new double *[threadLoopParameters->tempOperCount];
         time = 0;
         pointer = 0;
@@ -46,19 +45,19 @@ public:
 
     virtual void run() {
         THREAD_MEASURED_PRE;
-        while (!g->done) {
+        while (!this->g->done) {
             update_pointer();
             ++cnt;
             VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
             test_type key;
 
 //            double op = g->rngs[tid].next(100000000) / 1000000.;
-            double op = g->rngs[tid].nextDouble();
+            double op = this->g->rngs[tid].nextDouble();
             if (op < cdf[pointer][0]) { // insert
-                key = g->keygens[tid]->next_insert();
+                key = this->g->keygens[tid]->next_insert();
 
                 TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
-                if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
+                if (this->g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == this->g->dsAdapter->getNoValue()) {
                     TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
                     GSTATS_ADD(tid, key_checksum, key);
                     // GSTATS_ADD(tid, size_checksum, 1);
@@ -67,9 +66,9 @@ public:
                 }
                 GSTATS_ADD(tid, num_inserts, 1);
             } else if (op < cdf[pointer][1]) { // erase
-                key = g->keygens[tid]->next_erase();
+                key = this->g->keygens[tid]->next_erase();
                 TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-                if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
+                if (this->g->dsAdapter->erase(tid, key) != this->g->dsAdapter->getNoValue()) {
                     TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
                     GSTATS_ADD(tid, key_checksum, -key);
                     // GSTATS_ADD(tid, size_checksum, -1);
@@ -78,22 +77,22 @@ public:
                 }
                 GSTATS_ADD(tid, num_deletes, 1);
             } else if (op < cdf[pointer][2]) { // range query
-                test_type leftKey = g->keygens[tid]->next_range();
-                test_type rightKey = g->keygens[tid]->next_range();
+                test_type leftKey = this->g->keygens[tid]->next_range();
+                test_type rightKey = this->g->keygens[tid]->next_range();
                 if (leftKey > rightKey) {
                     std::swap(leftKey, rightKey);
                 }
                 ++rq_cnt;
                 size_t rqcnt;
-                if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
+                if ((rqcnt = this->g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
                                                       (VALUE_TYPE*) rqResultValues))) {
                     garbage += rqResultKeys[0] +
                                rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
                 }
                 GSTATS_ADD(tid, num_rq, 1);
             } else { // read
-                key = g->keygens[tid]->next_read();
-                if (g->dsAdapter->contains(tid, key)) {
+                key = this->g->keygens[tid]->next_read();
+                if (this->g->dsAdapter->contains(tid, key)) {
                     garbage += key; // prevent optimizing out
                 }
                 GSTATS_ADD(tid, num_searches, 1);

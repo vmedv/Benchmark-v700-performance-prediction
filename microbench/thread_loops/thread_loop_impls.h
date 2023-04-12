@@ -6,6 +6,7 @@
 #define SETBENCH_THREAD_LOOP_IMPLS_H
 
 #include "thread_loop.h"
+#include "impls/RQ_thread_loop.h"
 #include "impls/default_thread_loop.h"
 #include "impls/temporary_operation_thread_loop.h"
 

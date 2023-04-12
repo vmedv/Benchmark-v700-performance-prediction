@@ -194,7 +194,7 @@ PAD;
     tid = __tid; \
     binding_bindThread(tid); \
     test_type garbage = 0; \
-    double insProbability = (parameters->INS_FRAC > 0 ? 100*parameters->INS_FRAC/(parameters->INS_FRAC+parameters->DEL_FRAC) : 50.); \
+    double insProbability = 50. /* TODO: (parameters->INS_FRAC > 0 ? 100*parameters->INS_FRAC/(parameters->INS_FRAC+parameters->DEL_FRAC) : 50.); */ \
     __RLU_INIT_THREAD; \
     __RCU_INIT_THREAD; \
     g->dsAdapter->initThread(tid); \
@@ -373,118 +373,6 @@ struct globals_t {
     }
 };
 
-
-//template<class GlobalsT>
-//void thread_timed(GlobalsT *g, int __tid) {
-//    THREAD_MEASURED_PRE;
-//    int tid = __tid;
-//    while (!g->done) {
-//        ++cnt;
-//        VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
-//        test_type key;
-//        double op = g->rngs[tid].next(100000000) / 1000000.;
-//        if (op < parameters->INS_FRAC) {
-//            key = g->keygens[tid]->next_insert();
-//
-//            TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
-//            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
-//                TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
-//                GSTATS_ADD(tid, key_checksum, key);
-//                // GSTATS_ADD(tid, size_checksum, 1);
-//            } else {
-//                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-//            }
-//            GSTATS_ADD(tid, num_inserts, 1);
-//        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC) {
-//            key = g->keygens[tid]->next_erase();
-//            TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-//            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
-//                TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
-//                GSTATS_ADD(tid, key_checksum, -key);
-//                // GSTATS_ADD(tid, size_checksum, -1);
-//            } else {
-//                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-//            }
-//            GSTATS_ADD(tid, num_deletes, 1);
-//        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC + parameters->RQ) {
-//            test_type leftKey = g->keygens[tid]->next_range();
-//            test_type rightKey = g->keygens[tid]->next_range();
-//            if (leftKey > rightKey) {
-//                std::swap(leftKey, rightKey);
-//            }
-//            ++rq_cnt;
-//            size_t rqcnt;
-//            if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
-//                                                  (VALUE_TYPE*) rqResultValues))) {
-//                garbage += rqResultKeys[0] +
-//                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-//            }
-//            GSTATS_ADD(tid, num_rq, 1);
-//
-////            // TODO: make this respect KeyGenerators for non-uniform distributions
-////            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-////            assert(_key >= 1);
-////            assert(_key <= MAXKEY);
-////            assert(_key <= std::max(1, MAXKEY - RQSIZE));
-////            assert(MAXKEY > RQSIZE || _key == 0);
-////            key = (test_type) _key;
-////            ++rq_cnt;
-////            size_t rqcnt;
-////            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
-////                                                  (VALUE_TYPE*) rqResultValues))) {
-////                garbage += rqResultKeys[0] +
-////                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-////            }
-////            GSTATS_ADD(tid, num_rq, 1);
-//        } else {
-//            key = g->keygens[tid]->next_read();
-//            if (g->dsAdapter->contains(tid, key)) {
-//                garbage += key; // prevent optimizing out
-//            }
-//            GSTATS_ADD(tid, num_searches, 1);
-//        }
-//        // GSTATS_ADD(tid, num_operations, 1);
-//    }
-//    THREAD_MEASURED_POST;
-//}
-
-template<class GlobalsT>
-void thread_rq(GlobalsT *g, int __tid) {
-    THREAD_MEASURED_PRE;
-    while (!g->done) {
-        test_type leftKey = g->keygens[tid]->next_range();
-        test_type rightKey = g->keygens[tid]->next_range();
-        if (leftKey > rightKey) {
-            std::swap(leftKey, rightKey);
-        }
-
-        size_t rqcnt;
-        if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
-                                              (VALUE_TYPE*) rqResultValues))) {
-            garbage += rqResultKeys[0] +
-                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-        }
-//
-//        // TODO: make this respect KeyGenerators for non-uniform distributions
-//        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-//        assert(_key >= 1);
-//        assert(_key <= MAXKEY);
-//        assert(_key <= std::max(1, MAXKEY - RQSIZE));
-//        assert(MAXKEY > RQSIZE || _key == 0);
-//        test_type key = (test_type) _key;
-//        size_t rqcnt;
-//        TIMELINE_START(tid);
-//        if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
-//                                              (VALUE_TYPE*) rqResultValues))) {
-//            garbage += rqResultKeys[0] +
-//                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-//        }
-        TIMELINE_END(tid, "RQThreadOperation");
-        GSTATS_ADD(tid, num_rq, 1);
-        GSTATS_ADD(tid, num_operations, 1);
-    }
-    THREAD_MEASURED_POST;
-}
 
 template<class GlobalsT>
 void thread_prefill_with_updates(GlobalsT *g, int __tid) {
@@ -870,15 +758,20 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
     }
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
-        expectedSize = ((CreakersAndWaveKeyGenerator <test_type> *) g->keygens[0])->data->prefillSize;
+        expectedSize = ((CreakersAndWaveKeyGenerator<test_type> *) g->keygens[0])->data->prefillSize;
     }
 
     if (expectedSize == -1) {
-        const double expectedFullness = (parameters->INS_FRAC + parameters->DEL_FRAC ? parameters->INS_FRAC /
-                                                                                       (double) (parameters->INS_FRAC +
-                                                                                                 parameters->DEL_FRAC)
-                                                                                     : 0.5); // percent full in expectation
-        expectedSize = (int64_t) (parameters->MAXKEY * expectedFullness);
+        if (parameters->threadLoopBuilder->threadLoopType == ThreadLoopType::DEFAULT) {
+            DefaultThreadLoopParameters *parameters1 =
+                    (DefaultThreadLoopParameters *) parameters->threadLoopBuilder->threadLoopParameters;
+            const double expectedFullness = (
+                    parameters1->INS_FRAC + parameters1->DEL_FRAC
+                    ? parameters1->INS_FRAC / (double) (parameters1->INS_FRAC + parameters1->DEL_FRAC)
+                    : 0.5
+            ); // percent full in expectation
+            expectedSize = (int64_t) (parameters->MAXKEY * expectedFullness);
+        }
     }
 
     // prefill data structure to mimic its structure in the steady state
@@ -944,7 +837,7 @@ void createAndPrefillDataStructure(GlobalsT *g, int64_t expectedSize) {
       */
 
     if (g->keygenType == KeyGeneratorType::CREAKERS_AND_WAVE) {
-        CreakersAndWaveKeyGenerator <test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator <test_type> *>(g->keygens[0]);
+        CreakersAndWaveKeyGenerator<test_type> *keygen = static_cast<CreakersAndWaveKeyGenerator<test_type> *>(g->keygens[0]);
         int creakersAge = keygen->data->parameters->CREAKERS_AGE;
         for (int i = 0; i < creakersAge; ++i) {
             test_type key = keygen->next_warming();
@@ -1023,7 +916,9 @@ void trial(GlobalsT *g) {
             );
 
         } else {
-            threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);
+//            threads[i] = new std::thread(thread_rq<GlobalsT>, g, i);
+            threadLoops[i] = new RQThreadLoop<GlobalsT>(g, i, parameters->MAXKEY);
+            threads[i] = new std::thread(&ThreadLoop<GlobalsT>::run, threadLoops[i]);
         }
     }
 

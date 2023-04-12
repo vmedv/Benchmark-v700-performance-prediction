@@ -6,7 +6,7 @@
 #define SETBENCH_DISTRIBUTION_H
 
 enum class DistributionType {
-    UNIFORM, ZIPF, SKEWED_SETS
+    UNIFORM, ZIPF, SKEWED_UNIFORM
 };
 
 std::string distributionTypeToString(DistributionType distributionType) {
@@ -15,7 +15,7 @@ std::string distributionTypeToString(DistributionType distributionType) {
             return "UNIFORM";
         case DistributionType::ZIPF:
             return "ZIPF";
-        case DistributionType::SKEWED_SETS:
+        case DistributionType::SKEWED_UNIFORM:
             return "SKEWED_SETS";
     }
 }

@@ -9,7 +9,7 @@
 #include "thread_loop.h"
 
 struct ThreadLoopParameters {
-    int RQSIZE;
+    int RQ_RANGE;
     ThreadLoopType threadLoopType = ThreadLoopType::DEFAULT;
 
     ThreadLoopParameters() = default;

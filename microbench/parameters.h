@@ -12,9 +12,9 @@
 struct Parameters {
     bool isNonShuffle = false;
 
-    double INS_FRAC;
-    double DEL_FRAC;
-    double RQ;
+//    double INS_FRAC;
+//    double DEL_FRAC;
+//    double RQ;
     int RQSIZE;
     int MAXKEY = 0;
     int MILLIS_TO_RUN;
@@ -40,14 +40,14 @@ struct Parameters {
         this->RQ_THREADS = 0;
         this->WORK_THREADS = 4;
         this->RQSIZE = 0;
-        this->RQ = 0;
-        this->INS_FRAC = 0;
-        this->DEL_FRAC = 0;
+//        this->RQ = 0;
+//        this->INS_FRAC = 0;
+//        this->DEL_FRAC = 0;
         this->MAXKEY = 100000;
         this->PREFILL_HYBRID_MIN_MS = 1000;
         this->PREFILL_HYBRID_MAX_MS = 300000; // 5 minutes
         // note: DESIRED_PREFILL_SIZE is mostly useful for prefilling with in non-uniform distributions, to get sparse key spaces of a particular size
-        this->DESIRED_PREFILL_SIZE = -1;  // note: -1 means "use whatever would be expected in the steady state"
+        this->DESIRED_PREFILL_SIZE = 0;  // note: -1 means "use whatever would be expected in the steady state"
         // to get NO prefilling, set -nprefill 0
 
 
@@ -87,8 +87,10 @@ struct Parameters {
     virtual void parseArg(ParseArgument *args) {
         if (strcmp(args->getCurrent(), "-rqsize") == 0) {
             this->RQSIZE = atoi(args->getNext());
+            this->threadLoopBuilder->threadLoopParameters->RQ_RANGE = this->RQSIZE;
         } else if (strcmp(args->getCurrent(), "-k") == 0) {
             this->MAXKEY = atoi(args->getNext());
+            this->threadLoopBuilder->threadLoopParameters->RQ_RANGE = this->MAXKEY;
             if (this->MAXKEY < 1) {
                 setbench_error("key range cannot contain fewer than 1 key");
             }

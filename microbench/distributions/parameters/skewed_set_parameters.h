@@ -7,17 +7,17 @@
 
 #include "common.h"
 
-struct SkewedSetParameters : public DistributionParameters {
+struct SkewedUniformParameters : public DistributionParameters {
     double hotSize;
     double hotProb;
 
     DistributionBuilder * hotDistBuilder;
     DistributionBuilder * coldDistBuilder;
 
-    SkewedSetParameters(double _hotSize, double _hotProb) : hotSize(_hotSize), hotProb(_hotProb) {}
+    SkewedUniformParameters(double _hotSize, double _hotProb) : hotSize(_hotSize), hotProb(_hotProb) {}
 
     int getHotLength(int range) {
-        return (int) range * hotSize;
+        return (int) (range * hotSize);
     }
 
     int getColdLength(int range) {

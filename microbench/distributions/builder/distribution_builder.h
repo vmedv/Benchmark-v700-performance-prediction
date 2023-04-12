@@ -48,8 +48,8 @@ bool DistributionBuilder::parse(ParseArgument * args) {
     if (strcmp(args->getCurrent(), "-dist-zipf") == 0) {
         setType(DistributionType::ZIPF);
         setParameters(new ZipfParameters(atof(args->getNext())));
-    } else if (strcmp(args->getCurrent(), "-dist-skewed-sets") == 0) {
-        setType(DistributionType::SKEWED_SETS);
+    } else if (strcmp(args->getCurrent(), "-dist-skewed-uniform") == 0) {
+        setType(DistributionType::SKEWED_UNIFORM);
         //todo add parameters parse
     } else if (strcmp(args->getCurrent(), "-dist-uniform") == 0) {
         setType(DistributionType::UNIFORM);
@@ -65,9 +65,9 @@ Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) 
             return new UniformDistribution(rng, range);
         case DistributionType::ZIPF:
             return new ZipfDistribution(rng, ((ZipfParameters *) parameters)->alpha, range);
-        case DistributionType::SKEWED_SETS:
-            SkewedSetParameters *skewedSetParameters = (SkewedSetParameters *) parameters;
-            return new SkewedSetsDistribution(
+        case DistributionType::SKEWED_UNIFORM:
+            SkewedUniformParameters *skewedSetParameters = (SkewedUniformParameters *) parameters;
+            return new SkewedUniformDistribution(
                     skewedSetParameters->hotDistBuilder->
                             getDistribution(rng, skewedSetParameters->getHotLength(range)),
                     skewedSetParameters->coldDistBuilder->

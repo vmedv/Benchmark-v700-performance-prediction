@@ -2,8 +2,8 @@
 // Created by Ravil Galiev on 30.08.2022.
 //
 
-#ifndef SETBENCH_SKEWED_SETS_DISTRIBUTION_H
-#define SETBENCH_SKEWED_SETS_DISTRIBUTION_H
+#ifndef SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H
+#define SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H
 
 #include <algorithm>
 #include <cassert>
@@ -11,7 +11,7 @@
 #include "plaf.h"
 #include "distributions/distribution.h"
 
-class SkewedSetsDistribution : public Distribution {
+class SkewedUniformDistribution: public Distribution {
 private:
     PAD;
     Random64 *rng;
@@ -21,8 +21,8 @@ private:
     size_t hotSetLength;
     PAD;
 public:
-    SkewedSetsDistribution(Distribution *_hotDistribution, Distribution *_coldDistribution,
-                           Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
+    SkewedUniformDistribution(Distribution *_hotDistribution, Distribution *_coldDistribution,
+                              Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
             : hotDistribution(_hotDistribution), coldDistribution(_coldDistribution),
               rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
 
@@ -41,11 +41,11 @@ public:
         return value;
     }
 
-    ~SkewedSetsDistribution() {
+    ~SkewedUniformDistribution() {
         delete hotDistribution;
         delete coldDistribution;
     }
 };
 
 
-#endif //SETBENCH_SKEWED_SETS_DISTRIBUTION_H
+#endif //SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H
