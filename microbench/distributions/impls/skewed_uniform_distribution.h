@@ -10,8 +10,9 @@
 #include "random_xoshiro256p.h"
 #include "plaf.h"
 #include "distributions/distribution.h"
+//#include "parameters/skewed_set_parameters.h"
 
-class SkewedUniformDistribution: public Distribution {
+class SkewedUniformDistribution : public Distribution {
 private:
     PAD;
     Random64 *rng;
@@ -25,6 +26,15 @@ public:
                               Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
             : hotDistribution(_hotDistribution), coldDistribution(_coldDistribution),
               rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
+
+
+//    SkewedUniformDistribution(Random64 *_rng, SkewedUniformParameters *parameters, const size_t range)
+//            : rng(_rng) {
+//        hotDistribution = parameters->hotDistBuilder->getDistribution(rng, parameters->getHotLength(range));
+//        coldDistribution = parameters->coldDistBuilder->getDistribution(rng, parameters->getColdLength(range));
+//        hotProb = parameters->hotProb;
+//        hotSetLength = parameters->getHotLength(range);
+//    }
 
     size_t next() {
         size_t value;

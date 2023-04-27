@@ -11,17 +11,22 @@ struct SkewedUniformParameters : public DistributionParameters {
     double hotSize;
     double hotProb;
 
-    DistributionBuilder * hotDistBuilder;
-    DistributionBuilder * coldDistBuilder;
+    DistributionBuilder *hotDistBuilder = new DistributionBuilder();
+    DistributionBuilder *coldDistBuilder = new DistributionBuilder();
 
     SkewedUniformParameters(double _hotSize, double _hotProb) : hotSize(_hotSize), hotProb(_hotProb) {}
 
-    int getHotLength(int range) {
-        return (int) (range * hotSize);
+    size_t getHotLength(size_t range) {
+        return (size_t) (range * hotSize);
     }
 
-    int getColdLength(int range) {
+    size_t getColdLength(size_t range) {
         return range - getHotLength(range);
+    }
+
+    std::string toString() override {
+        return "    HOT SIZE:                 : " + std::to_string(hotSize) + "\n" +
+               "    HOT PROB:                 : " + std::to_string(hotProb) + "\n";
     }
 
 };

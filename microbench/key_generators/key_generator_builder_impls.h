@@ -13,5 +13,6 @@
 #include "builder/default_key_generator_builder.h"
 #include "builder/skewed_sets_key_generator_builder.h"
 #include "builder/temporary_skewed_key_generator_builder.h"
+#include "builder/ops_key_generator_builder.h"
 
 #endif //SETBENCH_KEY_GENERATOR_BUILDER_IMPLS_H

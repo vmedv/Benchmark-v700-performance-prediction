@@ -10,9 +10,9 @@
 
 #include "distributions/distribution.h"
 
-#include "distributions/distribution_impls.h"
-
 #include "distributions/parameters/distribution_parameters.h"
+
+#include "distributions/distribution_impls.h"
 #include "distributions/builder/distribution_builder.h"
 
 #include "parameters.h"

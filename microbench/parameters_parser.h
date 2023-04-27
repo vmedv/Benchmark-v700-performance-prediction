@@ -136,7 +136,10 @@ KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args)
                || strcmp(args->getCurrent(), "-temp-skewed") == 0) {
         TemporarySkewedParameters *parameters = new TemporarySkewedParameters();
         keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<K>(parameters);
-    } else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
+    } else if (strcmp(args->getCurrent(), "-ops") == 0) {
+        OpsParameters *parameters = new OpsParameters();
+        keyGeneratorBuilder = new OpsKeyGeneratorBuilder<K>(parameters);
+    }else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
 //            parameters = new Parameters(_argc, _argv);
 //            parameters->keygenType = KeyGeneratorType::LEAF_INSERT;
 //            parameters->point = ++point;

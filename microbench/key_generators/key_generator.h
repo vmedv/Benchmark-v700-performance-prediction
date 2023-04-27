@@ -10,7 +10,7 @@
 //#include "parameters.h"
 
 enum class KeyGeneratorType {
-    SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE
+    SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE, OPS
 };
 
 std::string keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
@@ -23,6 +23,8 @@ std::string keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
             return "TEMPORARY_SKEWED";
         case KeyGeneratorType::CREAKERS_AND_WAVE:
             return "CREAKERS_AND_WAVE";
+        case KeyGeneratorType::OPS:
+            return "OPS";
     }
 }
 
@@ -32,9 +34,9 @@ struct KeyGenerator {
 
     virtual K next_read() = 0;
 
-    virtual K next_erase() = 0;
-
     virtual K next_insert() = 0;
+
+    virtual K next_erase() = 0;
 
     virtual K next_range() = 0;
 

@@ -50,7 +50,10 @@ bool DistributionBuilder::parse(ParseArgument * args) {
         setParameters(new ZipfParameters(atof(args->getNext())));
     } else if (strcmp(args->getCurrent(), "-dist-skewed-uniform") == 0) {
         setType(DistributionType::SKEWED_UNIFORM);
-        //todo add parameters parse
+        setParameters(new SkewedUniformParameters(
+                              atof(args->getNext()),
+                              atof(args->getNext()))
+                    );
     } else if (strcmp(args->getCurrent(), "-dist-uniform") == 0) {
         setType(DistributionType::UNIFORM);
     } else {
@@ -66,15 +69,15 @@ Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) 
         case DistributionType::ZIPF:
             return new ZipfDistribution(rng, ((ZipfParameters *) parameters)->alpha, range);
         case DistributionType::SKEWED_UNIFORM:
-            SkewedUniformParameters *skewedSetParameters = (SkewedUniformParameters *) parameters;
+            SkewedUniformParameters *skewedUniformParameters = (SkewedUniformParameters *) parameters;
             return new SkewedUniformDistribution(
-                    skewedSetParameters->hotDistBuilder->
-                            getDistribution(rng, skewedSetParameters->getHotLength(range)),
-                    skewedSetParameters->coldDistBuilder->
-                            getDistribution(rng, skewedSetParameters->getColdLength(range)),
+                    skewedUniformParameters->hotDistBuilder->
+                            getDistribution(rng, skewedUniformParameters->getHotLength(range)),
+                    skewedUniformParameters->coldDistBuilder->
+                            getDistribution(rng, skewedUniformParameters->getColdLength(range)),
                     rng,
-                    skewedSetParameters->hotProb,
-                    skewedSetParameters->getHotLength(range)
+                    skewedUniformParameters->hotProb,
+                    skewedUniformParameters->getHotLength(range)
             );
     }
 }
