@@ -7,11 +7,13 @@
 
 #include "common.h"
 
+#include "parse_argument.h"
+
 struct DistributionBuilder {
     DistributionType distributionType;
     DistributionParameters *parameters = nullptr;
 
-    DistributionBuilder() : distributionType(DistributionType::UNIFORM) {};
+    DistributionBuilder() : distributionType(DistributionType::UNIFORM) {}
 
     DistributionBuilder(DistributionType _distributionType) : distributionType(_distributionType) {}
 
@@ -25,7 +27,7 @@ struct DistributionBuilder {
         return this;
     }
 
-    bool parse(size_t &argc, char **argv, size_t &point);
+    bool parse(ParseArgument * args);
 
     Distribution *getDistribution(Random64 *rng, size_t range);
 
@@ -40,24 +42,24 @@ struct DistributionBuilder {
     }
 
 };
+#include "distributions/distribution_parameters_impls.h"
 
-#include "distributions/parameters/distribution_parameters_impls.h"
-
-bool DistributionBuilder::parse(size_t &argc, char **argv, size_t &point) {
-    bool parsed = true;
-    if (strcmp(argv[point], "-dist-zipf") == 0) {
+bool DistributionBuilder::parse(ParseArgument * args) {
+    if (strcmp(args->getCurrent(), "-dist-zipf") == 0) {
         setType(DistributionType::ZIPF);
-        setParameters(new ZipfParameters(atof(argv[++point])));
-    } else if (strcmp(argv[point], "-dist-skewed-sets") == 0) {
-        setType(DistributionType::SKEWED_SETS);
-        //todo add parameters parse
-    } else if (strcmp(argv[point], "-dist-uniform") == 0) {
+        setParameters(new ZipfParameters(atof(args->getNext())));
+    } else if (strcmp(args->getCurrent(), "-dist-skewed-uniform") == 0) {
+        setType(DistributionType::SKEWED_UNIFORM);
+        setParameters(new SkewedUniformParameters(
+                              atof(args->getNext()),
+                              atof(args->getNext()))
+                    );
+    } else if (strcmp(args->getCurrent(), "-dist-uniform") == 0) {
         setType(DistributionType::UNIFORM);
     } else {
-        parsed = false;
+        return false;
     }
-
-    return parsed;
+    return true;
 }
 
 Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) {
@@ -66,16 +68,16 @@ Distribution *DistributionBuilder::getDistribution(Random64 *rng, size_t range) 
             return new UniformDistribution(rng, range);
         case DistributionType::ZIPF:
             return new ZipfDistribution(rng, ((ZipfParameters *) parameters)->alpha, range);
-        case DistributionType::SKEWED_SETS:
-            SkewedSetParameters *skewedSetParameters = (SkewedSetParameters *) parameters;
-            return new SkewedSetsDistribution(
-                    skewedSetParameters->hotDistBuilder->
-                            getDistribution(rng, skewedSetParameters->getHotLength(range)),
-                    skewedSetParameters->coldDistBuilder->
-                            getDistribution(rng, skewedSetParameters->getColdLength(range)),
+        case DistributionType::SKEWED_UNIFORM:
+            SkewedUniformParameters *skewedUniformParameters = (SkewedUniformParameters *) parameters;
+            return new SkewedUniformDistribution(
+                    skewedUniformParameters->hotDistBuilder->
+                            getDistribution(rng, skewedUniformParameters->getHotLength(range)),
+                    skewedUniformParameters->coldDistBuilder->
+                            getDistribution(rng, skewedUniformParameters->getColdLength(range)),
                     rng,
-                    skewedSetParameters->hotProb,
-                    skewedSetParameters->getHotLength(range)
+                    skewedUniformParameters->hotProb,
+                    skewedUniformParameters->getHotLength(range)
             );
     }
 }

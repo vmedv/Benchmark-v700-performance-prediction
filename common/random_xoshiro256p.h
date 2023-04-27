@@ -60,4 +60,10 @@ public:
     uint64_t next(uint64_t n) {
         return next() % n;
     }
+    /**
+     * next double from 0 to 1
+     */
+    double nextDouble() {
+        return (double) next() / (double) max_value;
+    }
 };

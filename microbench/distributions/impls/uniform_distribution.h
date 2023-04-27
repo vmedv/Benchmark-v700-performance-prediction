@@ -8,7 +8,7 @@
 #include <cassert>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "distribution.h"
+#include "distributions/distribution.h"
 
 class UniformDistribution : public MutableDistribution {
 private:

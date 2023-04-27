@@ -2,16 +2,17 @@
 // Created by Ravil Galiev on 30.08.2022.
 //
 
-#ifndef SETBENCH_SKEWED_SETS_DISTRIBUTION_H
-#define SETBENCH_SKEWED_SETS_DISTRIBUTION_H
+#ifndef SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H
+#define SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H
 
 #include <algorithm>
 #include <cassert>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "distribution.h"
+#include "distributions/distribution.h"
+//#include "parameters/skewed_set_parameters.h"
 
-class SkewedSetsDistribution : public Distribution {
+class SkewedUniformDistribution : public Distribution {
 private:
     PAD;
     Random64 *rng;
@@ -21,10 +22,19 @@ private:
     size_t hotSetLength;
     PAD;
 public:
-    SkewedSetsDistribution(Distribution *_hotDistribution, Distribution *_coldDistribution,
-                           Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
+    SkewedUniformDistribution(Distribution *_hotDistribution, Distribution *_coldDistribution,
+                              Random64 *_rng, const double _hotProb, const size_t _hotSetLength)
             : hotDistribution(_hotDistribution), coldDistribution(_coldDistribution),
               rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
+
+
+//    SkewedUniformDistribution(Random64 *_rng, SkewedUniformParameters *parameters, const size_t range)
+//            : rng(_rng) {
+//        hotDistribution = parameters->hotDistBuilder->getDistribution(rng, parameters->getHotLength(range));
+//        coldDistribution = parameters->coldDistBuilder->getDistribution(rng, parameters->getColdLength(range));
+//        hotProb = parameters->hotProb;
+//        hotSetLength = parameters->getHotLength(range);
+//    }
 
     size_t next() {
         size_t value;
@@ -41,11 +51,11 @@ public:
         return value;
     }
 
-    ~SkewedSetsDistribution() {
+    ~SkewedUniformDistribution() {
         delete hotDistribution;
         delete coldDistribution;
     }
 };
 
 
-#endif //SETBENCH_SKEWED_SETS_DISTRIBUTION_H
+#endif //SETBENCH_SKEWED_UNIFORM_DISTRIBUTION_H

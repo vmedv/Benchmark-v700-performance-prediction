@@ -5,7 +5,7 @@
 #ifndef SETBENCH_DISTRIBUTION_PARAMETERS_IMPLS_H
 #define SETBENCH_DISTRIBUTION_PARAMETERS_IMPLS_H
 
-#include "skewed_set_parameters.h"
-#include "zipf_parameters.h"
+#include "parameters/skewed_set_parameters.h"
+#include "parameters/zipf_parameters.h"
 
 #endif //SETBENCH_DISTRIBUTION_PARAMETERS_IMPLS_H

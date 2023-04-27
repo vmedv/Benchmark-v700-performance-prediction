@@ -34,11 +34,11 @@ struct SkewedSetsKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
 
             keygens[i] = new SkewedSetsKeyGenerator<K>(
                     skewedSetsKeygenData, &rngs[i],
-                    new SkewedSetsDistribution(
+                    new SkewedUniformDistribution(
                             new UniformDistribution(&rngs[i], readHotSize),
                             new UniformDistribution(&rngs[i], maxkeyToGenerate - readHotSize),
                             &rngs[i], parameters->READ_HOT_PROB, readHotSize),
-                    new SkewedSetsDistribution(
+                    new SkewedUniformDistribution(
                             new UniformDistribution(&rngs[i], writeHotSize),
                             new UniformDistribution(&rngs[i], maxkeyToGenerate - writeHotSize),
                             &rngs[i], parameters->WRITE_HOT_PROB, writeHotSize),

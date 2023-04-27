@@ -17,7 +17,7 @@ Different distributions are used for read and write requests.
 Notes:
 + During pre-filling, the hot reading set is filled first, and after that everything else is evenly distributed.
 For classical filling, where the keys for insertion and deletion are generated in the same way as in normal operation, you need to add the `-write-prefill-only` parameter. 
-+ At this stage of implementation, only `skewed-sets` distributions are used
++ At this stage of implementation, only `skewed-uniform` distributions are used
 
 [//]: # (When using skewed distributions, )
 [//]: # (to control the intersection of "hot" data for read and write operations )
@@ -33,7 +33,7 @@ are called more often than others
 2. Rest time — when elements are called equally likely
 
 Note:
-+ At this stage of implementation, only `skewed-sets` distributions are used
++ At this stage of implementation, only `skewed-uniform` distributions are used
 
 ### Сreakers and wave
 
@@ -54,7 +54,7 @@ and the essence of the workload will disappear.
 
 ## Parameters
 
-### Обозначения
+### Notation
 
 + `<p>` is an integer taking the value [0, 100]
 + `<n>` is an integer taking the value [0, +∞]
@@ -118,7 +118,7 @@ in relation to the entire set of keys
 + `-hti <n1> <n2>` — working time with hot data from the `n1' subset
 + `-rti <n1> <n2>` — rest time after working with hot data from the `n1' subset
 
-#### Дополнительные параметры
+#### Extra parameters
 
 + `-non-shuffle` — enabling the mode without mixing keys
 + `-sbi' <n> <f> is the left boundary of the hot data from the `nth` subset
@@ -143,4 +143,4 @@ for the wave set. (Only the Zipf distribution is available so far)
 
 + `-dist-zipf <d>` — Zipf distribution with parameter `d`
 + `-dist-uniform` — uniform distribution
-+ `-dist-skewed-sets ...` — skewed distribution
++ `-dist-skewed-uniform ...` — skewed distribution

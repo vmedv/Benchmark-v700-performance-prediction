@@ -164,53 +164,37 @@ struct TemporarySkewedParameters : public Parameters {
         delete[] relaxTimes;
     }
 
-
-};
-
-class TemporarySkewedParametersParser : public ParametersParser {
-protected:
-    TemporarySkewedParameters *localParameters;
-
-    virtual void parseArg() {
-        if (strcmp(argv[point], "-set-count") == 0) {
-            localParameters->setSetCount(atoi(argv[++point]));
-        } else if (strcmp(argv[point], "-rt") == 0) {
-            localParameters->setCommonRelaxTime(atof(argv[++point]));
-        } else if (strcmp(argv[point], "-ht") == 0) {
-            localParameters->setCommonHotTime(atof(argv[++point]));
-//        } else if (std::regex_match(argv[point], std::regex(R"(ht\d+)"))) {
-//            TSParm.setHotTime(atof(argv[point].substr(2, 4)), atof(argv[++point]));
-        } else if (strcmp(argv[point], "-si") == 0) {
-            int pointer = atoi(argv[++point]);
-            localParameters->setSetSize(pointer, atof(argv[++point]));
-        } else if (strcmp(argv[point], "-pi") == 0) {
-            int pointer = atoi(argv[++point]);
-            localParameters->setHotProb(pointer, atof(argv[++point]));
-        } else if (strcmp(argv[point], "-hti") == 0) {
-            int pointer = atoi(argv[++point]);
-            localParameters->setHotTime(pointer, atof(argv[++point]));
-        } else if (strcmp(argv[point], "-rti") == 0) {
-            int pointer = atoi(argv[++point]);
-            localParameters->setRelaxTimes(pointer, atof(argv[++point]));
-        } else if (strcmp(argv[point], "-non-shuffle") == 0) {
-            localParameters->setNotShuffle();
-        } else if (localParameters->isNonShuffle && strcmp(argv[point], "-sbi") == 0) {
-            int pointer = atoi(argv[++point]);
-            localParameters->setSetBegin(pointer, atof(argv[++point]));
+    virtual void parseArg(ParseArgument * args) {
+        if (strcmp(args->getCurrent(), "-set-count") == 0) {
+            this->setSetCount(atoi(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-rt") == 0) {
+            this->setCommonRelaxTime(atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-ht") == 0) {
+            this->setCommonHotTime(atof(args->getNext()));
+//        } else if (std::regex_match(args->getCurrent(), std::regex(R"(ht\d+)"))) {
+//            TSParm.setHotTime(atof(args->getCurrent().substr(2, 4)), atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-si") == 0) {
+            int pointer = atoi(args->getNext());
+            this->setSetSize(pointer, atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-pi") == 0) {
+            int pointer = atoi(args->getNext());
+            this->setHotProb(pointer, atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-hti") == 0) {
+            int pointer = atoi(args->getNext());
+            this->setHotTime(pointer, atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-rti") == 0) {
+            int pointer = atoi(args->getNext());
+            this->setRelaxTimes(pointer, atof(args->getNext()));
+        } else if (strcmp(args->getCurrent(), "-non-shuffle") == 0) {
+            this->setNotShuffle();
+        } else if (this->isNonShuffle && strcmp(args->getCurrent(), "-sbi") == 0) {
+            int pointer = atoi(args->getNext());
+            this->setSetBegin(pointer, atof(args->getNext()));
         } else {
-            ParametersParser::parseArg();
+            Parameters::parseArg(args);
         }
     }
 
-public:
-    TemporarySkewedParametersParser(size_t _argc, char **_argv, size_t _point = 0) {
-        argc = _argc;
-        argv = _argv;
-        point = _point;
-
-        localParameters = new TemporarySkewedParameters();
-        parameters = localParameters;
-    }
 };
 
 #endif //SETBENCH_TEMPORARY_SKEWED_PARAMETERS_H

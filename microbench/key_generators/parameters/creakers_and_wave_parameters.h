@@ -60,48 +60,31 @@ struct CreakersAndWaveParameters : public Parameters {
         return params;
     }
 
-};
-
-class CreakersAndWaveParametersParser : public ParametersParser {
-protected:
-    CreakersAndWaveParameters *localParameters;
-
-    virtual void parseArg() {
-        if (strcmp(argv[point], "-gs") == 0
-            || strcmp(argv[point], "-cs") == 0) {
-            localParameters->CREAKERS_SIZE = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-gp") == 0 || strcmp(argv[point], "-cp") == 0) {
-            localParameters->CREAKERS_PROB = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-ws") == 0) {
-            localParameters->WAVE_SIZE = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-g-age") == 0 || strcmp(argv[point], "-c-age") == 0) {
-            localParameters->CREAKERS_AGE = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-g-dist") == 0 || strcmp(argv[point], "-c-dist") == 0) {
-            localParameters->creakersDistBuilder->parse(argc, argv, point);
-        } else if (strcmp(argv[point], "-w-dist") == 0) {
-            localParameters->waveDistBuilder->parse(argc, argv, point);
-        } else if (strcmp(argv[point], "-prefillsize") == 0) {
-            ++point;
+    virtual void parseArg(ParseArgument *args) {
+        if (strcmp(args->getCurrent(), "-gs") == 0
+            || strcmp(args->getCurrent(), "-cs") == 0) {
+            this->CREAKERS_SIZE = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-gp") == 0 || strcmp(args->getCurrent(), "-cp") == 0) {
+            this->CREAKERS_PROB = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-ws") == 0) {
+            this->WAVE_SIZE = atof(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-g-age") == 0 || strcmp(args->getCurrent(), "-c-age") == 0) {
+            this->CREAKERS_AGE = atoi(args->getNext());
+        } else if (strcmp(args->getCurrent(), "-g-dist") == 0 || strcmp(args->getCurrent(), "-c-dist") == 0) {
+            this->creakersDistBuilder->parse(args);
+        } else if (strcmp(args->getCurrent(), "-w-dist") == 0) {
+            this->waveDistBuilder->parse(args);
+        } else if (strcmp(args->getCurrent(), "-prefillsize") == 0) {
+            args->getNext();
             std::cout << "CreakersAndWave key generator does not accept prefill size argument. Ignoring...\n";
         } else {
-            ParametersParser::parseArg();
+            Parameters::parseArg(args);
         }
     }
 
-public:
-    CreakersAndWaveParametersParser(size_t _argc, char **_argv, size_t _point = 0) {
-        argc = _argc;
-        argv = _argv;
-        point = _point;
-
-        localParameters = new CreakersAndWaveParameters();
-        parameters = localParameters;
-    }
-
-    void parse() {
-        ParametersParser::parse();
-        parameters->DESIRED_PREFILL_SIZE = (int) (parameters->MAXKEY * localParameters->CREAKERS_SIZE) +
-                                           (int) (parameters->MAXKEY * localParameters->WAVE_SIZE);
+    virtual void build() {
+        this->DESIRED_PREFILL_SIZE = (int) (this->MAXKEY * this->CREAKERS_SIZE) +
+                                     (int) (this->MAXKEY * this->WAVE_SIZE);
     }
 
 };

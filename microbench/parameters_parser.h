@@ -8,209 +8,179 @@
 #include "common.h"
 #include "binding.h"
 #include "errors.h"
+#include "parse_argument.h"
 
 //template<typename K>
 class ParametersParser {
 protected:
-    size_t point;
-    size_t argc;
-    char **argv;
+//    size_t point;
+//    size_t argc;
+//    char **argv;
+    ParseArgument *args;
 
     Parameters *parameters;
 //    KeyGeneratorBuilder<K> keyGeneratorBuilder;
 
     ParametersParser() = default;
 
-    virtual void parseArg() {
-        if (strcmp(argv[point], "-i") == 0) {
-            parameters->INS_FRAC = atof(argv[++point]) * 100;
-        } else if (strcmp(argv[point], "-d") == 0) {
-            parameters->DEL_FRAC = atof(argv[++point]) * 100;
-        } else if (strcmp(argv[point], "-insdel") == 0) {
-            parameters->INS_FRAC = atof(argv[++point]) * 100;
-            parameters->DEL_FRAC = atof(argv[++point]) * 100;
-        } else if (strcmp(argv[point], "-rq") == 0) {
-            parameters->RQ = atof(argv[++point]);
-        } else if (strcmp(argv[point], "-rqsize") == 0) {
-            parameters->RQSIZE = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-k") == 0) {
-            parameters->MAXKEY = atoi(argv[++point]);
-            if (parameters->MAXKEY < 1) {
-                setbench_error("key range cannot contain fewer than 1 key");
-            }
-        } else if (strcmp(argv[point], "-nrq") == 0) {
-            parameters->RQ_THREADS = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-nwork") == 0) {
-            parameters->WORK_THREADS = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-nprefill") == 0) { // num threads to prefill with
-            parameters->PREFILL_THREADS = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-prefill-mixed") == 0) { // prefilling type
-            parameters->PREFILL_TYPE = PrefillType::PREFILL_MIXED;
-        } else if (strcmp(argv[point], "-prefill-insert") == 0) { // prefilling type
-            parameters->PREFILL_TYPE = PrefillType::PREFILL_INSERT;
-        } else if (strcmp(argv[point], "-prefill-hybrid") == 0) { // prefilling type
-            parameters->PREFILL_TYPE = PrefillType::PREFILL_HYBRID;
-        } else if (strcmp(argv[point], "-prefill-hybrid-min-ms") == 0) {
-            parameters->PREFILL_HYBRID_MIN_MS = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-prefill-hybrid-max-ms") == 0) {
-            parameters->PREFILL_HYBRID_MAX_MS = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-prefillsize") == 0) {
-            parameters->DESIRED_PREFILL_SIZE = atol(argv[++point]);
-        } else if (strcmp(argv[point], "-t") == 0) {
-            parameters->MILLIS_TO_RUN = atoi(argv[++point]);
-        } else if (strcmp(argv[point], "-non-shuffle") == 0) {
-            parameters->isNonShuffle = true;
-        } else if (strcmp(argv[point], "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
-            binding_parseCustom(argv[++point]); // e.g., "1.2.3.8-11.4-7.0"
-            std::cout << "parsed custom binding: " << argv[point] << std::endl;
-        } else {
-            std::cout << "bad argument: " << argv[point] << "\nindex: " << point << std::endl;
-            exit(1);
-        }
-    }
+//    virtual void parseArg() {
+//        if (strcmp(args->getCurrent(), "-i") == 0) {
+//            parameters->INS_FRAC = atof(args->getNext()) * 100;
+//        } else if (strcmp(args->getCurrent(), "-d") == 0) {
+//            parameters->DEL_FRAC = atof(args->getNext()) * 100;
+//        } else if (strcmp(args->getCurrent(), "-insdel") == 0) {
+//            parameters->INS_FRAC = atof(args->getNext()) * 100;
+//            parameters->DEL_FRAC = atof(args->getNext()) * 100;
+//        } else if (strcmp(args->getCurrent(), "-rq") == 0) {
+//            parameters->RQ = atof(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-rqsize") == 0) {
+//            parameters->RQSIZE = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-k") == 0) {
+//            parameters->MAXKEY = atoi(args->getNext());
+//            if (parameters->MAXKEY < 1) {
+//                setbench_error("key range cannot contain fewer than 1 key");
+//            }
+//        } else if (strcmp(args->getCurrent(), "-nrq") == 0) {
+//            parameters->RQ_THREADS = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-nwork") == 0) {
+//            parameters->WORK_THREADS = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-nprefill") == 0) { // num threads to prefill with
+//            parameters->PREFILL_THREADS = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-prefill-mixed") == 0) { // prefilling type
+//            parameters->PREFILL_TYPE = PrefillType::PREFILL_MIXED;
+//        } else if (strcmp(args->getCurrent(), "-prefill-insert") == 0) { // prefilling type
+//            parameters->PREFILL_TYPE = PrefillType::PREFILL_INSERT;
+//        } else if (strcmp(args->getCurrent(), "-prefill-hybrid") == 0) { // prefilling type
+//            parameters->PREFILL_TYPE = PrefillType::PREFILL_HYBRID;
+//        } else if (strcmp(args->getCurrent(), "-prefill-hybrid-min-ms") == 0) {
+//            parameters->PREFILL_HYBRID_MIN_MS = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-prefill-hybrid-max-ms") == 0) {
+//            parameters->PREFILL_HYBRID_MAX_MS = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-prefillsize") == 0) {
+//            parameters->DESIRED_PREFILL_SIZE = atol(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-t") == 0) {
+//            parameters->MILLIS_TO_RUN = atoi(args->getNext());
+//        } else if (strcmp(args->getCurrent(), "-non-shuffle") == 0) {
+//            parameters->isNonShuffle = true;
+//        } else if (strcmp(args->getCurrent(), "-pin") == 0) { // e.g., "-pin 1.2.3.8-11.4-7.0"
+//            binding_parseCustom(args->getNext()); // e.g., "1.2.3.8-11.4-7.0"
+//            std::cout << "parsed custom binding: " << args->getCurrent() << std::endl;
+//        } else if (parameters->threadLoopParameters->parseArg(args)) {
+//            std::cout << "bad argument: " << args->getCurrent() << "\nindex: " << args->pointer << std::endl;
+//            exit(1);
+//        }
+//    }
 
 public:
 
-    ParametersParser(size_t _argc, char **_argv, size_t _point = 0)
-            : argc(_argc), argv(_argv), point(_point) {
+    ParametersParser(ParseArgument *_args)
+            : args(_args) {
         parameters = new Parameters();
     }
 
-    virtual void parse() {
-        while (point < argc) {
-            parseArg();
-            ++point;
+    template<typename K>
+    static KeyGeneratorBuilder<K> *parse(ParseArgument *args) {
+//        ParseArgument *args = new ParseArgument(argc, argv);
+        KeyGeneratorBuilder<K> *keyGeneratorBuilder = parseThreadLoop<K>(args);
+
+        while (args->hasNext()) {
+            keyGeneratorBuilder->parameters->parseArg(args);
+            args->next();
         }
-
-        argc = 0;
-        argv = nullptr;
-        point = 0;
+        keyGeneratorBuilder->parameters->build();
+        return keyGeneratorBuilder;
     }
 
-
-    virtual Parameters *parse(size_t _argc, char **_argv) {
-        argc = _argc;
-        argv = _argv;
-
-        parse();
-
-        return parameters;
-    }
+//    virtual void parse() {
+//        while (args->hasNext()) {
+//            parseArg();
+//            args->next();
+//        }
+//    }
 
     template<typename K>
-    static std::pair<KeyGeneratorBuilder<K> *, ParametersParser *>
-    parseKeyGeneratorType(size_t _argc, char **_argv, size_t point = 0);
+    static KeyGeneratorBuilder<K> *parseKeyGenerator(ParseArgument *args);
 
+    template<typename K>
+    static KeyGeneratorBuilder<K> *parseThreadLoop(ParseArgument *args);
 
-    ParametersParser *getParser(size_t _argc, char **_argv) {
-        return new ParametersParser(_argc, _argv);
-    }
+//
+//    ParametersParser *getParser(size_t _argc, char **_argv) {
+//        return new ParametersParser(_argc, _argv);
+//    }
 
     virtual ~ParametersParser() {
-        argv = nullptr;
+        delete args;
     }
 
 };
 
-#include "key_generators/parameters/key_generator_parameters_impls.h"
-#include "key_generators/builder/key_generator_builder_impls.h"
+#include "key_generators/key_generator_parameters_impls.h"
+
+#include "key_generators/key_generator_builder_impls.h"
+#include "thread_loops/thread_loop_builder.h"
 
 template<typename K>
-std::pair<KeyGeneratorBuilder<K> *, ParametersParser *>
-ParametersParser::parseKeyGeneratorType(size_t _argc, char **_argv, size_t point) {
-    ParametersParser *parametersParser = nullptr;
+KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args) {
+//    ParametersParser *parametersParser = nullptr;
 //    Parameters *parameters;
+
     KeyGeneratorBuilder<K> *keyGeneratorBuilder = nullptr;
-    if (strcmp(_argv[point], "-skewed-sets") == 0) {
-//        parameters = new SkewedSetsParameters();
-        parametersParser = new SkewedSetsParametersParser(_argc, _argv, ++point);
-//            parameters->keygenType = KeyGeneratorType::SKEWED_SETS;
-//        parameterParser->point = ++point;
-//        parameterParser->parameters = parameters;
-
-        keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder<K>(
-                (SkewedSetsParameters *) parametersParser->parameters
-        );
-    } else if (strcmp(_argv[point], "-creakers-and-wave") == 0) {
-//        parameters = new CreakersAndWaveParameters();
-        parametersParser = new CreakersAndWaveParametersParser(_argc, _argv, ++point);
-//            parameters->keygenType = KeyGeneratorType::CREAKERS_AND_WAVE;
-//        parameterParser->point = ++point;
-//        parameterParser->parameters = parameters;
-
-        keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder<K>(
-                (CreakersAndWaveParameters *) parametersParser->parameters
-        );
-    } else if (strcmp(_argv[point], "-temporary-skewed") == 0
-               || strcmp(_argv[point], "-temp-skewed") == 0) {
-//        parameters = new TemporarySkewedParameters();
-        parametersParser = new TemporarySkewedParametersParser(_argc, _argv, ++point);
-//            parameters->keygenType = KeyGeneratorType::TEMPORARY_SKEWED;
-//        parameterParser->point = ++point;
-//        parameterParser->parameters = parameters;
-
-        keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<K>(
-                (TemporarySkewedParameters *) parametersParser->parameters
-        );
-    } else if (strcmp(_argv[point], "-delete-speed-test") == 0) {
-        // todo add workloads
-//            parameters = new Parameters(_argc, _argv);
-//            parameters->workloadType = WorkloadType::DELETE_SPEED_TEST;
-//            parameters->keygenType = KeyGeneratorType::NONE;
-//            parameters->numMilliseconds = 0;
-//            parameters->point = ++point;
-//            parameterParser->parameters = parameters;
-//
-//            keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
-    } else if (strcmp(_argv[point], "-delete-leafs") == 0) {
-        // todo add workloads
-//            parameters = new Parameters(_argc, _argv);
-//            parameters->workloadType = WorkloadType::DELETE_LEAFS;
-//            parameters->keygenType = KeyGeneratorType::NONE;
-//                        parameters->point = ++point;
-//
-//            keyGeneratorBuilder = new NoneKeyGeneratorBuilder(parameters);
-    } else if (strcmp(_argv[point], "-leaf-insert") == 0) {
+    if (strcmp(args->getCurrent(), "-skewed-sets") == 0) {
+        SkewedSetsParameters *parameters = new SkewedSetsParameters();
+        keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder<K>(parameters);
+    } else if (strcmp(args->getCurrent(), "-creakers-and-wave") == 0) {
+        CreakersAndWaveParameters *parameters = new CreakersAndWaveParameters();
+        keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder<K>(parameters);
+    } else if (strcmp(args->getCurrent(), "-temporary-skewed") == 0
+               || strcmp(args->getCurrent(), "-temp-skewed") == 0) {
+        TemporarySkewedParameters *parameters = new TemporarySkewedParameters();
+        keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder<K>(parameters);
+    } else if (strcmp(args->getCurrent(), "-ops") == 0) {
+        OpsParameters *parameters = new OpsParameters();
+        keyGeneratorBuilder = new OpsKeyGeneratorBuilder<K>(parameters);
+    }else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
 //            parameters = new Parameters(_argc, _argv);
 //            parameters->keygenType = KeyGeneratorType::LEAF_INSERT;
 //            parameters->point = ++point;
 //
 //            keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder(parameters);
-    } else if (strcmp(_argv[point], "-leafs-handshake") == 0) {
+    } else if (strcmp(args->getCurrent(), "-leafs-handshake") == 0) {
 //            parameters = new LeafsHandshakeParameters(_argc, _argv);
 //            parameters->keygenType = KeyGeneratorType::LEAFS_HANDSHAKE;
 //            parameters->point = ++point;
 //
 //            keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder(parameters);
-    } else if (strcmp(_argv[point], "-leafs-extension-handshake") == 0) {
+    } else if (strcmp(args->getCurrent(), "-leafs-extension-handshake") == 0) {
 //            parameters = new LeafsHandshakeParameters(_argc, _argv);
 //            parameters->keygenType = KeyGeneratorType::LEAFS_EXTENSION_HANDSHAKE;
 //            parameters->point = ++point;
 //
 //            keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
-    } else if (strcmp(_argv[point], "-temporary-operation") == 0
-               || strcmp(_argv[point], "-temp-oper") == 0) {
-        // todo add workloads
-//
-//            keyGeneratorBuilder = parseWorkload(_argc, _argv, ++point );
-//            parameters = new TemporaryOperationsParameters(_argc, _argv);
-//            parameters->workloadType = WorkloadType::TEMPORARY_OPERATIONS;
-//            parameters->keygenType = keyGeneratorBuilder->parameters->keygenType;
-//
-//            keyGeneratorBuilder.parameters = parameters;
     } else {
-//        parameters = new SimpleParameters();
-        parametersParser = new SimpleParametersParser(_argc, _argv, point);
-//            parameters->keygenType = KeyGeneratorType::SIMPLE_KEYGEN;
-//        parameterParser->point = point;
-//        parameterParser->parameters = parameters;
-
-        keyGeneratorBuilder = new SimpleKeyGeneratorBuilder<K>(
-                (SimpleParameters *) parametersParser->parameters
-        );
+        DefaultParameters *parameters = new DefaultParameters();
+        return new DefaultKeyGeneratorBuilder<K>(parameters);
     }
 
-    return {keyGeneratorBuilder, parametersParser};
+    args->next();
+    return keyGeneratorBuilder;
+}
+
+template<typename K>
+KeyGeneratorBuilder<K> *ParametersParser::parseThreadLoop(ParseArgument *args) {
+    KeyGeneratorBuilder<K> *keyGeneratorBuilder;
+    if (strcmp(args->getCurrent(), "-temp-oper") == 0
+        || strcmp(args->getCurrent(), "-temporary-operation") == 0) {
+        keyGeneratorBuilder = parseKeyGenerator<K>(args->next());
+        keyGeneratorBuilder->parameters->threadLoopBuilder =
+                new ThreadLoopBuilder(new TemporaryOperationThreadLoopParameters());
+//        keyGeneratorBuilder->parameters->threadLoopParameters = new TemporaryOperationThreadLoopParameters();
+    } else {
+        keyGeneratorBuilder = parseKeyGenerator<K>(args);
+        keyGeneratorBuilder->parameters->threadLoopBuilder = new ThreadLoopBuilder();
+//        keyGeneratorBuilder->parameters->threadLoopParameters = new DefaultThreadLoopParameters();
+    }
+    return keyGeneratorBuilder;
 }
 
 #endif //SETBENCH_PARAMETERS_PARSER_H

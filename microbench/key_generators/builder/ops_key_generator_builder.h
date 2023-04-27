@@ -2,29 +2,25 @@
 // Created by Ravil Galiev on 10.02.2023.
 //
 
-#ifndef SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
-#define SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
+#ifndef SETBENCH_OPS_KEY_GENERATOR_BUILDER_H
+#define SETBENCH_OPS_KEY_GENERATOR_BUILDER_H
 
 #include "errors.h"
 #include "plaf.h"
 #include "common.h"
 
 template<typename K>
-struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
-    SimpleParameters *parameters;
+struct OpsKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
+    OpsParameters *parameters;
 
-    SimpleKeyGeneratorBuilder(SimpleParameters *_parameters)
+    OpsKeyGeneratorBuilder(OpsParameters *_parameters)
             : KeyGeneratorBuilder<K>(_parameters), parameters(_parameters) {
-        this->keyGeneratorType = KeyGeneratorType::SIMPLE_KEYGEN;
+        this->keyGeneratorType = KeyGeneratorType::OPS;
     }
 
     KeyGenerator<K> **generateKeyGenerators(size_t maxkeyToGenerate, Random64 *rngs) {
 
         KeyGenerator<K> **keygens = new KeyGenerator<K> *[MAX_THREADS_POW2];
-
-        if (parameters->distributionBuilder->distributionType == DistributionType::UNIFORM) {
-            parameters->isNonShuffle = true;
-        }
 
         KeyGeneratorData<K> *data = new KeyGeneratorData<K>(parameters);
 
@@ -35,18 +31,19 @@ struct SimpleKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
                                                 (new DistributionBuilder())->getDistribution(
                                                         &rngs[i], maxkeyToGenerate);
 
-            keygens[i] = new SimpleKeyGenerator<K>(
+            keygens[i] = new OpsKeyGenerator<K>(
                     data,
-                    parameters->distributionBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
+                    parameters->readDistBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
+                    parameters->insertDistBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
+                    parameters->removeDistBuilder->getDistribution(&rngs[i], maxkeyToGenerate),
                     prefillDistribution,
                     parameters->prefill_sequential
             );
         }
-
 
         return keygens;
     }
 
 };
 
-#endif //SETBENCH_SIMPLE_KEY_GENERATOR_BUILDER_H
+#endif //SETBENCH_OPS_KEY_GENERATOR_BUILDER_H

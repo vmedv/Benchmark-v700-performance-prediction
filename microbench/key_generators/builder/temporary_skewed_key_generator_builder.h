@@ -32,7 +32,7 @@ struct TemporarySkewedKeyGeneratorBuilder : public KeyGeneratorBuilder<K> {
                 size_t setSize = (size_t) (maxkeyToGenerate * parameters->setSizes[j]);
 
                 hotDists[j] =
-                        new SkewedSetsDistribution(
+                        new SkewedUniformDistribution(
                                 new UniformDistribution(&rngs[i], setSize),
                                 new UniformDistribution(&rngs[i], maxkeyToGenerate - setSize),
                                 &rngs[i], parameters->hotProbs[j], setSize
