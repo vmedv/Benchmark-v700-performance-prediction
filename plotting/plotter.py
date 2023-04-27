@@ -249,7 +249,7 @@ def plot_avg_all(stat, title, ylabel, aggregators, output_dir, fig_size):
     fig.suptitle(title)
     for aggregator in aggregators:
         aggregator.plot(ax)
-    ax.set_xlabel("keys (log-scale)")
+    ax.set_xlabel("keys set size")
     ax.set_xscale("log")
     ax.set_ylabel(ylabel)
     ax.grid(True)
