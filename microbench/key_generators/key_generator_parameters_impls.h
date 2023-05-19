@@ -10,6 +10,6 @@
 #include "parameters/skewed_sets_parameters.h"
 #include "parameters/temporary_skewed_parameters.h"
 #include "parameters/ops_parameters.h"
-
+#include "parameters/temporary_wave_special_remove_parameters.h"
 
 #endif //SETBENCH_KEY_GENERATOR_PARAMETERS_IMPLS_H

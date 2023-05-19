@@ -10,5 +10,6 @@
 #include "impls/skewed_sets_key_generator.h"
 #include "impls/temporary_skewed_key_generator.h"
 #include "impls/ops_key_generator.h"
+#include "impls/temporary_wave_special_remove_key_generator.h"
 
 #endif //SETBENCH_KEY_GENERATOR_IMPLS_H

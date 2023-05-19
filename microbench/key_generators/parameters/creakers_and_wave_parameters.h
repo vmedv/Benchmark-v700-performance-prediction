@@ -71,9 +71,9 @@ struct CreakersAndWaveParameters : public Parameters {
         } else if (strcmp(args->getCurrent(), "-g-age") == 0 || strcmp(args->getCurrent(), "-c-age") == 0) {
             this->CREAKERS_AGE = atoi(args->getNext());
         } else if (strcmp(args->getCurrent(), "-g-dist") == 0 || strcmp(args->getCurrent(), "-c-dist") == 0) {
-            this->creakersDistBuilder->parse(args);
+            this->creakersDistBuilder->parse(args->next());
         } else if (strcmp(args->getCurrent(), "-w-dist") == 0) {
-            this->waveDistBuilder->parse(args);
+            this->waveDistBuilder->parse(args->next());
         } else if (strcmp(args->getCurrent(), "-prefillsize") == 0) {
             args->getNext();
             std::cout << "CreakersAndWave key generator does not accept prefill size argument. Ignoring...\n";

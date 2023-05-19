@@ -81,12 +81,14 @@ public:
     template<typename K>
     static KeyGeneratorBuilder<K> *parse(ParseArgument *args) {
 //        ParseArgument *args = new ParseArgument(argc, argv);
+
         KeyGeneratorBuilder<K> *keyGeneratorBuilder = parseThreadLoop<K>(args);
 
         while (args->hasNext()) {
             keyGeneratorBuilder->parameters->parseArg(args);
             args->next();
         }
+
         keyGeneratorBuilder->parameters->build();
         return keyGeneratorBuilder;
     }
@@ -139,7 +141,11 @@ KeyGeneratorBuilder<K> *ParametersParser::parseKeyGenerator(ParseArgument *args)
     } else if (strcmp(args->getCurrent(), "-ops") == 0) {
         OpsParameters *parameters = new OpsParameters();
         keyGeneratorBuilder = new OpsKeyGeneratorBuilder<K>(parameters);
-    }else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
+    } else if (strcmp(args->getCurrent(), "-temporary-wave-special-remove") == 0
+               || strcmp(args->getCurrent(), "-twsr") == 0) {
+        TemporaryWaveSpecialRemoveParameters *parameters = new TemporaryWaveSpecialRemoveParameters();
+        keyGeneratorBuilder = new TemporaryWaveSpecialRemoveKeyGeneratorBuilder<K>(parameters);
+    } else if (strcmp(args->getCurrent(), "-leaf-insert") == 0) {
 //            parameters = new Parameters(_argc, _argv);
 //            parameters->keygenType = KeyGeneratorType::LEAF_INSERT;
 //            parameters->point = ++point;

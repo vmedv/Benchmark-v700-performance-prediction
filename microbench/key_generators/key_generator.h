@@ -10,7 +10,7 @@
 //#include "parameters.h"
 
 enum class KeyGeneratorType {
-    SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE, OPS
+    SIMPLE_KEYGEN, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE, OPS, TEMPORARY_WAVE_SPECIAL_REMOVE
 };
 
 std::string keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
@@ -25,6 +25,8 @@ std::string keyGeneratorTypeToString(KeyGeneratorType keyGeneratorType) {
             return "CREAKERS_AND_WAVE";
         case KeyGeneratorType::OPS:
             return "OPS";
+        case KeyGeneratorType::TEMPORARY_WAVE_SPECIAL_REMOVE:
+            return "TEMPORARY_WAVE_SPECIAL_REMOVE";
     }
 }
 
@@ -52,7 +54,7 @@ private:
     bool isNonShuffle = true;
 
 public:
-    KeyGeneratorData(Parameters * _parameters) 
+    KeyGeneratorData(Parameters * _parameters)
         : KeyGeneratorData(_parameters->MAXKEY, _parameters->isNonShuffle) {
     }
 
