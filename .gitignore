@@ -48,3 +48,5 @@ _bak
 common/papi/a.out
 */python_env/
 */plotter-output*/
+*-build-*/
+.idea/

@@ -8,7 +8,7 @@ Each tree's folder has the following strcut
 
 ## Implementations
 
-- [BTree (BT)](./ds/bt_8)
-- [Self-Adjusting BTree (SABT)](./ds/sabt_8)
-- [Interpolation Search Tree (IST)](./ds/ist_50)
-- [Self-Adjusting Interpolation Search Tree (SAIST)](./ds/saist_50)
+- [BTree (BT)](gsat/ds/btree)
+- [Self-Adjusting BTree (SABT)](gsat/ds/sabt_old)
+- [Interpolation Search Tree (IST)](gsat/ds/ist)
+- [Self-Adjusting Interpolation Search Tree (SAIST)](gsat/ds/saist)
