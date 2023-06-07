@@ -13,15 +13,8 @@ import seaborn as sns
 DEFAULT_OUTPUT_DIR_NAME = "plotter-output"
 DEFAULT_TIMEOUT = 90
 
-DEFAULT_COLORS = ["blue", "green", "red", "purple", "maroon", "azure", "orange", "pink", "black", "brown", "lime", "cyan"]
-DEFAULT_COLORS_DS_MAPPER = {
-    "sabt": "green",
-    "bt": "blue",
-    "saist": "purple",
-    "ist": "red",
-    "sat": "maroon",
-    "splay": "orange"
-}
+COLOR_PALETTE = sns.color_palette()
+DS = ["btree", "sabt", "ist", "sait", "salt", "sast", "splay_tree"]
 
 LOG_FILE = "log.txt"
 
@@ -361,12 +354,12 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
 def get_colors(ds):
     colors = []
     for i, ds_in in enumerate(ds):
-        for ds_out, color in DEFAULT_COLORS_DS_MAPPER.items():
+        index = i
+        for j, ds_out in enumerate(DS):
             if ds_out in ds_in:
-                colors.append(color)
+                index = j
                 break
-        if len(colors) == i:
-            colors.append(DEFAULT_COLORS[i])
+        colors.append(COLOR_PALETTE[index])
     return colors
 
 
@@ -416,7 +409,7 @@ def check_args(args):
     if args.color and len(args.color) != len(args.ds):
         raise ValueError(
             "if color specified then must be: len(color) == len(ds)")
-    if not args.color and len(DEFAULT_COLORS) < len(args.ds):
+    if not args.color and len(COLOR_PALETTE) < len(args.ds):
         raise ValueError(
             "not enough colors to draw all ds: specify colors by yourself")
     if args.workload_name and len(args.workload_name) != len(args.workload):
