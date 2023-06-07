@@ -48,7 +48,7 @@ public:
     }
 
     int64_t GetSumKeys(NodePtrType node) {
-        size_t sum = 0;
+        int64_t sum = 0;
         for (int index = 0; index < node->size; ++index) {
             sum += node->keys[index];
         }

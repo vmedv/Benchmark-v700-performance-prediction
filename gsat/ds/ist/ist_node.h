@@ -22,8 +22,8 @@ struct ISTNode {
     ISTNode **children;
     int *id;
 
-    const Key &left;   // inclusive
-    const Key &right;  // exclusive
+    const Key left;   // inclusive
+    const Key right;  // exclusive
 
     int rep_size;
     const int capacity;
@@ -63,7 +63,7 @@ struct ISTNode {
     void BuildId(int size) {
         id_size = size;
         id = new int[size];
-        BUILD_ID
+        BUILD_ID(this)
     }
 
     int Search(const Key &key) const {
@@ -74,7 +74,7 @@ struct ISTNode {
 #ifdef KEY_SEARCH_TOTAL_STAT
             ++key_search_total_iters_cnt__;
 #endif
-            ID_LOCATE
+            ID_LOCATE(this)
         }
 
         while (r - l > 1) {

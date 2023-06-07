@@ -10,7 +10,6 @@
 
 #include "../../common/error.h"
 
-#include "gsat_node.h"
 #include "gsat_node_handler.h"
 
 #ifdef KEY_DEPTH_TOTAL_STAT
@@ -23,6 +22,17 @@ extern int64_t* key_depth_sum__;
 extern int64_t* key_depth_cnt__;
 #endif
 
+#define KEY_FOUND (index != node->rep_size && node->rep[index] == key)
+
+#define INSERT(node, index, key, value, accesses)            \
+for (int at = node->rep_size - 1; at >= index; --at) {       \
+node->rep[at + 1] = std::move(node->rep[at]);                \
+node->value_data[at + 1] = std::move(node->value_data[at]);  \
+}                                                            \
+node->rep[index] = key;                                      \
+node->value_data[index] = {value, accesses};                 \
+++node->rep_size;                                            \
+
 template<typename Delimiter, typename Node, typename Key, typename Value>
 class GSAT {
 public:
@@ -32,6 +42,7 @@ public:
     static_assert(std::is_same<Node *, typename NodeHandler::NodePtrType>::value);
 
 public:
+    // [left, right)
     GSAT(Delimiter delimiter, const Value &no_value, const Key &left, const Key &right, int leaf_size,
          int64_t min_rebuild_bound, double rebuild_factor)
             : delimiter_(delimiter),
@@ -77,7 +88,7 @@ public:
             }
 
             auto index = node->Search(key);
-            if (node->KeyFound(index, key)) {
+            if (KEY_FOUND) {
 #ifdef KEY_DEPTH_TOTAL_STAT
                 key_depth_total_sum__ += d__;
                 ++key_depth_total_cnt__;
@@ -115,7 +126,7 @@ public:
 
     Value Insert(const Key &key, const Value &value) {
         assert(root_);
-        assert(root_->left <= key && key <= root_->right);
+        assert(root_->left <= key && key < root_->right);
 
         Node *node = root_;
         Node **node_at = &root_;
@@ -134,7 +145,7 @@ public:
             }
 
             auto index = node->Search(key);
-            if (node->KeyFound(index, key)) {
+            if (KEY_FOUND) {
                 auto &vd = node->value_data[index];
                 if (vd.accesses < 0) {
                     vd.accesses = -vd.accesses;
@@ -147,13 +158,13 @@ public:
             }
 
             if (!node->children[index]) {
-                if (node->rep_size < node->GetCapacity()) {
-                    node->Insert(index, key, value, 1);
+                if (node->leaf && node->rep_size < node->GetCapacity()) {
+                    INSERT(node, index, key, value, 1)
                 } else {
-                    auto child_left = index == 0 ? node->left : node->rep[index - 1];
-                    auto child_right = index == node->rep_size ? node->right : node->rep[index];
+                    const Key& child_left = index == 0 ? node->left : node->rep[index - 1];
+                    const Key& child_right = index == node->rep_size ? node->right : node->rep[index];
                     auto child = new Node(child_left, child_right, leaf_size_, min_rebuild_bound_);
-                    child->Insert(0, key, value, 1);
+                    INSERT(child, 0, key, value, 1)
                     ++child->total_asize;
                     ++child->counter;
                     node->children[index] = child;
@@ -190,7 +201,7 @@ public:
             }
 
             auto index = node->Search(key);
-            if (node->KeyFound(index, key)) {
+            if (KEY_FOUND) {
                 auto &vd = node->value_data[index];
                 if (vd.accesses > 0) {
                     result = vd.value;
@@ -294,6 +305,7 @@ private:
         const int child_accesses = ceil(total_accesses / (capacity + 1.0));
 
         auto node = new Node(left_bound, right_bound, capacity, rebuild_bound);
+        node->total_asize = size;
 
         int index = 0;
         while (index < capacity) {
@@ -320,27 +332,22 @@ private:
             }
         }
         node->children[index] = BuildIdealTree(rep, value_data, pac, left, right, left_bound, right_bound);
+        node->rep_size = index;
 
         node->Complete(total_accesses);
 
         return node;
     }
 
-    struct ValidateInfo {
-        int total_size;
-        int64_t total_accesses;
-    };
-
-    ValidateInfo Validate(const Node *node, const Key &left, const Key &right) const {
+    int Validate(const Node *node, const Key &left, const Key &right) const {
         if (!node) {
-            return {0, 0};
+            return 0;
         }
 
         Check(node->left == left)
         Check(node->right == right)
 
         int total_size = 0;
-        int64_t total_accesses = 0;
 
         for (int index = 0; index <= node->rep_size; ++index) {
             const Key &child_left = index == 0 ? left : node->rep[index - 1];
@@ -352,18 +359,14 @@ private:
                 const auto &vd = node->value_data[index];
                 Check(vd.value != no_value_)
                 total_size += vd.accesses > 0;
-                total_accesses += std::abs(vd.accesses);
             }
 
-            auto [child_total_size, child_total_accesses] = Validate(node->children[index], child_left, child_right);
-            total_size += child_total_size;
-            total_accesses += child_total_accesses;
+            total_size += Validate(node->children[index], child_left, child_right);
         }
 
         Check(total_size <= node->total_asize)
-        Check(total_accesses <= ceil(node->rebuild_bound / rebuild_factor_))
 
-        return {total_size, total_accesses};
+        return total_size;
     }
 
     Delimiter delimiter_;

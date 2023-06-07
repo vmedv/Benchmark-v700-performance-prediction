@@ -25,7 +25,7 @@ private:
 };
 
 void StressTest(double alpha, const tree_tests::StressTestConfig<int> &config) {
-    auto ist_builder = new ISTBuilder<tree_tests::ValueType>(alpha, config.GetMinKey(), config.GetMaxKey());
+    auto ist_builder = new ISTBuilder<tree_tests::ValueType>(alpha, config.GetMinKey(), config.GetMaxKey() + 1);
     tree_tests::StressTest(ist_builder, config)();
 }
 

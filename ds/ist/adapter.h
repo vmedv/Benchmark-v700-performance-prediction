@@ -7,16 +7,15 @@ using namespace std;
 
 #include "errors.h"
 #include "record_manager.h"
+#include "../../gsat/common/adapter_node_handler.h"
 
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
 #endif
 
-#include "adapter_node_handler.h"
-
 #include "../../gsat/ds/ist/ist.h"
 
-static constexpr double ALPHA = 0.5;
+#define ALPHA 0.5
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
 #define DATA_STRUCTURE_T IST<K, V>
@@ -34,7 +33,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, ALPHA, KEY_MIN, KEY_MAX, 8, 225, 0.75))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, ALPHA, KEY_MIN, KEY_MAX + 1, 8, 225, 0.75))
     {}
 
     ~ds_adapter() {

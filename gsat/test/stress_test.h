@@ -104,7 +104,7 @@ namespace tree_tests {
 
         void Run() override {
             for (size_t op_number = 1; op_number <= config_.GetOperationsCount(); ++op_number) {
-                //  std::cout << operation_index << std::endl;
+                // std::cout << op_number << std::endl;
                 Operation operation = gen_->GenOperation();
                 ApplyOperation(op_number, operation);
             }
@@ -181,6 +181,7 @@ namespace tree_tests {
 template<typename Tree>
 class TreeBuilder<Tree, tree_tests::ValueType> {
 public:
+    virtual ~TreeBuilder() = default;
     virtual Tree *Build() = 0;
 
     tree_tests::ValueType GetNoValue() const {

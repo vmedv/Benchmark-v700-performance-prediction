@@ -13,6 +13,6 @@ include(gsat/cmake/BuildFlags.cmake)
 
 include_directories(gsat/common)
 include_directories(gsat/test)
-add_subdirectory(gsat/test/map)
 
 add_subdirectory(gsat/ds)
+add_subdirectory(gsat/test/map)

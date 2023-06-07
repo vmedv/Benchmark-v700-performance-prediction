@@ -5,7 +5,7 @@
 template<typename Tree, typename Value>
 class TreeBuilder {
 public:
-    ~TreeBuilder() = default;
+    virtual ~TreeBuilder() = default;
 
     virtual Tree *Build() = 0;
 

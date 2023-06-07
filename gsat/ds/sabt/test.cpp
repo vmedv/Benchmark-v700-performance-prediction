@@ -24,7 +24,7 @@ private:
 
 template<int kMinKeys>
 void StressTest(const tree_tests::StressTestConfig<int> &config) {
-    tree_tests::StressTest(new SABTBuilder<tree_tests::ValueType, kMinKeys>(config.GetMinKey(), config.GetMaxKey()), config)();
+    tree_tests::StressTest(new SABTBuilder<tree_tests::ValueType, kMinKeys>(config.GetMinKey(), config.GetMaxKey() + 1), config)();
 }
 
 TEST_CASE("insert_delete") {
@@ -33,4 +33,16 @@ TEST_CASE("insert_delete") {
 
 TEST_CASE("small_stress") {
     StressTest<3>(tree_tests::kSmallStressTestConfig);
+}
+
+TEST_CASE("mid_stress") {
+    StressTest<7>(tree_tests::kMidStressTestConfig);
+}
+
+TEST_CASE("big_dense_stress") {
+    StressTest<12>(tree_tests::kBigDenseStressTestConfig);
+}
+
+TEST_CASE("big_non_dense_stress") {
+    StressTest<16>(tree_tests::kBigNoDenseStressTestConfig);
 }

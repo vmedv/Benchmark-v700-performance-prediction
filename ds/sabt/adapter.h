@@ -7,24 +7,20 @@ using namespace std;
 
 #include "errors.h"
 #include "record_manager.h"
+#include "../../gsat/common/adapter_node_handler.h"
 
 #ifdef USE_TREE_STATS
 #   include "tree_stats.h"
 #endif
 
-#include "../../common/adapter_node_handler.h"
+#include "../../gsat/ds/sabt/sabt.h"
 
-#include "saist.h"
-
-#ifndef ALPHA
-#define ALPHA 0.5
+#ifndef BTREE_FACTOR
+#define BTREE_FACTOR 16
 #endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
-#define DATA_STRUCTURE_T SAIST<K, V>
-
-template<typename K, typename V>
-using Node = SAISTNode<K, V>;
+#define DATA_STRUCTURE_T SABT<K, V, BTREE_FACTOR>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -39,7 +35,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, ALPHA, KEY_MIN, KEY_MAX + 1, 32, 225, 1.75))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, 250, 1))
     { }
 
     ~ds_adapter() {
@@ -66,11 +62,11 @@ public:
     }
 
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return ds->InsertIfAbsent(key, val);
+        return ds->Insert(key, val);
     }
 
     V erase(const int tid, const K& key) {
-        return ds->Erase(key);
+        return ds->Delete(key);
     }
 
     V find(const int tid, const K& key) {
@@ -101,7 +97,7 @@ public:
     }
 
     void printObjectSizes() {
-        std::cout<< "sizes: node=" << (sizeof(Node<K, V>)) << std::endl;
+        std::cout<< "sizes: node=" << (sizeof(typename DATA_STRUCTURE_T::Node)) << std::endl;
     }
 
 #ifdef USE_TREE_STATS

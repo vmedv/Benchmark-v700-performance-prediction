@@ -2,7 +2,7 @@
 
 #include "../gsat/gsat.h"
 
-#include "delimiter.h"
+#include "constant_delimiter.h"
 #include "sabt_node.h"
 
 template<typename Key, typename Value, int kMaxKeys>
@@ -17,6 +17,8 @@ public:
 
     static constexpr int64_t kMinRebuildBound = 125;
     static constexpr double kRebuildFactor = 0.25;
+
+    using Node = SABTNode<Key, Value, kMaxKeys>;
 
     SABT(const Value &no_value, const Key &left, const Key &right, int64_t min_rebuild_bound, double rebuild_factor)
             : SABTBase<Key, Value, kMaxKeys>(no_value, left, right, kMaxKeys, min_rebuild_bound, rebuild_factor) {}

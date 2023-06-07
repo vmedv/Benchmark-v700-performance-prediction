@@ -36,7 +36,7 @@ public:
 
     static_assert(std::is_same<Node *, typename NodeHandler::NodePtrType>::value);
 
-    // [left, right]
+    // [left, right)
     IST(const Value &no_value, double alpha, const Key &left, const Key &right, int leaf_size,
         int min_rebuild_bound, double rebuild_factor)
             : no_value_(no_value),
@@ -131,9 +131,9 @@ public:
                 if (node->rep_size < node->capacity) {
                     node->Insert(index, key, value);
                 } else {
-                    const Key &left = index == 0 ? node->left : node->rep[index - 1];
-                    const Key &right = index == node->rep_size ? node->right : node->rep[index];
-                    Node *child = new Node(left, right, leaf_size_, min_rebuild_bound_);
+                    const Key& left = index == 0 ? node->left : node->rep[index - 1];
+                    const Key& right = index == node->rep_size ? node->right : node->rep[index];
+                    auto child = new Node(left, right, leaf_size_, min_rebuild_bound_);
                     child->Insert(0, key, value);
                     ++child->total_asize;
                     ++child->counter;
@@ -210,10 +210,11 @@ private:
         int at = 0;
         CollectNonMarked(node, rep, value_data, at);
 
-        Node *result = BuildIdealTree(node->left, node->right, 0, at, rep, value_data);
+        Node *result = BuildIdealTree(rep, value_data, 0, at, node->left, node->right);
 
         delete[] value_data;
         delete[] rep;
+
         delete node;
 
         return result;
@@ -239,8 +240,8 @@ private:
     }
 
     // [left, right)
-    Node *BuildIdealTree(const Key &left_bound, const Key &right_bound, int left, int right,
-                         Key *rep, ValueData *value_data) const {
+    Node *BuildIdealTree(Key *rep, ValueData *value_data, int left, int right, const Key &left_bound,
+                         const Key &right_bound) const {
         const int size = right - left;
         if (size <= 0) {
             return nullptr;
@@ -274,10 +275,10 @@ private:
             const Key &child_right_bound = node->rep[index];
 
             node->children[index] =
-                    BuildIdealTree(child_left_bound, child_right_bound, child_left, child_right, rep, value_data);
+                    BuildIdealTree(rep, value_data, child_left, child_right, child_left_bound, child_right_bound);
         }
         node->children[step] =
-                BuildIdealTree(node->rep[step - 1], right_bound, left + step * step, right, rep, value_data);
+                BuildIdealTree(rep, value_data, left + step * step, right, node->rep[step - 1], right_bound);
 
         node->BuildId(ceil(pow(size, alpha_)));
 

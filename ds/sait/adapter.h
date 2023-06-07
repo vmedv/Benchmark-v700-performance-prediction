@@ -13,10 +13,10 @@ using namespace std;
 #   include "tree_stats.h"
 #endif
 
-#include "../../gsat/ds/splay_tree/splay_tree.h"
+#include "../../gsat/ds/sait/sait.h"
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
-#define DATA_STRUCTURE_T SplayTree<K, V>
+#define DATA_STRUCTURE_T SAIT<K, V>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -31,14 +31,14 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, 8, 225, 0.75))
     { }
 
     ~ds_adapter() {
         delete ds;
     }
 
-    V getNoValue() const {
+    V getNoValue() {
         return NO_VALUE;
     }
 
@@ -82,7 +82,7 @@ public:
 //        ds->print_inner_structure();
     }
 
-    bool validateStructure() const {
+    bool validateStructure() {
         try {
             ds->Validate();
             return true;
@@ -92,7 +92,7 @@ public:
         }
     }
 
-    void printObjectSizes() const {
+    void printObjectSizes() {
         std::cout<< "sizes: node=" << (sizeof(typename DATA_STRUCTURE_T::Node)) << std::endl;
     }
 

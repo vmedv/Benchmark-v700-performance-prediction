@@ -1,40 +1,50 @@
 #pragma once
 
 #include "../gsat/gsat_node.h"
+#include <cmath>
 
 #ifdef KEY_SEARCH_TOTAL_STAT
 extern int64_t key_search_total_iters_cnt__;
 extern int64_t key_search_total_cnt__;
 #endif
 
-template<typename Key, typename Value, int kMaxKeys>
-struct SABTNode : public GSATNode<Key, Value> {
+template<typename Key, typename Value>
+struct SALTNode : public GSATNode<Key, Value> {
     using Base = GSATNode<Key, Value>;
 
-    Key rep[kMaxKeys];
-    Base::ValueData value_data[kMaxKeys];
-    SABTNode *children[kMaxKeys + 1];
+    Key* rep;
+    Base::ValueData* value_data;
+    SALTNode** children;
 
-    SABTNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)
-            : Base(left, right, rebuild_bound) {
-        std::fill(children, children + kMaxKeys + 1, nullptr);
+    int capacity;
+
+    SALTNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)
+            : Base(left, right, rebuild_bound)
+            , rep(new Key[capacity])
+            , value_data(new Base::ValueData[capacity])
+            , children(new SALTNode*[capacity + 1])
+            , capacity(capacity) {
+        std::fill(children, children + capacity + 1, nullptr);
     }
 
-    ~SABTNode() {
+    ~SALTNode() {
+        delete[] rep;
+        delete[] value_data;
         for (int index = 0; index <= this->rep_size; ++index) {
             delete children[index];
         }
+        delete[] children;
     }
 
     int GetCapacity() const {
-        return kMaxKeys;
+        return capacity;
     }
 
     void Complete(int64_t total_accesses) {
         INITIALIZE_LEAF(this)
     }
 
-    int Search(const Key& key) {
+    int Search(const Key &key) const {
         int l = -1;
         int r = this->rep_size;
         while (r - l > 1) {
