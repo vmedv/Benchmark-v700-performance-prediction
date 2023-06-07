@@ -11,16 +11,17 @@ using SALTBase = GSAT<LogDelimiter, SALTNode<Key, Value>, Key, Value>;
 template<typename Key, typename Value>
 class SALT : public SALTBase<Key, Value> {
 public:
-
     static constexpr int kMinLeafSize = 8;
     static constexpr int64_t kMinRebuildBound = 125;
     static constexpr double kRebuildFactor = 0.25;
 
     using Node = SALTNode<Key, Value>;
+    using Base = SALTBase<Key, Value>;
+    using NodeHandler = typename Base::NodeHandler;
 
     SALT(const Value &no_value, const Key &left, const Key &right, int leaf_size, int64_t min_rebuild_bound,
          double rebuild_factor)
-            : SALTBase<Key, Value>(no_value, left, right, leaf_size, min_rebuild_bound, rebuild_factor) {}
+            : Base(no_value, left, right, leaf_size, min_rebuild_bound, rebuild_factor) {}
 
     SALT(const Value &no_value, const Key &left, const Key &right)
             : SALT(no_value, left, right, kMinLeafSize, kMinRebuildBound, kRebuildFactor) {}

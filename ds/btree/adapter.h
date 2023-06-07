@@ -16,7 +16,7 @@ using namespace std;
 #include "../../gsat/ds/btree/btree.h"
 
 #ifndef BTREE_FACTOR
-#define BTREE_FACTOR 16
+#define BTREE_FACTOR 8
 #endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>

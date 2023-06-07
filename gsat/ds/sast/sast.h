@@ -15,9 +15,11 @@ public:
     static constexpr double kRebuildFactor = 0.25;
 
     using Node = SASTNode<Key, Value>;
+    using Base = SASTBase<Key, Value>;
+    using NodeHandler = typename Base::NodeHandler;
 
     SAST(const Value &no_value, const Key &left, const Key &right, int64_t min_rebuild_bound, double rebuild_factor)
-            : SASTBase<Key, Value>(no_value, left, right, 1, min_rebuild_bound, rebuild_factor) {}
+            : Base(no_value, left, right, 1, min_rebuild_bound, rebuild_factor) {}
 
     SAST(const Value &no_value, const Key &left, const Key &right)
             : SAST(no_value, left, right, kMinRebuildBound, kRebuildFactor) {}
