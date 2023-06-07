@@ -47,6 +47,7 @@ _bak
 */output_tex
 common/papi/a.out
 */python_env/
-*/plotter-output*/
 *-build-*/
 .idea/
+.vscode/
+
