@@ -140,7 +140,7 @@ class AvgStatAggregator(StatAggregator):
             self.avg_vals.append(numpy.average(values))
 
     def plot(self, ax):
-        ax.plot(self.keys, self.avg_vals, self.color, label=self.ds)
+        ax.plot(self.keys, self.avg_vals, color=self.color, label=self.ds)
 
     def out(self, output_dir):
         out_file = output_dir / f"{to_file_name(self.stat)}.{OUT_FORMAT}"
