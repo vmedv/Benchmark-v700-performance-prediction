@@ -12,7 +12,7 @@ struct SABTNode : public GSATNode<Key, Value> {
     using Base = GSATNode<Key, Value>;
 
     Key rep[kMaxKeys];
-    Base::ValueData value_data[kMaxKeys];
+    typename Base::ValueData value_data[kMaxKeys];
     SABTNode *children[kMaxKeys + 1];
 
     SABTNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)

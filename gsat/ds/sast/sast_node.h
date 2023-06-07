@@ -13,7 +13,7 @@ struct SASTNode : public GSATNode<Key, Value> {
     using Base = GSATNode<Key, Value>;
 
     Key rep[1];
-    Base::ValueData value_data[1];
+    typename Base::ValueData value_data[1];
     SASTNode* children[2];
 
     SASTNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)

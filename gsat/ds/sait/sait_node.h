@@ -18,7 +18,7 @@ struct SAITNode : public GSATNode<Key, Value> {
     using Base = GSATNode<Key, Value>;
 
     Key* rep;
-    Base::ValueData* value_data;
+    typename Base::ValueData* value_data;
     SAITNode** children;
     int* id;
 
@@ -28,7 +28,7 @@ struct SAITNode : public GSATNode<Key, Value> {
     SAITNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)
             : Base(left, right, rebuild_bound)
             , rep(new Key[capacity])
-            , value_data(new Base::ValueData[capacity])
+            , value_data(new typename Base::ValueData[capacity])
             , children(new SAITNode*[capacity + 1])
             , id(nullptr)
             , capacity(capacity)

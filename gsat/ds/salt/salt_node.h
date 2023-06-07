@@ -13,7 +13,7 @@ struct SALTNode : public GSATNode<Key, Value> {
     using Base = GSATNode<Key, Value>;
 
     Key* rep;
-    Base::ValueData* value_data;
+    typename Base::ValueData* value_data;
     SALTNode** children;
 
     int capacity;
@@ -21,7 +21,7 @@ struct SALTNode : public GSATNode<Key, Value> {
     SALTNode(const Key &left, const Key &right, int capacity, int64_t rebuild_bound)
             : Base(left, right, rebuild_bound)
             , rep(new Key[capacity])
-            , value_data(new Base::ValueData[capacity])
+            , value_data(new typename Base::ValueData[capacity])
             , children(new SALTNode*[capacity + 1])
             , capacity(capacity) {
         std::fill(children, children + capacity + 1, nullptr);
