@@ -1,7 +1,8 @@
 package contention.benchmark.ThreadLoops.impls;
 
 import contention.abstractions.CompositionalMap;
-import contention.abstractions.ThreadLoopAbstract;
+import contention.abstractions.DataStructure;
+import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
 import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
@@ -9,15 +10,12 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DeleteSpeedTest extends ThreadLoopAbstract {
-    /**
-     * The instance of the running benchmark
-     */
-    public CompositionalMap<Integer, Integer> bench;
 
-    public DeleteSpeedTest(short myThreadNum, CompositionalMap<Integer, Integer> bench,
+    public DeleteSpeedTest(int myThreadNum,
+                           DataStructure<Integer> dataStructure,
+//                           CompositionalMap<Integer, Integer> bench,
                            Method[] methods) {
-        super(myThreadNum, methods, null);
-        this.bench = bench;
+        super(myThreadNum, dataStructure, methods);
 
     }
 
@@ -31,10 +29,12 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
         long startNanoTime = System.nanoTime();
 
         for (int i = lastLayer; i < vertices.size(); i++) {
-            bench.remove(vertices.get(i));
+            remove(vertices.get(i));
         }
 
-        while (!bench.isEmpty());
+//        while (!bench.isEmpty());
+        // TODO The isEmpty() method includes logically removed nodes, when the size() does not
+        while (size() > 0);
 
         long endTime = System.currentTimeMillis();
         long endNanoTime = System.nanoTime();
@@ -55,6 +55,11 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
     }
 
     @Override
+    public void step() {
+
+    }
+
+    @Override
     public void prefill(AtomicInteger prefillSize) {
         int size = prefillSize.get();
         vertices = new ArrayList<>(size);
@@ -72,7 +77,8 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
             int nextVert = (next.left + next.right) / 2;
 
             vertices.add(nextVert);
-            bench.putIfAbsent(nextVert, nextVert);
+            insert(nextVert);
+//            bench.putIfAbsent(nextVert, nextVert);
 
             if (next.left == next.right) {
                 continue;
@@ -84,7 +90,8 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
 
         for (int i = 0, deg = 1; i + deg < size; deg <<= 1) {
             for (int j = 0; j < deg; j++) {
-                bench.remove(vertices.get(i + j));
+//                bench.remove(vertices.get(i + j));
+                remove(vertices.get(i + j));
             }
             i += deg;
             lastLayer = i;

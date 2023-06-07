@@ -1,6 +1,8 @@
 package contention.benchmark.ThreadLoops.impls;
 
 import contention.abstractions.*;
+import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
+import contention.benchmark.ThreadLoops.parameters.DeleteLeafsParameters;
 import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
@@ -11,18 +13,14 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class DeleteLeafsWorkload extends ThreadLoopAbstract {
-    /**
-     * The instance of the running benchmark
-     */
-    public final CompositionalMap<Integer, Integer> bench;
     private WorkloadEpoch workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
     private static List<Integer> vertices;
     private static int lastLayer;
 
-    public DeleteLeafsWorkload(short myThreadNum, CompositionalMap<Integer, Integer> bench,
-                               Method[] methods, Parameters parameters) {
-        super(myThreadNum, methods, null);
-        this.bench = bench;
+    public DeleteLeafsWorkload(int myThreadNum, DataStructure<Integer> dataStructure,
+//                               CompositionalMap<Integer, Integer> bench,
+                               Method[] methods, DeleteLeafsParameters parameters) {
+        super(myThreadNum, dataStructure, methods);
         int size = parameters.range;
         vertices = new ArrayList<>(size);
         Queue<Range> vertQueue = new ArrayDeque<>();
@@ -60,74 +58,49 @@ public class DeleteLeafsWorkload extends ThreadLoopAbstract {
 
     @Override
     public void run() {
-        int curIndex = 0;
+        curIndex = 0;
+        super.run();
+    }
 
-        while (!stop) {
-            Integer a, b;
+    private int curIndex;
 
-            switch (workloadEpoch) {
-                case ADD -> {
-                    int newInt = vertices.get(curIndex++);
+    @Override
+    public void step() {
+        switch (workloadEpoch) {
+            case ADD -> {
+                int key = vertices.get(curIndex++);
+                insert(key);
 
-                    if ((a = bench.putIfAbsent(newInt, newInt)) == null) {
-                        numAdd++;
-                    } else {
-                        failures++;
-                    }
-
-                    if (curIndex >= vertices.size()) {
-                        workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
-                        curIndex = 0;
-                    }
-                }
-                case DELETE_INTERNAL -> {
-                    int newInt = vertices.get(curIndex++);
-
-                    if ((a = bench.remove(newInt)) != null) {
-                        numRemove++;
-                    } else {
-                        failures++;
-                    }
-
-                    if (curIndex >= lastLayer) {
-                        workloadEpoch = WorkloadEpoch.DELETE_LEAF;
-                        curIndex = lastLayer;
-                    }
-                }
-                case DELETE_LEAF -> {
-                    int newInt = vertices.get(curIndex++);
-
-                    if ((a = bench.remove(newInt)) != null) {
-                        numRemove++;
-                    } else {
-                        failures++;
-                    }
-
-                    if (curIndex >= vertices.size()) {
-                        workloadEpoch = WorkloadEpoch.ADD;
-                        curIndex = 0;
-                    }
+                if (curIndex >= vertices.size()) {
+                    workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
+                    curIndex = 0;
                 }
             }
+            case DELETE_INTERNAL -> {
+                int key = vertices.get(curIndex++);
+                remove(key);
 
-            total++;
+                if (curIndex >= lastLayer) {
+                    workloadEpoch = WorkloadEpoch.DELETE_LEAF;
+                    curIndex = lastLayer;
+                }
+            }
+            case DELETE_LEAF -> {
+                int key = vertices.get(curIndex++);
+                remove(key);
 
-            assert total == failures + numContains + numSize + numRemove
-                    + numAdd + numRemoveAll + numAddAll;
+                if (curIndex >= vertices.size()) {
+                    workloadEpoch = WorkloadEpoch.ADD;
+                    curIndex = 0;
+                }
+            }
         }
-
-
-        // System.out.println(numAdd + " " + numRemove + " " + failures);
-        this.getCount = CompositionalMap.counts.get().getCount;
-        this.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
-        this.structMods = CompositionalMap.counts.get().structMods;
-        System.out.println("Thread #" + myThreadNum + " finished.");
     }
 
     @Override
     public void prefill(AtomicInteger prefillSize) {
-        for (int newInt : vertices) {
-            bench.putIfAbsent(newInt, newInt);
+        for (int key : vertices) {
+            insert(key);
         }
     }
 

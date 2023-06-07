@@ -1,6 +1,6 @@
 package contention.benchmark.distributions;
 
-import contention.abstractions.MutableDistribution;
+import contention.benchmark.distributions.abstractions.MutableDistribution;
 
 import java.util.Random;
 

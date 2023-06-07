@@ -1,35 +1,39 @@
 package contention.benchmark.keygenerators.builders;
 
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.data.KeyGeneratorData;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.CreakersAndWaveKeyGenerator;
+import contention.benchmark.datamap.abstractions.DataMap;
+import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.datamap.ArrayDataMap;
+import contention.benchmark.Parameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.keygenerators.impls.CreakersAndWaveKeyGenerator;
 import contention.benchmark.keygenerators.parameters.CreakersAndWaveParameters;
 
 public class CreakersAndWaveKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
-    public CreakersAndWaveKeyGeneratorBuilder(Parameters parameters) {
+    public CreakersAndWaveKeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         super(parameters);
     }
 
+    private DataMap data;
+
     @Override
-    public KeyGenerator[] generateKeyGenerators() {
+    public void build(Parameters generalParameters) {
+        super.build(generalParameters);
+
+        data = new ArrayDataMap(generalParameters);
+    }
+
+    @Override
+    public KeyGenerator getKeyGenerator() {
         CreakersAndWaveParameters parameters = (CreakersAndWaveParameters) this.parameters;
 
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
-
-        KeyGeneratorData data = new KeyGeneratorData(parameters);
-
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new CreakersAndWaveKeyGenerator(
-                    data,
-                    parameters,
-                    parameters.creakersDistBuilder.getDistribution(parameters.creakersLength),
-                    parameters.waveDistBuilder.getDistribution()
-            );
-        }
-
-        return keygens;
+        return new CreakersAndWaveKeyGenerator(
+                data,
+                parameters
+//                ,
+//                parameters.creakersDistBuilder.getDistribution(parameters.creakersLength),
+//                parameters.waveDistBuilder.getDistribution()
+        );
     }
 }

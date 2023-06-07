@@ -6,7 +6,6 @@ import java.util.Random;
 import org.deuce.Atomic;
 
 import contention.abstractions.CompositionalIntSet;
-import contention.abstractions.Parameters;
 
 
 /**

@@ -1,55 +1,61 @@
 package contention.benchmark.keygenerators.builders;
 
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.data.KeyGeneratorData;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.*;
+import contention.benchmark.datamap.abstractions.DataMap;
+import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.datamap.ArrayDataMap;
+import contention.benchmark.Parameters;
+import contention.benchmark.datamap.IdDataMap;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.keygenerators.impls.LeafsHandshakeKeyGenerator;
 import contention.benchmark.keygenerators.parameters.LeafsHandshakeParameters;
 
 public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
-    public LeafsHandshakeKeyGeneratorBuilder(Parameters parameters) {
+    public LeafsHandshakeKeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         super(parameters);
     }
 
+    private DataMap readData;
+    private DataMap eraseData;
+    private Parameters generalParameters;
+
     @Override
-    public KeyGenerator[] generateKeyGenerators() {
+    public void build(Parameters generalParameters) {
+        super.build(generalParameters);
+
+        this.generalParameters = generalParameters;
+
         LeafsHandshakeParameters parameters = (LeafsHandshakeParameters) this.parameters;
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
-
-        KeyGeneratorData readData = switch (parameters.readDistBuilder.distributionType) {
-            case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-            default -> new KeyGeneratorData();
+        readData = switch (parameters.readDistBuilder.distributionType) {
+            case ZIPF, SKEWED_UNIFORM -> new ArrayDataMap(generalParameters);
+            default -> new IdDataMap();
         };
-        KeyGeneratorData eraseData;
         // todo think about the intersection of sets
         if (parameters.readDistBuilder.distributionType == parameters.removeDistBuilder.distributionType) {
             eraseData = readData;
         } else {
             eraseData = switch (parameters.readDistBuilder.distributionType) {
-                case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-                default -> new KeyGeneratorData();
+                case ZIPF, SKEWED_UNIFORM -> new ArrayDataMap(generalParameters);
+                default -> new IdDataMap();
             };
         }
+    }
 
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new LeafsHandshakeKeyGenerator(
-                    readData,
-                    eraseData,
-                    parameters,
-                    parameters.readDistBuilder.getDistribution(parameters.range),
-                    parameters.insertDistBuilder.getDistribution(),
-                    parameters.removeDistBuilder.getDistribution(parameters.range)
-            );
-        }
 
-        // to initialize deletedValue
-//        keygens[0].nextErase();
-//        LeafsHandshakeKeyGenerator.deletedValue = new AtomicInteger(keygens[0].nextErase());
-
-        return keygens;
+    @Override
+    public KeyGenerator getKeyGenerator() {
+        return new LeafsHandshakeKeyGenerator(
+                readData,
+                eraseData,
+                (LeafsHandshakeParameters) this.parameters,
+                generalParameters.range
+//                ,
+//                parameters.readDistBuilder.getDistribution(parameters.range),
+//                parameters.insertDistBuilder.getDistribution(),
+//                parameters.removeDistBuilder.getDistribution(parameters.range)
+        );
     }
 
 }

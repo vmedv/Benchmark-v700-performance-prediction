@@ -1,47 +1,42 @@
 package contention.benchmark.keygenerators.builders;
 
-import contention.abstractions.*;
-import contention.benchmark.distributions.SkewedUniformDistribution;
-import contention.benchmark.distributions.UniformDistribution;
-import contention.benchmark.keygenerators.TemporarySkewedKeyGenerator;
-import contention.benchmark.keygenerators.data.KeyGeneratorData;
+import contention.benchmark.Parameters;
+import contention.benchmark.datamap.abstractions.DataMap;
+import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.keygenerators.impls.TemporarySkewedKeyGenerator;
+import contention.benchmark.datamap.ArrayDataMap;
 import contention.benchmark.keygenerators.parameters.TemporarySkewedParameters;
 
 public class TemporarySkewedKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
-    public TemporarySkewedKeyGeneratorBuilder(Parameters parameters) {
+    public TemporarySkewedKeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         super(parameters);
     }
 
+    private DataMap data;
+    private Parameters generalParameters;
+
     @Override
-    public KeyGenerator[] generateKeyGenerators() {
+    public void build(Parameters generalParameters) {
+        super.build(generalParameters);
+
+        data = new ArrayDataMap(generalParameters);
+    }
+
+    @Override
+    public KeyGenerator getKeyGenerator() {
         TemporarySkewedParameters parameters = (TemporarySkewedParameters) this.parameters;
 
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
-
-        KeyGeneratorData data = new KeyGeneratorData(parameters);
-
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            Distribution[] hotDists = new Distribution[parameters.setCount];
-
-            for (int i = 0; i < parameters.setCount; ++i) {
-                hotDists[i] = new SkewedUniformDistribution(
-                        parameters.setsLengths[i],
-                        parameters.hotProbs[i],
-                        new UniformDistribution(parameters.setsLengths[i]),
-                        new UniformDistribution(parameters.range - parameters.setsLengths[i])
-                );
-            }
-
-            keygens[threadNum] = new TemporarySkewedKeyGenerator(
-                    data,
-                    parameters,
-                    hotDists,
-                    new UniformDistribution(parameters.range)
-            );
-        }
-
-        return keygens;
+        return new TemporarySkewedKeyGenerator(
+                data,
+                parameters,
+                generalParameters.range
+//                ,
+//                hotDists,
+//                new UniformDistribution(parameters.range)
+        );
     }
 
 }

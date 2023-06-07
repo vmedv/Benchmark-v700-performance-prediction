@@ -1,9 +1,11 @@
 package contention.benchmark.ThreadLoops.parameters;
 
+import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
-import contention.abstractions.ThreadLoopParameters;
+import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
 
-public class DefaultThreadLoopParameters implements ThreadLoopParameters {
+public class DefaultThreadLoopParameters extends ThreadLoopParameters {
     public double
             numWrites = 0.4,
             numInsert = 0.2,
@@ -11,8 +13,12 @@ public class DefaultThreadLoopParameters implements ThreadLoopParameters {
             numWriteAlls = 0,
             numSnapshots = 0;
 
-    public void build() {
+    public KeyGeneratorBuilder keyGeneratorBuilder;
+
+    @Override
+    public void build(Parameters parameters) {
         this.numWrites = this.numInsert + this.numRemove;
+        keyGeneratorBuilder.build(parameters);
     }
 
     public boolean parseArg(ParseArgument args) {
@@ -30,7 +36,7 @@ public class DefaultThreadLoopParameters implements ThreadLoopParameters {
                 case "--writeAll", "-a" -> this.numWriteAlls = Double.parseDouble(args.getNext());
                 case "--snapshots", "-s" -> this.numSnapshots = Double.parseDouble(args.getNext());
                 default -> {
-                    return true;
+                    return keyGeneratorBuilder.parameters.parseArg(args);
                 }
             }
         } catch (NumberFormatException e) {
@@ -57,7 +63,8 @@ public class DefaultThreadLoopParameters implements ThreadLoopParameters {
                 .append(" \n")
                 .append("  Snapshot ratio:          \t")
                 .append(this.numSnapshots)
-                .append(" \n");
+                .append(" \n")
+                .append(keyGeneratorBuilder.parameters.toStringBuilder());
     }
 }
 

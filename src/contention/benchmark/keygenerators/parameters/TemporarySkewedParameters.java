@@ -1,7 +1,8 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.abstractions.Parameters;
+import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
 import java.util.Arrays;
 
@@ -16,7 +17,7 @@ import java.util.Arrays;
  * // rt — если relax time всегда одинаковый
  * // rti — relax time после горячей работы с i-ым множеством
  */
-public class TemporarySkewedParameters extends Parameters {
+public class TemporarySkewedParameters implements KeyGeneratorParameters {
     public int setCount = 0;
     public double[] setSizes;
     public double[] hotProbs;
@@ -84,21 +85,19 @@ public class TemporarySkewedParameters extends Parameters {
     public int[] setsBegins;
 
     @Override
-    public void build() {
-        super.build();
+    public void build(Parameters parameters) {
         setsLengths = new int[setCount + 1];
         setsBegins = new int[setCount + 1];
         setsBegins[0] = 0;
 
         for (int i = 0; i < setCount; i++) {
-            setsLengths[i] = (int) (range * setSizes[i]);
+            setsLengths[i] = (int) (parameters.range * setSizes[i]);
             setsBegins[i + 1] = setsBegins[i] + setsLengths[i];
         }
     }
 
-
     @Override
-    protected void parseArg(ParseArgument args) {
+    public boolean parseArg(ParseArgument args) {
         switch (args.getCurrent()) {
             case "-set-count" -> setSetCount(Integer.parseInt(args.getNext()));
             case "-rt" -> setCommonRelaxTime(Integer.parseInt(args.getNext()));
@@ -107,17 +106,19 @@ public class TemporarySkewedParameters extends Parameters {
             case "-pi" -> setHotProb(Integer.parseInt(args.getNext()), Double.parseDouble(args.getNext()));
             case "-hti" -> setHotTime(Integer.parseInt(args.getNext()), Integer.parseInt(args.getNext()));
             case "-rti" -> setRelaxTimes(Integer.parseInt(args.getNext()), Integer.parseInt(args.getNext()));
-            default -> super.parseArg(args);
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
     public StringBuilder toStringBuilder() {
-        StringBuilder params = super.toStringBuilder();
+        StringBuilder params = new StringBuilder();
         params
-//                .append("\n")
-//                .append("  Key Generator:           \t")
-//                .append(this.keygenType)
+                .append("\n")
+                .append("  Key Generator:           \tTEMPORARY_SKEWED")
                 .append("\n")
                 .append("  Number of Sets:          \t")
                 .append(this.setCount)

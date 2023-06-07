@@ -1,7 +1,11 @@
 package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.*;
+import contention.benchmark.Parameters;
+import contention.benchmark.distributions.abstractions.DistributionBuilder;
+import contention.benchmark.distributions.abstractions.DistributionType;
 import contention.benchmark.distributions.parameters.ZipfParameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * // при желании можно переработать на "100% - ca — чтение, ca — запись"
  * (то есть брать ca не от общей вероятности, а только при чтении"
  */
-public class CreakersAndWaveParameters extends Parameters {
+public class CreakersAndWaveParameters implements KeyGeneratorParameters {
     public double CREAKERS_SIZE = 0;
     public double CREAKERS_PROB = 0;
     public long CREAKERS_AGE = 0;
@@ -38,22 +42,23 @@ public class CreakersAndWaveParameters extends Parameters {
     public int creakersBegin;
     public AtomicInteger waveBegin;
     public AtomicInteger waveEnd;
+    public int prefillSize;
 
 
     @Override
-    public void build() {
-        super.build();
-        creakersLength = (int) (range * CREAKERS_SIZE);
-        creakersBegin = range - creakersLength;
-        defaultWaveLength = (int) (range * WAVE_SIZE);
+    public void build(Parameters parameters) {
+        creakersLength = (int) (parameters.range * CREAKERS_SIZE);
+        creakersBegin = parameters.range - creakersLength;
+        defaultWaveLength = (int) (parameters.range * WAVE_SIZE);
         waveEnd = new AtomicInteger(creakersBegin);
         waveBegin = new AtomicInteger(waveEnd.get() - defaultWaveLength);
 
-        size = (int) (range * this.CREAKERS_SIZE) + (int) (range * this.WAVE_SIZE);
+        prefillSize = (int) (parameters.range * this.CREAKERS_SIZE) + (int) (parameters.range * this.WAVE_SIZE);
+        parameters.size = prefillSize;
     }
 
     @Override
-    public void parseArg(ParseArgument args) {
+    public boolean parseArg(ParseArgument args) {
         switch (args.getCurrent()) {
             case "-gs", "-cs" -> this.CREAKERS_SIZE = Double.parseDouble(args.getNext());
             case "-gp", "-cp" -> this.CREAKERS_PROB = Double.parseDouble(args.getNext());
@@ -65,16 +70,19 @@ public class CreakersAndWaveParameters extends Parameters {
                 args.getNext();
                 System.err.println("CreakersAndWave key generator does not accept prefill size argument. Ignoring...");
             }
-            default -> super.parseArg(args);
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
     public StringBuilder toStringBuilder() {
-        StringBuilder params = super.toStringBuilder();
+        StringBuilder params = new StringBuilder();
         params
-//                .append("\n")
-//                .append("  Key Generator:           \tCREAKERS_AND_WAVE")
+                .append("\n")
+                .append("  Key Generator:           \tCREAKERS_AND_WAVE")
                 .append("\n")
                 .append("  Creakers size:           \t")
                 .append(this.CREAKERS_SIZE)

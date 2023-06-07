@@ -9,10 +9,10 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import contention.benchmark.ThreadLoops.*;
-import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
-import contention.benchmark.ThreadLoops.impls.*;
-import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
+import contention.benchmark.ThreadLoops.abstractions.ThreadLoop;
+import contention.benchmark.datasctucrure.MapDataStructure;
+import contention.benchmark.datasctucrure.IntSetDataStructure;
+import contention.benchmark.datasctucrure.SortedSetDataStructure;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -75,10 +75,11 @@ public class Test {
      */
     private Type benchType = null;
     private Parameters parameters;
-    private KeyGeneratorBuilder keyGeneratorBuilder;
-    private CompositionalIntSet setBench = null;
-    private CompositionalSortedSet<Integer> sortedBench = null;
-    private CompositionalMap<Integer, Integer> mapBench = null;
+//    private KeyGeneratorBuilder keyGeneratorBuilder;
+    private DataStructure<Integer> dataStructure;
+//    private CompositionalIntSet setBench = null;
+//    private CompositionalSortedSet<Integer> sortedBench = null;
+//    private CompositionalMap<Integer, Integer> mapBench = null;
     /**
      * The instance of the benchmark
      */
@@ -143,13 +144,17 @@ public class Test {
             methods = benchClass.getDeclaredMethods();
 
             if (CompositionalIntSet.class.isAssignableFrom((Class<?>) benchClass)) {
-                setBench = (CompositionalIntSet) c.newInstance();
+                dataStructure = new IntSetDataStructure((CompositionalIntSet) c.newInstance());
+//                setBench = (CompositionalIntSet) c.newInstance();
                 benchType = Type.INTSET;
             } else if (CompositionalMap.class.isAssignableFrom((Class<?>) benchClass)) {
-                mapBench = (CompositionalMap<Integer, Integer>) c.newInstance();
+                dataStructure = new MapDataStructure<>(c.newInstance());
+
+//                mapBench = (CompositionalMap<Integer, Integer>) c.newInstance();
                 benchType = benchType != null ? benchType : Type.MAP;
             } else if (CompositionalSortedSet.class.isAssignableFrom((Class<?>) benchClass)) {
-                sortedBench = (CompositionalSortedSet<Integer>) c.newInstance();
+                dataStructure = new SortedSetDataStructure<>((CompositionalSortedSet<Integer>) c.newInstance());
+//                sortedBench = (CompositionalSortedSet<Integer>) c.newInstance();
                 benchType = Type.SORTEDSET;
             }
 
@@ -164,31 +169,46 @@ public class Test {
      * Creates as many threads as requested
      */
     private void initThreads() {
-        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
+//        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
 
         threads = new Thread[parameters.numThreads];
         threadLoops = new ThreadLoop[parameters.numThreads];
 
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+        for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
 
-            threadLoops[threadNum] = switch (benchType) {
-                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-                case MAP -> switch (parameters.threadLoopType) {
-                    case DEFAULT -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods);
-                    case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
-                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, mapBench, methods,
-                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-                    case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, mapBench, methods,
-                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-                };
-                case SORTEDSET ->
-                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
 
-            };
+//            threadLoops[threadNum] = parameters.threadLoopParameters
+//            threadLoops[threadNum] = switch (benchType) {
+//                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+//                case MAP -> switch (parameters.threadLoopType) {
+//                    case DEFAULT -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+//                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods);
+//                    case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
+//                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, mapBench, methods,
+//                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
+//                    case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, mapBench, methods,
+//                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
+//                };
+//                case SORTEDSET ->
+//                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+
+//            threadLoops[threadNum] = switch (parameters.threadLoopType) {
+//                case DEFAULT -> new DefaultThreadLoop(threadNum, dataStructure, methods, keygens[threadNum],
+//                        (DefaultThreadLoopParameters) parameters.threadLoopParameters);
+//                case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, dataStructure, methods);
+//                case DELETE_LEAFS ->
+//                        new DeleteLeafsWorkload(threadNum, dataStructure, methods, (DeleteLeafsParameters) parameters.threadLoopParameters);
+//                case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, dataStructure, methods,
+//                        keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
+//                case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, dataStructure, methods,
+//                        keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
+//            };
+
+            threadLoops[threadNum] = parameters.getWorkload(threadNum, dataStructure, methods);
 
             threads[threadNum] = new Thread(threadLoops[threadNum]);
         }
+
     }
 
     /**
@@ -236,11 +256,12 @@ public class Test {
     }
 
     public void clear() {
-        switch (benchType) {
-            case INTSET -> setBench.clear();
-            case MAP -> mapBench.clear();
-            case SORTEDSET -> sortedBench.clear();
-        }
+        dataStructure.clear();
+//        switch (benchType) {
+//            case INTSET -> setBench.clear();
+//            case MAP -> mapBench.clear();
+//            case SORTEDSET -> sortedBench.clear();
+//        }
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -265,15 +286,17 @@ public class Test {
             test.resetStats();
         }
 
+        assert test.dataStructure.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+
         // check that the structure is empty
-        switch (test.benchType) {
-            case INTSET:
-                assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-            case MAP:
-                assert test.mapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-            case SORTEDSET:
-                assert test.sortedBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-        }
+//        switch (test.benchType) {
+//            case INTSET:
+//                assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+//            case MAP:
+//                assert test.mapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+//            case SORTEDSET:
+//                assert test.sortedBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+//        }
 
         // running the bench
         for (int i = 0; i < test.parameters.iterations; i++) {
@@ -292,21 +315,26 @@ public class Test {
             }
             test.execute(test.parameters.numMilliseconds, false);
 
-            if (test.setBench instanceof MaintenanceAlg) {
-                ((MaintenanceAlg) test.setBench).stopMaintenance();
-                test.structMods += ((MaintenanceAlg) test.setBench)
-                        .getStructMods();
+            if (test.dataStructure.getDataStructure() instanceof MaintenanceAlg) {
+                ((MaintenanceAlg) test.dataStructure.getDataStructure()).stopMaintenance();
+                test.structMods += ((MaintenanceAlg) test.dataStructure.getDataStructure()).getStructMods();
             }
-            if (test.mapBench instanceof MaintenanceAlg) {
-                ((MaintenanceAlg) test.mapBench).stopMaintenance();
-                test.structMods += ((MaintenanceAlg) test.mapBench)
-                        .getStructMods();
-            }
-            if (test.sortedBench instanceof MaintenanceAlg) {
-                ((MaintenanceAlg) test.sortedBench).stopMaintenance();
-                test.structMods += ((MaintenanceAlg) test.sortedBench)
-                        .getStructMods();
-            }
+
+//            if (test.setBench instanceof MaintenanceAlg) {
+//                ((MaintenanceAlg) test.setBench).stopMaintenance();
+//                test.structMods += ((MaintenanceAlg) test.setBench)
+//                        .getStructMods();
+//            }
+//            if (test.mapBench instanceof MaintenanceAlg) {
+//                ((MaintenanceAlg) test.mapBench).stopMaintenance();
+//                test.structMods += ((MaintenanceAlg) test.mapBench)
+//                        .getStructMods();
+//            }
+//            if (test.sortedBench instanceof MaintenanceAlg) {
+//                ((MaintenanceAlg) test.sortedBench).stopMaintenance();
+//                test.structMods += ((MaintenanceAlg) test.sortedBench)
+//                        .getStructMods();
+//            }
 
             test.printBasicStats();
             if (test.parameters.detailedStats)
@@ -335,9 +363,7 @@ public class Test {
             }
         }
 
-        keyGeneratorBuilder = Parameters.parse(args);
-
-        parameters = keyGeneratorBuilder.parameters;
+        parameters = Parameters.parse(args);
 
         assert (parameters.range >= parameters.size);
 //        if (parameters.range != 2 * parameters.size)
@@ -386,21 +412,21 @@ public class Test {
                 + "\t-d duration   -- set the length of the benchmark, in milliseconds (default: "
                 + parameters.numMilliseconds
                 + ")\n"
-                + "\t-u updates    -- set the percentage of updates (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWrites
-                + ")\n"
-                + "\t-ue inserts   -- set the percentage of threads (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numInsert
-                + ")\n"
-                + "\t-ui removes   -- set the percentage of erases (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numRemove
-                + ")\n"
-                + "\t-a writeAll   -- set the percentage of composite updates (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWriteAlls
-                + ")\n"
-                + "\t-s snapshot   -- set the percentage of composite read-only operations (default: "
-                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numSnapshots
-                + ")\n"
+//                + "\t-u updates    -- set the percentage of updates (default: "
+//                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWrites
+//                + ")\n"
+//                + "\t-ue inserts   -- set the percentage of threads (default: "
+//                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numInsert
+//                + ")\n"
+//                + "\t-ui removes   -- set the percentage of erases (default: "
+//                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numRemove
+//                + ")\n"
+//                + "\t-a writeAll   -- set the percentage of composite updates (default: "
+//                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWriteAlls
+//                + ")\n"
+//                + "\t-s snapshot   -- set the percentage of composite read-only operations (default: "
+//                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numSnapshots
+//                + ")\n"
                 + "\t-r range      -- set the element range (default: "
                 + parameters.range
                 + ")\n"
@@ -485,11 +511,13 @@ public class Test {
         System.out.println("    unsuccessful ops:      \t" + failures + "\t( "
                 + formatDouble(((double) failures / (double) total) * 100)
                 + " %)");
-        finalSize = switch (benchType) {
-            case INTSET -> setBench.size();
-            case MAP -> mapBench.size();
-            case SORTEDSET -> sortedBench.size();
-        };
+        finalSize = dataStructure.size();
+
+//        finalSize = switch (benchType) {
+//            case INTSET -> setBench.size();
+//            case MAP -> mapBench.size();
+//            case SORTEDSET -> sortedBench.size();
+//        };
         System.out.println("  Final size:              \t" + finalSize);
         assert finalSize == (parameters.size + numAdd - numRemove) : "Final size does not reflect the modifications.";
 
@@ -514,26 +542,31 @@ public class Test {
         // .getBottomLevelRaiseCount());
         // }
 
-        switch (benchType) {
-            case INTSET -> {
-                if (setBench instanceof MaintenanceAlg) {
-                    System.out.println("  #nodes (inc. deleted): \t"
-                            + ((MaintenanceAlg) setBench).numNodes());
-                }
-            }
-            case MAP -> {
-                if (mapBench instanceof MaintenanceAlg) {
-                    System.out.println("  #nodes (inc. deleted): \t"
-                            + ((MaintenanceAlg) mapBench).numNodes());
-                }
-            }
-            case SORTEDSET -> {
-                if (mapBench instanceof MaintenanceAlg) {
-                    System.out.println("  #nodes (inc. deleted): \t"
-                            + ((MaintenanceAlg) sortedBench).numNodes());
-                }
-            }
+        if (dataStructure.getDataStructure() instanceof MaintenanceAlg) {
+            System.out.println("  #nodes (inc. deleted): \t"
+                    + ((MaintenanceAlg) dataStructure.getDataStructure()).numNodes());
         }
+
+//        switch (benchType) {
+//            case INTSET -> {
+//                if (setBench instanceof MaintenanceAlg) {
+//                    System.out.println("  #nodes (inc. deleted): \t"
+//                            + ((MaintenanceAlg) setBench).numNodes());
+//                }
+//            }
+//            case MAP -> {
+//                if (mapBench instanceof MaintenanceAlg) {
+//                    System.out.println("  #nodes (inc. deleted): \t"
+//                            + ((MaintenanceAlg) mapBench).numNodes());
+//                }
+//            }
+//            case SORTEDSET -> {
+//                if (mapBench instanceof MaintenanceAlg) {
+//                    System.out.println("  #nodes (inc. deleted): \t"
+//                            + ((MaintenanceAlg) sortedBench).numNodes());
+//                }
+//            }
+//        }
 
     }
 

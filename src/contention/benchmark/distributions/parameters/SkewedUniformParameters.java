@@ -1,7 +1,7 @@
 package contention.benchmark.distributions.parameters;
 
-import contention.abstractions.DistributionBuilder;
-import contention.abstractions.DistributionParameters;
+import contention.benchmark.distributions.abstractions.DistributionBuilder;
+import contention.benchmark.distributions.abstractions.DistributionParameters;
 
 public class SkewedUniformParameters implements DistributionParameters {
     public double HOT_SIZE = 0;

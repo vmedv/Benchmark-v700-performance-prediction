@@ -1,35 +1,44 @@
 package contention.benchmark.keygenerators.builders;
 
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.data.KeyGeneratorData;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.DefaultKeyGenerator;
+import contention.benchmark.datamap.abstractions.DataMap;
+import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.Parameters;
+import contention.benchmark.datamap.*;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.keygenerators.impls.DefaultKeyGenerator;
 import contention.benchmark.keygenerators.parameters.DefaultParameters;
 
 public class DefaultKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
-    public DefaultKeyGeneratorBuilder(Parameters parameters) {
+    public DefaultKeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         super(parameters);
     }
 
+
+    private DataMap data;
+    private Parameters generalParameters;
+
     @Override
-    public KeyGenerator[] generateKeyGenerators() {
+    public void build(Parameters generalParameters) {
+        super.build(generalParameters);
+
+        this.generalParameters = generalParameters;
         DefaultParameters parameters = (DefaultParameters) this.parameters;
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
 
-        KeyGeneratorData data = switch (parameters.distributionBuilder.distributionType) {
-            case ZIPF, SKEWED_UNIFORM -> new KeyGeneratorData(parameters);
-            default -> new KeyGeneratorData();
+        data = switch (parameters.distributionBuilder.distributionType) {
+            case ZIPF, SKEWED_UNIFORM -> new ArrayDataMap(generalParameters);
+            default -> new IdDataMap();
         };
+    }
 
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new DefaultKeyGenerator(
-                    data,
-                    parameters.distributionBuilder.getDistribution(parameters.range)
-            );
-        }
+    @Override
+    public KeyGenerator getKeyGenerator() {
+        DefaultParameters parameters = (DefaultParameters) this.parameters;
 
-        return keygens;
+        return new DefaultKeyGenerator(
+                data,
+                parameters.distributionBuilder.getDistribution(generalParameters.range)
+        );
     }
 }

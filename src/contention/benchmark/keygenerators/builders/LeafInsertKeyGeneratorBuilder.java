@@ -1,27 +1,31 @@
 package contention.benchmark.keygenerators.builders;
 
-import contention.abstractions.KeyGenerator;
-import contention.abstractions.KeyGeneratorBuilder;
-import contention.abstractions.Parameters;
-import contention.benchmark.keygenerators.LeafInsertKeyGenerator;
-import contention.benchmark.keygenerators.data.LeafInsertKeyGeneratorData;
+import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.Parameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.keygenerators.impls.LeafInsertKeyGenerator;
+import contention.benchmark.datamap.LeafInsertDataMap;
 
 public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
-    public LeafInsertKeyGeneratorBuilder(Parameters parameters) {
+    public LeafInsertKeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         super(parameters);
     }
 
+    private LeafInsertDataMap data;
+    private Parameters generalParameters;
+
     @Override
-    public KeyGenerator[] generateKeyGenerators() {
-        KeyGenerator[] keygens = new KeyGenerator[parameters.numThreads];
+    public void build(Parameters generalParameters) {
+        super.build(generalParameters);
 
-        LeafInsertKeyGeneratorData data = new LeafInsertKeyGeneratorData(parameters);
+        data = new LeafInsertDataMap(generalParameters);
+        this.generalParameters = generalParameters;
+    }
 
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            keygens[threadNum] = new LeafInsertKeyGenerator(data, parameters.range);
-        }
-
-        return keygens;
+    @Override
+    public KeyGenerator getKeyGenerator() {
+        return new LeafInsertKeyGenerator(data, generalParameters.range);
     }
 }

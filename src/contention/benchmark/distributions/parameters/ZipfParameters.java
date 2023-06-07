@@ -1,6 +1,6 @@
 package contention.benchmark.distributions.parameters;
 
-import contention.abstractions.DistributionParameters;
+import contention.benchmark.distributions.abstractions.DistributionParameters;
 
 public class ZipfParameters implements DistributionParameters {
     public double alpha;

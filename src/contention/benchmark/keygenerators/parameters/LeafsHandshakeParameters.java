@@ -1,14 +1,15 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.abstractions.DistributionBuilder;
-import contention.abstractions.DistributionType;
-import contention.abstractions.Parameters;
+import contention.benchmark.distributions.abstractions.DistributionBuilder;
+import contention.benchmark.distributions.abstractions.DistributionType;
+import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.distributions.parameters.ZipfParameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LeafsHandshakeParameters extends Parameters {
+public class LeafsHandshakeParameters implements KeyGeneratorParameters {
     public DistributionBuilder readDistBuilder = new DistributionBuilder();
     public DistributionBuilder insertDistBuilder = new DistributionBuilder()
             .setDistributionType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
@@ -19,30 +20,33 @@ public class LeafsHandshakeParameters extends Parameters {
     // for LeafsExtensionHandshakeKeyGenerator
     public AtomicInteger curRange;
 
-    public void build() {
-        super.build();
-        deletedValue = new AtomicInteger(range/2);
+    @Override
+    public void build(Parameters parameters) {
+        deletedValue = new AtomicInteger(parameters.range/2);
         // for LeafsExtensionHandshakeKeyGenerator
-        curRange = new AtomicInteger(Math.max(10, size));
+        curRange = new AtomicInteger(Math.max(10, parameters.size));
+
     }
 
     @Override
-    protected void parseArg(ParseArgument args) {
+    public boolean parseArg(ParseArgument args) {
         switch (args.getCurrent()) {
             case "-read-dist" -> readDistBuilder.parseDistribution(args.next());
             case "-insert-dist" -> insertDistBuilder.parseDistribution(args.next());
             case "-erase-dist" -> removeDistBuilder.parseDistribution(args.next());
-            default -> super.parseArg(args);
+            default -> {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
     public StringBuilder toStringBuilder() {
-        StringBuilder result = super.toStringBuilder();
+        StringBuilder result = new StringBuilder();
         result.append("\n")
-//                .append("  Key Generator:           \t")
-//                .append(this.keygenType)
-//                .append("\n")
+                .append("  Key Generator:           \tLEAFS_HANDSHAKE")
+                .append("\n")
                 .append("  Read distribution:       \t")
                 .append(readDistBuilder.distributionType)
                 .append(readDistBuilder.toStringBuilderParameters())

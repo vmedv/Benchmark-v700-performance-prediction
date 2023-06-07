@@ -1,14 +1,14 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.abstractions.Parameters;
+import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.distributions.parameters.SkewedUniformParameters;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
-public class SkewedSetsParameters extends Parameters {
+public class SkewedSetsParameters implements KeyGeneratorParameters {
     public SkewedUniformParameters READ = new SkewedUniformParameters(0, 0);
     public SkewedUniformParameters WRITE = new SkewedUniformParameters(0, 0);
     public double INTERSECTION = 0;
-
 
     public int readHotLength;
     public int writeHotLength;
@@ -17,11 +17,10 @@ public class SkewedSetsParameters extends Parameters {
     public int writeHotEnd;
 
     @Override
-    public void build() {
-        super.build();
-        int readHotLength = (int) (range * READ.HOT_SIZE);
-        int writeHotLength = (int) (range * WRITE.HOT_SIZE);
-        int intersectionLength = (int) (range * INTERSECTION);
+    public void build(Parameters parameters) {
+        int readHotLength = (int) (parameters.range * READ.HOT_SIZE);
+        int writeHotLength = (int) (parameters.range * WRITE.HOT_SIZE);
+        int intersectionLength = (int) (parameters.range * INTERSECTION);
 
         this.readHotLength = readHotLength;
         this.writeHotLength = writeHotLength;
@@ -31,14 +30,16 @@ public class SkewedSetsParameters extends Parameters {
     }
 
     @Override
-    protected void parseArg(ParseArgument args) {
+    public boolean parseArg(ParseArgument args) {
         //todo
-        super.parseArg(args);
+//        super.parseArg(args);
+        return false;
     }
 
     @Override
     public StringBuilder toStringBuilder() {
+        StringBuilder params = new StringBuilder();
         //todo
-        return super.toStringBuilder();
+        return params;
     }
 }
