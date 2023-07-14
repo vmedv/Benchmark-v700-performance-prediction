@@ -15,7 +15,7 @@ public interface DataStructure<K> {
 
     void clear();
 
-    String toString();
+//    String toString();
 
     Object getDataStructure();
 }

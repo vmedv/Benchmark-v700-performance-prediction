@@ -2,17 +2,20 @@ package contention.benchmark;
 
 import contention.abstractions.*;
 
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.util.Formatter;
-import java.util.Locale;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
+//import javafx.util.Pair;
 
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoop;
+import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
 import contention.benchmark.datasctucrure.MapDataStructure;
 import contention.benchmark.datasctucrure.IntSetDataStructure;
 import contention.benchmark.datasctucrure.SortedSetDataStructure;
+import contention.benchmark.json.JsonConverter;
+import contention.benchmark.tools.Pair;
+
+import static contention.benchmark.tools.StringFormat.formatDouble;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -24,22 +27,28 @@ public class Test {
 
     public static final String VERSION = "11-17-2014";
 
+
     public enum Type {
-        INTSET, MAP, SORTEDSET
+        INTSET, MAP, SORTEDSET;
     }
 
     /**
      * The array of threads executing the benchmark
      */
     private Thread[] threads;
+
     /**
      * The array of runnable thread codes
      */
-    private ThreadLoop[] threadLoops;
+    private ThreadLoopAbstract[] threadLoops;
+    //    private ThreadLoop threadLoops;
+    private double elapsedTime;
     /**
      * The observed duration of the benchmark
      */
-    private double elapsedTime;
+
+    private ThreadStatistic curStats = new ThreadStatistic();
+    public BenchStatistic[] benchStatistics;
     /**
      * The throughput
      */
@@ -48,50 +57,45 @@ public class Test {
      * The iteration
      */
     private int currentIteration = 0;
-
     /**
      * The total number of operations for all threads
      */
-    private long total = 0;
+//    private long total = 0;
+
     /**
      * The total number of successful operations for all threads
      */
-    private long numAdd = 0;
-    private long numRemove = 0;
-    private long numAddAll = 0;
-    private long numRemoveAll = 0;
-    private long numSize = 0;
-    private long numContains = 0;
+//    private long numAdd = 0;
+//    private long numRemove = 0;
+//    private long numAddAll = 0;
+//    private long numRemoveAll = 0;
+//    private long numSize = 0;
+//    private long numContains = 0;
     /**
      * The total number of failed operations for all threads
      */
-    private long failures = 0;
+//    private long failures = 0;
     /**
      * The total number of aborts
      */
-    private long aborts = 0;
+//    private long aborts = 0;
     /**
      * The instance of the benchmark
      */
     private Type benchType = null;
-    private Parameters parameters;
-//    private KeyGeneratorBuilder keyGeneratorBuilder;
+    private BenchParameters parameters;
+    //    private Parameters testParameters;
+//    private Parameters prefillParameters;
+//    private Parameters warmUpParameters;
     private DataStructure<Integer> dataStructure;
-//    private CompositionalIntSet setBench = null;
-//    private CompositionalSortedSet<Integer> sortedBench = null;
-//    private CompositionalMap<Integer, Integer> mapBench = null;
-    /**
-     * The instance of the benchmark
-     */
     /**
      * The benchmark methods
      */
     private Method[] methods;
-
-    private long nodesTraversed;
-    public long structMods;
-    private long getCount;
-
+//    private long nodesTraversed;
+//
+//    public long structMods;
+//    private long getCount;
     /**
      * The thread-private PRNG
      */
@@ -103,29 +107,6 @@ public class Test {
     };
 
     //TODO delete parameters
-    public void fill(final int range, final long size) throws InterruptedException {
-        Thread[] prefillThreads = new Thread[parameters.numPrefillThreads];
-
-        // TODO crutch
-        int crutch = 10;
-        AtomicInteger crutchPrefillSize = new AtomicInteger(crutch);
-        threadLoops[0].prefill(crutchPrefillSize);
-
-
-        AtomicInteger prefillSize = new AtomicInteger(parameters.size - crutch);
-
-        for (int threadNum = 0; threadNum < parameters.numPrefillThreads; threadNum++) {
-            final int finalThreadNum = threadNum;
-            prefillThreads[threadNum] = new Thread(() -> threadLoops[finalThreadNum].prefill(prefillSize));
-        }
-
-        for (Thread thread : prefillThreads)
-            thread.start();
-
-        for (Thread thread : prefillThreads)
-            thread.join();
-
-    }
 
 
     /**
@@ -143,16 +124,16 @@ public class Test {
                     .getConstructor();
             methods = benchClass.getDeclaredMethods();
 
-            if (CompositionalIntSet.class.isAssignableFrom((Class<?>) benchClass)) {
+            if (CompositionalIntSet.class.isAssignableFrom(benchClass)) {
                 dataStructure = new IntSetDataStructure((CompositionalIntSet) c.newInstance());
 //                setBench = (CompositionalIntSet) c.newInstance();
                 benchType = Type.INTSET;
-            } else if (CompositionalMap.class.isAssignableFrom((Class<?>) benchClass)) {
+            } else if (CompositionalMap.class.isAssignableFrom(benchClass)) {
                 dataStructure = new MapDataStructure<>(c.newInstance());
 
 //                mapBench = (CompositionalMap<Integer, Integer>) c.newInstance();
                 benchType = benchType != null ? benchType : Type.MAP;
-            } else if (CompositionalSortedSet.class.isAssignableFrom((Class<?>) benchClass)) {
+            } else if (CompositionalSortedSet.class.isAssignableFrom(benchClass)) {
                 dataStructure = new SortedSetDataStructure<>((CompositionalSortedSet<Integer>) c.newInstance());
 //                sortedBench = (CompositionalSortedSet<Integer>) c.newInstance();
                 benchType = Type.SORTEDSET;
@@ -168,47 +149,34 @@ public class Test {
     /**
      * Creates as many threads as requested
      */
-    private void initThreads() {
-//        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
+//    private void initThreads() {
+////        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
+//
+//        threads = new Thread[parameters.numThreads];
+//        threadLoops = new ThreadLoop[parameters.numThreads];
+//
+//        for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
+//            threadLoops[threadNum] = parameters.getWorkload(threadNum, dataStructure, methods);
+//
+//            threads[threadNum] = new Thread(threadLoops[threadNum]);
+//        }
+//
+//    }
 
-        threads = new Thread[parameters.numThreads];
-        threadLoops = new ThreadLoop[parameters.numThreads];
+    /**
+     * Creates as many threads as requested
+     */
+    private Pair<Thread[], ThreadLoopAbstract[]> initThreads(Parameters parameters) {
+        Thread[] threads = new Thread[parameters.numThreads];
+        ThreadLoopAbstract[] threadLoops = new ThreadLoopAbstract[parameters.numThreads];
 
         for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-
-
-//            threadLoops[threadNum] = parameters.threadLoopParameters
-//            threadLoops[threadNum] = switch (benchType) {
-//                case INTSET -> new ThreadSetLoop(threadNum, setBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-//                case MAP -> switch (parameters.threadLoopType) {
-//                    case DEFAULT -> new ThreadMapLoop(threadNum, mapBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-//                    case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, mapBench, methods);
-//                    case DELETE_LEAFS -> new DeleteLeafsWorkload(threadNum, mapBench, methods, parameters);
-//                    case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, mapBench, methods,
-//                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-//                    case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, mapBench, methods,
-//                            keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-//                };
-//                case SORTEDSET ->
-//                        new ThreadSortedSetLoop(threadNum, sortedBench, methods, keygens[threadNum], (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-
-//            threadLoops[threadNum] = switch (parameters.threadLoopType) {
-//                case DEFAULT -> new DefaultThreadLoop(threadNum, dataStructure, methods, keygens[threadNum],
-//                        (DefaultThreadLoopParameters) parameters.threadLoopParameters);
-//                case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, dataStructure, methods);
-//                case DELETE_LEAFS ->
-//                        new DeleteLeafsWorkload(threadNum, dataStructure, methods, (DeleteLeafsParameters) parameters.threadLoopParameters);
-//                case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, dataStructure, methods,
-//                        keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-//                case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, dataStructure, methods,
-//                        keygens[threadNum], (TemporaryOperationsThreadLoopParameters) parameters.threadLoopParameters);
-//            };
-
-            threadLoops[threadNum] = parameters.getWorkload(threadNum, dataStructure, methods);
+            threadLoops[threadNum] = (ThreadLoopAbstract) parameters.getWorkload(threadNum, dataStructure, methods);
 
             threads[threadNum] = new Thread(threadLoops[threadNum]);
         }
 
+        return new Pair<>(threads, threadLoops);
     }
 
     /**
@@ -229,27 +197,99 @@ public class Test {
         this.throughput = new double[parameters.iterations];
     }
 
+
+    /**
+     * The instance of the benchmark
+     */
+    public Test(BenchParameters parameters) {
+        this.parameters = parameters;
+        instanciateAbstraction(parameters.benchClassName);
+        this.throughput = new double[parameters.iterations];
+        this.benchStatistics = new BenchStatistic[parameters.iterations];
+    }
+
     /**
      * Execute the main thread that starts and terminates the benchmark threads
      *
      * @throws InterruptedException
      */
-    private void execute(int milliseconds, boolean maint) throws InterruptedException {
+//    private void execute(int milliseconds, boolean maint) throws InterruptedException {
+//        long startTime;
+//        fill(parameters.range, parameters.size);
+//        Thread.sleep(parameters.afterFillRelaxMilliseconds);
+//
+//        startTime = System.currentTimeMillis();
+//        for (Thread thread : threads)
+//            thread.start();
+//
+////        try {
+////            Thread.sleep(milliseconds);
+////        } finally {
+////            for (ThreadLoop threadLoop : threadLoops)
+////                threadLoop.stopThread();
+////        }
+////        for (Thread thread : threads)
+////            thread.join();
+//
+//        for (Thread thread : threads) {
+//            if (parameters.maxAwaitTime == 0) {
+//                thread.join();
+//            } else {
+//                long awaitTime = Math.max(1, parameters.maxAwaitTime + startTime - System.currentTimeMillis());
+//                System.out.println("Await time: " + awaitTime);
+//                thread.join(awaitTime);
+//                if (thread.isAlive()) {
+//                    System.err.println("The thread " + thread.getName()
+//                            + " was not terminated after the expiration of time. The max await time is "
+//                            + parameters.maxAwaitTime + " millis. "
+//                            + "The thread will be interrupted. ");
+//                    thread.interrupt();
+//
+//                }
+//            }
+//        }
+//
+//        long endTime = System.currentTimeMillis();
+//        elapsedTime = ((double) (endTime - startTime)) / 1000.0;
+//    }
+    private void execute(Parameters parameters, Thread[] threads) throws InterruptedException {
         long startTime;
-        fill(parameters.range, parameters.size);
-        Thread.sleep(parameters.afterFillRelaxMilliseconds);
+//        fill(parameters.range, parameters.size);
+//        Thread.sleep(parameters.afterFillRelaxMilliseconds);
 
         startTime = System.currentTimeMillis();
+        parameters.stopCondition.start(parameters);
         for (Thread thread : threads)
             thread.start();
-        try {
-            Thread.sleep(milliseconds);
-        } finally {
-            for (ThreadLoop threadLoop : threadLoops)
-                threadLoop.stopThread();
+
+//        try {
+//            Thread.sleep(milliseconds);
+//        } finally {
+//            for (ThreadLoop threadLoop : threadLoops)
+//                threadLoop.stopThread();
+//        }
+//        for (Thread thread : threads)
+//            thread.join();
+
+        for (Thread thread : threads) {
+            if (parameters.maxAwaitTime == 0) {
+                thread.join();
+            } else {
+                long awaitTime = Math.max(1, parameters.maxAwaitTime + startTime - System.currentTimeMillis());
+//                System.out.println("Await time: " + awaitTime);
+                thread.join(awaitTime);
+                if (thread.isAlive()) {
+//                    System.err.println("The thread " + thread.getName()
+//                            + " was not terminated after the expiration of time. The max await time is "
+//                            + parameters.maxAwaitTime + " millis. ");
+//                            + "The thread will be interrupted. ");
+//                    thread.interrupt();
+                    throw new RuntimeException("The thread " + thread.getName()
+                            + " was not terminated after the expiration of time. The max await time is "
+                            + parameters.maxAwaitTime + " millis. ");
+                }
+            }
         }
-        for (Thread thread : threads)
-            thread.join();
 
         long endTime = System.currentTimeMillis();
         elapsedTime = ((double) (endTime - startTime)) / 1000.0;
@@ -257,95 +297,161 @@ public class Test {
 
     public void clear() {
         dataStructure.clear();
-//        switch (benchType) {
-//            case INTSET -> setBench.clear();
-//            case MAP -> mapBench.clear();
-//            case SORTEDSET -> sortedBench.clear();
-//        }
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static Parameters parseJson(String jsonParameters) {
+        return JsonConverter.fromJson(jsonParameters);
+    }
+
+    public static Parameters parseCommandLine(String[] args) {
+        return Parameters.parse(args);
+    }
+
+    public void run() throws InterruptedException {
         boolean firstIteration = true;
-        Test test = new Test(args);
-        test.printParams();
 
-        // warming up the JVM
-        if (test.parameters.warmUp != 0) {
-            try {
-                test.initThreads();
-            } catch (Exception e) {
-                System.err.println("Cannot launch operations.");
-                e.printStackTrace();
-            }
-            test.execute(test.parameters.warmUp * 1000, true);
-            // give time to the JIT
-            Thread.sleep(100);
-            if (test.parameters.detailedStats)
-                test.recordPreliminaryStats();
-            test.clear();
-            test.resetStats();
-        }
-
-        assert test.dataStructure.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-
-        // check that the structure is empty
-//        switch (test.benchType) {
-//            case INTSET:
-//                assert test.setBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-//            case MAP:
-//                assert test.mapBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-//            case SORTEDSET:
-//                assert test.sortedBench.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
-//        }
-
-        // running the bench
-        for (int i = 0; i < test.parameters.iterations; i++) {
+        for (int i = 0; i < parameters.iterations; i++) {
             if (!firstIteration) {
                 // give time to the JIT
                 Thread.sleep(100);
-                test.resetStats();
-                test.clear();
+                resetStats();
+                clear();
                 org.deuce.transaction.estmstats.Context.threadIdCounter.set(0);
             }
-            try {
-                test.initThreads();
-            } catch (Exception e) {
-                System.err.println("Cannot launch operations.");
-                e.printStackTrace();
+
+
+            printStage("Prefill stage");
+
+            Pair<Thread[], ThreadLoopAbstract[]> prefillInits = initThreads(parameters.prefill);
+            Thread[] prefillThreads = prefillInits.first;
+            threadLoops = prefillInits.second;
+            execute(parameters.prefill, prefillThreads);
+
+
+            printStage("WarmUp stage");
+
+            Pair<Thread[], ThreadLoopAbstract[]> warmUpInits = initThreads(parameters.warmUp);
+            Thread[] warmUpThreads = warmUpInits.first;
+            threadLoops = warmUpInits.second;
+            execute(parameters.prefill, warmUpThreads);
+
+//            Thread[] warmUpThreads = initThreads(parametersters.warmUp).first;
+//            execute(parameters.warmUp, warmUpThreads);
+
+            if (parameters.test.detailedStats)
+                recordPreliminaryStats();
+
+//            clear();
+            resetStats();
+
+            long size = dataStructure.size();
+
+
+            printStage("Test stage");
+
+            Pair<Thread[], ThreadLoopAbstract[]> testInits = initThreads(parameters.test);
+            Thread[] testThreads = testInits.first;
+            threadLoops = testInits.second;
+
+            execute(parameters.test, testThreads);
+
+            if (dataStructure.getDataStructure() instanceof MaintenanceAlg) {
+                ((MaintenanceAlg) dataStructure.getDataStructure()).stopMaintenance();
+                curStats.structMods += ((MaintenanceAlg) dataStructure.getDataStructure()).getStructMods();
             }
-            test.execute(test.parameters.numMilliseconds, false);
 
-            if (test.dataStructure.getDataStructure() instanceof MaintenanceAlg) {
-                ((MaintenanceAlg) test.dataStructure.getDataStructure()).stopMaintenance();
-                test.structMods += ((MaintenanceAlg) test.dataStructure.getDataStructure()).getStructMods();
-            }
-
-//            if (test.setBench instanceof MaintenanceAlg) {
-//                ((MaintenanceAlg) test.setBench).stopMaintenance();
-//                test.structMods += ((MaintenanceAlg) test.setBench)
-//                        .getStructMods();
-//            }
-//            if (test.mapBench instanceof MaintenanceAlg) {
-//                ((MaintenanceAlg) test.mapBench).stopMaintenance();
-//                test.structMods += ((MaintenanceAlg) test.mapBench)
-//                        .getStructMods();
-//            }
-//            if (test.sortedBench instanceof MaintenanceAlg) {
-//                ((MaintenanceAlg) test.sortedBench).stopMaintenance();
-//                test.structMods += ((MaintenanceAlg) test.sortedBench)
-//                        .getStructMods();
-//            }
-
-            test.printBasicStats();
-            if (test.parameters.detailedStats)
-                test.printDetailedStats();
+            printBasicStats(size);
+            if (parameters.test.detailedStats)
+                printDetailedStats();
 
             firstIteration = false;
-            test.currentIteration++;
+            currentIteration++;
         }
 
-        if (test.parameters.iterations > 1) {
-            test.printIterationStats();
+        if (parameters.iterations > 1) {
+            printIterationStats();
+        }
+
+//        assert dataStructure.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
+    }
+
+
+    public static String readJsonFile(String fileName) throws IOException {
+        StringBuilder jsonStringBuilder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = reader.readLine()) != null)
+                jsonStringBuilder.append(line);
+        } catch (IOException e) {
+            System.err.println("An error occurred while reading the file: \"" + fileName + "\".");
+            throw e;
+        }
+        return jsonStringBuilder.toString();
+    }
+
+    public static <T> void writeJsonFile(T t, String fileName) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+            String json = JsonConverter.toJson(t);
+            writer.write(json);
+        } catch (IOException e) {
+            System.err.println("An error occurred while writing to the file: \"" + fileName + "\".");
+            throw e;
+        }
+    }
+
+    public static Parameters parseJsonFile(String fileName) throws IOException {
+        return parseJson(readJsonFile(fileName));
+    }
+
+    public static void main(String[] rowArgs) throws IOException, InterruptedException {
+        ParseArgument args = new ParseArgument(rowArgs);
+        Test test;
+
+        BenchParameters parameters = new BenchParameters();
+        boolean needInit = true;
+        String resultStatisticFileName = null;
+
+        while (args.hasNext()) {
+            switch (args.getCurrent()) {
+                case "-without-init" -> needInit = false;
+                case "-prefill" -> parameters.prefill = parseJsonFile(args.getNext());
+                case "-warm-up" -> parameters.warmUp = parseJsonFile(args.getNext());
+                case "-test" -> parameters.test = parseJsonFile(args.getNext());
+                case "-create-default-prefill" -> parameters.createDefaultPrefill();
+                case "-json-file" ->
+                        parameters = JsonConverter.fromJsonT(readJsonFile(args.getNext()), BenchParameters.class);
+                case "-result-file" -> resultStatisticFileName = args.getNext();
+                default -> {
+                    System.err.println("Unexpected option: " + args.getCurrent() + ". Ignoring...");
+                    args.next();
+                }
+            }
+        }
+
+        if (needInit) {
+            parameters.init();
+        }
+
+        test = new Test(parameters);
+
+        printHeader();
+        printStage("Prefill parameters");
+        test.printParams(test.parameters.prefill);
+
+        if (parameters.warmUp.numThreads != 0) {
+            printStage("WarmUp parameters");
+            test.printParams(test.parameters.test);
+        } else {
+            printStage("Without WarmUp");
+        }
+
+        printStage("Test parameters");
+        test.printParams(test.parameters.test);
+
+        test.run();
+
+        if (resultStatisticFileName != null) {
+            writeJsonFile(test.benchStatistics, resultStatisticFileName);
         }
     }
 
@@ -363,9 +469,9 @@ public class Test {
             }
         }
 
-        parameters = Parameters.parse(args);
+        parameters.test = Parameters.parse(args);
 
-        assert (parameters.range >= parameters.size);
+//        assert (testParameters.range >= testParameters.size);
 //        if (parameters.range != 2 * parameters.size)
 //            System.err
 //                    .println("Note that the value range is not twice "
@@ -377,21 +483,25 @@ public class Test {
      *
      * @param ch the marker character
      */
-    private void printLine(char ch) {
-        StringBuffer line = new StringBuffer(79);
-        for (int i = 0; i < 79; i++)
-            line.append(ch);
-        System.out.println(line);
+    private static void printLine(char ch) {
+        System.out.println(String.valueOf(ch).repeat(79));
     }
 
     /**
      * Print the header message on the standard output
      */
-    private void printHeader() {
+    private static void printHeader() {
         String header = "Synchrobench-java\n"
                 + "A benchmark-suite to evaluate synchronization techniques";
         printLine('-');
         System.out.println(header);
+        printLine('-');
+        System.out.println();
+    }
+
+    private static void printStage(String stageName) {
+        printLine('-');
+        System.out.println(stageName);
         printLine('-');
         System.out.println();
     }
@@ -404,14 +514,14 @@ public class Test {
                 + "java synchrobench.benchmark.Test [options] [-- stm-specific options]\n\n"
                 + "Options:\n"
                 + "\t-v            -- print detailed statistics (default: "
-                + parameters.detailedStats
+                + parameters.test.detailedStats
                 + ")\n"
                 + "\t-t thread-num -- set the number of threads (default: "
-                + parameters.numThreads
+                + parameters.test.numThreads
                 + ")\n"
-                + "\t-d duration   -- set the length of the benchmark, in milliseconds (default: "
-                + parameters.numMilliseconds
-                + ")\n"
+//                + "\t-d duration   -- set the length of the benchmark, in milliseconds (default: "
+//                + parameters.test.numMilliseconds
+//                + ")\n"
 //                + "\t-u updates    -- set the percentage of updates (default: "
 //                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numWrites
 //                + ")\n"
@@ -428,98 +538,54 @@ public class Test {
 //                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numSnapshots
 //                + ")\n"
                 + "\t-r range      -- set the element range (default: "
-                + parameters.range
+                + parameters.test.range
                 + ")\n"
-                + "\t-b benchmark  -- set the benchmark (default: "
-                + parameters.benchClassName
-                + ")\n"
-                + "\t-i size       -- set the datastructure initial size (default: "
-                + parameters.size
-                + ")\n"
+//                + "\t-b benchmark  -- set the benchmark (default: "
+//                + parameters.test.benchClassName
+//                + ")\n"
+//                + "\t-i size       -- set the datastructure initial size (default: "
+//                + parameters.test.size
+//                + ")\n"
                 + "\t-n iterations -- set the bench iterations in the same JVM (default: "
                 + parameters.iterations
-                + ")\n"
-                + "\t-W warmup     -- set the JVM warmup length, in seconds (default: "
-                + parameters.warmUp + ").";
+                + ").";
+//                + "\t-W warmup     -- set the JVM warmup length, in seconds (default: "
+//                + testParameters.warmUp + ").";
         System.err.println(syntax);
     }
 
     /**
      * Print the parameters that have been given as an input to the benchmark
      */
-    private void printParams() {
-        String params = parameters.toStringBuilder().toString();
-        System.out.println(params);
+    private void printParams(Parameters parameters) {
+        System.out.println(parameters.toStringBuilder());
     }
 
     /**
      * Print the statistics on the standard output
      */
-    private void printBasicStats() {
-        int finalSize = 0;
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            numAdd += threadLoops[threadNum].getNumAdd();
-            numRemove += threadLoops[threadNum].getNumRemove();
-            numAddAll += threadLoops[threadNum].getNumAddAll();
-            numRemoveAll += threadLoops[threadNum].getNumRemoveAll();
-            numSize += threadLoops[threadNum].getNumSize();
-            numContains += threadLoops[threadNum].getNumContains();
-            failures += threadLoops[threadNum].getFailures();
-            total += threadLoops[threadNum].getTotal();
-            aborts += threadLoops[threadNum].getAborts();
-            getCount += threadLoops[threadNum].getGetCount();
-            nodesTraversed += threadLoops[threadNum].getNodesTraversed();
-            structMods += threadLoops[threadNum].getStructMods();
+    private void printBasicStats(long prefillSize) {
+        BenchStatistic curBenchStats = new BenchStatistic();
+        curBenchStats.prefillSize = prefillSize;
+        curBenchStats.threadStatistics = new ThreadStatistic[threadLoops.length];
+        for (int i = 0; i < threadLoops.length; i++) {
+            curStats.add(threadLoops[i].stats);
+            curBenchStats.threadStatistics[i] = threadLoops[i].stats;
         }
-        throughput[currentIteration] = ((double) total / elapsedTime);
-        printLine('-');
-        System.out.println("Benchmark statistics");
-        printLine('-');
-        System.out.println("  Average traversal length: \t"
-                + (double) nodesTraversed / (double) getCount);
-        System.out.println("  Struct Modifications:     \t" + structMods);
-        System.out.println("  Throughput (ops/s):       \t" + throughput[currentIteration]);
-        System.out.println("  Elapsed time (s):         \t" + elapsedTime);
-        System.out.println("  Operations:               \t" + total
-                + "\t( 100 %)");
-        System.out.println("    effective updates:     \t"
-                + (numAdd + numRemove + numAddAll + numRemoveAll)
-                + "\t( "
-                + formatDouble(((double) (numAdd + numRemove
-                + numAddAll + numRemoveAll) * 100)
-                / (double) total) + " %)");
-        System.out.println("    |--add successful:     \t" + numAdd + "\t( "
-                + formatDouble(((double) numAdd / (double) total) * 100)
-                + " %)");
-        System.out.println("    |--remove succ.:       \t" + numRemove + "\t( "
-                + formatDouble(((double) numRemove / (double) total) * 100)
-                + " %)");
-        System.out.println("    |--addAll succ.:       \t" + numAddAll + "\t( "
-                + formatDouble(((double) numAddAll / (double) total) * 100)
-                + " %)");
-        System.out.println("    |--removeAll succ.:    \t" + numRemoveAll
-                + "\t( "
-                + formatDouble(((double) numRemoveAll / (double) total) * 100)
-                + " %)");
-        System.out.println("    size successful:       \t" + numSize + "\t( "
-                + formatDouble(((double) numSize / (double) total) * 100)
-                + " %)");
-        System.out.println("    contains succ.:        \t" + numContains
-                + "\t( "
-                + formatDouble(((double) numContains / (double) total) * 100)
-                + " %)");
-        System.out.println("    unsuccessful ops:      \t" + failures + "\t( "
-                + formatDouble(((double) failures / (double) total) * 100)
-                + " %)");
-        finalSize = dataStructure.size();
+        curBenchStats.elapsedTime = elapsedTime;
+        curBenchStats.throughput = ((double) curStats.total / elapsedTime);
+        curBenchStats.commonStatistic = curStats;
+        curBenchStats.effectiveUpdates = curStats.numAdd + curStats.numRemove + curStats.numAddAll + curStats.numRemoveAll;
 
-//        finalSize = switch (benchType) {
-//            case INTSET -> setBench.size();
-//            case MAP -> mapBench.size();
-//            case SORTEDSET -> sortedBench.size();
-//        };
-        System.out.println("  Final size:              \t" + finalSize);
-        assert finalSize == (parameters.size + numAdd - numRemove) : "Final size does not reflect the modifications.";
+        throughput[currentIteration] = ((double) curStats.total / elapsedTime);
+
+        printStage("Benchmark statistics");
+
+        int finalSize = dataStructure.size();
+        curBenchStats.finalSize = finalSize;
+
+//        System.out.println("  Final size:              \t" + finalSize);
+        assert finalSize == (prefillSize + curStats.numAdd - curStats.numRemove) : "Final size does not reflect the modifications.";
 
         //System.out.println("  Otherupdate_bin.bat size:              \t" + map.size());
 
@@ -542,32 +608,14 @@ public class Test {
         // .getBottomLevelRaiseCount());
         // }
 
+
         if (dataStructure.getDataStructure() instanceof MaintenanceAlg) {
-            System.out.println("  #nodes (inc. deleted): \t"
-                    + ((MaintenanceAlg) dataStructure.getDataStructure()).numNodes());
+            curBenchStats.numNodes = ((MaintenanceAlg) dataStructure.getDataStructure()).numNodes();
         }
 
-//        switch (benchType) {
-//            case INTSET -> {
-//                if (setBench instanceof MaintenanceAlg) {
-//                    System.out.println("  #nodes (inc. deleted): \t"
-//                            + ((MaintenanceAlg) setBench).numNodes());
-//                }
-//            }
-//            case MAP -> {
-//                if (mapBench instanceof MaintenanceAlg) {
-//                    System.out.println("  #nodes (inc. deleted): \t"
-//                            + ((MaintenanceAlg) mapBench).numNodes());
-//                }
-//            }
-//            case SORTEDSET -> {
-//                if (mapBench instanceof MaintenanceAlg) {
-//                    System.out.println("  #nodes (inc. deleted): \t"
-//                            + ((MaintenanceAlg) sortedBench).numNodes());
-//                }
-//            }
-//        }
+        System.out.println(curBenchStats);
 
+        benchStatistics[currentIteration] = curBenchStats;
     }
 
     /**
@@ -604,33 +652,10 @@ public class Test {
      * JVM to enable its warmup
      */
     public void resetStats() {
-
-        for (short threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            threadLoops[threadNum].setNumAdd(0);
-            threadLoops[threadNum].setNumRemove(0);
-            threadLoops[threadNum].setNumAddAll(0);
-            threadLoops[threadNum].setNumRemoveAll(0);
-            threadLoops[threadNum].setNumSize(0);
-            threadLoops[threadNum].setNumContains(0);
-            threadLoops[threadNum].setFailures(0);
-            threadLoops[threadNum].setTotal(0);
-            threadLoops[threadNum].setAborts(0);
-            threadLoops[threadNum].setNodesTraversed(0);
-            threadLoops[threadNum].setGetCount(0);
-            threadLoops[threadNum].setStructMods(0);
+        for (ThreadLoopAbstract threadLoop : threadLoops) {
+            threadLoop.stats.reset();
         }
-        numAdd = 0;
-        numRemove = 0;
-        numAddAll = 0;
-        numRemoveAll = 0;
-        numSize = 0;
-        numContains = 0;
-        failures = 0;
-        total = 0;
-        aborts = 0;
-        nodesTraversed = 0;
-        getCount = 0;
-        structMods = 0;
+        this.curStats.reset();
 
         numCommits = 0;
         numStarts = 0;
@@ -660,32 +685,32 @@ public class Test {
     }
 
     public void recordPreliminaryStats() {
-        numAborts = Statistics.getTotalAborts();
-        numCommits = Statistics.getTotalCommits();
-        numCommitsReadOnly = Statistics.getNumCommitsReadOnly();
-        numCommitsElastic = Statistics.getNumCommitsElastic();
-        numCommitsUpdate = Statistics.getNumCommitsUpdate();
-        numStarts = Statistics.getTotalStarts();
-        numAbortsBetweenSuccessiveReads = Statistics
+        numAborts = STMStatistics.getTotalAborts();
+        numCommits = STMStatistics.getTotalCommits();
+        numCommitsReadOnly = STMStatistics.getNumCommitsReadOnly();
+        numCommitsElastic = STMStatistics.getNumCommitsElastic();
+        numCommitsUpdate = STMStatistics.getNumCommitsUpdate();
+        numStarts = STMStatistics.getTotalStarts();
+        numAbortsBetweenSuccessiveReads = STMStatistics
                 .getNumAbortsBetweenSuccessiveReads();
-        numAbortsBetweenReadAndWrite = Statistics
+        numAbortsBetweenReadAndWrite = STMStatistics
                 .getNumAbortsBetweenReadAndWrite();
-        numAbortsExtendOnRead = Statistics.getNumAbortsExtendOnRead();
-        numAbortsWriteAfterRead = Statistics.getNumAbortsWriteAfterRead();
-        numAbortsLockedOnWrite = Statistics.getNumAbortsLockedOnWrite();
-        numAbortsLockedBeforeRead = Statistics.getNumAbortsLockedBeforeRead();
-        numAbortsLockedBeforeElasticRead = Statistics
+        numAbortsExtendOnRead = STMStatistics.getNumAbortsExtendOnRead();
+        numAbortsWriteAfterRead = STMStatistics.getNumAbortsWriteAfterRead();
+        numAbortsLockedOnWrite = STMStatistics.getNumAbortsLockedOnWrite();
+        numAbortsLockedBeforeRead = STMStatistics.getNumAbortsLockedBeforeRead();
+        numAbortsLockedBeforeElasticRead = STMStatistics
                 .getNumAbortsLockedBeforeElasticRead();
-        numAbortsLockedOnRead = Statistics.getNumAbortsLockedOnRead();
-        numAbortsInvalidCommit = Statistics.getNumAbortsInvalidCommit();
-        numAbortsInvalidSnapshot = Statistics.getNumAbortsInvalidSnapshot();
-        readSetSizeSum = Statistics.getSumReadSetSize();
-        writeSetSizeSum = Statistics.getSumWriteSetSize();
+        numAbortsLockedOnRead = STMStatistics.getNumAbortsLockedOnRead();
+        numAbortsInvalidCommit = STMStatistics.getNumAbortsInvalidCommit();
+        numAbortsInvalidSnapshot = STMStatistics.getNumAbortsInvalidSnapshot();
+        readSetSizeSum = STMStatistics.getSumReadSetSize();
+        writeSetSizeSum = STMStatistics.getSumWriteSetSize();
 
-        statSize = Statistics.getStatSize();
-        txDurationSum = Statistics.getSumCommitingTxTime();
-        elasticReads = Statistics.getTotalElasticReads();
-        readsInROPrefix = Statistics.getTotalReadsInROPrefix();
+        statSize = STMStatistics.getStatSize();
+        txDurationSum = STMStatistics.getSumCommitingTxTime();
+        elasticReads = STMStatistics.getTotalElasticReads();
+        readsInROPrefix = STMStatistics.getTotalReadsInROPrefix();
     }
 
     /**
@@ -693,38 +718,38 @@ public class Test {
      */
     private void printDetailedStats() {
 
-        numCommits = Statistics.getTotalCommits() - numCommits;
-        numStarts = Statistics.getTotalStarts() - numStarts;
-        numAborts = Statistics.getTotalAborts() - numAborts;
+        numCommits = STMStatistics.getTotalCommits() - numCommits;
+        numStarts = STMStatistics.getTotalStarts() - numStarts;
+        numAborts = STMStatistics.getTotalAborts() - numAborts;
 
-        numCommitsReadOnly = Statistics.getNumCommitsReadOnly()
+        numCommitsReadOnly = STMStatistics.getNumCommitsReadOnly()
                 - numCommitsReadOnly;
-        numCommitsElastic = Statistics.getNumCommitsElastic()
+        numCommitsElastic = STMStatistics.getNumCommitsElastic()
                 - numCommitsElastic;
-        numCommitsUpdate = Statistics.getNumCommitsUpdate() - numCommitsUpdate;
+        numCommitsUpdate = STMStatistics.getNumCommitsUpdate() - numCommitsUpdate;
 
-        numAbortsBetweenSuccessiveReads = Statistics
+        numAbortsBetweenSuccessiveReads = STMStatistics
                 .getNumAbortsBetweenSuccessiveReads()
                 - numAbortsBetweenSuccessiveReads;
-        numAbortsBetweenReadAndWrite = Statistics
+        numAbortsBetweenReadAndWrite = STMStatistics
                 .getNumAbortsBetweenReadAndWrite()
                 - numAbortsBetweenReadAndWrite;
-        numAbortsExtendOnRead = Statistics.getNumAbortsExtendOnRead()
+        numAbortsExtendOnRead = STMStatistics.getNumAbortsExtendOnRead()
                 - numAbortsExtendOnRead;
-        numAbortsWriteAfterRead = Statistics.getNumAbortsWriteAfterRead()
+        numAbortsWriteAfterRead = STMStatistics.getNumAbortsWriteAfterRead()
                 - numAbortsWriteAfterRead;
-        numAbortsLockedOnWrite = Statistics.getNumAbortsLockedOnWrite()
+        numAbortsLockedOnWrite = STMStatistics.getNumAbortsLockedOnWrite()
                 - numAbortsLockedOnWrite;
-        numAbortsLockedBeforeRead = Statistics.getNumAbortsLockedBeforeRead()
+        numAbortsLockedBeforeRead = STMStatistics.getNumAbortsLockedBeforeRead()
                 - numAbortsLockedBeforeRead;
-        numAbortsLockedBeforeElasticRead = Statistics
+        numAbortsLockedBeforeElasticRead = STMStatistics
                 .getNumAbortsLockedBeforeElasticRead()
                 - numAbortsLockedBeforeElasticRead;
-        numAbortsLockedOnRead = Statistics.getNumAbortsLockedOnRead()
+        numAbortsLockedOnRead = STMStatistics.getNumAbortsLockedOnRead()
                 - numAbortsLockedOnRead;
-        numAbortsInvalidCommit = Statistics.getNumAbortsInvalidCommit()
+        numAbortsInvalidCommit = STMStatistics.getNumAbortsInvalidCommit()
                 - numAbortsInvalidCommit;
-        numAbortsInvalidSnapshot = Statistics.getNumAbortsInvalidSnapshot()
+        numAbortsInvalidSnapshot = STMStatistics.getNumAbortsInvalidSnapshot()
                 - numAbortsInvalidSnapshot;
 
         assert (numAborts == (numAbortsBetweenSuccessiveReads
@@ -735,10 +760,10 @@ public class Test {
 
         assert (numStarts - numAborts) == numCommits;
 
-        readSetSizeSum = Statistics.getSumReadSetSize() - readSetSizeSum;
-        writeSetSizeSum = Statistics.getSumWriteSetSize() - writeSetSizeSum;
-        statSize = Statistics.getStatSize() - statSize;
-        txDurationSum = Statistics.getSumCommitingTxTime() - txDurationSum;
+        readSetSizeSum = STMStatistics.getSumReadSetSize() - readSetSizeSum;
+        writeSetSizeSum = STMStatistics.getSumWriteSetSize() - writeSetSizeSum;
+        statSize = STMStatistics.getStatSize() - statSize;
+        txDurationSum = STMStatistics.getSumCommitingTxTime() - txDurationSum;
 
         printLine('-');
         System.out.println("TM statistics");
@@ -869,8 +894,5 @@ public class Test {
         System.out.println("  |--Margin of error (95% CL):\t" + (sterr * 1.96));
     }
 
-    private static String formatDouble(double result) {
-        Formatter formatter = new Formatter(Locale.US);
-        return formatter.format("%.2f", result).out().toString();
-    }
+
 }

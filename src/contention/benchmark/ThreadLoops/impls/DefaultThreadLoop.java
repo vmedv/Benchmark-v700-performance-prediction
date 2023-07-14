@@ -4,6 +4,7 @@ import contention.abstractions.DataStructure;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
 import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGenerator;
+import contention.benchmark.stop.condition.StopCondition;
 
 import java.lang.reflect.Method;
 import java.util.Random;
@@ -23,9 +24,10 @@ public class DefaultThreadLoop extends ThreadLoopAbstract {
      */
     private double[] cdf = new double[4];
 
-    public DefaultThreadLoop(int threadNum, DataStructure<Integer> dataStructure, Method[] methods,
+    public DefaultThreadLoop(int threadNum, DataStructure<Integer> dataStructure,
+                             Method[] methods, StopCondition stopCondition,
                          KeyGenerator keygen, DefaultThreadLoopParameters parameters) {
-        super(threadNum, dataStructure, methods);
+        super(threadNum, dataStructure, methods, stopCondition);
         /* initialize the method boundaries */
         this.keygen = keygen;
         assert (parameters.numWrites >= parameters.numWriteAlls);
@@ -35,8 +37,10 @@ public class DefaultThreadLoop extends ThreadLoopAbstract {
         cdf[3] = cdf[2] + parameters.numSnapshots;
     }
 
-    public DefaultThreadLoop(int threadNum, DataStructure<Integer> dataStructure, Method[] methods, DefaultThreadLoopParameters parameters) {
-        this(threadNum, dataStructure, methods, parameters.keyGeneratorBuilder.getKeyGenerator(), parameters);
+    public DefaultThreadLoop(int threadNum, DataStructure<Integer> dataStructure,
+                             Method[] methods, StopCondition stopCondition,
+                             DefaultThreadLoopParameters parameters) {
+        this(threadNum, dataStructure, methods, stopCondition, parameters.keyGeneratorBuilder.build(), parameters);
 //        super(threadNum, dataStructure, methods);
 //        this.keygen = parameters.keyGeneratorBuilder.getKeyGenerator();
     }
@@ -73,6 +77,12 @@ public class DefaultThreadLoop extends ThreadLoopAbstract {
 
     @Override
     public void prefill(AtomicInteger prefillSize) {
-
+        while (prefillSize.get() > 0) {
+            int curPrefillSize = prefillSize.decrementAndGet();
+            int v = keygen.nextPrefill();
+            if (curPrefillSize < 0 || dataStructure.insert(v) != null) {
+                prefillSize.incrementAndGet();
+            }
+        }
     }
 }

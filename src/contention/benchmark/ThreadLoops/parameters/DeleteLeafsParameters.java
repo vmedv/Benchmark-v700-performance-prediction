@@ -8,7 +8,7 @@ public class DeleteLeafsParameters extends ThreadLoopParameters {
     public int range;
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
         this.range = parameters.range;
     }
 

@@ -1,6 +1,6 @@
 package contention.benchmark.keygenerators.impls;
 
-import contention.benchmark.datamap.LeafInsertDataMap;
+import contention.benchmark.datamap.impls.LeafInsertDataMap;
 import contention.benchmark.keygenerators.abstractions.KeyGenerator;
 
 import java.util.Random;

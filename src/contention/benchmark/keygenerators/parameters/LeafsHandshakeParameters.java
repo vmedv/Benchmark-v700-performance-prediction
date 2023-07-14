@@ -1,5 +1,7 @@
 package contention.benchmark.keygenerators.parameters;
 
+import contention.benchmark.datamap.abstractions.DataMapBuilder;
+import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
 import contention.benchmark.distributions.abstractions.DistributionType;
 import contention.benchmark.Parameters;
@@ -12,8 +14,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class LeafsHandshakeParameters implements KeyGeneratorParameters {
     public DistributionBuilder readDistBuilder = new DistributionBuilder();
     public DistributionBuilder insertDistBuilder = new DistributionBuilder()
-            .setDistributionType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
+            .setType(DistributionType.ZIPF).setParameters(new ZipfParameters(1));
     public DistributionBuilder removeDistBuilder = new DistributionBuilder();
+
+    public DataMapBuilder readDataMapBuilder = new DataMapBuilder(DataMapType.ID);
+    public DataMapBuilder eraseDataMapBuilder = new DataMapBuilder(DataMapType.ID);
 
     public AtomicInteger deletedValue;
 
@@ -21,12 +26,27 @@ public class LeafsHandshakeParameters implements KeyGeneratorParameters {
     public AtomicInteger curRange;
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
         deletedValue = new AtomicInteger(parameters.range/2);
         // for LeafsExtensionHandshakeKeyGenerator
-        curRange = new AtomicInteger(Math.max(10, parameters.size));
+        curRange = new AtomicInteger(10);//Math.max(10, parameters.size));
 
+
+//        dataMaps.put("readData", switch (parameters.readDistBuilder.distributionType) {
+//            case ZIPF, SKEWED_UNIFORM -> new ArrayDataMap(generalParameters);
+//            default -> new IdDataMap();
+//        });
+//        // todo think about the intersection of sets
+//        if (parameters.readDistBuilder.distributionType == parameters.removeDistBuilder.distributionType) {
+//            eraseData = readData;
+//        } else {
+//            eraseData = switch (parameters.readDistBuilder.distributionType) {
+//                case ZIPF, SKEWED_UNIFORM -> new ArrayDataMap(generalParameters);
+//                default -> new IdDataMap();
+//            };
+//        }
     }
+
 
     @Override
     public boolean parseArg(ParseArgument args) {
@@ -48,15 +68,15 @@ public class LeafsHandshakeParameters implements KeyGeneratorParameters {
                 .append("  Key Generator:           \tLEAFS_HANDSHAKE")
                 .append("\n")
                 .append("  Read distribution:       \t")
-                .append(readDistBuilder.distributionType)
+                .append(readDistBuilder.type)
                 .append(readDistBuilder.toStringBuilderParameters())
                 .append("\n")
                 .append("  Insert distribution:     \t")
-                .append(insertDistBuilder.distributionType)
+                .append(insertDistBuilder.type)
                 .append(insertDistBuilder.toStringBuilderParameters())
                 .append("\n")
                 .append("  Erase distribution:      \t")
-                .append(removeDistBuilder.distributionType)
+                .append(removeDistBuilder.type)
                 .append(removeDistBuilder.toStringBuilderParameters());
         return result;
     }

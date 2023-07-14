@@ -2,6 +2,8 @@ package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.*;
 import contention.benchmark.Parameters;
+import contention.benchmark.datamap.abstractions.DataMapBuilder;
+import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
 import contention.benchmark.distributions.abstractions.DistributionType;
 import contention.benchmark.distributions.parameters.ZipfParameters;
@@ -36,6 +38,8 @@ public class CreakersAndWaveParameters implements KeyGeneratorParameters {
     public DistributionBuilder waveDistBuilder = new DistributionBuilder(DistributionType.ZIPF)
             .setParameters(new ZipfParameters(1));
 
+    public DataMapBuilder dataMapBuilder = new DataMapBuilder(DataMapType.ARRAY);
+
 
     public int creakersLength;
     public int defaultWaveLength;
@@ -46,15 +50,15 @@ public class CreakersAndWaveParameters implements KeyGeneratorParameters {
 
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
         creakersLength = (int) (parameters.range * CREAKERS_SIZE);
         creakersBegin = parameters.range - creakersLength;
         defaultWaveLength = (int) (parameters.range * WAVE_SIZE);
         waveEnd = new AtomicInteger(creakersBegin);
         waveBegin = new AtomicInteger(waveEnd.get() - defaultWaveLength);
 
-        prefillSize = (int) (parameters.range * this.CREAKERS_SIZE) + (int) (parameters.range * this.WAVE_SIZE);
-        parameters.size = prefillSize;
+//        prefillSize = (int) (parameters.range * this.CREAKERS_SIZE) + (int) (parameters.range * this.WAVE_SIZE);
+//        parameters.size = prefillSize;
     }
 
     @Override
@@ -97,11 +101,11 @@ public class CreakersAndWaveParameters implements KeyGeneratorParameters {
                 .append(this.CREAKERS_AGE)
                 .append("\n")
                 .append("  Creakers distribution:   \t")
-                .append(creakersDistBuilder.distributionType)
+                .append(creakersDistBuilder.type)
                 .append(creakersDistBuilder.toStringBuilderParameters())
                 .append("\n")
                 .append("  Wave distribution:       \t")
-                .append(waveDistBuilder.distributionType)
+                .append(waveDistBuilder.type)
                 .append(waveDistBuilder.toStringBuilderParameters());
 
         return params;

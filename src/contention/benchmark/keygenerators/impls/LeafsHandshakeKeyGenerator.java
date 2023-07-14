@@ -44,9 +44,21 @@ public class LeafsHandshakeKeyGenerator implements KeyGenerator {
         this.eraseData = eraseData;
         this.parameters = parameters;
         this.range = range;
-        this.readDistribution = parameters.readDistBuilder.getDistribution(range);
-        this.insertDistribution = parameters.insertDistBuilder.getDistribution();
-        this.eraseDistribution = parameters.removeDistBuilder.getDistribution(range);
+        this.readDistribution = parameters.readDistBuilder.build(range);
+        this.insertDistribution = parameters.insertDistBuilder.build();
+        this.eraseDistribution = parameters.removeDistBuilder.build(range);
+        this.random = new Random();
+    }
+
+    public LeafsHandshakeKeyGenerator(LeafsHandshakeParameters parameters,
+                                      int range) {
+        this.readData = parameters.readDataMapBuilder.build(range);
+        this.eraseData = parameters.eraseDataMapBuilder.build(range);
+        this.parameters = parameters;
+        this.range = range;
+        this.readDistribution = parameters.readDistBuilder.build(range);
+        this.insertDistribution = parameters.insertDistBuilder.build();
+        this.eraseDistribution = parameters.removeDistBuilder.build(range);
         this.random = new Random();
     }
 

@@ -15,7 +15,7 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
                            DataStructure<Integer> dataStructure,
 //                           CompositionalMap<Integer, Integer> bench,
                            Method[] methods) {
-        super(myThreadNum, dataStructure, methods);
+        super(myThreadNum, dataStructure, methods, null);
 
     }
 
@@ -48,9 +48,9 @@ public class DeleteSpeedTest extends ThreadLoopAbstract {
                 + "\n===========================================================\n");
 
         // System.out.println(numAdd + " " + numRemove + " " + failures);
-        this.getCount = CompositionalMap.counts.get().getCount;
-        this.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
-        this.structMods = CompositionalMap.counts.get().structMods;
+        this.stats.getCount = CompositionalMap.counts.get().getCount;
+        this.stats.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
+        this.stats.structMods = CompositionalMap.counts.get().structMods;
         System.out.println("Thread #" + myThreadNum + " finished.");
     }
 

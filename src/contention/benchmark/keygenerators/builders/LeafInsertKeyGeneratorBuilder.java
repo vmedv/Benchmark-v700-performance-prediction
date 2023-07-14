@@ -2,10 +2,9 @@ package contention.benchmark.keygenerators.builders;
 
 import contention.benchmark.keygenerators.abstractions.KeyGenerator;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.Parameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 import contention.benchmark.keygenerators.impls.LeafInsertKeyGenerator;
-import contention.benchmark.datamap.LeafInsertDataMap;
+import contention.benchmark.datamap.impls.LeafInsertDataMap;
 
 public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
@@ -13,19 +12,15 @@ public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
         super(parameters);
     }
 
-    private LeafInsertDataMap data;
-    private Parameters generalParameters;
+    private LeafInsertDataMap data = new LeafInsertDataMap(generalParameters);
+
+//    @Override
+//    public void initDataMaps() {
+//        data = new LeafInsertDataMap(generalParameters);
+//    }
 
     @Override
-    public void build(Parameters generalParameters) {
-        super.build(generalParameters);
-
-        data = new LeafInsertDataMap(generalParameters);
-        this.generalParameters = generalParameters;
-    }
-
-    @Override
-    public KeyGenerator getKeyGenerator() {
+    public KeyGenerator build() {
         return new LeafInsertKeyGenerator(data, generalParameters.range);
     }
 }

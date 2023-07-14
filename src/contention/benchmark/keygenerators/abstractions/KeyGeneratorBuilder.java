@@ -2,71 +2,119 @@ package contention.benchmark.keygenerators.abstractions;
 
 import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
-import contention.benchmark.keygenerators.builders.*;
+import contention.benchmark.keygenerators.impls.CreakersAndWaveKeyGenerator;
+import contention.benchmark.keygenerators.impls.DefaultKeyGenerator;
+import contention.benchmark.keygenerators.impls.SkewedSetsKeyGenerator;
+import contention.benchmark.keygenerators.impls.TemporarySkewedKeyGenerator;
 import contention.benchmark.keygenerators.parameters.*;
 
-public abstract class KeyGeneratorBuilder {
-//    public KeyGeneratorType keyGeneratorType;
+public class KeyGeneratorBuilder {
+    public KeyGeneratorType type;
     public KeyGeneratorParameters parameters;
+    public Parameters generalParameters;
+
+//    protected Map<String, DataMap> dataMaps;
+
+    public KeyGeneratorBuilder() {
+        this.type = KeyGeneratorType.DEFAULT_KEYGEN;
+        this.parameters = new DefaultParameters();
+    }
+
+    public KeyGeneratorBuilder(KeyGeneratorType type) {
+        this.type = type;
+    }
 
     public KeyGeneratorBuilder(KeyGeneratorParameters parameters) {
         this.parameters = parameters;
     }
 
-    public void build(Parameters generalParameters) {
-        parameters.build(generalParameters);
+    public KeyGeneratorBuilder setType(KeyGeneratorType type) {
+        this.type = type;
+        return this;
     }
-    public abstract KeyGenerator getKeyGenerator();
+
+    public KeyGeneratorBuilder setParameters(KeyGeneratorParameters parameters) {
+        this.parameters = parameters;
+        return this;
+    }
+
+    public void initParamters(Parameters generalParameters) {
+        parameters.init(generalParameters);
+        this.generalParameters = generalParameters;
+//        initParamters(this.parameters, generalParameters);
+    }
+
+    public void initParamters(KeyGeneratorParameters parameters, Parameters generalParameters) {
+        this.parameters = parameters;
+        parameters.init(generalParameters);
+        this.generalParameters = generalParameters;
+    }
+
+    public KeyGenerator build() {
+        return switch (type) {
+            case DEFAULT_KEYGEN -> {
+                DefaultParameters parameters = (DefaultParameters) this.parameters;
+
+                yield new DefaultKeyGenerator(
+                        parameters.dataMapBuilder.build(generalParameters.range),
+                        parameters.distributionBuilder.build(generalParameters.range)
+                );
+            }
+            case SKEWED_SETS -> new SkewedSetsKeyGenerator(
+                    (SkewedSetsParameters) this.parameters,
+                    generalParameters.range);
+            case TEMPORARY_SKEWED -> {
+                TemporarySkewedParameters parameters = (TemporarySkewedParameters) this.parameters;
+
+                yield new TemporarySkewedKeyGenerator(
+                        parameters.dataMapBuilder.build(generalParameters.range),
+                        parameters,
+                        generalParameters.range);
+            }
+            case CREAKERS_AND_WAVE -> {
+                CreakersAndWaveParameters parameters = (CreakersAndWaveParameters) this.parameters;
+
+                yield new CreakersAndWaveKeyGenerator(
+                        parameters.dataMapBuilder.build(generalParameters.range),
+                        parameters);
+            }
+            case LEAF_INSERT -> null;
+            case LEAFS_HANDSHAKE -> null;
+            case LEAFS_EXTENSION_HANDSHAKE -> null;
+            case NONE -> null;
+        };
+    }
+
+    ;
 
     public static KeyGeneratorBuilder parseKeyGenerator(ParseArgument args) {
-        KeyGeneratorParameters parameters;
-        KeyGeneratorBuilder keyGeneratorBuilder;
-        switch (args.getCurrent()) {
+        return switch (args.getCurrent()) {
             case "-skewed-sets" -> {
-                parameters = new SkewedSetsParameters();
-//                parameters.keygenType = KeyGeneratorType.SKEWED_SETS;
-
-                keyGeneratorBuilder = new SkewedSetsKeyGeneratorBuilder(parameters);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.SKEWED_SETS).setParameters(new SkewedSetsParameters());
             }
             case "-creakers-and-wave" -> {
-                parameters = new CreakersAndWaveParameters();
-//                parameters.keygenType = KeyGeneratorType.CREAKERS_AND_WAVE;
-
-                keyGeneratorBuilder = new CreakersAndWaveKeyGeneratorBuilder(parameters);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.CREAKERS_AND_WAVE).setParameters(new CreakersAndWaveParameters());
             }
             case "-temporary-skewed", "-temp-skewed" -> {
-                parameters = new TemporarySkewedParameters();
-//                parameters.keygenType = KeyGeneratorType.TEMPORARY_SKEWED;
-
-                keyGeneratorBuilder = new TemporarySkewedKeyGeneratorBuilder(parameters);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.TEMPORARY_SKEWED).setParameters(new TemporarySkewedParameters());
             }
             case "-leaf-insert" -> {
-//                parameters = new Parameters();
-//                parameters.keygenType = KeyGeneratorType.LEAF_INSERT;
-
-                keyGeneratorBuilder = new LeafInsertKeyGeneratorBuilder(null);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.LEAF_INSERT);
             }
             case "-leafs-handshake" -> {
-                parameters = new LeafsHandshakeParameters();
-//                parameters.keygenType = KeyGeneratorType.LEAFS_HANDSHAKE;
-
-                keyGeneratorBuilder = new LeafsHandshakeKeyGeneratorBuilder(parameters);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.LEAFS_HANDSHAKE).setParameters(new LeafsHandshakeParameters());
             }
             case "-leafs-extension-handshake" -> {
-                parameters = new LeafsHandshakeParameters();
-//                parameters.keygenType = KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE;
-
-                keyGeneratorBuilder = new LeafsExtensionHandshakeKeyGeneratorBuilder(parameters);
+                args.next();
+                yield new KeyGeneratorBuilder(KeyGeneratorType.LEAFS_EXTENSION_HANDSHAKE).setParameters(new LeafsHandshakeParameters());
             }
-            default -> {
-                parameters = new DefaultParameters();
-//                parameters.keygenType = KeyGeneratorType.DEFAULT_KEYGEN;
-
-                return new DefaultKeyGeneratorBuilder(parameters);
-            }
-        }
-        args.next();
-        return keyGeneratorBuilder;
+            default -> new KeyGeneratorBuilder(KeyGeneratorType.DEFAULT_KEYGEN).setParameters(new DefaultParameters());
+        };
     }
 
 

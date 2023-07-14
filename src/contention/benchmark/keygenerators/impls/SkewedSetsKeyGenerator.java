@@ -25,10 +25,20 @@ public class SkewedSetsKeyGenerator implements KeyGenerator {
         this.data = data;
         this.parameters = parameters;
         this.readDistribution = new DistributionBuilder(DistributionType.SKEWED_UNIFORM)
-                        .setParameters(parameters.READ).getDistribution(range);
+                        .setParameters(parameters.READ).build(range);
         this.writeDistribution = new DistributionBuilder(DistributionType.SKEWED_UNIFORM)
-                .setParameters(parameters.WRITE).getDistribution(range);
+                .setParameters(parameters.WRITE).build(range);
     }
+
+    public SkewedSetsKeyGenerator(SkewedSetsParameters parameters, int range) {
+        this.data = parameters.dataMapBuilder.build(range);
+        this.parameters = parameters;
+        this.readDistribution = new DistributionBuilder(DistributionType.SKEWED_UNIFORM)
+                .setParameters(parameters.READ).build(range);
+        this.writeDistribution = new DistributionBuilder(DistributionType.SKEWED_UNIFORM)
+                .setParameters(parameters.WRITE).build(range);
+    }
+
 
     @Override
     public int nextGet() {

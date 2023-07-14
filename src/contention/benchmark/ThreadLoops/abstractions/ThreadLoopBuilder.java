@@ -8,6 +8,7 @@ import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
 import contention.benchmark.ThreadLoops.parameters.DeleteLeafsParameters;
 import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.stop.condition.StopCondition;
 
 import java.lang.reflect.Method;
 
@@ -15,6 +16,8 @@ public class ThreadLoopBuilder {
     public ThreadLoopType type;
     public ThreadLoopParameters parameters;
     public int quantity;
+    private StopCondition stopCondition;
+
 
     public ThreadLoopBuilder() {
         this.type = ThreadLoopType.DEFAULT;
@@ -42,11 +45,14 @@ public class ThreadLoopBuilder {
         return this;
     }
 
-    //    public void build() {
-//        parameters.build();
-//    }
-    public void build(Parameters generalParameters) {
-        parameters.build(generalParameters);
+    public ThreadLoopBuilder setQuantity(int quantity) {
+        this.quantity = quantity;
+        return this;
+    }
+
+    public void init(Parameters generalParameters) {
+        stopCondition = generalParameters.stopCondition;
+        parameters.init(generalParameters);
     }
 
     public StringBuilder toStringBuilder() {
@@ -60,17 +66,21 @@ public class ThreadLoopBuilder {
                 .append(parameters.toStringBuilder());
     }
 
-    public ThreadLoop getThreadLoop(int threadNum, DataStructure<Integer> dataStructure, Method[] methods) {
+    public ThreadLoop build(int threadNum, DataStructure<Integer> dataStructure, Method[] methods) {
         return switch (type) {
             case DEFAULT ->
-                    new DefaultThreadLoop(threadNum, dataStructure, methods, (DefaultThreadLoopParameters) parameters);
+                    new DefaultThreadLoop(threadNum, dataStructure, methods, stopCondition,
+                            (DefaultThreadLoopParameters) parameters);
             case DELETE_SPEED_TEST -> new DeleteSpeedTest(threadNum, dataStructure, methods);
             case DELETE_LEAFS ->
-                    new DeleteLeafsWorkload(threadNum, dataStructure, methods, (DeleteLeafsParameters) parameters);
-            case TEMPORARY_OPERATIONS -> new TemporaryOperationsThreadLoop(threadNum, dataStructure, methods,
-                    (TemporaryOperationsThreadLoopParameters) parameters);
-            case TEMPORARY_OPERATIONS_2 -> new TemporaryOperations2ThreadLoop(threadNum, dataStructure, methods,
-                    (TemporaryOperationsThreadLoopParameters) parameters);
+                    new DeleteLeafsWorkload(threadNum, dataStructure, methods, stopCondition,
+                            (DeleteLeafsParameters) parameters);
+            case TEMPORARY_OPERATIONS ->
+                    new TemporaryOperationsThreadLoop(threadNum, dataStructure, methods, stopCondition,
+                            (TemporaryOperationsThreadLoopParameters) parameters);
+            case TEMPORARY_OPERATIONS_2 ->
+                    new TemporaryOperations2ThreadLoop(threadNum, dataStructure, methods, stopCondition,
+                            (TemporaryOperationsThreadLoopParameters) parameters);
         };
     }
 
@@ -126,5 +136,4 @@ public class ThreadLoopBuilder {
             }
         };
     }
-
 }

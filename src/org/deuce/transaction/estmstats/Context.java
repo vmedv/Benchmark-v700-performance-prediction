@@ -6,13 +6,11 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.deuce.transaction.TransactionException;
 import org.deuce.transaction.estmstats.field.ReadFieldAccess.Field;
 import org.deuce.transaction.estmstats.field.ReadFieldAccess.Field.Type;
-import org.deuce.transaction.estmstats.ReadSet;
-import org.deuce.transaction.estmstats.WriteSet;
 import org.deuce.transform.Exclude;
 
-import contention.benchmark.Statistics;
-import contention.benchmark.Statistics.AbortType;
-import contention.benchmark.Statistics.CommitType;
+import contention.benchmark.STMStatistics;
+import contention.benchmark.STMStatistics.AbortType;
+import contention.benchmark.STMStatistics.CommitType;
 
 
 /**
@@ -78,7 +76,7 @@ final public class Context implements org.deuce.transaction.Context {
 	final private WriteSet writeSet = new WriteSet(32);
 	
 	private int attempts=0;
-	private final Statistics stats = new Statistics(threadId);	
+	private final STMStatistics stats = new STMStatistics(threadId);
 	private static final Context[] threads = new Context[256];
 	
 	private int readHash;
@@ -112,7 +110,7 @@ final public class Context implements org.deuce.transaction.Context {
 		return threadId;
 	}
 
-	public final Statistics getStatistics() {
+	public final STMStatistics getStatistics() {
 		return stats;
 	}
 	

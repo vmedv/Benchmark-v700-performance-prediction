@@ -3,6 +3,7 @@ package contention.benchmark.ThreadLoops.impls;
 import contention.abstractions.*;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
 import contention.benchmark.ThreadLoops.parameters.DeleteLeafsParameters;
+import contention.benchmark.stop.condition.StopCondition;
 import contention.benchmark.tools.Range;
 
 import java.lang.reflect.Method;
@@ -19,8 +20,9 @@ public class DeleteLeafsWorkload extends ThreadLoopAbstract {
 
     public DeleteLeafsWorkload(int myThreadNum, DataStructure<Integer> dataStructure,
 //                               CompositionalMap<Integer, Integer> bench,
-                               Method[] methods, DeleteLeafsParameters parameters) {
-        super(myThreadNum, dataStructure, methods);
+                               Method[] methods, StopCondition stopCondition,
+                               DeleteLeafsParameters parameters) {
+        super(myThreadNum, dataStructure, methods, stopCondition);
         int size = parameters.range;
         vertices = new ArrayList<>(size);
         Queue<Range> vertQueue = new ArrayDeque<>();

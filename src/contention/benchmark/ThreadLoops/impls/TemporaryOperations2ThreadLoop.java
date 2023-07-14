@@ -4,6 +4,7 @@ import contention.abstractions.DataStructure;
 import contention.benchmark.keygenerators.abstractions.KeyGenerator;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
 import contention.benchmark.ThreadLoops.parameters.TemporaryOperationsThreadLoopParameters;
+import contention.benchmark.stop.condition.StopCondition;
 
 import java.lang.reflect.Method;
 import java.util.Random;
@@ -24,9 +25,9 @@ public class TemporaryOperations2ThreadLoop extends ThreadLoopAbstract {
 
     public TemporaryOperations2ThreadLoop(int myThreadNum, DataStructure<Integer> dataStructure,
 //                                          CompositionalMap<Integer, Integer> bench,
-                                          Method[] methods,
+                                          Method[] methods, StopCondition stopCondition,
                                           KeyGenerator keygen, TemporaryOperationsThreadLoopParameters parameters) {
-        super(myThreadNum, dataStructure, methods);
+        super(myThreadNum, dataStructure, methods, stopCondition);
         this.keygen = keygen;
         this.time = 0;
         this.pointer = 0;
@@ -43,9 +44,9 @@ public class TemporaryOperations2ThreadLoop extends ThreadLoopAbstract {
     }
 
     public TemporaryOperations2ThreadLoop(int myThreadNum, DataStructure<Integer> dataStructure,
-                                         Method[] methods,
-                                         TemporaryOperationsThreadLoopParameters parameters) {
-        this(myThreadNum, dataStructure, methods, parameters.keyGeneratorBuilder.getKeyGenerator(), parameters);
+                                          Method[] methods, StopCondition stopCondition,
+                                          TemporaryOperationsThreadLoopParameters parameters) {
+        this(myThreadNum, dataStructure, methods, stopCondition, parameters.keyGeneratorBuilder.build(), parameters);
     }
 
     private void update_pointer() {

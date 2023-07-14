@@ -4,6 +4,7 @@ import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.keygenerators.abstractions.KeyGeneratorType;
 
 public class TemporaryOperationsThreadLoopParameters extends ThreadLoopParameters {
     public int tempOperCount = 0;
@@ -11,7 +12,7 @@ public class TemporaryOperationsThreadLoopParameters extends ThreadLoopParameter
     public double[] numInserts;
     public double[] numErases;
 
-    public KeyGeneratorBuilder keyGeneratorBuilder;
+    public KeyGeneratorBuilder keyGeneratorBuilder = new KeyGeneratorBuilder();
 
     public void setTempOperCount(final int tempOperCount) {
         this.tempOperCount = tempOperCount;
@@ -21,8 +22,8 @@ public class TemporaryOperationsThreadLoopParameters extends ThreadLoopParameter
     }
 
     @Override
-    public void build(Parameters parameters) {
-        keyGeneratorBuilder.build(parameters);
+    public void init(Parameters parameters) {
+        keyGeneratorBuilder.initParamters(parameters);
     }
 
     @Override

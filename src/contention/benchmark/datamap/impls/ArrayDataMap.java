@@ -1,4 +1,4 @@
-package contention.benchmark.datamap;
+package contention.benchmark.datamap.impls;
 
 import contention.benchmark.Parameters;
 import contention.benchmark.datamap.abstractions.DataMap;

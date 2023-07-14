@@ -4,7 +4,7 @@ import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 
 public interface KeyGeneratorParameters {
-    void build(Parameters parameters);
+    void init(Parameters parameters);
 
     boolean parseArg(ParseArgument args);
 

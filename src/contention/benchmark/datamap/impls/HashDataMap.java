@@ -1,7 +1,7 @@
-package contention.benchmark.datamap;
+package contention.benchmark.datamap.impls;
 
 import contention.benchmark.datamap.abstractions.DataMap;
-import contention.benchmark.datamap.hash.HashFunction;
+import contention.benchmark.datamap.impls.hash.HashFunction;
 
 public class HashDataMap implements DataMap {
     HashFunction hashFunction;

@@ -2,8 +2,11 @@ package contention.benchmark.keygenerators.parameters;
 
 import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
+import contention.benchmark.datamap.abstractions.DataMapBuilder;
+import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
+import javax.xml.crypto.Data;
 import java.util.Arrays;
 
 /**
@@ -18,6 +21,8 @@ import java.util.Arrays;
  * // rti — relax time после горячей работы с i-ым множеством
  */
 public class TemporarySkewedParameters implements KeyGeneratorParameters {
+    public DataMapBuilder dataMapBuilder = new DataMapBuilder(DataMapType.ARRAY);
+
     public int setCount = 0;
     public double[] setSizes;
     public double[] hotProbs;
@@ -85,7 +90,7 @@ public class TemporarySkewedParameters implements KeyGeneratorParameters {
     public int[] setsBegins;
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
         setsLengths = new int[setCount + 1];
         setsBegins = new int[setCount + 1];
         setsBegins[0] = 0;

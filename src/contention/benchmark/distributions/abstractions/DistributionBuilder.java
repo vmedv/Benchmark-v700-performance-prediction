@@ -7,19 +7,19 @@ import contention.benchmark.distributions.ZipfDistribution;
 import contention.benchmark.distributions.parameters.*;
 
 public class DistributionBuilder {
-    public DistributionType distributionType;
+    public DistributionType type;
     public DistributionParameters parameters;
 
     public DistributionBuilder(DistributionType distributionType) {
-        this.distributionType = distributionType;
+        this.type = distributionType;
     }
 
     public DistributionBuilder() {
-        this.distributionType = DistributionType.UNIFORM;
+        this.type = DistributionType.UNIFORM;
     }
 
-    public DistributionBuilder setDistributionType(DistributionType distributionType) {
-        this.distributionType = distributionType;
+    public DistributionBuilder setType(DistributionType type) {
+        this.type = type;
         return this;
     }
 
@@ -33,14 +33,14 @@ public class DistributionBuilder {
      */
     public boolean parseDistribution(ParseArgument args) {
         switch (args.getCurrent()) {
-            case "-dist-zipf" -> this.setDistributionType(DistributionType.ZIPF)
+            case "-dist-zipf" -> this.setType(DistributionType.ZIPF)
                     .setParameters(new ZipfParameters(Double.parseDouble(args.getNext())));
-            case "-dist-skewed-uniform" -> this.setDistributionType(DistributionType.SKEWED_UNIFORM)
+            case "-dist-skewed-uniform" -> this.setType(DistributionType.SKEWED_UNIFORM)
                     .setParameters(new SkewedUniformParameters(
                             Double.parseDouble(args.getNext()),
                             Double.parseDouble(args.getNext()))
                     );
-            case "-dist-uniform" -> this.setDistributionType(DistributionType.UNIFORM);
+            case "-dist-uniform" -> this.setType(DistributionType.UNIFORM);
             default -> {
                 return false;
             }
@@ -48,8 +48,8 @@ public class DistributionBuilder {
         return true;
     }
 
-    public Distribution getDistribution(int range) {
-        return switch (this.distributionType) {
+    public Distribution build(int range) {
+        return switch (this.type) {
             case UNIFORM -> new UniformDistribution(range);
             case ZIPF -> {
                 ZipfParameters zipfParameters = (ZipfParameters) parameters;
@@ -60,15 +60,15 @@ public class DistributionBuilder {
                 yield new SkewedUniformDistribution(
                         skewedUniformParameters.getHotLength(range),
                         skewedUniformParameters.HOT_PROB,
-                        skewedUniformParameters.hotDistBuilder.getDistribution(skewedUniformParameters.getHotLength(range)),
-                        skewedUniformParameters.coldDistBuilder.getDistribution(skewedUniformParameters.getColdLength(range))
+                        skewedUniformParameters.hotDistBuilder.build(skewedUniformParameters.getHotLength(range)),
+                        skewedUniformParameters.coldDistBuilder.build(skewedUniformParameters.getColdLength(range))
                 );
             }
         };
     }
 
-    public MutableDistribution getDistribution() {
-        return switch (this.distributionType) {
+    public MutableDistribution build() {
+        return switch (this.type) {
             case UNIFORM -> new UniformDistribution();
             case ZIPF -> {
                 ZipfParameters zipfParameters = (ZipfParameters) parameters;

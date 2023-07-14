@@ -2,12 +2,17 @@ package contention.benchmark.keygenerators.parameters;
 
 import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
+import contention.benchmark.datamap.abstractions.DataMapBuilder;
+import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.parameters.SkewedUniformParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
 public class SkewedSetsParameters implements KeyGeneratorParameters {
     public SkewedUniformParameters READ = new SkewedUniformParameters(0, 0);
     public SkewedUniformParameters WRITE = new SkewedUniformParameters(0, 0);
+
+    public DataMapBuilder dataMapBuilder = new DataMapBuilder(DataMapType.ARRAY);
+
     public double INTERSECTION = 0;
 
     public int readHotLength;
@@ -17,7 +22,7 @@ public class SkewedSetsParameters implements KeyGeneratorParameters {
     public int writeHotEnd;
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
         int readHotLength = (int) (parameters.range * READ.HOT_SIZE);
         int writeHotLength = (int) (parameters.range * WRITE.HOT_SIZE);
         int intersectionLength = (int) (parameters.range * INTERSECTION);

@@ -3,7 +3,6 @@ package org.deuce.transaction.strongiso;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.deuce.reflection.AddressUtil;
 import org.deuce.reflection.UnsafeHolder;
 import org.deuce.transaction.TransactionException;
 import org.deuce.transaction.strongiso.field.BooleanWriteFieldAccess;
@@ -14,17 +13,10 @@ import org.deuce.transaction.strongiso.field.FloatWriteFieldAccess;
 import org.deuce.transaction.strongiso.field.IntWriteFieldAccess;
 import org.deuce.transaction.strongiso.field.LongWriteFieldAccess;
 import org.deuce.transaction.strongiso.field.ObjectWriteFieldAccess;
-import org.deuce.transaction.strongiso.field.ReadFieldAccess;
 import org.deuce.transaction.strongiso.field.ShortWriteFieldAccess;
 import org.deuce.transaction.strongiso.field.TransStatus;
 import org.deuce.transaction.strongiso.field.WriteFieldAccess;
-import org.deuce.transaction.strongiso.pool.Pool;
-import org.deuce.transaction.strongiso.pool.ResourceFactory;
 import org.deuce.transform.Exclude;
-import org.deuce.trove.TObjectProcedure;
-
-import contention.benchmark.Counters;
-import contention.benchmark.Statistics.CommitType;
 
 /**
  * TL2 implementation

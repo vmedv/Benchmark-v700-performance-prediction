@@ -27,8 +27,8 @@ public class CreakersAndWaveKeyGenerator implements KeyGenerator {
         this.data = data;
         this.parameters = parameters;
         this.random = new Random();
-        this.creakersDist = parameters.creakersDistBuilder.getDistribution(parameters.creakersLength);
-        this.waveDist = parameters.waveDistBuilder.getDistribution();
+        this.creakersDist = parameters.creakersDistBuilder.build(parameters.creakersLength);
+        this.waveDist = parameters.waveDistBuilder.build();
     }
 
     /**

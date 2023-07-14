@@ -6,7 +6,7 @@ import contention.abstractions.ParseArgument;
 public abstract class ThreadLoopParameters {
     public ThreadLoopType type;
 //    public abstract void build();
-    public abstract void build(Parameters parameters);
+    public abstract void init(Parameters parameters);
 
     public abstract boolean parseArg(ParseArgument args);
 

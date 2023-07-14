@@ -1,5 +1,7 @@
 package contention.benchmark.keygenerators.parameters;
 
+import contention.benchmark.datamap.abstractions.DataMapBuilder;
+import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
 import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
@@ -7,9 +9,10 @@ import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
 public class DefaultParameters implements KeyGeneratorParameters {
     public DistributionBuilder distributionBuilder = new DistributionBuilder();
+    public DataMapBuilder dataMapBuilder = new DataMapBuilder(DataMapType.ID);
 
     @Override
-    public void build(Parameters parameters) {
+    public void init(Parameters parameters) {
 
     }
 
@@ -23,7 +26,7 @@ public class DefaultParameters implements KeyGeneratorParameters {
         StringBuilder params = new StringBuilder();
         params.append("\n")
                 .append("  Distribution:            \t")
-                .append(distributionBuilder.distributionType)
+                .append(distributionBuilder.type)
                 .append(distributionBuilder.toStringBuilderParameters());
         return params;
     }

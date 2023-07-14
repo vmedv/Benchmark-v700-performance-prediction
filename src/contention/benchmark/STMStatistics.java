@@ -12,7 +12,7 @@ import java.util.Map;
  * @author Vincent Gramoli
  * 
  */
-public class Statistics {
+public class STMStatistics {
 
 	public enum AbortType {
 		ALL, BETWEEN_SUCCESSIVE_READS, BETWEEN_READ_AND_WRITE, EXTEND_ON_READ, WRITE_AFTER_READ, LOCKED_ON_WRITE, LOCKED_BEFORE_READ, LOCKED_BEFORE_ELASTIC_READ, LOCKED_ON_READ, INVALID_COMMIT, INVALID_SNAPSHOT
@@ -26,7 +26,7 @@ public class Statistics {
 		ALL, READ_BACK, READ_SET, COMMIT_BACK, COMMIT_RS
 	}
 
-	private static final Map<Integer, Statistics> statsMap = new HashMap<Integer, Statistics>();
+	private static final Map<Integer, STMStatistics> statsMap = new HashMap<Integer, STMStatistics>();
 	private static int[] txAttemptsHistBins;
 
 	static {
@@ -46,8 +46,8 @@ public class Statistics {
 
 	public static int getTotalStarts() {
 		int totalStarts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalStarts += statistics.starts;
 		}
 		return totalStarts;
@@ -55,8 +55,8 @@ public class Statistics {
 
 	public static int getTotalCommits() {
 		int totalCommits = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalCommits += statistics.commits;
 		}
 		return totalCommits;
@@ -68,8 +68,8 @@ public class Statistics {
 
 	public static int getNumCommitsElastic() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getCommits(CommitType.ELASTIC);
 		}
 		return total;
@@ -77,8 +77,8 @@ public class Statistics {
 
 	public static int getNumCommitsUpdate() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getCommits(CommitType.UPDATE);
 		}
 		return total;
@@ -86,8 +86,8 @@ public class Statistics {
 
 	public static int getNumCommitsReadOnly() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getCommits(CommitType.READONLY);
 		}
 		return total;
@@ -95,8 +95,8 @@ public class Statistics {
 
 	public static int getTotalValidations() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getValidation(ValidationType.ALL);
 		}
 		return totalAborts;
@@ -104,8 +104,8 @@ public class Statistics {
 
 	public static int getReadBackValidations() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getValidation(ValidationType.READ_BACK);
 		}
 		return totalAborts;
@@ -113,8 +113,8 @@ public class Statistics {
 
 	public static int getReadSetValidations() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getValidation(ValidationType.READ_SET);
 		}
 		return totalAborts;
@@ -122,8 +122,8 @@ public class Statistics {
 
 	public static int getCommitBackValidations() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getValidation(ValidationType.COMMIT_BACK);
 		}
 		return totalAborts;
@@ -131,8 +131,8 @@ public class Statistics {
 
 	public static int getCommitRSValidations() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getValidation(ValidationType.COMMIT_RS);
 		}
 		return totalAborts;
@@ -140,8 +140,8 @@ public class Statistics {
 
 	public static int getTotalAborts() {
 		int totalAborts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			totalAborts += statistics.getAborts(AbortType.ALL);
 		}
 		return totalAborts;
@@ -149,8 +149,8 @@ public class Statistics {
 
 	public static int getNumAbortsBetweenSuccessiveReads() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.BETWEEN_SUCCESSIVE_READS);
 		}
 		return total;
@@ -158,8 +158,8 @@ public class Statistics {
 
 	public static int getNumAbortsBetweenReadAndWrite() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.BETWEEN_READ_AND_WRITE);
 		}
 		return total;
@@ -167,8 +167,8 @@ public class Statistics {
 
 	public static int getNumAbortsExtendOnRead() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.EXTEND_ON_READ);
 		}
 		return total;
@@ -176,8 +176,8 @@ public class Statistics {
 
 	public static int getNumAbortsWriteAfterRead() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.WRITE_AFTER_READ);
 		}
 		return total;
@@ -185,8 +185,8 @@ public class Statistics {
 
 	public static int getNumAbortsLockedOnWrite() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.LOCKED_ON_WRITE);
 		}
 		return total;
@@ -194,8 +194,8 @@ public class Statistics {
 
 	public static int getNumAbortsLockedOnRead() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.LOCKED_ON_READ);
 		}
 		return total;
@@ -203,8 +203,8 @@ public class Statistics {
 
 	public static int getNumAbortsLockedBeforeRead() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.LOCKED_BEFORE_READ);
 		}
 		return total;
@@ -212,8 +212,8 @@ public class Statistics {
 
 	public static int getNumAbortsLockedBeforeElasticRead() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.LOCKED_BEFORE_ELASTIC_READ);
 		}
 		return total;
@@ -221,8 +221,8 @@ public class Statistics {
 
 	public static int getNumAbortsInvalidCommit() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.INVALID_COMMIT);
 		}
 		return total;
@@ -230,8 +230,8 @@ public class Statistics {
 
 	public static int getNumAbortsInvalidSnapshot() {
 		int total = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			total += statistics.getAborts(AbortType.INVALID_SNAPSHOT);
 		}
 		return total;
@@ -246,8 +246,8 @@ public class Statistics {
 
 	public static String getTotalAbortsPercentage(AbortType type) {
 		int abortsSum = 0, totalStarts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			if (type.equals(AbortType.ALL)) {
 				abortsSum += statistics.getAborts(AbortType.ALL);
 			} else if (type.equals(AbortType.BETWEEN_SUCCESSIVE_READS)) {
@@ -282,8 +282,8 @@ public class Statistics {
 
 	public static String getTotalCommitsPercentage(CommitType type) {
 		int commitsSum = 0, totalStarts = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			if (type.equals(CommitType.ALL)) {
 				commitsSum += statistics.getCommits(CommitType.ALL);
 			} else if (type.equals(CommitType.READONLY)) {
@@ -301,8 +301,8 @@ public class Statistics {
 
 	public static String getTotalAvgReadSetSize() {
 		double sumOfAverages = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sumOfAverages += statistics.getAvgReadSetSizeOnCommit();
 		}
 		return formatDouble(average(sumOfAverages, statsMap.size()));
@@ -310,8 +310,8 @@ public class Statistics {
 
 	public static String getTotalAvgWriteSetSize() {
 		double sumOfAverages = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sumOfAverages += statistics.getAvgWriteSetSizeOnCommit();
 		}
 		return formatDouble(average(sumOfAverages, statsMap.size()));
@@ -319,8 +319,8 @@ public class Statistics {
 
 	public static String getTotalAvgCommitingTxTime() {
 		int sum = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sum += statistics.txDurationSum;
 		}
 		double avgTimeInMS = 1000 * average(sum, getTotalCommits());
@@ -329,8 +329,8 @@ public class Statistics {
 
 	public static int getSumCommitingTxTime() {
 		int sum = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sum += statistics.txDurationSum;
 		}
 		return sum * 1000;
@@ -338,8 +338,8 @@ public class Statistics {
 
 	public static int getTotalReadsInROPrefix() {
 		int sum = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sum += statistics.readsInROPrefix;
 		}
 		return sum;
@@ -347,8 +347,8 @@ public class Statistics {
 
 	public static int getTotalElasticReads() {
 		int sum = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sum += statistics.elasticReads;
 		}
 		return sum;
@@ -465,7 +465,7 @@ public class Statistics {
 	private int validationCommitBack = 0;
 	private int validationCommitRS = 0;
 
-	public Statistics(int threadId) {
+	public STMStatistics(int threadId) {
 		statsMap.put(threadId, this);
 		txAttemptsHistCounters = new int[txAttemptsHistBins.length];
 	}
@@ -625,8 +625,8 @@ public class Statistics {
 
 	public static double getSumReadSetSize() {
 		double sumOfAverages = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sumOfAverages += statistics.getAvgReadSetSizeOnCommit();
 		}
 		return sumOfAverages;
@@ -634,8 +634,8 @@ public class Statistics {
 
 	public static double getSumWriteSetSize() {
 		double sumOfAverages = 0;
-		for (Map.Entry<Integer, Statistics> entry : statsMap.entrySet()) {
-			Statistics statistics = entry.getValue();
+		for (Map.Entry<Integer, STMStatistics> entry : statsMap.entrySet()) {
+			STMStatistics statistics = entry.getValue();
 			sumOfAverages += statistics.getAvgWriteSetSizeOnCommit();
 		}
 		return sumOfAverages;
