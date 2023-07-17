@@ -21,7 +21,6 @@ public class Parameters {
     public int numThreads = 1;
 //            numPrefillThreads = 1,
 //            numMilliseconds = 5000,
-   public int range = 2048;
 //            size = 1024,
 //            warmUp = 0,
 //            iterations = 1,
@@ -42,6 +41,7 @@ public class Parameters {
 
     public StopCondition stopCondition = new Timer(5000);
 
+    // TODO: вместо массива тредлупов, быть может массов parameters.test в BenchParameters?
     public List<ThreadLoopBuilder> threadLoopBuilders = new ArrayList<>();
 //    public List<ThreadLoopBuilder> prefillThreadLoopBuilders = new ArrayList<>();
 
@@ -68,8 +68,8 @@ public class Parameters {
 //                .append("  Size:                    \t")
 //                .append(this.size)
 //                .append(" elts\n")
-                .append("  Range:                   \t")
-                .append(this.range)
+//                .append("  Range:                   \t")
+//                .append(this.range)
                 .append(" elts\n");
 //                .append("  WarmUp:                  \t")
 //                .append(this.warmUp)
@@ -88,8 +88,8 @@ public class Parameters {
         return params;
     }
 
-    public void init() {
-        threadLoopBuilders.forEach(it -> it.init(this));
+    public void init(int range) {
+        threadLoopBuilders.forEach(it -> it.init(stopCondition, range));
 //        threadLoopBuilders.forEach(it -> it.init(this));
 //        threadLoopBuilders.parameter.init()
         threadLoopIndexes = new TreeMap<>();
@@ -113,7 +113,7 @@ public class Parameters {
 //                                this.numPrefillThreads = Integer.parseInt(args.getNext());
 //                        case "--duration", "-d" -> this.numMilliseconds = Integer.parseInt(args.getNext());
 //                        case "--size", "-i" -> this.size = Integer.parseInt(args.getNext());
-                        case "--range", "-r" -> this.range = Integer.parseInt(args.getNext());
+//                        case "--range", "-r" -> this.range = Integer.parseInt(args.getNext());
 //                        case "--Warmup", "-W" -> this.warmUp = Integer.parseInt(args.getNext());
 //                        case "--benchmark", "-b" -> this.benchClassName = args.getNext();
 //                        case "--iterations", "-n" -> this.iterations = Integer.parseInt(args.getNext());
@@ -144,7 +144,7 @@ public class Parameters {
             parameters.parseArg(args);
             args.next();
         }
-        parameters.init();
+//        parameters.init();
         return parameters;
     }
 

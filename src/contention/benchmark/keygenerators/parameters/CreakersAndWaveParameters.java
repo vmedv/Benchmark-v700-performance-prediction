@@ -1,7 +1,6 @@
 package contention.benchmark.keygenerators.parameters;
 
 import contention.abstractions.*;
-import contention.benchmark.Parameters;
 import contention.benchmark.datamap.abstractions.DataMapBuilder;
 import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
@@ -50,10 +49,10 @@ public class CreakersAndWaveParameters implements KeyGeneratorParameters {
 
 
     @Override
-    public void init(Parameters parameters) {
-        creakersLength = (int) (parameters.range * CREAKERS_SIZE);
-        creakersBegin = parameters.range - creakersLength;
-        defaultWaveLength = (int) (parameters.range * WAVE_SIZE);
+    public void init(int range) {
+        creakersLength = (int) (range * CREAKERS_SIZE);
+        creakersBegin = range - creakersLength;
+        defaultWaveLength = (int) (range * WAVE_SIZE);
         waveEnd = new AtomicInteger(creakersBegin);
         waveBegin = new AtomicInteger(waveEnd.get() - defaultWaveLength);
 

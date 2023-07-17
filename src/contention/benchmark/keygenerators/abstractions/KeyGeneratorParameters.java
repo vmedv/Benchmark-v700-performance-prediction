@@ -1,10 +1,9 @@
 package contention.benchmark.keygenerators.abstractions;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 
 public interface KeyGeneratorParameters {
-    void init(Parameters parameters);
+    void init(int range);
 
     boolean parseArg(ParseArgument args);
 

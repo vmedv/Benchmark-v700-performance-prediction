@@ -7,7 +7,11 @@ import contention.benchmark.stop.condition.OperationCounter;
 
 public class BenchParameters {
     public int iterations = 1;
-    public long range = 2048;
+    public int range = 2048;
+    public long afterPrefillDuration = 1000;
+    public long afterWarmUpDuration = 0;
+    public long betweenIterationsDuration = 100;
+
 
     public String benchClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
 
@@ -43,9 +47,9 @@ public class BenchParameters {
 
 
     public void init() {
-        test.init();
-        prefill.init();
-        warmUp.init();
+        test.init(range);
+        prefill.init(range);
+        warmUp.init(range);
     }
 
 }

@@ -40,7 +40,7 @@ public class LeafsExtensionHandshakeKeyGeneratorBuilder extends KeyGeneratorBuil
 //                dataMaps.get("readData"),
 //                dataMaps.get("eraseData"),
                 (LeafsHandshakeParameters) this.parameters,
-                generalParameters.range
+                range
 //                ,
 //                parameters.readDistBuilder.getDistribution(),
 //                parameters.insertDistBuilder.getDistribution(),

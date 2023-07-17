@@ -9,8 +9,8 @@ import java.util.List;
 public class LeafInsertDataMap {
     private final List<int[]> layers;
 
-    public LeafInsertDataMap(Parameters parameters) {
-        int size = parameters.range;
+    public LeafInsertDataMap(int range) {
+        int size = range;
         layers = new ArrayList<>();
 
         List<Range> verts = new ArrayList<>();

@@ -1,6 +1,5 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.datamap.abstractions.DataMapBuilder;
 import contention.benchmark.datamap.abstractions.DataMapType;
@@ -22,10 +21,10 @@ public class SkewedSetsParameters implements KeyGeneratorParameters {
     public int writeHotEnd;
 
     @Override
-    public void init(Parameters parameters) {
-        int readHotLength = (int) (parameters.range * READ.HOT_SIZE);
-        int writeHotLength = (int) (parameters.range * WRITE.HOT_SIZE);
-        int intersectionLength = (int) (parameters.range * INTERSECTION);
+    public void init(int range) {
+        int readHotLength = (int) (range * READ.HOT_SIZE);
+        int writeHotLength = (int) (range * WRITE.HOT_SIZE);
+        int intersectionLength = (int) (range * INTERSECTION);
 
         this.readHotLength = readHotLength;
         this.writeHotLength = writeHotLength;

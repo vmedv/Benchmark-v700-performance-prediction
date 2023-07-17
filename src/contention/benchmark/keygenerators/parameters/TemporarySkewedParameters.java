@@ -1,12 +1,10 @@
 package contention.benchmark.keygenerators.parameters;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.datamap.abstractions.DataMapBuilder;
 import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
-import javax.xml.crypto.Data;
 import java.util.Arrays;
 
 /**
@@ -90,13 +88,13 @@ public class TemporarySkewedParameters implements KeyGeneratorParameters {
     public int[] setsBegins;
 
     @Override
-    public void init(Parameters parameters) {
+    public void init(int range) {
         setsLengths = new int[setCount + 1];
         setsBegins = new int[setCount + 1];
         setsBegins[0] = 0;
 
         for (int i = 0; i < setCount; i++) {
-            setsLengths[i] = (int) (parameters.range * setSizes[i]);
+            setsLengths[i] = (int) (range * setSizes[i]);
             setsBegins[i + 1] = setsBegins[i] + setsLengths[i];
         }
     }

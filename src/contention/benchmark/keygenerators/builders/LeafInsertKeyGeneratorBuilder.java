@@ -12,7 +12,7 @@ public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
         super(parameters);
     }
 
-    private LeafInsertDataMap data = new LeafInsertDataMap(generalParameters);
+    private LeafInsertDataMap data = new LeafInsertDataMap(range);
 
 //    @Override
 //    public void initDataMaps() {
@@ -21,6 +21,6 @@ public class LeafInsertKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
     @Override
     public KeyGenerator build() {
-        return new LeafInsertKeyGenerator(data, generalParameters.range);
+        return new LeafInsertKeyGenerator(data, range);
     }
 }

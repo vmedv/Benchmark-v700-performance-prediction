@@ -1,6 +1,5 @@
 package contention.benchmark.ThreadLoops.parameters;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
 
@@ -8,8 +7,8 @@ public class DeleteLeafsParameters extends ThreadLoopParameters {
     public int range;
 
     @Override
-    public void init(Parameters parameters) {
-        this.range = parameters.range;
+    public void init(int range) {
+        this.range = range;
     }
 
     @Override

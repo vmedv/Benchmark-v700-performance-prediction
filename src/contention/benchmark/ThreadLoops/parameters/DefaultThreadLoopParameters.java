@@ -1,10 +1,8 @@
 package contention.benchmark.ThreadLoops.parameters;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorType;
 
 public class DefaultThreadLoopParameters extends ThreadLoopParameters {
     public double
@@ -17,10 +15,10 @@ public class DefaultThreadLoopParameters extends ThreadLoopParameters {
     public KeyGeneratorBuilder keyGeneratorBuilder = new KeyGeneratorBuilder();
 
     @Override
-    public void init(Parameters parameters) {
+    public void init(int range) {
         this.numWrites = this.numInsert + this.numRemove;
-        keyGeneratorBuilder.initParamters(parameters);
-        keyGeneratorBuilder.parameters.init(parameters);
+        keyGeneratorBuilder.initParamters(range);
+//        keyGeneratorBuilder.parameters.init(range);
     }
 
     public boolean parseArg(ParseArgument args) {

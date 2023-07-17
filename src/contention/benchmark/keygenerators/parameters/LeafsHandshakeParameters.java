@@ -4,7 +4,6 @@ import contention.benchmark.datamap.abstractions.DataMapBuilder;
 import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
 import contention.benchmark.distributions.abstractions.DistributionType;
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.distributions.parameters.ZipfParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
@@ -26,8 +25,8 @@ public class LeafsHandshakeParameters implements KeyGeneratorParameters {
     public AtomicInteger curRange;
 
     @Override
-    public void init(Parameters parameters) {
-        deletedValue = new AtomicInteger(parameters.range/2);
+    public void init(int range) {
+        deletedValue = new AtomicInteger(range/2);
         // for LeafsExtensionHandshakeKeyGenerator
         curRange = new AtomicInteger(10);//Math.max(10, parameters.size));
 

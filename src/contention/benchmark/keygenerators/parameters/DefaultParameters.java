@@ -3,7 +3,6 @@ package contention.benchmark.keygenerators.parameters;
 import contention.benchmark.datamap.abstractions.DataMapBuilder;
 import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.distributions.abstractions.DistributionBuilder;
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
 
@@ -12,7 +11,7 @@ public class DefaultParameters implements KeyGeneratorParameters {
     public DataMapBuilder dataMapBuilder = new DataMapBuilder(DataMapType.ID);
 
     @Override
-    public void init(Parameters parameters) {
+    public void init(int range) {
 
     }
 

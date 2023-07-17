@@ -29,8 +29,8 @@ public class DefaultKeyGeneratorBuilder extends KeyGeneratorBuilder {
         return new DefaultKeyGenerator(
 //                dataMaps.get("data"),
 //                parameters.da
-                parameters.dataMapBuilder.build(generalParameters.range),
-                parameters.distributionBuilder.build(generalParameters.range)
+                parameters.dataMapBuilder.build(range),
+                parameters.distributionBuilder.build(range)
         );
     }
 

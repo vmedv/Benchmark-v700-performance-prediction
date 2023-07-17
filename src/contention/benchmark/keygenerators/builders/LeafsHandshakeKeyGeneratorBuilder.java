@@ -46,7 +46,7 @@ public class LeafsHandshakeKeyGeneratorBuilder extends KeyGeneratorBuilder {
 //                readData,
 //                eraseData,
                 (LeafsHandshakeParameters) this.parameters,
-                generalParameters.range
+                range
 //                ,
 //                parameters.readDistBuilder.getDistribution(parameters.range),
 //                parameters.insertDistBuilder.getDistribution(),

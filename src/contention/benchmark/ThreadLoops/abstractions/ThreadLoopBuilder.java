@@ -50,9 +50,9 @@ public class ThreadLoopBuilder {
         return this;
     }
 
-    public void init(Parameters generalParameters) {
-        stopCondition = generalParameters.stopCondition;
-        parameters.init(generalParameters);
+    public void init(StopCondition stopCondition, int range) {
+        this.stopCondition = stopCondition;
+        parameters.init(range);
     }
 
     public StringBuilder toStringBuilder() {

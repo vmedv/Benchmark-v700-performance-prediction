@@ -23,7 +23,7 @@ public class SkewedSetsKeyGeneratorBuilder extends KeyGeneratorBuilder {
         return new SkewedSetsKeyGenerator(
 //                dataMaps.get("data"),
                 (SkewedSetsParameters) this.parameters,
-                generalParameters.range
+                range
 //                ,
 //                new DistributionBuilder(DistributionType.SKEWED_UNIFORM)
 //                        .setParameters(parameters.READ).getDistribution(parameters.range),

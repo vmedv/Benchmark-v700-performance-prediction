@@ -1,10 +1,8 @@
 package contention.benchmark.ThreadLoops.parameters;
 
-import contention.benchmark.Parameters;
 import contention.abstractions.ParseArgument;
 import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
 import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorType;
 
 public class TemporaryOperationsThreadLoopParameters extends ThreadLoopParameters {
     public int tempOperCount = 0;
@@ -22,8 +20,8 @@ public class TemporaryOperationsThreadLoopParameters extends ThreadLoopParameter
     }
 
     @Override
-    public void init(Parameters parameters) {
-        keyGeneratorBuilder.initParamters(parameters);
+    public void init(int range) {
+        keyGeneratorBuilder.initParamters(range);
     }
 
     @Override

@@ -11,7 +11,8 @@ import contention.benchmark.keygenerators.parameters.*;
 public class KeyGeneratorBuilder {
     public KeyGeneratorType type;
     public KeyGeneratorParameters parameters;
-    public Parameters generalParameters;
+    public int range;
+//    public Parameters generalParameters;
 
 //    protected Map<String, DataMap> dataMaps;
 
@@ -38,16 +39,17 @@ public class KeyGeneratorBuilder {
         return this;
     }
 
-    public void initParamters(Parameters generalParameters) {
-        parameters.init(generalParameters);
-        this.generalParameters = generalParameters;
+    public void initParamters(int range) {
+        this.range = range;
+        parameters.init(range);
+//        this.generalParameters = generalParameters;
 //        initParamters(this.parameters, generalParameters);
     }
 
-    public void initParamters(KeyGeneratorParameters parameters, Parameters generalParameters) {
+    public void initParamters(int range, KeyGeneratorParameters parameters) {
         this.parameters = parameters;
-        parameters.init(generalParameters);
-        this.generalParameters = generalParameters;
+        parameters.init(range);
+//        this.generalParameters = generalParameters;
     }
 
     public KeyGenerator build() {
@@ -56,27 +58,21 @@ public class KeyGeneratorBuilder {
                 DefaultParameters parameters = (DefaultParameters) this.parameters;
 
                 yield new DefaultKeyGenerator(
-                        parameters.dataMapBuilder.build(generalParameters.range),
-                        parameters.distributionBuilder.build(generalParameters.range)
+                        parameters.dataMapBuilder.build(range),
+                        parameters.distributionBuilder.build(range)
                 );
             }
             case SKEWED_SETS -> new SkewedSetsKeyGenerator(
-                    (SkewedSetsParameters) this.parameters,
-                    generalParameters.range);
+                    (SkewedSetsParameters) this.parameters, range);
             case TEMPORARY_SKEWED -> {
                 TemporarySkewedParameters parameters = (TemporarySkewedParameters) this.parameters;
 
-                yield new TemporarySkewedKeyGenerator(
-                        parameters.dataMapBuilder.build(generalParameters.range),
-                        parameters,
-                        generalParameters.range);
+                yield new TemporarySkewedKeyGenerator(parameters.dataMapBuilder.build(range), parameters, range);
             }
             case CREAKERS_AND_WAVE -> {
                 CreakersAndWaveParameters parameters = (CreakersAndWaveParameters) this.parameters;
 
-                yield new CreakersAndWaveKeyGenerator(
-                        parameters.dataMapBuilder.build(generalParameters.range),
-                        parameters);
+                yield new CreakersAndWaveKeyGenerator(parameters.dataMapBuilder.build(range), parameters);
             }
             case LEAF_INSERT -> null;
             case LEAFS_HANDSHAKE -> null;
@@ -84,8 +80,6 @@ public class KeyGeneratorBuilder {
             case NONE -> null;
         };
     }
-
-    ;
 
     public static KeyGeneratorBuilder parseKeyGenerator(ParseArgument args) {
         return switch (args.getCurrent()) {

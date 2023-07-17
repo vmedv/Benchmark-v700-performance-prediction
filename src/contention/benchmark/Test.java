@@ -307,13 +307,20 @@ public class Test {
         return Parameters.parse(args);
     }
 
+    private void initAndExecute(Parameters parameters) throws InterruptedException {
+        Pair<Thread[], ThreadLoopAbstract[]> inits = initThreads(parameters);
+        Thread[] prefillThreads = inits.first;
+        threadLoops = inits.second;
+        execute(parameters, prefillThreads);
+    }
+
     public void run() throws InterruptedException {
         boolean firstIteration = true;
 
         for (int i = 0; i < parameters.iterations; i++) {
             if (!firstIteration) {
                 // give time to the JIT
-                Thread.sleep(100);
+                Thread.sleep(parameters.betweenIterationsDuration);
                 resetStats();
                 clear();
                 org.deuce.transaction.estmstats.Context.threadIdCounter.set(0);
@@ -321,39 +328,24 @@ public class Test {
 
 
             printStage("Prefill stage");
+            initAndExecute(parameters.prefill);
 
-            Pair<Thread[], ThreadLoopAbstract[]> prefillInits = initThreads(parameters.prefill);
-            Thread[] prefillThreads = prefillInits.first;
-            threadLoops = prefillInits.second;
-            execute(parameters.prefill, prefillThreads);
+            Thread.sleep(parameters.afterPrefillDuration);
 
 
             printStage("WarmUp stage");
-
-            Pair<Thread[], ThreadLoopAbstract[]> warmUpInits = initThreads(parameters.warmUp);
-            Thread[] warmUpThreads = warmUpInits.first;
-            threadLoops = warmUpInits.second;
-            execute(parameters.prefill, warmUpThreads);
-
-//            Thread[] warmUpThreads = initThreads(parametersters.warmUp).first;
-//            execute(parameters.warmUp, warmUpThreads);
+            initAndExecute(parameters.warmUp);
 
             if (parameters.test.detailedStats)
                 recordPreliminaryStats();
-
-//            clear();
             resetStats();
-
             long size = dataStructure.size();
+
+            Thread.sleep(parameters.afterWarmUpDuration);
 
 
             printStage("Test stage");
-
-            Pair<Thread[], ThreadLoopAbstract[]> testInits = initThreads(parameters.test);
-            Thread[] testThreads = testInits.first;
-            threadLoops = testInits.second;
-
-            execute(parameters.test, testThreads);
+            initAndExecute(parameters.test);
 
             if (dataStructure.getDataStructure() instanceof MaintenanceAlg) {
                 ((MaintenanceAlg) dataStructure.getDataStructure()).stopMaintenance();
@@ -417,6 +409,8 @@ public class Test {
                 case "-prefill" -> parameters.prefill = parseJsonFile(args.getNext());
                 case "-warm-up" -> parameters.warmUp = parseJsonFile(args.getNext());
                 case "-test" -> parameters.test = parseJsonFile(args.getNext());
+                case "-range" -> parameters.range = Integer.parseInt(args.getNext());
+                case "-iter" -> parameters.iterations = Integer.parseInt(args.getNext());
                 case "-create-default-prefill" -> parameters.createDefaultPrefill();
                 case "-json-file" ->
                         parameters = JsonConverter.fromJsonT(readJsonFile(args.getNext()), BenchParameters.class);
@@ -538,7 +532,7 @@ public class Test {
 //                + ((DefaultThreadLoopParameters) parameters.threadLoopParameters).numSnapshots
 //                + ")\n"
                 + "\t-r range      -- set the element range (default: "
-                + parameters.test.range
+                + parameters.range
                 + ")\n"
 //                + "\t-b benchmark  -- set the benchmark (default: "
 //                + parameters.test.benchClassName

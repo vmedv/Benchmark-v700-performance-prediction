@@ -26,7 +26,7 @@ public class CreakersAndWaveKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
         return new CreakersAndWaveKeyGenerator(
 //                dataMaps.get("data"),
-                parameters.dataMapBuilder.build(generalParameters.range),
+                parameters.dataMapBuilder.build(range),
                 parameters
 //                ,
 //                parameters.creakersDistBuilder.getDistribution(parameters.creakersLength),

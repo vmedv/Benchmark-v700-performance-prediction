@@ -24,9 +24,9 @@ public class TemporarySkewedKeyGeneratorBuilder extends KeyGeneratorBuilder {
 
         return new TemporarySkewedKeyGenerator(
 //                dataMaps.get("data"),
-                parameters.dataMapBuilder.build(generalParameters.range),
+                parameters.dataMapBuilder.build(range),
                 parameters,
-                generalParameters.range
+                range
 //                ,
 //                hotDists,
 //                new UniformDistribution(parameters.range)
