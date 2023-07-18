@@ -8,10 +8,10 @@ import java.lang.reflect.Method;
 import java.util.Random;
 //import javafx.util.Pair;
 
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopAbstract;
-import contention.benchmark.datasctucrure.MapDataStructure;
-import contention.benchmark.datasctucrure.IntSetDataStructure;
-import contention.benchmark.datasctucrure.SortedSetDataStructure;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopAbstract;
+import contention.benchmark.data.sctucrure.MapDataStructure;
+import contention.benchmark.data.sctucrure.IntSetDataStructure;
+import contention.benchmark.data.sctucrure.SortedSetDataStructure;
 import contention.benchmark.json.JsonConverter;
 import contention.benchmark.tools.Pair;
 

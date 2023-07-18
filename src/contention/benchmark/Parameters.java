@@ -2,8 +2,9 @@ package contention.benchmark;
 
 import contention.abstractions.DataStructure;
 import contention.abstractions.ParseArgument;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoop;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopBuilder;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoop;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopBuilder;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopBuilderOld;
 import contention.benchmark.stop.condition.StopCondition;
 import contention.benchmark.stop.condition.Timer;
 
@@ -89,7 +90,7 @@ public class Parameters {
     }
 
     public void init(int range) {
-        threadLoopBuilders.forEach(it -> it.init(stopCondition, range));
+        threadLoopBuilders.forEach(it -> it.init(range, stopCondition));
 //        threadLoopBuilders.forEach(it -> it.init(this));
 //        threadLoopBuilders.parameter.init()
         threadLoopIndexes = new TreeMap<>();
@@ -120,9 +121,9 @@ public class Parameters {
 //                        case "--after-fill-relax-time", "-afr" ->
 //                                this.afterFillRelaxMilliseconds = Integer.parseInt(args.getNext());
                         default -> {
-                            if (!threadLoopBuilders.get(0).parameters.parseArg(args)) {
-                                System.err.println("Unexpected option: " + currentArg + ". Ignoring...");
-                            }
+//                            if (!threadLoopBuilders.get(0).parameters.parseArg(args)) {
+//                                System.err.println("Unexpected option: " + currentArg + ". Ignoring...");
+//                            }
                         }
                     }
                 }
@@ -138,7 +139,7 @@ public class Parameters {
 
     public static Parameters parse(ParseArgument args) {
         Parameters parameters = new Parameters();
-        parameters.threadLoopBuilders.add(ThreadLoopBuilder.parseAndCreateThreadLoop(args)); //new ThreadLoopBuilder().parseThreadLoop(args));
+//        parameters.threadLoopBuilders.add(ThreadLoopBuilderOld.parseAndCreateThreadLoop(args)); //new ThreadLoopBuilder().parseThreadLoop(args));
 
         while (args.hasNext()) {
             parameters.parseArg(args);

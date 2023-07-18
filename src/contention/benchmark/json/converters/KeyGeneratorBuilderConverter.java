@@ -1,15 +1,15 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorParameters;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorType;
+import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorBuilderOld;
+import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorParameters;
+import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorType;
 
 import java.lang.reflect.Type;
 
-public class KeyGeneratorBuilderConverter implements JsonSerializer<KeyGeneratorBuilder>, JsonDeserializer<KeyGeneratorBuilder> {
+public class KeyGeneratorBuilderConverter implements JsonSerializer<KeyGeneratorBuilderOld>, JsonDeserializer<KeyGeneratorBuilderOld> {
     @Override
-    public KeyGeneratorBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public KeyGeneratorBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
         KeyGeneratorType keyGenType = context.deserialize(object.get("type"), KeyGeneratorType.class);
@@ -23,11 +23,11 @@ public class KeyGeneratorBuilderConverter implements JsonSerializer<KeyGenerator
 
         KeyGeneratorParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
 
-        return new KeyGeneratorBuilder(keyGenType).setParameters(parameters);
+        return new KeyGeneratorBuilderOld(keyGenType).setParameters(parameters);
     }
 
     @Override
-    public JsonElement serialize(KeyGeneratorBuilder keyGeneratorBuilder, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(KeyGeneratorBuilderOld keyGeneratorBuilder, Type type, JsonSerializationContext context) {
         JsonObject object = new JsonObject();
         object.addProperty("ParametersClassName", keyGeneratorBuilder.parameters.getClass().getName());
         object.add("type", context.serialize(keyGeneratorBuilder.type));

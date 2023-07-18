@@ -1,9 +1,6 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.datamap.abstractions.DataMapBuilder;
-import contention.benchmark.datamap.abstractions.DataMapParameters;
-import contention.benchmark.datamap.abstractions.DataMapType;
 import contention.benchmark.stop.condition.StopCondition;
 
 import java.lang.reflect.Type;

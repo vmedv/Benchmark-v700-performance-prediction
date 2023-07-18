@@ -1,15 +1,15 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopBuilder;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopParameters;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopType;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopBuilderOld;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopParameters;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopType;
 
 import java.lang.reflect.Type;
 
-public class ThreadLoopBuilderConverter implements JsonSerializer<ThreadLoopBuilder>, JsonDeserializer<ThreadLoopBuilder> {
+public class ThreadLoopBuilderConverter implements JsonSerializer<ThreadLoopBuilderOld>, JsonDeserializer<ThreadLoopBuilderOld> {
     @Override
-    public ThreadLoopBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public ThreadLoopBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
         ThreadLoopType threadLoopType = context.deserialize(object.get("type"), ThreadLoopType.class);
@@ -24,11 +24,11 @@ public class ThreadLoopBuilderConverter implements JsonSerializer<ThreadLoopBuil
 
         ThreadLoopParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
 
-        return new ThreadLoopBuilder(threadLoopType).setParameters(parameters).setQuantity(quantity);
+        return new ThreadLoopBuilderOld(threadLoopType).setParameters(parameters).setQuantity(quantity);
     }
 
     @Override
-    public JsonElement serialize(ThreadLoopBuilder threadLoopBuilder, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(ThreadLoopBuilderOld threadLoopBuilder, Type type, JsonSerializationContext context) {
         JsonObject object = new JsonObject();
         object.addProperty("ParametersClassName", threadLoopBuilder.parameters.getClass().getName());
         object.add("type", context.serialize(threadLoopBuilder.type));

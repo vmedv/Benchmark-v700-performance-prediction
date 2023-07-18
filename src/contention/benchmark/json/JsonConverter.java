@@ -3,19 +3,19 @@ package contention.benchmark.json;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import contention.benchmark.Parameters;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopBuilder;
-import contention.benchmark.datamap.abstractions.DataMapBuilder;
-import contention.benchmark.distributions.abstractions.DistributionBuilder;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopBuilderOld;
+import contention.benchmark.workload.datamap.abstractions.DataMapBuilderOld;
+import contention.benchmark.workload.distributions.abstractions.DistributionBuilderOld;
 import contention.benchmark.json.converters.*;
-import contention.benchmark.keygenerators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorBuilderOld;
 import contention.benchmark.stop.condition.StopCondition;
 
 public class JsonConverter {
     private static final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(ThreadLoopBuilder.class, new ThreadLoopBuilderConverter())
-            .registerTypeAdapter(KeyGeneratorBuilder.class, new KeyGeneratorBuilderConverter())
-            .registerTypeAdapter(DistributionBuilder.class, new DistributionBuilderConverter())
-            .registerTypeAdapter(DataMapBuilder.class, new DataMapBuilderConverter())
+            .registerTypeAdapter(ThreadLoopBuilderOld.class, new ThreadLoopBuilderConverter())
+            .registerTypeAdapter(KeyGeneratorBuilderOld.class, new KeyGeneratorBuilderConverter())
+            .registerTypeAdapter(DistributionBuilderOld.class, new DistributionBuilderConverter())
+            .registerTypeAdapter(DataMapBuilderOld.class, new DataMapBuilderConverter())
             .registerTypeAdapter(StopCondition.class, new StopConditionConverter())
             .setPrettyPrinting()
             .create();

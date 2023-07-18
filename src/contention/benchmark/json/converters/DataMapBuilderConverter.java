@@ -1,13 +1,13 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.datamap.abstractions.DataMapBuilder;
-import contention.benchmark.datamap.abstractions.DataMapParameters;
-import contention.benchmark.datamap.abstractions.DataMapType;
+import contention.benchmark.workload.datamap.abstractions.DataMapBuilderOld;
+import contention.benchmark.workload.datamap.abstractions.DataMapParameters;
+import contention.benchmark.workload.datamap.abstractions.DataMapType;
 
 import java.lang.reflect.Type;
 
-public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilder>, JsonDeserializer<DataMapBuilder> {
+public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilderOld>, JsonDeserializer<DataMapBuilderOld> {
 
     private <T> T getClassByName(JsonElement json, Class<T> tClass, JsonDeserializationContext context) {
         if (json == null) {
@@ -18,7 +18,7 @@ public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilder>, 
     }
 
     @Override
-    public DataMapBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public DataMapBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
         DataMapType dataMapType = context.deserialize(object.get("type"), DataMapType.class);
@@ -37,7 +37,7 @@ public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilder>, 
 
 //        DataMapParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
 
-        return new DataMapBuilder(dataMapType).setParameters(parameters);
+        return new DataMapBuilderOld(dataMapType).setParameters(parameters);
     }
 
     private String getClassName(Object object) {
@@ -49,7 +49,7 @@ public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilder>, 
     }
 
     @Override
-    public JsonElement serialize(DataMapBuilder dataMapBuilder, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(DataMapBuilderOld dataMapBuilder, Type type, JsonSerializationContext context) {
         JsonObject object = new JsonObject();
 //        object.addProperty("ParametersClassName", dataMapBuilder.parameters.getClass().getName());
         object.addProperty("ParametersClassName", getClassName(dataMapBuilder.parameters));

@@ -1,8 +1,9 @@
 package contention.benchmark;
 
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopBuilder;
-import contention.benchmark.ThreadLoops.abstractions.ThreadLoopType;
-import contention.benchmark.ThreadLoops.parameters.DefaultThreadLoopParameters;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopBuilderOld;
+import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopType;
+import contention.benchmark.workload.ThreadLoops.builders.DefaultThreadLoopBuilder;
+import contention.benchmark.workload.ThreadLoops.parameters.DefaultThreadLoopParameters;
 import contention.benchmark.stop.condition.OperationCounter;
 
 public class BenchParameters {
@@ -38,10 +39,8 @@ public class BenchParameters {
     public void createDefaultPrefill() {
         prefill = new Parameters();
         prefill.stopCondition = new OperationCounter(range / 2);
-        DefaultThreadLoopParameters threadLoopParameters = new DefaultThreadLoopParameters();
-        threadLoopParameters.numInsert = 1;
-        threadLoopParameters.numRemove = 0;
-        prefill.threadLoopBuilders.add(new ThreadLoopBuilder(threadLoopParameters).setType(ThreadLoopType.DEFAULT));
+
+        prefill.threadLoopBuilders.add(new DefaultThreadLoopBuilder().setNumRemove(0).setNumInsert(1));
     }
 
 
