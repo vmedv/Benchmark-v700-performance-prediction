@@ -1,14 +1,14 @@
 package contention.benchmark.workload.distributions.parameters;
 
-import contention.benchmark.workload.distributions.abstractions.DistributionBuilderOld;
-import contention.benchmark.workload.distributions.abstractions.DistributionParameters;
+import contention.benchmark.workload.distributions.abstractions.DistributionBuilder;
+import contention.benchmark.workload.distributions.builders.UniformDistributionBuilder;
 
-public class SkewedUniformParameters implements DistributionParameters {
+public class SkewedUniformParameters  {
     public double HOT_SIZE = 0;
     public double HOT_PROB = 0;
 
-    public DistributionBuilderOld hotDistBuilder = new DistributionBuilderOld();
-    public DistributionBuilderOld coldDistBuilder = new DistributionBuilderOld();
+    public DistributionBuilder hotDistBuilder = new UniformDistributionBuilder();
+    public DistributionBuilder coldDistBuilder = new UniformDistributionBuilder();
 
     public SkewedUniformParameters() {
     }

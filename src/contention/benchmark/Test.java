@@ -8,12 +8,17 @@ import java.lang.reflect.Method;
 import java.util.Random;
 //import javafx.util.Pair;
 
-import contention.benchmark.workload.ThreadLoops.abstractions.ThreadLoopAbstract;
+import contention.benchmark.workload.BenchParameters;
+import contention.benchmark.workload.Parameters;
+import contention.benchmark.workload.thread.loops.abstractions.ThreadLoop;
 import contention.benchmark.data.sctucrure.MapDataStructure;
 import contention.benchmark.data.sctucrure.IntSetDataStructure;
 import contention.benchmark.data.sctucrure.SortedSetDataStructure;
 import contention.benchmark.json.JsonConverter;
 import contention.benchmark.tools.Pair;
+import contention.benchmark.statistic.BenchStatistic;
+import contention.benchmark.statistic.STMStatistics;
+import contention.benchmark.statistic.ThreadStatistic;
 
 import static contention.benchmark.tools.StringFormat.formatDouble;
 
@@ -40,7 +45,7 @@ public class Test {
     /**
      * The array of runnable thread codes
      */
-    private ThreadLoopAbstract[] threadLoops;
+    private ThreadLoop[] threadLoops;
     //    private ThreadLoop threadLoops;
     private double elapsedTime;
     /**
@@ -166,12 +171,12 @@ public class Test {
     /**
      * Creates as many threads as requested
      */
-    private Pair<Thread[], ThreadLoopAbstract[]> initThreads(Parameters parameters) {
+    private Pair<Thread[], ThreadLoop[]> initThreads(Parameters parameters) {
         Thread[] threads = new Thread[parameters.numThreads];
-        ThreadLoopAbstract[] threadLoops = new ThreadLoopAbstract[parameters.numThreads];
+        ThreadLoop[] threadLoops = new ThreadLoop[parameters.numThreads];
 
         for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            threadLoops[threadNum] = (ThreadLoopAbstract) parameters.getWorkload(threadNum, dataStructure, methods);
+            threadLoops[threadNum] = (ThreadLoop) parameters.getWorkload(threadNum, dataStructure, methods);
 
             threads[threadNum] = new Thread(threadLoops[threadNum]);
         }
@@ -300,7 +305,7 @@ public class Test {
     }
 
     public static Parameters parseJson(String jsonParameters) {
-        return JsonConverter.fromJson(jsonParameters);
+        return JsonConverter.fromJson(jsonParameters, Parameters.class);
     }
 
     public static Parameters parseCommandLine(String[] args) {
@@ -308,7 +313,7 @@ public class Test {
     }
 
     private void initAndExecute(Parameters parameters) throws InterruptedException {
-        Pair<Thread[], ThreadLoopAbstract[]> inits = initThreads(parameters);
+        Pair<Thread[], ThreadLoop[]> inits = initThreads(parameters);
         Thread[] prefillThreads = inits.first;
         threadLoops = inits.second;
         execute(parameters, prefillThreads);
@@ -412,14 +417,11 @@ public class Test {
                 case "-range" -> parameters.range = Integer.parseInt(args.getNext());
                 case "-iter" -> parameters.iterations = Integer.parseInt(args.getNext());
                 case "-create-default-prefill" -> parameters.createDefaultPrefill();
-                case "-json-file" ->
-                        parameters = JsonConverter.fromJsonT(readJsonFile(args.getNext()), BenchParameters.class);
+                case "-json-file" -> parameters = JsonConverter.fromJson(readJsonFile(args.getNext()));
                 case "-result-file" -> resultStatisticFileName = args.getNext();
-                default -> {
-                    System.err.println("Unexpected option: " + args.getCurrent() + ". Ignoring...");
-                    args.next();
-                }
+                default -> System.err.println("Unexpected option: " + args.getCurrent() + ". Ignoring...");
             }
+            args.next();
         }
 
         if (needInit) {
@@ -434,7 +436,7 @@ public class Test {
 
         if (parameters.warmUp.numThreads != 0) {
             printStage("WarmUp parameters");
-            test.printParams(test.parameters.test);
+            test.printParams(test.parameters.warmUp);
         } else {
             printStage("Without WarmUp");
         }
@@ -646,7 +648,7 @@ public class Test {
      * JVM to enable its warmup
      */
     public void resetStats() {
-        for (ThreadLoopAbstract threadLoop : threadLoops) {
+        for (ThreadLoop threadLoop : threadLoops) {
             threadLoop.stats.reset();
         }
         this.curStats.reset();

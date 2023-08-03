@@ -1,21 +1,15 @@
 package contention.benchmark.workload.distributions.builders;
 
 import contention.benchmark.workload.distributions.abstractions.DistributionBuilder;
-import contention.benchmark.workload.distributions.SkewedUniformDistribution;
+import contention.benchmark.workload.distributions.impls.SkewedUniformDistribution;
 import contention.benchmark.workload.distributions.abstractions.Distribution;
 
 public class SkewedUniformDistributionBuilder implements DistributionBuilder {
-//    public int range;
     public double hotSize = 0;
     public double hotProb = 0;
 
     public DistributionBuilder hotDistBuilder = new UniformDistributionBuilder();
     public DistributionBuilder coldDistBuilder = new UniformDistributionBuilder();
-
-//    public SkewedUniformDistributionBuilder setRange(int range) {
-//        this.range = range;
-//        return this;
-//    }
 
     public SkewedUniformDistributionBuilder setHotSize(double hotSize) {
         this.hotSize = hotSize;
@@ -27,15 +21,15 @@ public class SkewedUniformDistributionBuilder implements DistributionBuilder {
         return this;
     }
 
-//    public SkewedUniformDistributionBuilder setHotDistBuilder(DistributionBuilder hotDistBuilder) {
-//        this.hotDistBuilder = hotDistBuilder;
-//        return this;
-//    }
-//
-//    public SkewedUniformDistributionBuilder setColdDistBuilder(DistributionBuilder coldDistBuilder) {
-//        this.coldDistBuilder = coldDistBuilder;
-//        return this;
-//    }
+    public SkewedUniformDistributionBuilder setHotDistBuilder(DistributionBuilder hotDistBuilder) {
+        this.hotDistBuilder = hotDistBuilder;
+        return this;
+    }
+
+    public SkewedUniformDistributionBuilder setColdDistBuilder(DistributionBuilder coldDistBuilder) {
+        this.coldDistBuilder = coldDistBuilder;
+        return this;
+    }
 
     public int getHotLength(int range) {
         return (int) (range * hotSize);
@@ -46,14 +40,12 @@ public class SkewedUniformDistributionBuilder implements DistributionBuilder {
     }
 
     @Override
-    public Distribution build(int range) {
+    public SkewedUniformDistribution build(int range) {
         return new SkewedUniformDistribution(
                 getHotLength(range),
                 hotProb,
-                new UniformDistributionBuilder().build(getHotLength(range)),
-                new UniformDistributionBuilder().build(getColdLength(range))
-//                hotDistBuilder.build(skewedUniformParameters.getHotLength(range)),
-//                coldDistBuilder.build(skewedUniformParameters.getColdLength(range))
+                hotDistBuilder.build(getHotLength(range)),
+                coldDistBuilder.build(getColdLength(range))
         );
     }
 

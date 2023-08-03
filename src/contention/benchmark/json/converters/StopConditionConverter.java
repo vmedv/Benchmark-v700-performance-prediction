@@ -1,7 +1,7 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.stop.condition.StopCondition;
+import contention.benchmark.workload.stop.condition.StopCondition;
 
 import java.lang.reflect.Type;
 

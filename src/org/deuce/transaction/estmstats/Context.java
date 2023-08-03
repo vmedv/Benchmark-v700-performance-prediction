@@ -8,9 +8,9 @@ import org.deuce.transaction.estmstats.field.ReadFieldAccess.Field;
 import org.deuce.transaction.estmstats.field.ReadFieldAccess.Field.Type;
 import org.deuce.transform.Exclude;
 
-import contention.benchmark.STMStatistics;
-import contention.benchmark.STMStatistics.AbortType;
-import contention.benchmark.STMStatistics.CommitType;
+import contention.benchmark.statistic.STMStatistics;
+import contention.benchmark.statistic.STMStatistics.AbortType;
+import contention.benchmark.statistic.STMStatistics.CommitType;
 
 
 /**

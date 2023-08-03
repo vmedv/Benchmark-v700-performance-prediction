@@ -1,37 +1,35 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorBuilderOld;
-import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorParameters;
-import contention.benchmark.workload.keygenerators.keygenerators.abstractions.KeyGeneratorType;
+import contention.benchmark.workload.key.generators.abstractions.KeyGeneratorBuilder;
 
 import java.lang.reflect.Type;
 
-public class KeyGeneratorBuilderConverter implements JsonSerializer<KeyGeneratorBuilderOld>, JsonDeserializer<KeyGeneratorBuilderOld> {
+public class KeyGeneratorBuilderConverter implements JsonSerializer<KeyGeneratorBuilder>, JsonDeserializer<KeyGeneratorBuilder> {
     @Override
-    public KeyGeneratorBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public KeyGeneratorBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
-        KeyGeneratorType keyGenType = context.deserialize(object.get("type"), KeyGeneratorType.class);
+        KeyGeneratorBuilder keyGeneratorBuilder = null;
 
-        Class<?> parametersClass;
         try {
-            parametersClass = Class.forName(object.get("ParametersClassName").getAsString());
+            Class<?> dataMapBuilderClass = Class.forName(object.get("ClassName").getAsString());
+            keyGeneratorBuilder = context.deserialize(object.get("KeyGeneratorBuilder"), dataMapBuilderClass);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-        KeyGeneratorParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
-
-        return new KeyGeneratorBuilderOld(keyGenType).setParameters(parameters);
+        return keyGeneratorBuilder;
     }
 
     @Override
-    public JsonElement serialize(KeyGeneratorBuilderOld keyGeneratorBuilder, Type type, JsonSerializationContext context) {
-        JsonObject object = new JsonObject();
-        object.addProperty("ParametersClassName", keyGeneratorBuilder.parameters.getClass().getName());
-        object.add("type", context.serialize(keyGeneratorBuilder.type));
-        object.add("parameters", context.serialize(keyGeneratorBuilder.parameters));
+    public JsonElement serialize(KeyGeneratorBuilder keyGeneratorBuilder, Type type, JsonSerializationContext context) {
+        JsonObject object = context.serialize(keyGeneratorBuilder).getAsJsonObject();
+        object.addProperty("ClassName", keyGeneratorBuilder.getClass().getName());
+        object.addProperty("AClassName", "test");
+        object.addProperty("ZClassName", "test");
+//        object.addProperty("ClassName", keyGeneratorBuilder.getClass().getName());
+//        object.add("KeyGeneratorBuilder", context.serialize(keyGeneratorBuilder));
         return object;
     }
 }

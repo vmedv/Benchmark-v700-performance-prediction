@@ -1,13 +1,11 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.workload.distributions.abstractions.DistributionBuilderOld;
-import contention.benchmark.workload.distributions.abstractions.DistributionParameters;
-import contention.benchmark.workload.distributions.abstractions.DistributionType;
+import contention.benchmark.workload.distributions.abstractions.DistributionBuilder;
 
 import java.lang.reflect.Type;
 
-public class DistributionBuilderConverter implements JsonSerializer<DistributionBuilderOld>, JsonDeserializer<DistributionBuilderOld> {
+public class DistributionBuilderConverter implements JsonSerializer<DistributionBuilder>, JsonDeserializer<DistributionBuilder> {
     private <T> T getClassByName(JsonElement json, Class<T> tClass, JsonDeserializationContext context) {
         if (json == null) {
             return null;
@@ -17,25 +15,19 @@ public class DistributionBuilderConverter implements JsonSerializer<Distribution
     }
 
     @Override
-    public DistributionBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public DistributionBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
-        DistributionType distributionType = context.deserialize(object.get("type"), DistributionType.class);
+        DistributionBuilder dataMapBuilder;
 
-        Class<?> parametersClass;
-        DistributionParameters parameters = null;
         try {
-            if (object.get("ParametersClassName") != null) {
-                parametersClass = Class.forName(object.get("ParametersClassName").getAsString());
-                parameters = context.deserialize(object.get("parameters"), parametersClass);
-            }
+            Class<?> dataMapBuilderClass = Class.forName(object.get("ClassName").getAsString());
+            dataMapBuilder = context.deserialize(object.get("DistributionBuilder"), dataMapBuilderClass);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-//        DistributionParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
-
-        return new DistributionBuilderOld(distributionType).setParameters(parameters);
+        return dataMapBuilder;
     }
 
     private String getClassName(Object object) {
@@ -47,12 +39,10 @@ public class DistributionBuilderConverter implements JsonSerializer<Distribution
     }
 
     @Override
-    public JsonElement serialize(DistributionBuilderOld distributionBuilder, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(DistributionBuilder distributionBuilder, Type type, JsonSerializationContext context) {
         JsonObject object = new JsonObject();
-//        object.addProperty("ParametersClassName", distributionBuilder.parameters.getClass().getName());
-        object.addProperty("ParametersClassName", getClassName(distributionBuilder.parameters));
-        object.add("type", context.serialize(distributionBuilder.type));
-        object.add("parameters", context.serialize(distributionBuilder.parameters));
+        object.addProperty("ClassName", distributionBuilder.getClass().getName());
+        object.add("DistributionBuilder", context.serialize(distributionBuilder));
         return object;
     }
 }

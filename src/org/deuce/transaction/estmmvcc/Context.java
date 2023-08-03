@@ -8,7 +8,7 @@ import org.deuce.transaction.estmmvcc.field.ReadFieldAccess.Field;
 import org.deuce.transaction.estmmvcc.field.ReadFieldAccess.Field.Type;
 import org.deuce.transform.Exclude;
 
-import contention.benchmark.STMStatistics;
+import contention.benchmark.statistic.STMStatistics;
 
 
 /**

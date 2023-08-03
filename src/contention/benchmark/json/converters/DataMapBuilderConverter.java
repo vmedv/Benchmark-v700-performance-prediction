@@ -1,13 +1,11 @@
 package contention.benchmark.json.converters;
 
 import com.google.gson.*;
-import contention.benchmark.workload.datamap.abstractions.DataMapBuilderOld;
-import contention.benchmark.workload.datamap.abstractions.DataMapParameters;
-import contention.benchmark.workload.datamap.abstractions.DataMapType;
+import contention.benchmark.workload.data.map.abstractions.DataMapBuilder;
 
 import java.lang.reflect.Type;
 
-public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilderOld>, JsonDeserializer<DataMapBuilderOld> {
+public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilder>, JsonDeserializer<DataMapBuilder> {
 
     private <T> T getClassByName(JsonElement json, Class<T> tClass, JsonDeserializationContext context) {
         if (json == null) {
@@ -18,26 +16,19 @@ public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilderOld
     }
 
     @Override
-    public DataMapBuilderOld deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
+    public DataMapBuilder deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context) throws JsonParseException {
         JsonObject object = jsonElement.getAsJsonObject();
 
-        DataMapType dataMapType = context.deserialize(object.get("type"), DataMapType.class);
+        DataMapBuilder dataMapBuilder;
 
-        Class<?> parametersClass;
-        DataMapParameters parameters = null;
         try {
-
-            if (object.get("ParametersClassName") != null) {
-                parametersClass = Class.forName(object.get("ParametersClassName").getAsString());
-                parameters = context.deserialize(object.get("parameters"), parametersClass);
-            }
+            Class<?> dataMapBuilderClass = Class.forName(object.get("ClassName").getAsString());
+            dataMapBuilder = context.deserialize(object.get("DataMapBuilder"), dataMapBuilderClass);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
 
-//        DataMapParameters parameters = context.deserialize(object.get("parameters"), parametersClass);
-
-        return new DataMapBuilderOld(dataMapType).setParameters(parameters);
+        return dataMapBuilder;
     }
 
     private String getClassName(Object object) {
@@ -49,12 +40,10 @@ public class DataMapBuilderConverter implements JsonSerializer<DataMapBuilderOld
     }
 
     @Override
-    public JsonElement serialize(DataMapBuilderOld dataMapBuilder, Type type, JsonSerializationContext context) {
+    public JsonElement serialize(DataMapBuilder dataMapBuilder, Type type, JsonSerializationContext context) {
         JsonObject object = new JsonObject();
-//        object.addProperty("ParametersClassName", dataMapBuilder.parameters.getClass().getName());
-        object.addProperty("ParametersClassName", getClassName(dataMapBuilder.parameters));
-        object.add("type", context.serialize(dataMapBuilder.type));
-        object.add("parameters", context.serialize(dataMapBuilder.parameters));
+        object.addProperty("ClassName", dataMapBuilder.getClass().getName());
+        object.add("DataMapBuilder", context.serialize(dataMapBuilder));
         return object;
     }
 }

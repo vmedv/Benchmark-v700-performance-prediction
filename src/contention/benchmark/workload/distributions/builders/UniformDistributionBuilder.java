@@ -1,26 +1,18 @@
 package contention.benchmark.workload.distributions.builders;
 
 import contention.benchmark.workload.distributions.abstractions.MutableDistributionBuilder;
-import contention.benchmark.workload.distributions.UniformDistribution;
+import contention.benchmark.workload.distributions.impls.UniformDistribution;
 import contention.benchmark.workload.distributions.abstractions.Distribution;
 import contention.benchmark.workload.distributions.abstractions.MutableDistribution;
 
 public class UniformDistributionBuilder implements MutableDistributionBuilder {
-//    public int range;
-//
-//    public UniformDistributionBuilder setRange(int range) {
-//        this.range = range;
-//
-//        return this;
-//    }
-
     @Override
-    public MutableDistribution build() {
+    public UniformDistribution build() {
         return new UniformDistribution();
     }
 
     @Override
-    public Distribution build(int range) {
+    public UniformDistribution build(int range) {
         return new UniformDistribution(range);
     }
 
