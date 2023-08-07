@@ -106,10 +106,10 @@ The workload consists of 4 types of entities:
 + ThreadLoop — the logic for interacting with a data structure.
 
 There are builders to create each type of entity:
-(ThreadLoopBuilder)[./microbench/workloads/thread_loops/thread_loop_builder.h],
-(ArgsGeneratorBuilder)[./microbench/workloads/args_generators/args_generator_builder.h],
-(DistributionBuilder)[./microbench/workloads/distributions/distribution_builder.h],
-(DataMapBuilder)[./microbench/workloads/data_maps/data_map_builder.h].
+[ThreadLoopBuilder](./microbench/workloads/thread_loops/thread_loop_builder.h),
+[ArgsGeneratorBuilder](./microbench/workloads/args_generators/args_generator_builder.h),
+[DistributionBuilder](./microbench/workloads/distributions/distribution_builder.h),
+[DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h).
 
 Let's create a standard workload with Zipf distribution.
 
