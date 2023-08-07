@@ -8,32 +8,27 @@
 #include <cassert>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "distributions/distribution.h"
+#include "workloads/distributions/distribution.h"
 
 class UniformDistribution : public MutableDistribution {
 private:
     PAD;
-    Random64 *rng;
-    size_t maxKey;
+    Random64 &rng;
+    size_t range;
     PAD;
 public:
-    UniformDistribution(Random64 *_rng, const size_t _maxKey = 0) : rng(_rng), maxKey(_maxKey) {}
+    UniformDistribution(Random64 &_rng, const size_t _range = 0) : rng(_rng), range(_range) {}
 
-    void setMaxKey(size_t _maxKey) {
-        maxKey = _maxKey;
+    void setRange(size_t _maxKey) override {
+        range = _maxKey;
     }
 
-    size_t next() {
-        size_t result = rng->next(maxKey);
+    size_t next() override {
+        size_t result = rng.next(range);
         return result;
     }
 
-    size_t next(size_t _maxKey) {
-        setMaxKey(_maxKey);
-        return next();
-    }
-
-    ~UniformDistribution() {}
+    ~UniformDistribution() override {}
 };
 
 #endif //SETBENCH_UNIFORM_DISTRIBUTION_H

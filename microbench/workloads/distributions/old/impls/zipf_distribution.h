@@ -9,34 +9,34 @@
 #include <cassert>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "workloads/distributions/distribution.h"
+#include "distributions/distribution.h"
 
 class ZipfDistribution : public MutableDistribution {
 private:
     PAD;
-    Random64 &rng;
-    size_t range;
+    Random64 *rng;
+    size_t maxKey;
     double area;
     double alpha;
     PAD;
 public:
 
-    ZipfDistribution(Random64 &_rng, double _alpha = 1.0, size_t _range = 0)
-            : rng(_rng), range(_range), area(0), alpha(_alpha) {}
+    ZipfDistribution(Random64 *_rng, double _alpha = 1.0, size_t _maxkey = 0)
+            : rng(_rng), maxKey(_maxkey), area(0), alpha(_alpha) {}
 
-    void setRange(size_t _range) override {
-        range = _range;
+    void setMaxKey(size_t _maxKey) override {
+        maxKey = _maxKey;
         if (alpha == 1.0) {
-            area = log(range);
+            area = log(maxKey);
         } else {
-            area = (pow((double) range, 1.0 - alpha) - 1.0) / (1.0 - alpha);
+            area = (pow((double) maxKey, 1.0 - alpha) - 1.0) / (1.0 - alpha);
         }
     }
 
     size_t next() override {
         double z; // Uniform random number (0 < z < 1)
         do {
-            z = (rng.next() / (double) rng.max_value);
+            z = (rng->next() / (double) rng->max_value);
         } while ((z == 0) || (z == 1));
 
         size_t zipf_value = 0;
@@ -47,6 +47,11 @@ public:
             zipf_value = (size_t) pow(s * (1.0 - alpha) + 1.0, 1.0 / (1.0 - alpha));
         }
         return zipf_value;
+    }
+
+    size_t next(size_t _maxKey) override {
+        setMaxKey(_maxKey);
+        return next();
     }
 
     ~ZipfDistribution() {}

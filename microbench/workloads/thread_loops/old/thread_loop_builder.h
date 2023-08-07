@@ -5,20 +5,23 @@
 #ifndef SETBENCH_THREAD_LOOP_BUILDER_H
 #define SETBENCH_THREAD_LOOP_BUILDER_H
 
+#include <string>
 #include "thread_loop.h"
 #include "thread_loop_parameters.h"
 #include "thread_loop_parameters_impls.h"
 #include "thread_loop_impls.h"
+#include "workloads/thread_loops/thread_loop_builder.h"
 
-struct ThreadLoopBuilder {
+
+struct ThreadLoopBuilder_old {
     ThreadLoopType threadLoopType;
     ThreadLoopParameters *threadLoopParameters;
 
-    ThreadLoopBuilder()
+    ThreadLoopBuilder_old()
             : threadLoopType(ThreadLoopType::DEFAULT),
               threadLoopParameters(new DefaultThreadLoopParameters) {}
 
-    ThreadLoopBuilder(ThreadLoopParameters *threadLoopParameters)
+    ThreadLoopBuilder_old(ThreadLoopParameters *threadLoopParameters)
             : threadLoopType(threadLoopParameters->threadLoopType), threadLoopParameters(threadLoopParameters) {}
 
 

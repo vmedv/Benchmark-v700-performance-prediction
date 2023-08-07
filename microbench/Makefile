@@ -72,6 +72,9 @@ FLAGS += $(xargs)
 LDFLAGS += -L../lib
 LDFLAGS += -I./ -I../ `find ../common -type d | sed s/^/-I/`
 LDFLAGS += -lpthread
+#LDFLAGS += -fsanitize=thread
+#LDFLAGS += -Wl,--stack,8192
+LDFLAGS += -g1
 LDFLAGS += -ldl
 LDFLAGS += -mrtm
 

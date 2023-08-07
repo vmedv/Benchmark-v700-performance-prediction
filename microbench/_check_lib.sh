@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 if [ "$#" -ne "1" ]; then
     echo "USAGE: $(basename $0) <ld_library_name>"

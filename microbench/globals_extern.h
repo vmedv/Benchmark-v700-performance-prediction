@@ -6,7 +6,7 @@
  */
 
 #ifndef GLOBALS_EXTERN_H
-#define	GLOBALS_EXTERN_H
+#define    GLOBALS_EXTERN_H
 
 // enable USE_TRACE if you want low level functionality tracing using std::cout
 //#define USE_TRACE
@@ -63,38 +63,74 @@ extern std::atomic_bool ___validateops;
  */
 
 #ifndef PRINTS
-    #define STR(x) XSTR(x)
-    #define XSTR(x) #x
-    #define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
-    #define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
+#define STR(x) XSTR(x)
+#define XSTR(x) #x
+#define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
+#define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
 #endif
 
 #define _EVAL(a) a
-#define _PASTE2(a,b) a##b
-#define PASTE(a,b) _PASTE2(a,b)
+#define _PASTE2(a, b) a##b
+#define PASTE(a, b) _PASTE2(a,b)
 #ifdef RECLAIM_TYPE
-    #define RECLAIM PASTE(reclaimer_,RECLAIM_TYPE)
-    // #define RECLAIM_DOT_H PASTE(RECLAIM,.h)
-    #include STR(RECLAIM.h)
+#define RECLAIM PASTE(reclaimer_,RECLAIM_TYPE)
+// #define RECLAIM_DOT_H PASTE(RECLAIM,.h)
+#include STR(RECLAIM.h)
 #else
-    #define RECLAIM reclaimer_debra
-    #include "reclaimer_debra.h"
+#define RECLAIM reclaimer_debra
+
+#include "reclaimer_debra.h"
+
 #endif
 #ifdef ALLOC_TYPE
-    #define ALLOC PASTE(allocator_,ALLOC_TYPE)
-    // #define ALLOC_DOT_H PASTE(ALLOC,.h)
-    #include STR(ALLOC.h)
+#define ALLOC PASTE(allocator_,ALLOC_TYPE)
+// #define ALLOC_DOT_H PASTE(ALLOC,.h)
+#include STR(ALLOC.h)
 #else
-    #define ALLOC allocator_new
-    #include "allocator_new.h"
+#define ALLOC allocator_new
+
+#include "allocator_new.h"
+
 #endif
 #ifdef POOL_TYPE
-    #define POOL PASTE(pool_,POOL_TYPE)
-    // #define POOL_DOT_H PASTE(POOL,.h)
-    #include STR(POOL.h)
+#define POOL PASTE(pool_,POOL_TYPE)
+// #define POOL_DOT_H PASTE(POOL,.h)
+#include STR(POOL.h)
 #else
-    #define POOL pool_none
-    #include "pool_none.h"
+#define POOL pool_none
+
+#include "pool_none.h"
+
 #endif
 
-#endif	/* GLOBALS_EXTERN_H */
+std::string indented_title(const std::string &title,
+                           size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
+    return std::string(indents * indentLength, ' ') + title + ":"
+           + std::string(lineLength - title.size() - indents * indentLength, ' ')
+           + "\n";
+}
+
+template<typename T>
+std::string indented_title_with_data(const std::string &title, const T &t,
+                                     size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
+    return std::string(indents * indentLength, ' ') + title + ":"
+                         + (title.size() + indents * indentLength < lineLength
+                            ? std::string(lineLength - title.size() - indents * indentLength, ' ')
+                            : "\t")
+                         + std::to_string(t) + "\n";
+}
+
+std::string indented_title_with_str_data(const std::string &title, const std::string& t,
+                                     size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
+    return std::string(indents * indentLength, ' ') + title + ":"
+           + (title.size() + indents * indentLength < lineLength
+              ? std::string(lineLength - title.size() - indents * indentLength, ' ')
+              : "\t")
+           + t + "\n";
+}
+
+std::string toStringStage(const std::string &stageName) {
+    return std::string(80, '-') + "\n" + stageName + "\n" + std::string(80, '-') + "\n";
+}
+
+#endif    /* GLOBALS_EXTERN_H */

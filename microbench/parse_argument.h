@@ -21,9 +21,9 @@ struct ParseArgument {
         return args[++pointer];
     }
 
-    ParseArgument *next() {
+    ParseArgument &next() {
         ++pointer;
-        return this;
+        return *this;
     }
 
     bool hasNext() {

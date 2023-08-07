@@ -2,14 +2,14 @@
 // Created by Ravil Galiev on 22.02.2023.
 //
 
-#ifndef SETBENCH_PARAMETERS_H
-#define SETBENCH_PARAMETERS_H
+#ifndef SETBENCH_PARAMETERS_OLD_H
+#define SETBENCH_PARAMETERS_OLD_H
 
 //#include "common.h"
 #include "binding.h"
 #include "thread_loops/thread_loop_builder.h"
 
-struct Parameters {
+struct Parameters_Old {
     bool isNonShuffle = false;
 
 //    double INS_FRAC;
@@ -34,7 +34,7 @@ struct Parameters {
     ThreadLoopBuilder *threadLoopBuilder;
 //    ThreadLoopParameters *threadLoopParameters;
 
-    Parameters() {
+    Parameters_Old() {
         this->PREFILL_THREADS = 0;
         this->MILLIS_TO_RUN = 1000;
         this->RQ_THREADS = 0;
@@ -54,7 +54,7 @@ struct Parameters {
         this->PREFILL_TYPE = PREFILL_MIXED;
     };
 
-    virtual ~Parameters() = default;
+    virtual ~Parameters_Old() = default;
 
     virtual void build() {
         TOTAL_THREADS = WORK_THREADS + RQ_THREADS;
@@ -65,7 +65,7 @@ struct Parameters {
         std::string params;
 
         params += "MILLIS_TO_RUN                 : " + std::to_string(MILLIS_TO_RUN) + "\n";
-        params += threadLoopBuilder->toString();
+        params += threadLoopBuilder->toString(1);
 //        params+="INS_FRAC                      : " + std::to_string(INS_FRAC) + "\n";
 //        params+="DEL_FRAC                      : " + std::to_string(DEL_FRAC) + "\n";
 //        params+="RQ                            : " + std::to_string(RQ) + "\n";
@@ -127,4 +127,4 @@ struct Parameters {
 
 };
 
-#endif //SETBENCH_PARAMETERS_H
+#endif //SETBENCH_PARAMETERS_OLD_H

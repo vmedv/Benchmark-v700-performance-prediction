@@ -1,40 +1,22 @@
-////
-//// Created by Ravil Galiev on 19.05.2023.
-////
 //
-//#ifndef SETBENCH_DATA_MAP_H
-//#define SETBENCH_DATA_MAP_H
+// Created by Ravil Galiev on 24.07.2023.
 //
-//template<typename K>
-//class DataMap {
-//private:
-//    K * data = nullptr;
-//    bool isNonShuffle = true;
+
+#ifndef SETBENCH_DATA_MAP_H
+#define SETBENCH_DATA_MAP_H
+
+template<typename K>
+struct DataMap {
+    virtual K get(size_t index) = 0;
+
+    virtual ~DataMap() = default;
+};
+
+//struct DataMap {
+//    template<typename K>
+//   K get(size_t index) {};
 //
-//public:
-//    DataMap(Parameters * _parameters)
-//            : KeyGeneratorData(_parameters->MAXKEY, _parameters->isNonShuffle) {
-//    }
-//
-//    DataMap(int maxKey, bool _isNonShuffle) : isNonShuffle(_isNonShuffle) {
-//        if (!isNonShuffle) {
-//            data = new K[maxKey];
-//            for (size_t i = 0; i < maxKey; i++) {
-//                data[i] = i + 1;
-//            }
-//
-//            std::random_shuffle(data, data + maxKey - 1);
-//        }
-//    }
-//
-//    K get(size_t index) {
-//        return !isNonShuffle ? data[index] : index + 1;
-//    }
-//
-//    virtual ~KeyGeneratorData() {
-//        delete[] data;
-//    }
-//
+////    virtual ~DataMap() = default;
 //};
-//
-//#endif //SETBENCH_DATA_MAP_H
+
+#endif //SETBENCH_DATA_MAP_H
