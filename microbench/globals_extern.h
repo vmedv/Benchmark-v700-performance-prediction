@@ -13,6 +13,8 @@
 
 #include <string>
 
+#ifdef MAIN_BENCH
+
 #include "debugprinting.h"
 #include "plaf.h"
 #include <atomic>
@@ -100,6 +102,8 @@ extern std::atomic_bool ___validateops;
 #define POOL pool_none
 
 #include "pool_none.h"
+
+#endif
 
 #endif
 

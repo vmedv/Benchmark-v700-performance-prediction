@@ -11,7 +11,7 @@
 #include "globals_t.h"
 
 enum class ThreadLoopType {
-    DEFAULT, TEMPORARY_OPERATION
+    DEFAULT, TEMPORARY_OPERATION, PREFILL_INSERT
 };
 
 //template<typename K>

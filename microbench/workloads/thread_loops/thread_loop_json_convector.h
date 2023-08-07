@@ -7,6 +7,7 @@
 
 #include "thread_loop_builder.h"
 #include "workloads/thread_loops/impls/default_thread_loop.h"
+#include "workloads/thread_loops/impls/prefill_insert_thread_loop.h"
 
 
 ThreadLoopBuilder *getThreadLoopFromJson(const nlohmann::json &j) {
@@ -17,6 +18,9 @@ ThreadLoopBuilder *getThreadLoopFromJson(const nlohmann::json &j) {
             threadLoopBuilder = new DefaultThreadLoopBuilder();
             break;
         case ThreadLoopType::TEMPORARY_OPERATION:
+            break;
+        case ThreadLoopType::PREFILL_INSERT:
+            threadLoopBuilder = new PrefillInsertThreadLoopBuilder();
             break;
     }
     threadLoopBuilder->fromJson(j);

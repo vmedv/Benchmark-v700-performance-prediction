@@ -50,9 +50,9 @@ public:
         return numThreads;
     }
 
-    Parameters *setStopCondition(StopCondition *_stopCondition) {
+    Parameters &setStopCondition(StopCondition *_stopCondition) {
         stopCondition = _stopCondition;
-        return this;
+        return *this;
     }
 
     Parameters *setThreadLoopBuilders(
@@ -61,10 +61,10 @@ public:
         return this;
     }
 
-    Parameters *addThreadLoopBuilder(ThreadLoopBuilder &_threadLoopBuilder, size_t quantity = 1) {
+    Parameters &addThreadLoopBuilder(ThreadLoopBuilder &_threadLoopBuilder, size_t quantity = 1) {
         threadLoopBuilders.push_back({_threadLoopBuilder, quantity});
         numThreads += quantity;
-        return this;
+        return *this;
     }
 
     void init(int range) {

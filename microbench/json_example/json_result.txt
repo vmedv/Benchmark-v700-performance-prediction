@@ -1,0 +1,14 @@
+{
+    "find_throughput": 203113,
+    "query_throughput": 203113,
+    "rq_throughput": 0,
+    "total_deletes": 253573,
+    "total_gets": 2031746,
+    "total_inserts": 253532,
+    "total_ops": 2538851,
+    "total_queries": 2031746,
+    "total_rq": 0,
+    "total_throughput": 253808,
+    "total_updates": 507105,
+    "update_throughput": 50695
+}

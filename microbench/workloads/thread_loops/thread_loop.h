@@ -17,9 +17,11 @@ typedef long long K;
 
 //template<class GlobalsT>
 class ThreadLoop {
+protected:
     K garbage = 0;
     K * rqResultKeys;
     VALUE_TYPE * rqResultValues;
+    VALUE_TYPE * NO_VALUE;
     int rq_cnt;
     size_t RQ_RANGE;
 public:
@@ -32,13 +34,13 @@ public:
             : g(_g), threadId(_threadId), stopCondition(_stopCondition), RQ_RANGE(_RQ_RANGE) {}
 
     template<typename K>
-    void executeInsert(K & key);
+    K * executeInsert(K & key);
 
     template<typename K>
-    void executeRemove(const K & key);
+    K * executeRemove(const K & key);
 
     template<typename K>
-    void executeGet(const K & key);
+    K * executeGet(const K & key);
 
     template<typename K>
     bool executeContains(const K & key);
@@ -53,6 +55,39 @@ public:
 
     virtual void step() = 0;
 };
+
+#ifndef MAIN_BENCH
+
+template<typename K>
+void ThreadLoop::executeRangeQuery(const K &leftKey, const K &rightKey) {
+
+}
+
+template<typename K>
+bool ThreadLoop::executeContains(const K &key) {
+    return 0;
+}
+
+template<typename K>
+K *ThreadLoop::executeGet(const K &key) {
+    return nullptr;
+}
+
+template<typename K>
+K *ThreadLoop::executeRemove(const K &key) {
+    return nullptr;
+}
+
+template<typename K>
+K *ThreadLoop::executeInsert(K &key) {
+    return nullptr;
+}
+
+void ThreadLoop::run() {
+
+}
+
+#endif
 
 #endif //SETBENCH_THREAD_LOOP_H
 

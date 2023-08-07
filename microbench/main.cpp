@@ -17,6 +17,8 @@
 #include <perftools.h>
 #include <regex>
 
+#define MAIN_BENCH
+
 #ifdef PRINT_JEMALLOC_STATS
 #include <jemalloc/jemalloc.h>
 #define DEBUG_PRINT_ARENA_STATS malloc_stats_print(printCallback, NULL, "ag")

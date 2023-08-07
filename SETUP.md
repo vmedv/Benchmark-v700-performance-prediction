@@ -4,7 +4,7 @@ First of all, it's necessary to clone the repository with submodules:
 
 ```shell
 git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules
-git checkout setbench_self_adjusting_trees
+git checkout json
 ```
 
 The project has the following structure:
@@ -13,6 +13,7 @@ The project has the following structure:
 ├── common
 ├── docker
 ├── ds
+├── json
 ├── lib
 ├── macrobench
 ├── macrobench_experiments

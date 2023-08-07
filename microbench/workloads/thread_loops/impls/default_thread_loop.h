@@ -97,7 +97,7 @@ struct DefaultThreadLoopBuilder : public ThreadLoopBuilder {
         return this;
     }
 
-    DefaultThreadLoopBuilder *setDelFrac(double delFrac) {
+    DefaultThreadLoopBuilder *setRemFrac(double delFrac) {
         parameters->DEL_FRAC = delFrac;
         return this;
     }

@@ -25,34 +25,34 @@ struct BenchParameters {
         warmUp = Parameters();
     }
 
-    BenchParameters *createDefaultPrefill() {
+    BenchParameters &createDefaultPrefill() {
         prefill = Parameters();
         prefill.stopCondition = new OperationCounter(range / 2);
         prefill.addThreadLoopBuilder(
-                *(new DefaultThreadLoopBuilder())->setInsFrac(1)->setDelFrac(0),
+                *(new PrefillInsertThreadLoopBuilder()),
                 1
         );
-        return this;
+        return *this;
     }
 
-    BenchParameters *setRange(size_t _range) {
+    BenchParameters &setRange(size_t _range) {
         range = _range;
-        return this;
+        return *this;
     }
 
-    BenchParameters *setTest(Parameters &_test) {
+    BenchParameters &setTest(Parameters &_test) {
         test = _test;
-        return this;
+        return *this;
     }
 
-    BenchParameters *setPrefill(Parameters &_prefill) {
+    BenchParameters &setPrefill(Parameters &_prefill) {
         prefill = _prefill;
-        return this;
+        return *this;
     }
 
-    BenchParameters *setWarmUp(Parameters &_warmUp) {
+    BenchParameters &setWarmUp(Parameters &_warmUp) {
         warmUp = _warmUp;
-        return this;
+        return *this;
     }
 
     size_t getTotalThreads() {
