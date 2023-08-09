@@ -57,6 +57,28 @@ int main() {
                     ->setDataMapBuilder(
                             new ArrayDataMapBuilder()
                     );
+//
+//    ArgsGeneratorBuilder *argsGeneratorBuilder
+//        = (new TemporarySkewedArgsGeneratorBuilder())
+//                ->setSetNumber(5)
+//                    ->setHotTimes(new long long[5]{1, 2, 3, 4, 5})
+//                    ->setRelaxTimes(new long long[5]{1, 2, 3, 4, 5})
+//                    ->setHotSizeAndRatio(0, 0.1, 0.8)
+//                    ->setHotSizeAndRatio(1, 0.2, 0.7)
+//                    ->setHotSizeAndRatio(2, 0.3, 0.6)
+//                    ->setHotSizeAndRatio(3, 0.4, 0.6)
+//                    ->setHotSizeAndRatio(4, 0.5, 0.7)
+//                    ->enableManualSettingSetBegins()
+//                    ->setSetBegins(new double [5]{0, 0.1, 0.2, 0.3, 0.05});
+
+//    ArgsGeneratorBuilder *argsGeneratorBuilder
+//            = (new CreakersAndWaveArgsGeneratorBuilder())
+//                ->setCreakersRatio(0.2)
+//                ->setWaveSize(0.2)
+//                ->setCreakersSize(0.1)
+//                ->setDataMapBuilder(new IdDataMapBuilder());
+
+
 
     ThreadLoopBuilder *threadLoopBuilder
             = (new DefaultThreadLoopBuilder())

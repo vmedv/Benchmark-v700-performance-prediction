@@ -23,6 +23,8 @@ struct ArgsGeneratorBuilder {
     virtual void fromJson(const nlohmann::json &j) = 0;
 
     virtual std::string toString(size_t indents = 1) = 0;
+
+    virtual ~ArgsGeneratorBuilder() = default;
 };
 
 void to_json(nlohmann::json &j, const ArgsGeneratorBuilder &s) {

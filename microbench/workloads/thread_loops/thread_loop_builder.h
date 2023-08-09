@@ -30,15 +30,9 @@ struct ThreadLoopBuilder {
 
     virtual void fromJson(const nlohmann::json &j) = 0;
 
-//    static void to_json(nlohmann::json &j, const ThreadLoopBuilder &s);
-
-//    static void from_json(const nlohmann::json &j, ThreadLoopBuilder &s);
-
     virtual std::string toString(size_t indents = 1) = 0;
 
     virtual ~ThreadLoopBuilder() = default;
-
-//    virtual toJson()
 };
 
 

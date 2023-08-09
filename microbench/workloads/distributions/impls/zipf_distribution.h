@@ -49,7 +49,12 @@ public:
         return zipf_value;
     }
 
-    ~ZipfDistribution() {}
+    size_t next(size_t _range) override {
+        setRange(_range);
+        return next();
+    }
+
+    ~ZipfDistribution() override = default;
 };
 
 

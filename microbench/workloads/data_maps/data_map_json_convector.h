@@ -11,7 +11,15 @@
 #include "workloads/data_maps/builders/id_data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
 
+std::map<size_t, DataMapBuilder*> dataMapBuilders;
+
 DataMapBuilder *getDataMapFromJson(const nlohmann::json &j) {
+    size_t id = j["id"];
+
+    auto dataMapsBuilderById = dataMapBuilders.find(id);
+    if (dataMapsBuilderById != dataMapBuilders.end())
+        return dataMapsBuilderById->second;
+
     DataMapType type = j["dataMapType"];
     DataMapBuilder * dataMapBuilder;
     switch (type) {
@@ -25,6 +33,7 @@ DataMapBuilder *getDataMapFromJson(const nlohmann::json &j) {
             break;
     }
     dataMapBuilder->fromJson(j);
+    dataMapBuilders.insert({id, dataMapBuilder});
     return dataMapBuilder;
 }
 

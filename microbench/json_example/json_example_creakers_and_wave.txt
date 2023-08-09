@@ -38,15 +38,21 @@
                 "quantity": 8,
                 "threadLoopBuilder": {
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 0,
-                        "dataMapBuilder": {
-                            "dataMapType": 1,
+                        "argsGeneratorType": 3,
+                        "creakersDistribution": {
+                            "distributionType": 0
+                        },
+                        "creakersRatio": 0.2,
+                        "creakersSize": 0.1,
+                        "dataMap": {
+                            "dataMapType": 0,
                             "id": 2
                         },
-                        "distributionBuilder": {
+                        "waveDistribution": {
                             "alpha": 1.0,
                             "distributionType": 1
-                        }
+                        },
+                        "waveSize": 0.2
                     },
                     "delFrac": 0.1,
                     "insFrac": 0.1,

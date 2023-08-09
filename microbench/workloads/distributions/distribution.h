@@ -14,10 +14,7 @@ struct Distribution {
 struct MutableDistribution : public Distribution {
     virtual void setRange(size_t range) = 0;
 
-    size_t next(size_t range) {
-        setRange(range);
-        return Distribution::next();
-    }
+    virtual size_t next(size_t range) = 0;
 };
 
 

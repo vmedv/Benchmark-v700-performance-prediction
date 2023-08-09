@@ -28,7 +28,12 @@ public:
         return result;
     }
 
-    ~UniformDistribution() override {}
+    size_t next(size_t _range) override {
+        setRange(_range);
+        return next();
+    }
+
+    ~UniformDistribution() override = default;
 };
 
 #endif //SETBENCH_UNIFORM_DISTRIBUTION_H

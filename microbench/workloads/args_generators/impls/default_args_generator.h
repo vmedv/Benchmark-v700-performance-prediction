@@ -113,6 +113,11 @@ public:
                + dataMapBuilder->toString(indents + 1);
     }
 
+    ~DefaultArgsGeneratorBuilder() override {
+        delete distributionBuilder;
+//        delete dataMapBuilder; //TODO may delete twice
+    };
+
 };
 
 
