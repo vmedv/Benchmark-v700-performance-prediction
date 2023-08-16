@@ -129,9 +129,9 @@
                         ],
                         "setNumber": 5
                     },
-                    "delFrac": 0.1,
-                    "insFrac": 0.1,
-                    "rqFrac": 0.0,
+                    "delRatio": 0.1,
+                    "insRatio": 0.1,
+                    "rqRatio": 0.0,
                     "threadLoopType": 0
                 }
             }

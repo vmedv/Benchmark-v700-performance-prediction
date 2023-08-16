@@ -28,11 +28,6 @@ public:
         return result;
     }
 
-    size_t next(size_t _range) override {
-        setRange(_range);
-        return next();
-    }
-
     ~UniformDistribution() override = default;
 };
 

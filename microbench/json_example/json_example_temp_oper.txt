@@ -38,26 +38,40 @@
                 "quantity": 8,
                 "threadLoopBuilder": {
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 3,
-                        "creakersDistribution": {
-                            "distributionType": 0
-                        },
-                        "creakersRatio": 0.2,
-                        "creakersSize": 0.1,
-                        "dataMap": {
-                            "dataMapType": 0,
+                        "argsGeneratorType": 0,
+                        "dataMapBuilder": {
+                            "dataMapType": 1,
                             "id": 2
                         },
-                        "waveDistribution": {
+                        "distributionBuilder": {
                             "alpha": 1.0,
                             "distributionType": 1
-                        },
-                        "waveSize": 0.2
+                        }
                     },
-                    "delRatio": 0.1,
-                    "insRatio": 0.1,
-                    "rqRatio": 0.0,
-                    "threadLoopType": 0
+                    "ratios": [
+                        {
+                            "insRatio": 0.1,
+                            "remRatio": 0.1,
+                            "rqRatio": 0.0
+                        },
+                        {
+                            "insRatio": 0.2,
+                            "remRatio": 0.2,
+                            "rqRatio": 0.0
+                        },
+                        {
+                            "insRatio": 0.3,
+                            "remRatio": 0.3,
+                            "rqRatio": 0.0
+                        }
+                    ],
+                    "stagesDurations": [
+                        1000,
+                        2000,
+                        3000
+                    ],
+                    "stagesNumber": 3,
+                    "threadLoopType": 1
                 }
             }
         ]

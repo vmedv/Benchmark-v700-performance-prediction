@@ -78,13 +78,20 @@ int main() {
 //                ->setCreakersSize(0.1)
 //                ->setDataMapBuilder(new IdDataMapBuilder());
 
-
+//    ThreadLoopBuilder *threadLoopBuilder
+//            = (new DefaultThreadLoopBuilder())
+//                    ->setInsRatio(0.1)
+//                    ->setRemRatio(0.1)
+//                    ->setRqRatio(0)
+//                    ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 
     ThreadLoopBuilder *threadLoopBuilder
-            = (new DefaultThreadLoopBuilder())
-                    ->setInsFrac(0.1)
-                    ->setRemFrac(0.1)
-                    ->setRq(0)
+            = (new TemporaryOperationThreadLoopBuilder())
+                    ->setStagesNumber(3)
+                    ->setStagesDurations(new size_t[3]{1000, 2000, 3000})
+                    ->setRatios(0, new RatioThreadLoopParameters(0.1, 0.1, 0))
+                    ->setRatios(1, new RatioThreadLoopParameters(0.2, 0.2, 0))
+                    ->setRatios(2, new RatioThreadLoopParameters(0.3, 0.3, 0))
                     ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 
     test.addThreadLoopBuilder(*threadLoopBuilder, 8)

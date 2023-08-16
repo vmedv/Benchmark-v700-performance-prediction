@@ -200,10 +200,10 @@ public:
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setSetDistBuilder(const size_t i,
+    TemporarySkewedArgsGeneratorBuilder *setSetDistBuilder(const size_t index,
                                                            SkewedUniformDistributionBuilder *_setDistBuilder) {
-        assert(i < setNumber);
-        hotDistBuilders[i] = _setDistBuilder;
+        assert(index < setNumber);
+        hotDistBuilders[index] = _setDistBuilder;
         return this;
     }
 
@@ -214,22 +214,22 @@ public:
 
 
     TemporarySkewedArgsGeneratorBuilder *
-    setHotSizeAndRatio(const size_t i, const double _hotSize, const double _hotRatio) {
-        assert(i < setNumber);
-        hotDistBuilders[i]->setHotSize(_hotSize);
-        hotDistBuilders[i]->setHotProb(_hotRatio);
+    setHotSizeAndRatio(const size_t index, const double _hotSize, const double _hotRatio) {
+        assert(index < setNumber);
+        hotDistBuilders[index]->setHotSize(_hotSize);
+        hotDistBuilders[index]->setHotProb(_hotRatio);
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setHotSize(const size_t i, const double _hotSize) {
-        assert(i < setNumber);
-        hotDistBuilders[i]->setHotSize(_hotSize);
+    TemporarySkewedArgsGeneratorBuilder *setHotSize(const size_t index, const double _hotSize) {
+        assert(index < setNumber);
+        hotDistBuilders[index]->setHotSize(_hotSize);
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setHotRatio(const size_t i, const double _hotRatio) {
-        assert(i < setNumber);
-        hotDistBuilders[i]->setHotProb(_hotRatio);
+    TemporarySkewedArgsGeneratorBuilder *setHotRatio(const size_t index, const double _hotRatio) {
+        assert(index < setNumber);
+        hotDistBuilders[index]->setHotProb(_hotRatio);
         return this;
     }
 
@@ -244,27 +244,27 @@ public:
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setHotTime(const size_t i, const long long _hotTime) {
-        assert(i < setNumber);
+    TemporarySkewedArgsGeneratorBuilder *setHotTime(const size_t index, const long long _hotTime) {
+        assert(index < setNumber);
 //        assert(hotTime == -1);
 //
 //        if (hotTimes == nullptr) {
 //            hotTimes = new int[setCount];
 //        }
 
-        hotTimes[i] = _hotTime;
+        hotTimes[index] = _hotTime;
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setRelaxTime(const size_t i, const long long _relaxTime) {
-        assert(i < setNumber);
+    TemporarySkewedArgsGeneratorBuilder *setRelaxTime(const size_t index, const long long _relaxTime) {
+        assert(index < setNumber);
 //        assert(relaxTime == -1);
 //
 //        if (relaxTimes == nullptr) {
 //            relaxTimes = new int[setCount];
 //        }
 
-        relaxTimes[i] = _relaxTime;
+        relaxTimes[index] = _relaxTime;
         return this;
     }
 
@@ -295,9 +295,9 @@ public:
         return this;
     }
 
-    TemporarySkewedArgsGeneratorBuilder *setSetBegin(const size_t i, const double _setBegin) {
-        assert(i < setNumber);
-        setBegins[i] = _setBegin;
+    TemporarySkewedArgsGeneratorBuilder *setSetBegin(const size_t index, const double _setBegin) {
+        assert(index < setNumber);
+        setBegins[index] = _setBegin;
         return this;
     }
 

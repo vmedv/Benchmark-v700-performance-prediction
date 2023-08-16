@@ -137,8 +137,8 @@ and set our ArgsGeneratorBuilder
 ```c++
     ThreadLoopBuilder *threadLoopBuilder
             = (new DefaultThreadLoopBuilder())
-                    ->setInsFrac(0.1)
-                    ->setRemFrac(0.1)
+                    ->setInsRatio(0.1)
+                    ->setRemRatio(0.1)
                     ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 ```
 

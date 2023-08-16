@@ -9,10 +9,8 @@
 
 typedef long long K;
 
-//#include "workloads/thread_loops/thread_loop_impl.h"
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/args_generators/args_generator.h"
-//#include "globals_t_impl.h"
 
 //template<typename K>
 class PrefillInsertThreadLoop : public ThreadLoop {
