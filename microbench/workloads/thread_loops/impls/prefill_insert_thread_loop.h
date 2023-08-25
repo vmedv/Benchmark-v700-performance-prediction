@@ -7,7 +7,7 @@
 
 #include <string>
 
-typedef long long K;
+//typedef long long K;
 
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/args_generators/args_generator.h"

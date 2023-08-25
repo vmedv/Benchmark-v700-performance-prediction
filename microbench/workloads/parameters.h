@@ -50,6 +50,11 @@ public:
         return numThreads;
     }
 
+    Parameters *setPin(const std::string &_pin) {
+        pin = _pin;
+        return this;
+    }
+
     Parameters &setStopCondition(StopCondition *_stopCondition) {
         stopCondition = _stopCondition;
         return *this;
@@ -68,10 +73,6 @@ public:
     }
 
     void init(int range) {
-        if (!pin.empty()) {
-            binding_parseCustom(pin); // e.g., "1.2.3.8-11.4-7.0"
-            std::cout << "parsed custom binding: " << pin << std::endl;
-        }
         for (std::pair<ThreadLoopBuilder &, size_t> threadLoopBuilder: threadLoopBuilders) {
             threadLoopBuilder.first.init(range);
         }
@@ -97,10 +98,6 @@ public:
         j["numThreads"] = numThreads;
         j["pin"] = pin;
         j["stopCondition"] = *stopCondition;
-//        ThreadLoopBuilder * threadLoopBuilder = threadLoopBuilders[0].first;
-//        for (std::pair<ThreadLoopBuilder&, size_t> i : threadLoopBuilders){
-//
-//        }
         j["threadLoopBuilders"] = threadLoopBuilders;
     }
 
@@ -108,17 +105,11 @@ public:
 //        numThreads = j["numThreads"];
         pin = j["pin"];
         stopCondition = getStopConditionFromJson(j["stopCondition"]);
-//        threadLoopBuilders = j["threadLoopBuilders"];
-//        threadLoopBuilders = j["threadLoopBuilders"].get<std::vector<std::pair<ThreadLoopBuilder&, size_t>> >();
 
-//        ThreadLoopBuilder * threadLoopBuilder = threadLoopBuilders[0].first;
         for (const auto &i: j["threadLoopBuilders"]) {
             ThreadLoopBuilder &threadLoopBuilder = *getThreadLoopFromJson(i["threadLoopBuilder"]);
-//            std::pair<ThreadLoopBuilder&, size_t> p = i.get<std::pair<ThreadLoopBuilder&, size_t>>();
             addThreadLoopBuilder(threadLoopBuilder, i["quantity"]);
-//            threadLoopBuilders.push_back(i);
         }
-//        j["threadLoopBuilders"] = threadLoopBuilders;
 
     }
 
@@ -136,30 +127,10 @@ public:
         return result;
     }
 
-//    nlohmann::json toJson() {
-//        nlohmann::json json;
-//        json["numThreads"] = numThreads;
-//        json["stopCondition"] = *stopCondition;
-//        ThreadLoopBuilder * threadLoopBuilder = threadLoopBuilders[0].first;
-//        json["threadLoopBuilders"] = threadLoopBuilders;
-//        return json;
-//    }
-
-//    static Parameters * fromJson(const nlohmann::json &json) {
-//        Parameters * p = new Parameters();
-//        p->numThreads = json["numThreads"];
-//        json["stopCondition"] = stopCondition->toJson();
-//        ThreadLoopBuilder * threadLoopBuilder = threadLoopBuilders[0].first;
-//        std::vector<std::pair<DefaultThreadLoopBuilder&, size_t>> a = json["threadLoopBuilders"];
-//    }
 };
 
 void to_json(nlohmann::json &json, const Parameters &s) {
     s.toJson(json);
-//    json["numThreads"] = s.numThreads;
-//    json["stopCondition"] = s.stopCondition->toJson();
-//    ThreadLoopBuilder * threadLoopBuilder = s.threadLoopBuilders[0].first;
-//    json["threadLoopBuilders"] = *threadLoopBuilder;
 }
 
 void from_json(const nlohmann::json &j, Parameters &s) {

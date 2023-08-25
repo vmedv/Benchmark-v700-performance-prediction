@@ -70,7 +70,7 @@ sudo sysctl kernel.perf_event_paranoid=1
 [Example of configuring launch parameters](./microbench/json_example/json_example.cpp).
 Use [Makefile](./microbench/json_example/Makefile) to compile.
 
-The first step is the creation the BenchParameters class.
+The first step is the creation the [BenchParameters class](./microbench/workloads/bench_parameters.h).
 
 ```c++
     BenchParameters benchParameters;
@@ -82,15 +82,15 @@ Set the range of keys.
     benchParameters.setRange(2048);
 ```
 
-Create the Parameters class for benchmarking (test).
+Create the [Parameters class](./microbench/workloads/parameters.h) for benchmarking (test).
 
 ```c++
     Parameters test;
 ```
 
-We will need to set the stop condition and workloads.
+We will need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
 
-First, let's create and set a stop condition: Timer with 10 second (10000 millis).
+First, let's create and set a stop condition: [Timer](./microbench/workloads/stop_condition/impls/timer.h) with 10 second (10000 millis).
 
 ```c++
     StopCondition * stopCondition = new Timer(10000);
@@ -128,7 +128,7 @@ The next step is to create the ArgsGeneratorBuilder.
     ArgsGeneratorBuilder *argsGeneratorBuilder
             = (new DefaultArgsGeneratorBuilder())
                     ->setDistributionBuilder(distributionBuilder)
-                    ->setDataMapBuilder();
+                    ->setDataMapBuilder(dataMapBuilder);
 ```
 
 The last step is to create the ThreadLoopBuilder. 

@@ -23,7 +23,7 @@ class Timer : public StopCondition {
 public:
     void wait() {
         isStarted = true;
-        std::this_thread::sleep_for(std::chrono::milliseconds(workTime / 100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(workTime));
         stop = true;
     }
 

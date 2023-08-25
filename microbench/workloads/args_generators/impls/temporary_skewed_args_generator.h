@@ -124,7 +124,7 @@ public:
 #include "workloads/distributions/distribution_json_convector.h"
 #include "workloads/data_maps/data_map_json_convector.h"
 
-typedef long long K;
+//typedef long long K;
 
 class TemporarySkewedArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     size_t range;

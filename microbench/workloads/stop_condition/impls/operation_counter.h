@@ -52,7 +52,6 @@ public:
 
         for (int i = 0; i < numThreads; i++) {
             counters[i].operCount = operationLimit + (--remainder >= 0 ? 1 : 0);
-            std::cout<<counters[i].operCount;
         }
     }
 

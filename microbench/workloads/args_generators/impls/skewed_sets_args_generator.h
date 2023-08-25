@@ -70,7 +70,7 @@ public:
 #include "workloads/data_maps/data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
 
-typedef long long K;
+//typedef long long K;
 
 //template<typename K>
 class SkewedSetsArgsGeneratorBuilder : public ArgsGeneratorBuilder {

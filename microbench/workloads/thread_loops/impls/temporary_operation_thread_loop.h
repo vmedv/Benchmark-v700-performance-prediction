@@ -8,7 +8,7 @@
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/thread_loops/ratio_thread_loop_parameters.h"
 
-typedef long long K;
+//typedef long long K;
 
 //template<typename K>
 class TemporaryOperationThreadLoop : public ThreadLoop {

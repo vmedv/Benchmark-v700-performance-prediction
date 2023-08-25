@@ -5,7 +5,7 @@
 #ifndef SETBENCH_DEFAULT_THREAD_LOOP_H
 #define SETBENCH_DEFAULT_THREAD_LOOP_H
 
-typedef long long K;
+//typedef long long K;
 
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/args_generators/args_generator.h"

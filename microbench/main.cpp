@@ -173,16 +173,16 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #include "statistics.h"
 #include "parse_argument.h"
 
-void bindThreads(int TOTAL_THREADS) {
+void bindThreads(int nthreads) {
     // setup thread pinning/binding
-    binding_configurePolicy(TOTAL_THREADS);
+    binding_configurePolicy(nthreads);
 
     std::cout << "ACTUAL_THREAD_BINDINGS=";
-    for (int i = 0; i < TOTAL_THREADS; ++i) {
+    for (int i = 0; i < nthreads; ++i) {
         std::cout << (i ? "," : "") << binding_getActualBinding(i);
     }
     std::cout << std::endl;
-    if (!binding_isInjectiveMapping(TOTAL_THREADS)) {
+    if (!binding_isInjectiveMapping(nthreads)) {
         std::cout << "ERROR: thread binding maps more than one thread to a single logical processor" << std::endl;
         exit(-1);
     }
@@ -204,9 +204,15 @@ void execute(globals_t *g, Parameters &parameters) {
     std::thread **threads = new std::thread *[MAX_THREADS_POW2];
     ThreadLoop **threadLoops = parameters.getWorkload(g, g->rngs);
 
+    if (!parameters.pin.empty()) {
+        binding_parseCustom(parameters.pin); // e.g., "1.2.3.8-11.4-7.0"
+        std::cout << "parsed custom binding: " << parameters.pin << std::endl;
+    }
+
+    bindThreads(parameters.getNumThreads());
+
     for (int i = 0; i < parameters.getNumThreads(); ++i) {
         threads[i] = new std::thread(&ThreadLoop::run, threadLoops[i]);
-//        threads[i]->detach();
     }
 
     while (g->running < parameters.getNumThreads()) {
@@ -228,9 +234,6 @@ void execute(globals_t *g, Parameters &parameters) {
     parameters.stopCondition->start(parameters.getNumThreads());
     g->start = true;
     SOFTWARE_BARRIER;
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-
 
     for (size_t i = 0; i < parameters.getNumThreads(); ++i) {
         threads[i]->join();
@@ -639,10 +642,6 @@ int main(int argc, char **argv) {
 
     // print object sizes, to help debugging/sanity checking memory layouts
     g->dsAdapter->printObjectSizes();
-
-    int TOTAL_THREADS = benchParameters.getTotalThreads();
-
-    bindThreads(TOTAL_THREADS);
 
 //TODO maybe move it to bindThreads()?
     /******************************************************************************
