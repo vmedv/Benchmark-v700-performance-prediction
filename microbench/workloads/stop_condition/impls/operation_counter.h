@@ -47,12 +47,15 @@ public:
         long long remainder = commonOperationLimit % numThreads;
 
 //        barrier = new AtomicInteger(parameters.numThreads);
-        //TODO memory leak
         counters = new Counter[numThreads];
 
         for (int i = 0; i < numThreads; i++) {
             counters[i].operCount = operationLimit + (--remainder >= 0 ? 1 : 0);
         }
+    }
+
+    void clean() override {
+        delete[] counters;
     }
 
     bool isStopped(int id) override {
@@ -73,9 +76,7 @@ public:
                + indented_title_with_data("commonOperationLimit", commonOperationLimit, indents);
     }
 
-    ~OperationCounter() override {
-        delete[] counters;
-    };
+    ~OperationCounter() = default;
 
 };
 

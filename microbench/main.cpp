@@ -646,7 +646,6 @@ int main(int argc, char **argv) {
     // print object sizes, to help debugging/sanity checking memory layouts
     g->dsAdapter->printObjectSizes();
 
-//TODO maybe move it to bindThreads()?
     /******************************************************************************
         * Perform the actual creation of all GSTATS global statistics trackers that
         * have been defined over all files #included.

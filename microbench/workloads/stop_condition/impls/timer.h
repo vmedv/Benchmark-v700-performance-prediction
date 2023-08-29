@@ -44,6 +44,11 @@ public:
         while (!isStarted);
     }
 
+    void clean() override {
+        stopThread->join();
+        delete stopThread;
+    }
+
     bool isStopped(int id) override {
         return stop;
     }
