@@ -182,10 +182,10 @@ void bindThreads(int nthreads) {
         std::cout << (i ? "," : "") << binding_getActualBinding(i);
     }
     std::cout << std::endl;
-    if (!binding_isInjectiveMapping(nthreads)) {
-        std::cout << "ERROR: thread binding maps more than one thread to a single logical processor" << std::endl;
-        exit(-1);
-    }
+//    if (!binding_isInjectiveMapping(nthreads)) {
+//        std::cout << "ERROR: thread binding maps more than one thread to a single logical processor" << std::endl;
+//        exit(-1);
+//    }
 }
 
 void createDataStructure(globals_t *g) {
@@ -199,23 +199,24 @@ Statistic getStatistic(long long elapsedMillis) {
     return Statistic(elapsedMillis / 1000.);
 }
 
-void execute(globals_t *g, Parameters &parameters) {
+void execute(globals_t *g, Parameters *parameters) {
 
     std::thread **threads = new std::thread *[MAX_THREADS_POW2];
-    ThreadLoop **threadLoops = parameters.getWorkload(g, g->rngs);
+    ThreadLoop **threadLoops = parameters->getWorkload(g, g->rngs);
 
-    if (!parameters.pin.empty()) {
-        binding_parseCustom(parameters.pin); // e.g., "1.2.3.8-11.4-7.0"
-        std::cout << "parsed custom binding: " << parameters.pin << std::endl;
-    }
+//    if (!parameters->pin.empty()) {
+//        binding_parseCustom(parameters->pin); // e.g., "1.2.3.8-11.4-7.0"
+//        std::cout << "parsed custom binding: " << parameters->pin << std::endl;
+//    }
+    std::cout << "pinning...\n";
+    binding_setCustom(parameters->getPin());
+    bindThreads(parameters->getNumThreads());
 
-    bindThreads(parameters.getNumThreads());
-
-    for (int i = 0; i < parameters.getNumThreads(); ++i) {
+    for (int i = 0; i < parameters->getNumThreads(); ++i) {
         threads[i] = new std::thread(&ThreadLoop::run, threadLoops[i]);
     }
 
-    while (g->running < parameters.getNumThreads()) {
+    while (g->running < parameters->getNumThreads()) {
         TRACE COUTATOMIC("main thread: waiting for threads to START running=" << g->running << std::endl);
     } // wait for all threads to be ready
     COUTATOMIC("main thread: starting timer..." << std::endl)
@@ -231,11 +232,11 @@ void execute(globals_t *g, Parameters &parameters) {
     ___timeline_use = 1;
 #endif
 
-    parameters.stopCondition->start(parameters.getNumThreads());
+    parameters->stopCondition->start(parameters->getNumThreads());
     g->start = true;
     SOFTWARE_BARRIER;
 
-    for (size_t i = 0; i < parameters.getNumThreads(); ++i) {
+    for (size_t i = 0; i < parameters->getNumThreads(); ++i) {
         threads[i]->join();
     }
 
@@ -296,8 +297,10 @@ void execute(globals_t *g, Parameters &parameters) {
 
     g->elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(g->endTime - g->startTime).count();
 
+    parameters->stopCondition->clean();
     delete[] threads;
     delete[] threadLoops;
+    binding_deinit();
 
     g->start = false;
     g->done = false;
@@ -343,7 +346,7 @@ void run(globals_t *g) {
     /**
      * PREFILL STAGE
      */
-    if (g->benchParameters->prefill.getNumThreads() != 0) {
+    if (g->benchParameters->prefill->getNumThreads() != 0) {
 
         std::cout << toStringStage("Prefill stage");
 
@@ -386,7 +389,7 @@ void run(globals_t *g) {
     /**
      * WARM UP STAGE
      */
-    if (g->benchParameters->warmUp.getNumThreads() != 0) {
+    if (g->benchParameters->warmUp->getNumThreads() != 0) {
         std::cout << toStringStage("WarmUp stage");
 
         // prefill data structure to mimic its structure in the steady state

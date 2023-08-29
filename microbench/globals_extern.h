@@ -110,7 +110,6 @@ extern std::atomic_bool ___validateops;
 std::string indented_title(const std::string &title,
                            size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
     return std::string(indents * indentLength, ' ') + title + ":"
-//           + std::string(lineLength - title.size() - indents * indentLength, ' ')
            + "\n";
 }
 
@@ -118,14 +117,14 @@ template<typename T>
 std::string indented_title_with_data(const std::string &title, const T &t,
                                      size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
     return std::string(indents * indentLength, ' ') + title + ":"
-                         + (title.size() + indents * indentLength < lineLength
-                            ? std::string(lineLength - title.size() - indents * indentLength, ' ')
-                            : "\t")
-                         + std::to_string(t) + "\n";
+           + (title.size() + indents * indentLength < lineLength
+              ? std::string(lineLength - title.size() - indents * indentLength, ' ')
+              : "\t")
+           + std::to_string(t) + "\n";
 }
 
-std::string indented_title_with_str_data(const std::string &title, const std::string& t,
-                                     size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
+std::string indented_title_with_str_data(const std::string &title, const std::string &t,
+                                         size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
     return std::string(indents * indentLength, ' ') + title + ":"
            + (title.size() + indents * indentLength < lineLength
               ? std::string(lineLength - title.size() - indents * indentLength, ' ')
