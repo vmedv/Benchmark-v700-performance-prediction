@@ -20,21 +20,34 @@ private:
     PAD;
     ArgsGenerator<K> *argsGenerator;
     PAD;
+    size_t number_of_attempts;
 
 public:
     PrefillInsertThreadLoop(globals_t *_g, Random64 &_rng, size_t _threadId,
                             StopCondition *_stopCondition, size_t _RQ_RANGE,
-                            ArgsGenerator<K> *_argsGenerator)
+                            ArgsGenerator<K> *_argsGenerator, size_t _number_of_attempts)
             : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE),
-              rng(_rng), argsGenerator(_argsGenerator) {
+              rng(_rng), argsGenerator(_argsGenerator), number_of_attempts(_number_of_attempts){
     }
 
     void step() override {
-        K *value = (K *) this->NO_VALUE;
-        while (value == (K *) this->NO_VALUE) {
+        size_t counter = 0;
+        K *value;
+        do {
             K key = this->argsGenerator->nextInsert();
             value = this->executeInsert(key);
+            ++counter;
+        } while (value != (K *) this->NO_VALUE && counter < number_of_attempts);
+
+        if (value != (K *) this->NO_VALUE) {
+            std::cout<<"WARNING: PrefillInsertThreadLoop have not inserted a new key.\n" <<counter<<"\n";
         }
+
+//        K *value = (K *) this->NO_VALUE;
+//        while (value != (K *) this->NO_VALUE) {
+//            K key = this->argsGenerator->nextInsert();
+//            value = this->executeInsert(key);
+//        }
     }
 };
 
@@ -47,6 +60,12 @@ public:
 //template<typename K>
 struct PrefillInsertThreadLoopBuilder : public ThreadLoopBuilder {
     ArgsGeneratorBuilder *argsGeneratorBuilder = new DefaultArgsGeneratorBuilder();
+    size_t number_of_attempts = 10e+6;
+
+    PrefillInsertThreadLoopBuilder * setNumberOfAttempts(size_t _numberOfAttempts) {
+        number_of_attempts = _numberOfAttempts;
+        return this;
+    }
 
     PrefillInsertThreadLoopBuilder *setArgsGeneratorBuilder(ArgsGeneratorBuilder *_argsGeneratorBuilder) {
         argsGeneratorBuilder = _argsGeneratorBuilder;
@@ -62,35 +81,27 @@ struct PrefillInsertThreadLoopBuilder : public ThreadLoopBuilder {
 //    template<typename K>
     ThreadLoop *build(globals_t *_g, Random64 &_rng, size_t _threadId, StopCondition *_stopCondition) override {
         return new PrefillInsertThreadLoop(_g, _rng, _threadId, _stopCondition, this->RQ_RANGE,
-                                                  argsGeneratorBuilder->build(_rng));
+                                           argsGeneratorBuilder->build(_rng), number_of_attempts);
     }
 
     void toJson(nlohmann::json &json) const override {
         json["threadLoopType"] = ThreadLoopType::PREFILL_INSERT;
-//        json["insFrac"] = parameters->INS_FRAC;
-//        json["delFrac"] = parameters->DEL_FRAC;
-//        json["rqFrac"] = parameters->RQ;
         json["argsGeneratorBuilder"] = *argsGeneratorBuilder;
     }
 
-
     void fromJson(const nlohmann::json &j) override {
-//        parameters->INS_FRAC = j["insFrac"];
-//        parameters->DEL_FRAC = j["delFrac"];
-//        parameters->RQ = j["rqFrac"];
         argsGeneratorBuilder = getArgsGeneratorFromJson(j["argsGeneratorBuilder"]);
     }
 
     std::string toString(size_t indents = 1) override {
         return indented_title_with_str_data("Type", "Prefill Insert", indents)
-               //               + indented_title_with_data("INS_FRAC", parameters->INS_FRAC, indents)
-               //               + indented_title_with_data("DEL_FRAC", parameters->DEL_FRAC, indents)
-               //               + indented_title_with_data("RQ", parameters->RQ, indents)
                + indented_title("Args generator", indents)
                + argsGeneratorBuilder->toString(indents + 1);
     }
 
-    ~PrefillInsertThreadLoopBuilder() override = default;
+    ~PrefillInsertThreadLoopBuilder() override {
+        delete argsGeneratorBuilder;
+    };
 };
 
 #endif //SETBENCH_PREFILL_INSERT_THREAD_LOOP_H

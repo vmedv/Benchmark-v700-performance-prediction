@@ -21,7 +21,7 @@ protected:
     K garbage = 0;
     K * rqResultKeys;
     VALUE_TYPE * rqResultValues;
-    VALUE_TYPE * NO_VALUE;
+    VALUE_TYPE NO_VALUE;
     int rq_cnt;
     size_t RQ_RANGE;
 public:

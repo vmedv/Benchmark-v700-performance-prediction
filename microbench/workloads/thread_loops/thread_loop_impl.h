@@ -17,6 +17,7 @@
     garbage = 0; \
     rqResultKeys = new K[this->RQ_RANGE+MAX_KEYS_PER_NODE]; \
     rqResultValues = new VALUE_TYPE[this->RQ_RANGE+MAX_KEYS_PER_NODE]; \
+    NO_VALUE = this->g->dsAdapter->getNoValue();                  \
     __RLU_INIT_THREAD; \
     __RCU_INIT_THREAD; \
     this->g->dsAdapter->initThread(threadId); \
@@ -47,51 +48,58 @@
 
 
 template<typename K>
-K * ThreadLoop::executeInsert(K &key) {
+K *ThreadLoop::executeInsert(K &key) {
     TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
 
-    K * value = (K*) g->dsAdapter->insertIfAbsent(threadId, key, KEY_TO_VALUE(key));
+    K *value = (K *) g->dsAdapter->insertIfAbsent(threadId, key, KEY_TO_VALUE(key));
 
     if (value == g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
         GSTATS_ADD(this->threadId, key_checksum, key);
 //             GSTATS_ADD(tid, size_checksum, 1);
+        GSTATS_ADD(threadId, num_successful_inserts, 1);
     } else {
         TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
+        GSTATS_ADD(threadId, num_fail_inserts, 1);
     }
-    GSTATS_ADD(this->threadId, num_inserts, 1);
+    GSTATS_ADD(threadId, num_inserts, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
     return value;
 }
 
 template<typename K>
-K * ThreadLoop::executeRemove(const K &key) {
+K *ThreadLoop::executeRemove(const K &key) {
     TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-    K * value = (K*) g->dsAdapter->erase(this->threadId, key);
+    K *value = (K *) g->dsAdapter->erase(this->threadId, key);
 
     if (value != this->g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
         GSTATS_ADD(this->threadId, key_checksum, -key);
 //             GSTATS_ADD(tid, size_checksum, -1);
+        GSTATS_ADD(threadId, num_successful_deletes, 1);
     } else {
         TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
+        GSTATS_ADD(threadId, num_fail_deletes, 1);
     }
-    GSTATS_ADD(this->threadId, num_deletes, 1);
+    GSTATS_ADD(threadId, num_deletes, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
     return value;
 }
 
 template<typename K>
-K * ThreadLoop::executeGet(const K &key) {
+K *ThreadLoop::executeGet(const K &key) {
 //    K value = this->g->dsAdapter->contains(this->threadId, key);
-    K * value = (K*) this->g->dsAdapter->find(this->threadId, key);
+    K *value = (K *) this->g->dsAdapter->find(this->threadId, key);
 
-    if (value  != this->g->dsAdapter->getNoValue()) {
+    if (value != this->g->dsAdapter->getNoValue()) {
         garbage += key; // prevent optimizing out
+        GSTATS_ADD(threadId, num_successful_searches, 1);
+    } else {
+        GSTATS_ADD(threadId, num_fail_searches, 1);
     }
-    GSTATS_ADD(this->threadId, num_searches, 1);
+    GSTATS_ADD(threadId, num_searches, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
     return value;
@@ -104,8 +112,11 @@ bool ThreadLoop::executeContains(const K &key) {
 
     if (value) {
         garbage += key; // prevent optimizing out
+        GSTATS_ADD(threadId, num_successful_searches, 1);
+    } else {
+        GSTATS_ADD(threadId, num_fail_searches, 1);
     }
-    GSTATS_ADD(this->threadId, num_searches, 1);
+    GSTATS_ADD(threadId, num_searches, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
     return value;
@@ -123,9 +134,8 @@ void ThreadLoop::executeRangeQuery(const K &leftKey, const K &rightKey) {
         garbage += rqResultKeys[0] +
                    rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
     }
-    GSTATS_ADD(this->threadId, num_rq, 1);
+    GSTATS_ADD(threadId, num_rq, 1);
     GSTATS_ADD(threadId, num_operations, 1);
-
 }
 
 void ThreadLoop::run() {
