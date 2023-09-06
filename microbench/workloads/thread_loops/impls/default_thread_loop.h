@@ -5,8 +5,6 @@
 #ifndef SETBENCH_DEFAULT_THREAD_LOOP_H
 #define SETBENCH_DEFAULT_THREAD_LOOP_H
 
-//typedef long long K;
-
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/args_generators/args_generator.h"
 #include "workloads/thread_loops/ratio_thread_loop_parameters.h"
@@ -24,7 +22,8 @@ public:
     DefaultThreadLoop(globals_t *_g, Random64 &_rng, size_t _threadId, StopCondition *_stopCondition, size_t _RQ_RANGE,
                       ArgsGenerator<K> *_argsGenerator,
                       RatioThreadLoopParameters *threadLoopParameters)
-            : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE), rng(_rng), argsGenerator(_argsGenerator) {
+            : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE),
+              rng(_rng), argsGenerator(_argsGenerator) {
         cdf = new double[3];
         cdf[0] = threadLoopParameters->INS_RATIO;
         cdf[1] = cdf[0] + threadLoopParameters->REM_RATIO;

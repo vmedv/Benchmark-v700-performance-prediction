@@ -179,6 +179,42 @@ public:
     };
 };
 
+
+template<typename K>
+class CreakersAndWavePrefillArgsGenerator : public ArgsGenerator<K> {
+    PAD;
+    Random64 &rng;
+    PAD;
+    DataMap<K> *dataMap;
+    size_t waveBegin;
+    size_t prefillLength;
+    PAD;
+
+public:
+    CreakersAndWavePrefillArgsGenerator(Random64 &rng, size_t waveBegin, size_t prefillLength, DataMap<K> *dataMap) :
+            rng(rng), waveBegin(waveBegin), prefillLength(prefillLength), dataMap(dataMap) {}
+
+    K nextGet() override {
+        setbench_error("Unsupported operation -- nextGet")
+    }
+
+    K nextInsert() override {
+        return dataMap->get(waveBegin + rng.next(prefillLength));
+    }
+
+    K nextRemove() override {
+        setbench_error("Unsupported operation -- nextRemove")
+    }
+
+    std::pair<K, K> nextRange() override {
+        setbench_error("Unsupported operation -- nextRange")
+    }
+
+    ~CreakersAndWavePrefillArgsGenerator() override {
+//        delete dataMap; //TODO may deleted twice
+    };
+};
+
 #include "workloads/args_generators/args_generator_builder.h"
 #include "workloads/distributions/builders/uniform_distribution_builder.h"
 #include "workloads/distributions/builders/zipf_distribution_builder.h"
@@ -210,6 +246,19 @@ class CreakersAndWaveArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     DataMapBuilder *dataMapBuilder = new ArrayDataMapBuilder();
 
 public:
+    double getCreakersSize() const {
+        return creakersSize;
+    }
+
+    double getWaveSize() const {
+        return waveSize;
+    }
+
+    DataMapBuilder *getDataMapBuilder() const {
+        return dataMapBuilder;
+    }
+
+
     CreakersAndWaveArgsGeneratorBuilder *setCreakersSize(double _creakersSize) {
         creakersSize = _creakersSize;
         return this;
@@ -299,5 +348,78 @@ public:
 //        delete dataMapBuilder; //TODO may delete twice
     };
 };
+
+class CreakersAndWavePrefillArgsGeneratorBuilder : public ArgsGeneratorBuilder {
+    size_t waveBegin;
+    size_t prefillLength;
+    PAD;
+
+
+    double creakersSize = 0;
+    double waveSize = 0;
+
+    DataMapBuilder *dataMapBuilder = new ArrayDataMapBuilder();
+
+public:
+    CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(CreakersAndWaveArgsGeneratorBuilder * builder) {
+        creakersSize = builder->getCreakersSize();
+        waveSize = builder->getWaveSize();
+        dataMapBuilder = builder->getDataMapBuilder();
+        return this;
+    }
+
+    CreakersAndWavePrefillArgsGeneratorBuilder *setCreakersSize(double _creakersSize) {
+        creakersSize = _creakersSize;
+        return this;
+    }
+
+    CreakersAndWavePrefillArgsGeneratorBuilder *setWaveSize(double _waveSize) {
+        waveSize = _waveSize;
+        return this;
+    }
+
+    CreakersAndWavePrefillArgsGeneratorBuilder *setDataMapBuilder(DataMapBuilder *_dataMapBuilder) {
+        dataMapBuilder = _dataMapBuilder;
+        return this;
+    }
+
+    CreakersAndWavePrefillArgsGeneratorBuilder *init(size_t range) override {
+        dataMapBuilder->init(range);
+        prefillLength = range * creakersSize + range * waveSize;
+        waveBegin = range - prefillLength;
+        return this;
+    }
+
+    CreakersAndWavePrefillArgsGenerator<K> *build(Random64 &_rng) override {
+        return new CreakersAndWavePrefillArgsGenerator<K>(_rng, waveBegin, prefillLength,
+                                                          dataMapBuilder->getOrBuild());
+    }
+
+    void toJson(nlohmann::json &j) const override {
+        j["argsGeneratorType"] = ArgsGeneratorType::CREAKERS_AND_WAVE_PREFILL;
+        j["creakersSize"] = creakersSize;
+        j["waveSize"] = waveSize;
+        j["dataMap"] = *dataMapBuilder;
+    }
+
+    void fromJson(const nlohmann::json &j) override {
+        creakersSize = j["creakersSize"];
+        waveSize = j["waveSize"];
+        dataMapBuilder = getDataMapFromJson(j["dataMap"]);
+    }
+
+    std::string toString(size_t indents) override {
+        return indented_title_with_str_data("Type", "CREAKERS_AND_WAVE_PREFILL", indents)
+               + indented_title_with_data("Creakers Size", creakersSize, indents)
+               + indented_title_with_data("Wave Size", waveSize, indents)
+               + indented_title("Data Map", indents)
+               + dataMapBuilder->toString(indents + 1);
+    }
+
+    ~CreakersAndWavePrefillArgsGeneratorBuilder() override {
+//        delete dataMapBuilder; //TODO may delete twice
+    };
+};
+
 
 #endif //SETBENCH_CREAKERS_AND_WAVE_ARGS_GENERATOR_H

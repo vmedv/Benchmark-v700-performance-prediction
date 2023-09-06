@@ -46,7 +46,7 @@ public:
         } else {
             zipf_value = (size_t) pow(s * (1.0 - alpha) + 1.0, 1.0 / (1.0 - alpha));
         }
-        return zipf_value;
+        return zipf_value - 1;
     }
 
     ~ZipfDistribution() override = default;

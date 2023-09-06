@@ -29,9 +29,8 @@ ArgsGeneratorBuilder *getArgsGeneratorFromJson(const nlohmann::json &j) {
         case ArgsGeneratorType::CREAKERS_AND_WAVE:
             argsGeneratorBuilder = new CreakersAndWaveArgsGeneratorBuilder();
             break;
-        case ArgsGeneratorType::OPS:
-            break;
-        case ArgsGeneratorType::TEMPORARY_WAVE_SPECIAL_REMOVE:
+        case ArgsGeneratorType::CREAKERS_AND_WAVE_PREFILL:
+            argsGeneratorBuilder = new CreakersAndWavePrefillArgsGeneratorBuilder();
             break;
     }
     argsGeneratorBuilder->fromJson(j);

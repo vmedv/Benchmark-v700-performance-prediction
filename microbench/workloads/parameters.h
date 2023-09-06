@@ -190,7 +190,7 @@ public:
             pin_string += "," + std::to_string(pin[i]);
         }
 
-        result += indented_title_with_str_data("all pins", pin_string, indents + 1)
+        result += indented_title_with_str_data("all pins", pin_string, indents)
                   + indented_title("thread loops", indents);
 
 

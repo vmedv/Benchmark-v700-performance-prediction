@@ -20,8 +20,7 @@ struct BenchParameters {
     BenchParameters() {
         range = 2048;
         test = new Parameters();
-//                ->addThreadLoopBuilder(*new DefaultThreadLoopBuilder(), 1);
-        createDefaultPrefill();
+        prefill = new Parameters();
         warmUp = new Parameters();
     }
 
@@ -41,7 +40,6 @@ struct BenchParameters {
     }
 
     BenchParameters &setTest(Parameters *_test) {
-//        delete test; //TODO
         test = _test;
         return *this;
     }
@@ -91,9 +89,9 @@ void to_json(nlohmann::json &json, const BenchParameters &s) {
 
 void from_json(const nlohmann::json &json, BenchParameters &s) {
     s.range = json["range"];
-    s.test = new Parameters(json["test"].template get<Parameters>());//json["test"];
-    s.prefill = new Parameters(json["prefill"]);//json["test"];
-    s.warmUp = new Parameters(json["warmUp"]);//json["test"];
+    s.test = new Parameters(json["test"]);
+    s.prefill = new Parameters(json["prefill"]);
+    s.warmUp = new Parameters(json["warmUp"]);
 
 }
 

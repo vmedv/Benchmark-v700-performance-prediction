@@ -55,7 +55,7 @@ K *ThreadLoop::executeInsert(K &key) {
 
     if (value == g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
-        GSTATS_ADD(this->threadId, key_checksum, key);
+        GSTATS_ADD(threadId, key_checksum, key);
 //             GSTATS_ADD(tid, size_checksum, 1);
         GSTATS_ADD(threadId, num_successful_inserts, 1);
     } else {
@@ -75,14 +75,14 @@ K *ThreadLoop::executeRemove(const K &key) {
 
     if (value != this->g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
-        GSTATS_ADD(this->threadId, key_checksum, -key);
+        GSTATS_ADD(threadId, key_checksum, -key);
 //             GSTATS_ADD(tid, size_checksum, -1);
-        GSTATS_ADD(threadId, num_successful_deletes, 1);
+        GSTATS_ADD(threadId, num_successful_removes, 1);
     } else {
         TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-        GSTATS_ADD(threadId, num_fail_deletes, 1);
+        GSTATS_ADD(threadId, num_fail_removes, 1);
     }
-    GSTATS_ADD(threadId, num_deletes, 1);
+    GSTATS_ADD(threadId, num_removes, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
     return value;

@@ -5,7 +5,6 @@
 #ifndef SETBENCH_DEFAULT_ARGS_GENERATOR_H
 #define SETBENCH_DEFAULT_ARGS_GENERATOR_H
 
-//#include "plaf.h"
 #include "workloads/args_generators/args_generator.h"
 #include "workloads/distributions/distribution.h"
 #include "workloads/data_maps/data_map.h"
@@ -51,7 +50,6 @@ public:
 };
 
 
-//#include "errors.h"
 #include "workloads/distributions/distribution_builder.h"
 #include "workloads/data_maps/data_map_builder.h"
 #include "workloads/distributions/builders/uniform_distribution_builder.h"
@@ -101,8 +99,6 @@ public:
     void fromJson(const nlohmann::json &j) override {
         distributionBuilder = getDistributionFromJson(j["distributionBuilder"]);
         dataMapBuilder = getDataMapFromJson(j["dataMapBuilder"]);
-//        j["distributionBuilder"] = *distributionBuilder;
-//        j["dataMapBuilder"] = *dataMapBuilder;
     }
 
     std::string toString(size_t indents = 1) override {

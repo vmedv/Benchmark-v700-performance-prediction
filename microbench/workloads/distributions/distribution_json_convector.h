@@ -32,9 +32,4 @@ MutableDistributionBuilder *getMutableDistributionFromJson(const nlohmann::json 
     return dynamic_cast<MutableDistributionBuilder *>(getDistributionFromJson(j));
 }
 
-//size_t MutableDistribution::next(size_t range) {
-//    setRange(range);
-//    return this->next();
-//}
-
 #endif //SETBENCH_DISTRIBUTION_JSON_CONVECTOR_H
