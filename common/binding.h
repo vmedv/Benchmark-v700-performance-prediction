@@ -109,7 +109,17 @@ void binding_parseCustom(std::string argv) {
 //    std::cout<<std::endl;
 }
 
+void binding_setCustom(const std::vector<int> & pin) {
+    numCustomBindings = 0;
+    for (int i : pin) {
+        customBinding[numCustomBindings++] = i;
+        assert(numCustomBindings <= MAX_THREADS_POW2);
+    }
+}
+
 static void doBindThread(const int tid) {
+    if (customBinding[tid] == -1)
+        return;
     if (sched_setaffinity(0, CPU_ALLOC_SIZE(numLogicalProcessors), cpusets[tid%numLogicalProcessors])) { // bind thread to core
         std::cout<<"ERROR: could not bind thread "<<tid<<" to cpuset "<<cpusets[tid%numLogicalProcessors]<<std::endl;
         exit(-1);
@@ -130,11 +140,11 @@ int binding_getActualBinding(const int tid) {
             std::cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
             exit(-1);
         }
-        if (bindings == 0) {
-            std::cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
-            std::cout<<"DEBUG INFO: number of physical processors (set in Makefile)="<<numLogicalProcessors<<std::endl;
-            exit(-1);
-        }
+//        if (bindings == 0) {
+//            std::cout<<"ERROR: "<<bindings<<" processor bindings for thread "<<tid<<std::endl;
+//            std::cout<<"DEBUG INFO: number of physical processors (set in Makefile)="<<numLogicalProcessors<<std::endl;
+//            exit(-1);
+//        }
     }
     return result;
 }
@@ -168,6 +178,8 @@ void binding_configurePolicy(const int nthreads) {
         for (int i=0;i<numLogicalProcessors;++i) {
             cpusets[i] = CPU_ALLOC(numLogicalProcessors);
             CPU_ZERO_S(size, cpusets[i]);
+            if (customBinding[i%numCustomBindings] == -1)
+                continue;
             CPU_SET_S(customBinding[i%numCustomBindings], size, cpusets[i]);
         }
     }

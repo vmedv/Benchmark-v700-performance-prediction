@@ -20,7 +20,7 @@
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
-    gstats_handle_stat(LONG_LONG, num_deletes, 1, { \
+    gstats_handle_stat(LONG_LONG, num_removes, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
@@ -29,6 +29,30 @@
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \
     gstats_handle_stat(LONG_LONG, num_rq, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_successful_inserts, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_fail_inserts, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_successful_removes, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_fail_removes, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_successful_searches, 1, { \
+            gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
+      __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
+    }) \
+    gstats_handle_stat(LONG_LONG, num_fail_searches, 1, { \
             gstats_output_item(PRINT_RAW, SUM, BY_THREAD) \
       __AND gstats_output_item(PRINT_RAW, SUM, TOTAL) \
     }) \

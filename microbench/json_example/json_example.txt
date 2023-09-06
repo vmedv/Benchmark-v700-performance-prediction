@@ -1,0 +1,68 @@
+{
+    "prefill": {
+        "numThreads": 1,
+        "pin": "",
+        "stopCondition": {
+            "commonOperationLimit": 1024,
+            "stopConditionType": 1
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 1,
+                "threadLoopBuilder": {
+                    "argsGeneratorBuilder": {
+                        "argsGeneratorType": 0,
+                        "dataMapBuilder": {
+                            "dataMapType": 0,
+                            "id": 4
+                        },
+                        "distributionBuilder": {
+                            "distributionType": 0
+                        }
+                    },
+                    "threadLoopType": 2
+                }
+            }
+        ]
+    },
+    "range": 2048,
+    "test": {
+        "numThreads": 8,
+        "pin": "",
+        "stopCondition": {
+            "stopConditionType": 0,
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "argsGeneratorBuilder": {
+                        "argsGeneratorType": 0,
+                        "dataMapBuilder": {
+                            "dataMapType": 1,
+                            "id": 2
+                        },
+                        "distributionBuilder": {
+                            "alpha": 1.0,
+                            "distributionType": 1
+                        }
+                    },
+                    "delRatio": 0.1,
+                    "insRatio": 0.1,
+                    "rqRatio": 0.0,
+                    "threadLoopType": 0
+                }
+            }
+        ]
+    },
+    "warmUp": {
+        "numThreads": 0,
+        "pin": "",
+        "stopCondition": {
+            "stopConditionType": 0,
+            "workTime": 5000
+        },
+        "threadLoopBuilders": []
+    }
+}

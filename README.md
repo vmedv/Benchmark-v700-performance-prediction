@@ -1,134 +1,162 @@
-# Warning: CLONING requires a special command!
+# SETUP
 
-Cloning this repo is complicated by the existence of *submodules*:
+First of all, it's necessary to clone the repository with submodules:
 
-```
-git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
-```
-
-Note: if you check out a branch, you must run `git submodule update` to pull the correct versions of the submodules for that branch.
-
-# For usage instructions visit the SetBench Wiki!
-https://gitlab.com/trbot86/setbench/wikis/home
-
-Also see: `microbench_experiments/tutorial/tutorial.ipynb`, a Jupyter notebook tutorial that we recommend opening in the free/open source IDE VSCode (after installing the VSCode Python (Microsoft) extension).
-
-# Setting up SetBench on Ubuntu 20.04 or 18.04
-
-Installing necessary build tools, libraries and python packages:
-```
-sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip zip
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
+```shell
+git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules
+git checkout json
 ```
 
-Installing LibPAPI (needed for per-operation cache-miss counts, cycle counts, etc.):
-```
-git clone https://bitbucket.org/icl/papi.git
-cd papi/src
-./configure
-sudo sh -c "echo 2 > /proc/sys/kernel/perf_event_paranoid"
-./configure
-make -j
-make test
-sudo make install
-sudo ldconfig
+The project has the following structure:
+```shell
+.
+├── common
+├── docker
+├── ds
+├── json
+├── lib
+├── macrobench
+├── macrobench_experiments
+├── microbench
+├── microbench_experiments
+└── tools
 ```
 
-Clone and build SetBench:
-```
-git clone https://gitlab.com/trbot86/setbench.git --recurse-submodules
+The main folders to pay attention to are [ds](./ds) and [microbench](./microbench/). The first one stands for data structures - all available for benchmarking data structures are stored there. The latter stands for launching benchmarks and there you can specify many arguments, in particular, [different workloads](./WORKLOADS.md).
+
+Before launching benchmarks for different data structures --- it's necessary to build the project and it can be done with the following command:
+
+```shell
 cd setbench/microbench
-make -j<NUMBER_OF_CORES>
-cd ../macrobench
-./compile.sh
+make -j
 ```
 
-## Setting up SetBench on Ubuntu 16.04
 
-Installing necessary build tools, libraries and python packages:
-```
-sudo apt update
-sudo apt install build-essential make g++ git time libnuma-dev numactl dos2unix parallel python3 python3-pip zip
-pip3 install --upgrade pip
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
-```
+# LAUNCH
 
-*The rest is the same as in Ubuntu 18.04+ (above).*
+After setting up the project, you can launch benchmarks. Commands to launch have the following pattern:
 
-## Setting up SetBench on Fedora 32
+```shell
+cd setbench/microbench
 
-Installing necessary build tools, libraries and python packages:
-```
-dnf update -y
-dnf install -y @development-tools dos2unix gcc g++ git make numactl numactl-devel parallel python3 python3-pip time findutils hostname zip perf papi papi-static papi-libs
-pip3 install numpy matplotlib pandas seaborn ipython ipykernel jinja2 colorama
+LD_PRELOAD=../lib/libjemalloc.so ./bin/<data_structure_name>.debra <bench_args>
 ```
 
-*The rest is the same as in Ubuntu 18.04+ (above).*
-
-## Other operating systems
-
-- Debian: Should probably work, as it's very similar to Ubuntu... may need some minor tweaks to package names (can usually be resolved by googling "debian cannot find package xyz").
-
-- Windows (WSL): Should work if you disable `USE_PAPI` in the Makefile(s), and eliminate any mention of `numactl`. Note that hardware counters won't work.
-
-- FreeBSD: Could possibly make this work with a lot of tweaking.
-
-- Mac / OSX: Suspect it should work with minor tweaking, but haven't tested.
-
-## Other architectures
-
-This benchmark is for Intel/AMD x86_64.
-
-It likely needs new memory fence placements, or a port to use `atomics`, if it is to run correctly on ARM or POWER (except in x86 memory model emulation mode).
-
-## Docker
-
-Docker files for Ubuntu 20.04 and Fedora 32 are provided in `docker/`. You can pull the mainline prebuilt Ubuntu 20.04 image with `docker pull trbot86/setbench` or with script `docker/download_image.sh`. You can then launch a container to run it with `docker/launch_downloaded_image.sh` (and stop it with `stop_container.sh`).
-
-## Virtual machines
-
-Note that you won't have access to hardware counters for tracking cache misses, etc., if you are using a virtual machine (except possibly in VMWare Player with PMU/PMC counter virtualization, although such results might not be 100% reliable).
-
-However, we are working on preparing one or more VM images.
-
-## Exact Python package versions
-
-If you are installing the Python prerequisites yourself, and you are have trouble getting the various Python packages and the data framework to play well together, you might want to pull the exact same versions we used. So, here's a dump of the version numbers I used when I installed all the packages.
-
-(You should be able to use `pip` to install these specific versions.)
-
+Example:
+```shell
+LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -json-file json_example.txt -result-file result_example.txt 
 ```
-backcall==0.2.0
-colorama==0.4.3
-cycler==0.10.0
-decorator==4.4.2
-ipykernel==5.3.2
-ipython==7.16.1
-ipython-genutils==0.2.0
-jedi==0.17.1
-Jinja2==2.11.2
-jupyter-client==6.1.6
-jupyter-core==4.6.3
-kiwisolver==1.2.0
-MarkupSafe==1.1.1
-matplotlib==3.2.2
-numpy==1.19.0
-pandas==1.0.5
-parso==0.7.0
-pexpect==4.8.0
-pickleshare==0.7.5
-prompt-toolkit==3.0.5
-ptyprocess==0.6.0
-Pygments==2.6.1
-pyparsing==2.4.7
-python-dateutil==2.8.1
-pytz==2020.1
-pyzmq==19.0.1
-scipy==1.5.1
-seaborn==0.10.1
-six==1.15.0
-tornado==6.0.4
-traitlets==4.3.3
-wcwidth==0.2.5
+
+## Benchmark arguments
+
++ `-json-file <file_name>` — file with launch parameters in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_exampl/json_example.cpp))
++ `-result-file <file_name>` — file to output the results in the json format (optional)
+
+## Troubleshooting
+
+If something breaks after the launch, or there is such a problem:
+
+```shell
+PAPI ERROR: thread 0 unable to add event PAPI_L2_DCM: Permission level does not permit operation
+```
+then the following can help:
+
+```shell
+sudo sysctl kernel.perf_event_paranoid=1
+```
+
+# Configuring Launch Parameters
+
+[Example of configuring launch parameters](./microbench/json_example/json_example.cpp).
+Use [Makefile](./microbench/json_example/Makefile) to compile.
+
+The first step is the creation the [BenchParameters class](./microbench/workloads/bench_parameters.h).
+
+```c++
+    BenchParameters benchParameters;
+```
+
+Set the range of keys.
+
+```c++
+    benchParameters.setRange(2048);
+```
+
+Create the [Parameters class](./microbench/workloads/parameters.h) for benchmarking (test).
+
+```c++
+    Parameters test;
+```
+
+We will need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
+
+First, let's create and set a stop condition: [Timer](./microbench/workloads/stop_condition/impls/timer.h) with 10 second (10000 millis).
+
+```c++
+    StopCondition * stopCondition = new Timer(10000);
+    test.setStopCondition(stopCondition);
+```
+
+The next step is the setup a workload.
+
+The workload consists of 4 types of entities:
++ Distribution — a distribution of a random variable
++ DataMap — for converting a distribution's output into a key
++ ArgsGenerator — creates operands for an operation
++ ThreadLoop — the logic for interacting with a data structure.
+
+There are builders to create each type of entity:
+[ThreadLoopBuilder](./microbench/workloads/thread_loops/thread_loop_builder.h),
+[ArgsGeneratorBuilder](./microbench/workloads/args_generators/args_generator_builder.h),
+[DistributionBuilder](./microbench/workloads/distributions/distribution_builder.h),
+[DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h).
+
+Let's create a standard workload with Zipf distribution.
+
+At first create the DistributionBuilder and DataMapBuilder.
+```c++
+    DistributionBuilder * distributionBuilder 
+            = (new ZipfDistributionBuilder())
+                    ->setAlpha(1.0);
+
+    DataMapBuilder * dataMapBuilder 
+            = new ArrayDataMapBuilder();
+```
+
+The next step is to create the ArgsGeneratorBuilder.
+```c++
+    ArgsGeneratorBuilder *argsGeneratorBuilder
+            = (new DefaultArgsGeneratorBuilder())
+                    ->setDistributionBuilder(distributionBuilder)
+                    ->setDataMapBuilder(dataMapBuilder);
+```
+
+The last step is to create the ThreadLoopBuilder. 
+We create a DefaultThreadLoop with the probability 0.1 (10%) of calling the insertion and remove operation
+and set our ArgsGeneratorBuilder
+```c++
+    ThreadLoopBuilder *threadLoopBuilder
+            = (new DefaultThreadLoopBuilder())
+                    ->setInsRatio(0.1)
+                    ->setRemRatio(0.1)
+                    ->setArgsGeneratorBuilder(argsGeneratorBuilder);
+```
+
+Now set the ThreadLoop class to Parameters with the number of threads with this load
+```c++
+    test.addThreadLoopBuilder(*threadLoopBuilder, 8);
+```
+
+Specify the test parameters in the benchParameters and create a default prefill (fill the data structure in half):
+```c++
+    benchParameters.setTest(test).createDefaultPrefill();
+```
+
+Convert parameters to json format and output:
+```c++
+    nlohmann::json json = benchParameters;
+
+    std::ofstream out("json_example.txt");
+
+    out << json.dump(4);
 ```
