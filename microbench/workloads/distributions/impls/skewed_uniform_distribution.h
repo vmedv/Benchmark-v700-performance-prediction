@@ -28,14 +28,6 @@ public:
               rng(_rng), hotProb(_hotProb), hotSetLength(_hotSetLength) {}
 
 
-//    SkewedUniformDistribution(Random64 *_rng, SkewedUniformParameters *parameters, const size_t range)
-//            : rng(_rng) {
-//        hotDistribution = parameters->hotDistBuilder->getDistribution(rng, parameters->getHotLength(range));
-//        coldDistribution = parameters->coldDistBuilder->getDistribution(rng, parameters->getColdLength(range));
-//        hotProb = parameters->hotProb;
-//        hotSetLength = parameters->getHotLength(range);
-//    }
-
     size_t next() override {
         size_t value;
         double z; // Uniform random number (0 < z < 1)

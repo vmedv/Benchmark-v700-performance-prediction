@@ -112,7 +112,6 @@ public:
         delete[] hotDists;
         delete relaxDist;
 //        delete dataMap; //TODO may deleted twice
-        // TODO delete hotTimes, relaxTimes, setBegins
     };
 
 };
@@ -124,15 +123,11 @@ public:
 #include "workloads/distributions/distribution_json_convector.h"
 #include "workloads/data_maps/data_map_json_convector.h"
 
-//typedef long long K;
-
 class TemporarySkewedArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     size_t range;
     size_t setNumber = 0;
     SkewedUniformDistributionBuilder **hotDistBuilders;
     DistributionBuilder *relaxDistBuilder = new UniformDistributionBuilder();
-//    double *setSizes;
-//    double *hotProbs;
     PAD;
     long long *hotTimes;
     PAD;

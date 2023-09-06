@@ -6,16 +6,12 @@
 #define SETBENCH_THREAD_LOOP_H
 
 #include "workloads/stop_condition/stop_condition.h"
-//#include "globals.h"
 #include "globals_t.h"
-//#include "globals_t_impl.h"
-//#include "globals_extern.h"
 
 #define VALUE_TYPE void *
 
 typedef long long K;
 
-//template<class GlobalsT>
 class ThreadLoop {
 protected:
     K garbage = 0;
@@ -25,7 +21,6 @@ protected:
     int rq_cnt;
     size_t RQ_RANGE;
 public:
-//    int tid;
     size_t threadId;
     globals_t *g;
     StopCondition *stopCondition;
@@ -90,16 +85,3 @@ void ThreadLoop::run() {
 #endif
 
 #endif //SETBENCH_THREAD_LOOP_H
-
-
-
-
-
-
-
-
-
-
-
-
-

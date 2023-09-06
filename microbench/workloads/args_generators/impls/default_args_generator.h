@@ -59,8 +59,6 @@ public:
 #include "workloads/data_maps/data_map_json_convector.h"
 #include "globals_extern.h"
 
-//typedef long long K;
-
 //template<typename K>
 class DefaultArgsGeneratorBuilder : public ArgsGeneratorBuilder {
 private:

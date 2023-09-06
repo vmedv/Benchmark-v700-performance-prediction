@@ -6,7 +6,6 @@
 #define SETBENCH_GLOBALS_T_IMPL_H
 
 #define VALUE_TYPE void *
-//#define VALUE_TYPE long long
 #define DS_ADAPTER_T ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >
 #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
 

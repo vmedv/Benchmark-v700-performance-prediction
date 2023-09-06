@@ -26,10 +26,6 @@ struct MutableDistributionBuilder : public DistributionBuilder {
     virtual MutableDistribution * build(Random64 &rng) = 0;
 };
 
-enum class DistributionType {
-    UNIFORM, ZIPF, SKEWED_UNIFORM
-};
-
 void to_json(nlohmann::json &j, const DistributionBuilder &s) {
     s.toJson(j);
     assert(j["distributionType"] != nullptr);
@@ -38,4 +34,9 @@ void to_json(nlohmann::json &j, const DistributionBuilder &s) {
 void from_json(const nlohmann::json &j, DistributionBuilder &s) {
     s.fromJson(j);
 }
+
+enum class DistributionType {
+    UNIFORM, ZIPF, SKEWED_UNIFORM
+};
+
 #endif //SETBENCH_DISTRIBUTION_BUILDER_H

@@ -5,8 +5,6 @@
 #ifndef SETBENCH_THREAD_LOOP_IMPL_H
 #define SETBENCH_THREAD_LOOP_IMPL_H
 
-//#include "globals.h"
-
 #include "adapter.h"
 #include "globals_t_impl.h"
 #include "globals_extern.h"
@@ -90,7 +88,6 @@ K *ThreadLoop::executeRemove(const K &key) {
 
 template<typename K>
 K *ThreadLoop::executeGet(const K &key) {
-//    K value = this->g->dsAdapter->contains(this->threadId, key);
     K *value = (K *) this->g->dsAdapter->find(this->threadId, key);
 
     if (value != this->g->dsAdapter->getNoValue()) {
@@ -108,7 +105,6 @@ K *ThreadLoop::executeGet(const K &key) {
 template<typename K>
 bool ThreadLoop::executeContains(const K &key) {
     bool value = this->g->dsAdapter->contains(this->threadId, key);
-//    K value = this->g->dsAdapter->find(this->threadId, key);
 
     if (value) {
         garbage += key; // prevent optimizing out
@@ -144,8 +140,6 @@ void ThreadLoop::run() {
         ++cnt;
         VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
         step();
-//        GSTATS_ADD(threadId, num_operations, 1);
-
     }
     THREAD_MEASURED_POST
 }

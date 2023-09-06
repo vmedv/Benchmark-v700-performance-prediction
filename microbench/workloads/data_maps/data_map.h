@@ -12,11 +12,4 @@ struct DataMap {
     virtual ~DataMap() = default;
 };
 
-//struct DataMap {
-//    template<typename K>
-//   K get(size_t index) {};
-//
-////    virtual ~DataMap() = default;
-//};
-
 #endif //SETBENCH_DATA_MAP_H

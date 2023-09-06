@@ -28,7 +28,6 @@ struct ThreadLoopSettings {
             std::copy(std::begin(j["pin"]), std::end(j["pin"]), pin);
         } else {
             pin = nullptr;
-//            std::fill(pin, pin + quantity, -1);
         }
         threadLoopBuilder = getThreadLoopFromJson(j["threadLoopBuilder"]);
     }
@@ -87,7 +86,6 @@ class Parameters {
     size_t numThreads;
     std::vector<int> pin;
 public:
-//    std::string pin; // e.g., "1.2.3.8-11.4-7.0"
     StopCondition *stopCondition;
 
     std::vector<ThreadLoopSettings *> threadLoopBuilders;
@@ -166,14 +164,10 @@ public:
     }
 
     void fromJson(const nlohmann::json &j) {
-//        numThreads = j["numThreads"];
-//        pin = j["pin"].template get<std::vector<int>>();
         stopCondition = getStopConditionFromJson(j["stopCondition"]);
 
 
         for (const auto &i: j["threadLoopBuilders"]) {
-//            ThreadLoopBuilder *threadLoopBuilder = getThreadLoopFromJson(i["threadLoopBuilder"]);
-//            addThreadLoopBuilder(threadLoopBuilder, i["quantity"]);
             addThreadLoopBuilder(new ThreadLoopSettings(i));
         }
     }

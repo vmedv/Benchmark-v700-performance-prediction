@@ -143,7 +143,7 @@ public:
 
     gstats_output_item(gstats_enum_output_method method, gstats_enum_aggregation_function func,
                        gstats_enum_aggregation_granularity granularity,
-                       const char *const output_filename = "test.txt",//NULL,
+                       const char *const output_filename = NULL,
                        const int num_buckets_if_histogram_lin = GSTATS_DEFAULT_HISTOGRAM_LIN_NUM_BUCKETS)
             : method(method), func(func), granularity(granularity), output_filename(output_filename),
               num_buckets_if_histogram_lin(num_buckets_if_histogram_lin) {
@@ -154,7 +154,7 @@ public:
             setbench_error("PRINT_TO_FILE can only be used with aggregation function NONE, and granularity FULL_DATA");
         }
         if (output_filename && (method != PRINT_TO_FILE || func != NONE || granularity != FULL_DATA)) {
-//            setbench_error("output_filename can only be used with PRINT_TO_FILE, NONE, FULL_DATA");
+            setbench_error("output_filename can only be used with PRINT_TO_FILE, NONE, FULL_DATA");
         }
     }
 };

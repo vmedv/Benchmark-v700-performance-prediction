@@ -70,8 +70,6 @@ public:
 #include "workloads/data_maps/data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
 
-//typedef long long K;
-
 //template<typename K>
 class SkewedSetsArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     size_t range;
@@ -119,8 +117,6 @@ public:
         range = _range;
         dataMapBuilder->init(range);
         writeSetBegins = readDistBuilder->getHotLength(range) - range * intersection;
-//        readDistBuilder->init(range);
-//        writeDistBuilder->init(range);
         return this;
     }
 

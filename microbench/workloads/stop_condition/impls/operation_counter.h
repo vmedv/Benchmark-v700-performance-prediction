@@ -46,7 +46,6 @@ public:
         long long operationLimit = commonOperationLimit / numThreads;
         long long remainder = commonOperationLimit % numThreads;
 
-//        barrier = new AtomicInteger(parameters.numThreads);
         counters = new Counter[numThreads];
 
         for (int i = 0; i < numThreads; i++) {

@@ -61,7 +61,7 @@ int64_t key_search_total_cnt__;
 
 
 // each thread saves its own thread-id (should be used primarily within this file--could be eliminated to improve software engineering)
-__thread int tid = 0; //TODO: ???
+__thread int tid = 0;
 
 #include "plaf.h"
 
@@ -347,9 +347,6 @@ void run(globals_t *g) {
 
         COUTATOMIC(toStringStage("Prefill stage"))
 
-        // prefill data structure to mimic its structure in the steady state
-//        g->prefillStartTime = std::chrono::high_resolution_clock::now();
-
         execute(g, g->benchParameters->prefill);
 
         {
@@ -361,7 +358,6 @@ void run(globals_t *g) {
             g->curKeySum += GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
             g->curSize += GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_inserts)
                           - GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_removes);
-            auto now = high_resolution_clock::now();
             auto elapsedMillis = duration_cast<milliseconds>(g->endTime - g->startTime).count();
             COUTATOMIC(
                     "finished prefilling to size " << g->curSize// << " for expected size "// << expectedSize
@@ -369,7 +365,6 @@ void run(globals_t *g) {
                                                    << " updates; total_prefilling_elapsed_ms=" << elapsedMillis
                                                    << " ms)"
                                                    << std::endl)
-//            std::cout << "pref_size=" << g->prefillSize << std::endl;
             std::cout << "prefill_millis=" << elapsedMillis << std::endl;
             GSTATS_CLEAR_ALL;
 
@@ -405,7 +400,6 @@ void run(globals_t *g) {
                                             << " updates; total_prefilling_elapsed_ms=" << elapsedMillis
                                             << " ms)"
                                             << std::endl)
-//            std::cout << "pref_size=" << g->prefillSize << std::endl;
         std::cout << "warm up millis=" << elapsedMillis << std::endl;
         GSTATS_CLEAR_ALL;
     } else {

@@ -10,10 +10,6 @@
 #include "json/single_include/nlohmann/json.hpp"
 #include "globals_t.h"
 
-enum class ThreadLoopType {
-    DEFAULT, TEMPORARY_OPERATION, PREFILL_INSERT
-};
-
 //template<typename K>
 struct ThreadLoopBuilder {
     size_t RQ_RANGE;
@@ -23,7 +19,6 @@ struct ThreadLoopBuilder {
         return this;
     };
 
-//    template<class GlobalsT>
     virtual ThreadLoop *build(globals_t *_g, Random64 & _rng, size_t _tid, StopCondition *_stopCondition) = 0;
 
     virtual void toJson(nlohmann::json &j) const = 0;
@@ -35,7 +30,6 @@ struct ThreadLoopBuilder {
     virtual ~ThreadLoopBuilder() = default;
 };
 
-
 void to_json(nlohmann::json &j, const ThreadLoopBuilder &s) {
     s.toJson(j);
     assert(j["threadLoopType"] != nullptr);
@@ -45,6 +39,8 @@ void from_json(const nlohmann::json &j, ThreadLoopBuilder &s) {
     s.fromJson(j);
 }
 
-//ThreadLoopBuilder & from_json(const nlohmann::json &j, )
+enum class ThreadLoopType {
+    DEFAULT, TEMPORARY_OPERATION, PREFILL_INSERT
+};
 
 #endif //SETBENCH_THREAD_LOOP_BUILDER_H

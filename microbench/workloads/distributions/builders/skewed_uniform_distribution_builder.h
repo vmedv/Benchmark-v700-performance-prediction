@@ -13,7 +13,6 @@
 #include "workloads/distributions/distribution_builder.h"
 #include "uniform_distribution_builder.h"
 #include "workloads/distributions/impls/skewed_uniform_distribution.h"
-//#include "workloads/distributions/distribution_json_convector.h"
 
 DistributionBuilder *getDistributionFromJson(const nlohmann::json &j);
 
@@ -77,7 +76,6 @@ struct SkewedUniformDistributionBuilder : public DistributionBuilder {
 
         hotDistBuilder = getDistributionFromJson(j["hotDistBuilder"]);
         coldDistBuilder = getDistributionFromJson(j["coldDistBuilder"]);
-//        j["coldDistBuilder"] = *coldDistBuilder;
     }
 
     std::string toString(size_t indents = 1) override {
