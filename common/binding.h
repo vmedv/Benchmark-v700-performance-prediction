@@ -112,7 +112,6 @@ void binding_parseCustom(std::string argv) {
 void binding_setCustom(const std::vector<int> & pin) {
     numCustomBindings = 0;
     for (int i : pin) {
-        std::cout<<"pin i: "<<std::to_string(i)<<"\n";
         customBinding[numCustomBindings++] = i;
         assert(numCustomBindings <= MAX_THREADS_POW2);
     }

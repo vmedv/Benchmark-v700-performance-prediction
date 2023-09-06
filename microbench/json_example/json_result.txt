@@ -1,14 +1,128 @@
 {
-    "find_throughput": 281793,
-    "query_throughput": 281793,
-    "rq_throughput": 0,
-    "total_deletes": 0,
-    "total_gets": 2823285,
-    "total_inserts": 857240,
-    "total_ops": 3680525,
-    "total_queries": 2823285,
-    "total_rq": 0,
-    "total_throughput": 367354,
-    "total_updates": 857240,
-    "update_throughput": 85561
+    "average_num_operations_total": [
+        47648380
+    ],
+    "first_time_thread_start_by_thread": [
+        528,
+        528,
+        528,
+        529
+    ],
+    "first_time_thread_terminate_by_thread": [
+        10000633,
+        10000633,
+        10000633,
+        10000633
+    ],
+    "max_num_operations_total": [
+        51599682
+    ],
+    "max_time_thread_start_total": [
+        529
+    ],
+    "max_time_thread_terminate_total": [
+        10000633
+    ],
+    "min_num_operations_total": [
+        44179642
+    ],
+    "min_time_thread_start_total": [
+        528
+    ],
+    "min_time_thread_terminate_total": [
+        10000633
+    ],
+    "stdev_num_operations_total": [
+        1997149
+    ],
+    "sum_num_fail_inserts_by_thread": [
+        5158470,
+        4538102,
+        4420023,
+        4946131
+    ],
+    "sum_num_fail_inserts_total": [
+        19062726
+    ],
+    "sum_num_fail_removes_by_thread": [
+        5159322,
+        4538336,
+        4418225,
+        4938705
+    ],
+    "sum_num_fail_removes_total": [
+        19054588
+    ],
+    "sum_num_fail_searches_by_thread": [
+        15483554,
+        13614464,
+        13252222,
+        14826241
+    ],
+    "sum_num_fail_searches_total": [
+        57176481
+    ],
+    "sum_num_inserts_by_thread": [
+        10316797,
+        9079890,
+        8837532,
+        9889901
+    ],
+    "sum_num_inserts_total": [
+        38124120
+    ],
+    "sum_num_operations_by_thread": [
+        51599682,
+        45390161,
+        44179642,
+        49424036
+    ],
+    "sum_num_operations_total": [
+        190593521
+    ],
+    "sum_num_removes_by_thread": [
+        10322734,
+        9078977,
+        8834653,
+        9879629
+    ],
+    "sum_num_removes_total": [
+        38115993
+    ],
+    "sum_num_searches_by_thread": [
+        30960151,
+        27231294,
+        26507457,
+        29654506
+    ],
+    "sum_num_searches_total": [
+        114353408
+    ],
+    "sum_num_successful_inserts_by_thread": [
+        5158327,
+        4541788,
+        4417509,
+        4943770
+    ],
+    "sum_num_successful_inserts_total": [
+        19061394
+    ],
+    "sum_num_successful_removes_by_thread": [
+        5163412,
+        4540641,
+        4416428,
+        4940924
+    ],
+    "sum_num_successful_removes_total": [
+        19061405
+    ],
+    "sum_num_successful_searches_by_thread": [
+        15476597,
+        13616830,
+        13255235,
+        14828265
+    ],
+    "sum_num_successful_searches_total": [
+        57176927
+    ]
 }

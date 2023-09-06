@@ -18,8 +18,18 @@ struct Statistic {
     long long totalRQs;
     long long totalQueries;
     long long totalInserts;
-    long long totalDeletes;
+    long long totalRemoves;
     long long totalUpdates;
+
+    long long totalSuccessfulGets;
+    long long totalSuccessfulInserts;
+    long long totalSuccessfulRemoves;
+    long long totalSuccessfulUpdates;
+
+    long long totalFailGets;
+    long long totalFailInserts;
+    long long totalFailRemoves;
+    long long totalFailUpdates;
 
     double SECONDS_TO_RUN;
     long long throughputSearches;
@@ -33,8 +43,18 @@ struct Statistic {
         totalRQs = GSTATS_GET_STAT_METRICS(num_rq, TOTAL)[0].sum;
         totalQueries = totalGets + totalRQs;
         totalInserts = GSTATS_GET_STAT_METRICS(num_inserts, TOTAL)[0].sum;
-        totalDeletes = GSTATS_GET_STAT_METRICS(num_deletes, TOTAL)[0].sum;
-        totalUpdates = totalInserts + totalDeletes;
+        totalRemoves = GSTATS_GET_STAT_METRICS(num_removes, TOTAL)[0].sum;
+        totalUpdates = totalInserts + totalRemoves;
+
+        totalSuccessfulGets = GSTATS_GET_STAT_METRICS(num_successful_searches, TOTAL)[0].sum;
+        totalSuccessfulInserts = GSTATS_GET_STAT_METRICS(num_successful_inserts, TOTAL)[0].sum;
+        totalSuccessfulRemoves = GSTATS_GET_STAT_METRICS(num_successful_removes, TOTAL)[0].sum;
+        totalSuccessfulUpdates = totalSuccessfulInserts + totalSuccessfulRemoves;
+
+        totalFailGets = GSTATS_GET_STAT_METRICS(num_fail_searches, TOTAL)[0].sum;
+        totalFailInserts = GSTATS_GET_STAT_METRICS(num_fail_inserts, TOTAL)[0].sum;
+        totalFailRemoves = GSTATS_GET_STAT_METRICS(num_fail_removes, TOTAL)[0].sum;
+        totalFailUpdates = totalFailInserts + totalFailRemoves;
 
         SECONDS_TO_RUN = _SECONDS_TO_RUN; // (MILLIS_TO_RUN)/1000.;
         totalAll = totalUpdates + totalQueries;
@@ -45,13 +65,29 @@ struct Statistic {
         throughputAll = (long long) (totalAll / SECONDS_TO_RUN);
     }
 
-    void printTotalStatisticShort() const {
+    void printTotalStatisticShort(bool detail = false) const {
         COUTATOMIC(std::endl);
-        COUTATOMIC("total_find=" << totalGets << std::endl)
+        COUTATOMIC("total_gets=" << totalGets << std::endl)
+        if (detail) {
+            COUTATOMIC("total_successful_gets=" << totalSuccessfulGets << std::endl)
+            COUTATOMIC("total_fail_gets=" << totalFailGets << std::endl)
+        }
         COUTATOMIC("total_rq=" << totalRQs << std::endl)
         COUTATOMIC("total_inserts=" << totalInserts << std::endl)
-        COUTATOMIC("total_deletes=" << totalDeletes << std::endl)
+        if (detail) {
+            COUTATOMIC("total_successful_inserts=" << totalSuccessfulInserts << std::endl)
+            COUTATOMIC("total_fail_inserts=" << totalFailInserts << std::endl)
+        }
+        COUTATOMIC("total_removes=" << totalRemoves << std::endl)
+        if (detail) {
+            COUTATOMIC("total_successful_removes=" << totalSuccessfulRemoves << std::endl)
+            COUTATOMIC("total_fail_removes=" << totalFailRemoves << std::endl)
+        }
         COUTATOMIC("total_updates=" << totalUpdates << std::endl)
+        if (detail) {
+            COUTATOMIC("total_successful_updates=" << totalSuccessfulUpdates << std::endl)
+            COUTATOMIC("total_fail_updates=" << totalFailUpdates << std::endl)
+        }
         COUTATOMIC("total_queries=" << totalQueries << std::endl)
         COUTATOMIC("total_ops=" << totalAll << std::endl)
         COUTATOMIC("find_throughput=" << throughputSearches << std::endl)
@@ -62,36 +98,36 @@ struct Statistic {
         COUTATOMIC(std::endl);
     }
 
-    void printTotalStatistic() const {
-//        COUTATOMIC(std::endl)
-//        COUTATOMIC("total find                    : " << totalGets << std::endl)
-//        COUTATOMIC("total rq                      : " << totalRQs << std::endl)
-//        COUTATOMIC("total inserts                 : " << totalInserts << std::endl)
-//        COUTATOMIC("total deletes                 : " << totalDeletes << std::endl)
-//        COUTATOMIC("total updates                 : " << totalUpdates << std::endl)
-//        COUTATOMIC("total queries                 : " << totalQueries << std::endl)
-//        COUTATOMIC("total ops                     : " << totalAll << std::endl)
-//        COUTATOMIC("find throughput               : " << throughputSearches << std::endl)
-//        COUTATOMIC("rq throughput                 : " << throughputRQs << std::endl)
-//        COUTATOMIC("update throughput             : " << throughputUpdates << std::endl)
-//        COUTATOMIC("query throughput              : " << throughputQueries << std::endl)
-//        COUTATOMIC("total throughput              : " << throughputAll << std::endl)
-//        COUTATOMIC(std::endl)
-
-
+    void printTotalStatistic(bool detail = false) const {
         COUTATOMIC(std::endl)
-        COUTATOMIC(indented_title_with_data("total find", totalGets))
-        COUTATOMIC(indented_title_with_data("total rq", totalRQs))
-        COUTATOMIC(indented_title_with_data("total inserts", totalInserts))
-        COUTATOMIC(indented_title_with_data("total deletes", totalDeletes))
-        COUTATOMIC(indented_title_with_data("total updates", totalUpdates))
-        COUTATOMIC(indented_title_with_data("total queries", totalQueries))
-        COUTATOMIC(indented_title_with_data("total ops", totalAll))
-        COUTATOMIC(indented_title_with_data("find throughput", throughputSearches))
-        COUTATOMIC(indented_title_with_data("rq throughput", throughputRQs))
-        COUTATOMIC(indented_title_with_data("update throughput", throughputUpdates))
-        COUTATOMIC(indented_title_with_data("query throughput", throughputQueries))
-        COUTATOMIC(indented_title_with_data("total throughput", throughputAll))
+        COUTATOMIC(indented_title_with_data("total gets", totalGets, 1, 32))
+        if (detail) {
+            COUTATOMIC(indented_title_with_data("total successful gets", totalSuccessfulGets, 2, 32))
+            COUTATOMIC(indented_title_with_data("total fail gets", totalFailGets, 2, 32))
+        }
+        COUTATOMIC(indented_title_with_data("total rq", totalRQs, 1, 32))
+        COUTATOMIC(indented_title_with_data("total inserts", totalInserts, 1, 32))
+        if (detail) {
+            COUTATOMIC(indented_title_with_data("total successful inserts", totalSuccessfulInserts, 2, 32))
+            COUTATOMIC(indented_title_with_data("total fail inserts", totalFailInserts, 2, 32))
+        }
+        COUTATOMIC(indented_title_with_data("total removes", totalRemoves, 1, 32))
+        if (detail) {
+            COUTATOMIC(indented_title_with_data("total successful removes", totalSuccessfulRemoves, 2, 32))
+            COUTATOMIC(indented_title_with_data("total fail removes", totalFailRemoves, 2, 32))
+        }
+        COUTATOMIC(indented_title_with_data("total updates", totalUpdates, 1, 32))
+        if (detail) {
+            COUTATOMIC(indented_title_with_data("total successful updates", totalSuccessfulUpdates, 2, 32))
+            COUTATOMIC(indented_title_with_data("total fail updates", totalFailUpdates, 2, 32))
+        }
+        COUTATOMIC(indented_title_with_data("total queries", totalQueries, 1, 32))
+        COUTATOMIC(indented_title_with_data("total ops", totalAll, 1, 32))
+        COUTATOMIC(indented_title_with_data("find throughput", throughputSearches, 1, 32))
+        COUTATOMIC(indented_title_with_data("rq throughput", throughputRQs, 1, 32))
+        COUTATOMIC(indented_title_with_data("update throughput", throughputUpdates, 1, 32))
+        COUTATOMIC(indented_title_with_data("query throughput", throughputQueries, 1, 32))
+        COUTATOMIC(indented_title_with_data("total throughput", throughputAll, 1, 32))
         COUTATOMIC(std::endl)
     }
 
@@ -99,10 +135,23 @@ struct Statistic {
 
 void to_json(nlohmann::json &json, const Statistic &s) {
     json["total_gets"] = s.totalGets;
+    json["total_successful_gets"] = s.totalSuccessfulGets;
+    json["total_fail_gets"] = s.totalFailGets;
+
     json["total_rq"] = s.totalRQs;
+
     json["total_inserts"] = s.totalInserts;
-    json["total_deletes"] = s.totalDeletes;
+    json["total_successful_inserts"] = s.totalSuccessfulInserts;
+    json["total_fail_inserts"] = s.totalFailInserts;
+
+    json["total_removes"] = s.totalRemoves;
+    json["total_successful_removes"] = s.totalSuccessfulRemoves;
+    json["total_fail_removes"] = s.totalFailRemoves;
+
     json["total_updates"] = s.totalUpdates;
+    json["total_successful_updates"] = s.totalSuccessfulUpdates;
+    json["total_fail_updates"] = s.totalFailUpdates;
+
     json["total_queries"] = s.totalQueries;
     json["total_ops"] = s.totalAll;
     json["find_throughput"] = s.throughputSearches;
@@ -114,10 +163,23 @@ void to_json(nlohmann::json &json, const Statistic &s) {
 
 void from_json(const nlohmann::json &json, Statistic &s) {
     s.totalGets = json["total_gets"];
+    s.totalSuccessfulGets = json["total_successful_gets"];
+    s.totalFailGets = json["total_fail_gets"];
+
     s.totalRQs = json["total_rq"];
+
     s.totalInserts = json["total_inserts"];
-    s.totalDeletes = json["total_deletes"];
+    s.totalSuccessfulInserts = json["total_successful_inserts"];
+    s.totalFailInserts = json["total_fail_inserts"];
+
+    s.totalRemoves = json["total_deletes"];
+    s.totalSuccessfulRemoves = json["total_successful_removes"];
+    s.totalFailRemoves = json["total_fail_removes"];
+
     s.totalUpdates = json["total_updates"];
+    s.totalSuccessfulUpdates = json["total_successful_updates"];
+    s.totalFailUpdates = json["total_fail_updates"];
+
     s.totalQueries = json["total_queries"];
     s.totalAll = json["total_ops"];
     s.throughputSearches = json["find_throughput"];
@@ -127,7 +189,8 @@ void from_json(const nlohmann::json &json, Statistic &s) {
     s.throughputAll = json["total_throughput"];
 }
 
+struct ThreadStatistic {
 
-
+};
 
 #endif //SETBENCH_STATISTICS_H

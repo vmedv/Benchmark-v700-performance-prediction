@@ -175,8 +175,8 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 
 void bindThreads(int nthreads) {
     // setup thread pinning/binding
-    binding_configurePolicy(nthreads);
 
+    binding_configurePolicy(nthreads);
     std::cout << "ACTUAL_THREAD_BINDINGS=";
     for (int i = 0; i < nthreads; ++i) {
         std::cout << (i ? "," : "") << binding_getActualBinding(i);
@@ -204,13 +204,11 @@ void execute(globals_t *g, Parameters *parameters) {
     std::thread **threads = new std::thread *[MAX_THREADS_POW2];
     ThreadLoop **threadLoops = parameters->getWorkload(g, g->rngs);
 
-//    if (!parameters->pin.empty()) {
-//        binding_parseCustom(parameters->pin); // e.g., "1.2.3.8-11.4-7.0"
-//        std::cout << "parsed custom binding: " << parameters->pin << std::endl;
-//    }
-    std::cout << "pinning...\n";
+    std::cout << "pinning threads...\n";
     binding_setCustom(parameters->getPin());
     bindThreads(parameters->getNumThreads());
+
+    std::cout << "creating threads...\n";
 
     for (int i = 0; i < parameters->getNumThreads(); ++i) {
         threads[i] = new std::thread(&ThreadLoop::run, threadLoops[i]);
@@ -219,7 +217,6 @@ void execute(globals_t *g, Parameters *parameters) {
     while (g->running < parameters->getNumThreads()) {
         TRACE COUTATOMIC("main thread: waiting for threads to START running=" << g->running << std::endl);
     } // wait for all threads to be ready
-    COUTATOMIC("main thread: starting timer..." << std::endl)
 
 ////////////////////////////////////
 
@@ -348,70 +345,78 @@ void run(globals_t *g) {
      */
     if (g->benchParameters->prefill->getNumThreads() != 0) {
 
-        std::cout << toStringStage("Prefill stage");
+        COUTATOMIC(toStringStage("Prefill stage"))
 
         // prefill data structure to mimic its structure in the steady state
-        g->prefillStartTime = std::chrono::high_resolution_clock::now();
+//        g->prefillStartTime = std::chrono::high_resolution_clock::now();
 
         execute(g, g->benchParameters->prefill);
 
         {
             // print prefilling status information
             using namespace std::chrono;
-            const long totalUpdates =
+            const long long totalUpdates =
                     GSTATS_OBJECT_NAME.get_sum<long long>(num_inserts) +
-                    GSTATS_OBJECT_NAME.get_sum<long long>(num_deletes);
-            g->prefillKeySum = GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
-            g->prefillSize = GSTATS_OBJECT_NAME.get_sum<long long>(prefill_size);
+                    GSTATS_OBJECT_NAME.get_sum<long long>(num_removes);
+            g->curKeySum += GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
+            g->curSize += GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_inserts)
+                          - GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_removes);
             auto now = high_resolution_clock::now();
-            auto elapsedMillis = duration_cast<milliseconds>(now - g->startTime).count();
+            auto elapsedMillis = duration_cast<milliseconds>(g->endTime - g->startTime).count();
             COUTATOMIC(
-                    "finished prefilling to size " << g->prefillSize << " for expected size "// << expectedSize
-                                                   << " keysum="
-                                                   << g->prefillKeySum << ", performing " << totalUpdates
+                    "finished prefilling to size " << g->curSize// << " for expected size "// << expectedSize
+                                                   << " keysum=" << g->curKeySum << ", performing " << totalUpdates
                                                    << " updates; total_prefilling_elapsed_ms=" << elapsedMillis
                                                    << " ms)"
-                                                   << std::endl);
-            std::cout << "pref_size=" << g->prefillSize << std::endl;
-            std::cout << "pref_millis=" << elapsedMillis << std::endl;
+                                                   << std::endl)
+//            std::cout << "pref_size=" << g->prefillSize << std::endl;
+            std::cout << "prefill_millis=" << elapsedMillis << std::endl;
             GSTATS_CLEAR_ALL;
 
             // print total prefilling time
-            std::cout << "prefill_elapsed_ms=" << std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::high_resolution_clock::now() - g->prefillStartTime).count() << std::endl;
             g->dsAdapter->printSummary(); ///////// debug
         }
 
     } else {
-        std::cout << toStringStage("Without Prefill stage");
+        COUTATOMIC(toStringStage("Without Prefill stage"))
     }
 
     /**
      * WARM UP STAGE
      */
     if (g->benchParameters->warmUp->getNumThreads() != 0) {
-        std::cout << toStringStage("WarmUp stage");
-
-        // prefill data structure to mimic its structure in the steady state
-//    g->prefillStartTime = std::chrono::high_resolution_clock::now();
+        COUTATOMIC(toStringStage("WarmUp stage"))
 
         execute(g, g->benchParameters->warmUp);
+
+        // print warm up status information
+        using namespace std::chrono;
+        const long long totalUpdates =
+                GSTATS_OBJECT_NAME.get_sum<long long>(num_inserts) +
+                GSTATS_OBJECT_NAME.get_sum<long long>(num_removes);
+        g->curKeySum += GSTATS_OBJECT_NAME.get_sum<long long>(key_checksum);
+        g->curSize += GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_inserts)
+                      - GSTATS_OBJECT_NAME.get_sum<long long>(num_successful_removes);
+        auto now = high_resolution_clock::now();
+        auto elapsedMillis = duration_cast<milliseconds>(g->endTime - g->startTime).count();
+        COUTATOMIC(
+                "finished warm up to size " << g->curSize// << " for expected size "// << expectedSize
+                                            << " keysum=" << g->curKeySum << ", performing " << totalUpdates
+                                            << " updates; total_prefilling_elapsed_ms=" << elapsedMillis
+                                            << " ms)"
+                                            << std::endl)
+//            std::cout << "pref_size=" << g->prefillSize << std::endl;
+        std::cout << "warm up millis=" << elapsedMillis << std::endl;
+        GSTATS_CLEAR_ALL;
     } else {
-        std::cout << toStringStage("Without WarmUp stage");
+        COUTATOMIC(toStringStage("Without WarmUp stage"))
     }
 
     /**
      * TEST STAGE
      */
 
-    GSTATS_OBJECT_NAME.clear_all();
-
     std::cout << toStringStage("Test stage");
-
-    // prefill data structure to mimic its structure in the steady state
-//    g->prefillStartTime = std::chrono::high_resolution_clock::now();
-
-
 
     execute(g, g->benchParameters->test);
 
@@ -433,7 +438,7 @@ void printExecutionTime(globals_t *g) {
     std::cout << "total_execution_walltime=" << (programExecutionElapsed / 1000.) << "s" << std::endl;
 }
 
-void printOutput(globals_t *g) {
+void printOutput(globals_t *g, bool detailStats = true) {
     std::cout << "PRODUCING OUTPUT" << std::endl;
 
 #ifdef KEY_DEPTH_TOTAL_STAT
@@ -482,8 +487,11 @@ void printOutput(globals_t *g) {
     g->dsAdapter->printSummary(); // can put this before GSTATS_PRINT to help some hacky debug code in reclaimer_ebr_token route some information to GSTATS_ to be printed. not a big deal, though.
 
 #ifdef USE_GSTATS
-    GSTATS_PRINT;
-    std::cout << std::endl;
+    GSTATS_COMPUTE_STATS;
+    if (detailStats) {
+        GSTATS_PRINT;
+        std::cout << std::endl;
+    }
 #endif
 
     long long threadsKeySum = 0;
@@ -491,14 +499,14 @@ void printOutput(globals_t *g) {
 
 #ifdef USE_GSTATS
     {
-        threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->prefillKeySum;
-        // threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->prefillSize;
+        threadsKeySum = GSTATS_GET_STAT_METRICS(key_checksum, TOTAL)[0].sum + g->curKeySum;
+//        threadsSize = GSTATS_GET_STAT_METRICS(size_checksum, TOTAL)[0].sum + g->curSize;
 #ifdef USE_TREE_STATS
         long long dsKeySum = (treeStats) ? treeStats->getSumOfKeys() : threadsKeySum;
         long long dsSize = (treeStats) ? treeStats->getKeys() : -1; // threadsSize;
 #endif
         std::cout << "threads_final_keysum=" << threadsKeySum << std::endl;
-        // std::cout<<"threads_final_size="<<threadsSize<<std::endl;
+//         std::cout<<"threads_final_size="<<threadsSize<<std::endl;
 #ifdef USE_TREE_STATS
         std::cout<<"final_keysum="<<dsKeySum<<std::endl;
         std::cout<<"final_size="<<dsSize<<std::endl;
@@ -532,14 +540,14 @@ void printOutput(globals_t *g) {
 #ifdef USE_GSTATS
     {
         Statistic statistic = getStatistic(g->elapsedMillis);
-        statistic.printTotalStatistic();
+        statistic.printTotalStatistic(true);
         totalAll = statistic.totalAll;
     }
 #endif
 
 
-    COUTATOMIC(indented_title_with_data("elapsed milliseconds", g->elapsedMillis));
-    COUTATOMIC(indented_title_with_data("napping milliseconds overtime", g->elapsedMillisNapping));
+    COUTATOMIC(indented_title_with_data("elapsed milliseconds", g->elapsedMillis, 1, 32))
+    COUTATOMIC(indented_title_with_data("napping milliseconds overtime", g->elapsedMillisNapping, 1, 32))
     COUTATOMIC(std::endl);
 
 //    g->dsAdapter->printSummary();
@@ -604,6 +612,7 @@ int main(int argc, char **argv) {
 
     ParseArgument args = ParseArgument(argc, argv).next();
     bool resultStatisticToFile = false;
+    bool detailStats = false;
     std::string resultStatisticFileName;
 
     while (args.hasNext()) {
@@ -612,6 +621,8 @@ int main(int argc, char **argv) {
         } else if (strcmp(args.getCurrent(), "-result-file") == 0) {
             resultStatisticToFile = true;
             resultStatisticFileName = args.getNext();
+        } else if (strcmp(args.getCurrent(), "-detail-stats") == 0) {
+            detailStats = true;
         } else {
             std::cout << "Unexpected option: " << args.getCurrent() << "\nindex: " << args.pointer << std::endl;
         }
@@ -676,11 +687,12 @@ int main(int argc, char **argv) {
     std::cout << std::endl;
 
     run(g);
-    printOutput(g);
+    printOutput(g, detailStats);
 
     if (resultStatisticToFile) {
-        Statistic stats = getStatistic(g->elapsedMillis);
-        writeJsonFile(resultStatisticFileName, stats);
+        nlohmann::json json;
+        GSTATS_JSON(json);
+        writeJsonFile(resultStatisticFileName, json);
     }
 
     printUptimeStampForPERF("MAIN_END");

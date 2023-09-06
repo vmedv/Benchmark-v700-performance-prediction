@@ -31,8 +31,8 @@ struct globals_t {
     PAD;
     // write once
     long long elapsedMillis;
-    long long prefillKeySum;
-    long long prefillSize;
+    long long curKeySum = 0;
+    long long curSize = 0;
     std::chrono::time_point<std::chrono::high_resolution_clock> programExecutionStartTime;
     std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
     PAD;
@@ -40,7 +40,6 @@ struct globals_t {
     long long startClockTicks;
     PAD;
     long elapsedMillisNapping;
-    std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime;
     PAD;
     volatile test_type garbage; // used to prevent optimizing out some code
     PAD;
@@ -74,8 +73,8 @@ struct globals_t {
         running = 0;
         dsAdapter = NULL;
         garbage = 0;
-        prefillKeySum = 0;
-        prefillSize = 0;
+        curKeySum = 0;
+        curSize = 0;
     }
 
     void enable_debug_print() {
@@ -87,19 +86,7 @@ struct globals_t {
     }
 
     ~globals_t() {
-        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-//            if (keygens[i]) {
-//                delete keygens[i];
-//            }
-
-            // (1) double-free
-            // if (keygens[i]) {
-            //     delete keygens[i];
-            // }
-
-        }
-
-//        delete keyGeneratorBuilder;
+        delete benchParameters;
     }
 };
 

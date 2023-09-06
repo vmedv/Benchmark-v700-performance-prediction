@@ -88,6 +88,9 @@ extern gstats_t& GSTATS_OBJECT_NAME;
 #define GSTATS_CLEAR_ALL GSTATS_OBJECT_NAME.clear_all()
 #define GSTATS_CLEAR_VAL(stat, val) GSTATS_OBJECT_NAME.clear_to_value(stat, val)
 #define GSTATS_PRINT GSTATS_OBJECT_NAME.print_all()
+#define GSTATS_JSON(json) GSTATS_OBJECT_NAME.to_json(json)
+#define GSTATS_COMPUTE_STATS GSTATS_OBJECT_NAME.compute_stats()
+
 
 #define GSTATS_TIMER_RESET(tid, timer_stat) GSTATS_SET(tid, timer_stat, get_server_clock())
 #define GSTATS_TIMER_ELAPSED(tid, timer_stat) (get_server_clock() - GSTATS_GET(tid, timer_stat))

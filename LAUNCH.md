@@ -15,7 +15,7 @@ LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -json-file jso
 
 ## Benchmark arguments 
 
-+ `-json-file <file_name>` — file with launch options in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_example.cpp))
++ `-json-file <file_name>` — file with launch options in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_exampl/json_example.cpp))
 + `-result-file <file_name>` — file to output the results in the json format (optional)
 
 ## Troubleshooting
