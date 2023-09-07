@@ -179,6 +179,7 @@ public:
     };
 };
 
+#include "errors.h"
 
 template<typename K>
 class CreakersAndWavePrefillArgsGenerator : public ArgsGenerator<K> {

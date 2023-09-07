@@ -38,8 +38,9 @@ public:
         } while (value != (K *) this->NO_VALUE && counter < number_of_attempts);
 
         if (value != (K *) this->NO_VALUE) {
-            COUTATOMICTID("WARNING: PrefillInsertThreadLoop have not inserted a new key. Number of attempts is: "
-                                  << number_of_attempts << "\n")
+            std::cerr << "WARNING: PrefillInsertThreadLoop with threadId=" << threadId
+                      << " have not inserted a new key. Number of attempts is: "
+                      << number_of_attempts << "\n";
         }
     }
 };

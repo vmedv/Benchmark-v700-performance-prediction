@@ -4,7 +4,6 @@ First of all, it's necessary to clone the repository with submodules:
 
 ```shell
 git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules
-git checkout json
 ```
 
 The project has the following structure:
@@ -15,8 +14,6 @@ The project has the following structure:
 ├── ds
 ├── json
 ├── lib
-├── macrobench
-├── macrobench_experiments
 ├── microbench
 ├── microbench_experiments
 └── tools
@@ -52,25 +49,13 @@ LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -json-file jso
 + `-json-file <file_name>` — file with launch parameters in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_exampl/json_example.cpp))
 + `-result-file <file_name>` — file to output the results in the json format (optional)
 
-## Troubleshooting
-
-If something breaks after the launch, or there is such a problem:
-
-```shell
-PAPI ERROR: thread 0 unable to add event PAPI_L2_DCM: Permission level does not permit operation
-```
-then the following can help:
-
-```shell
-sudo sysctl kernel.perf_event_paranoid=1
-```
-
 # Configuring Launch Parameters
 
 [Example of configuring launch parameters](./microbench/json_example/json_example.cpp).
 Use [Makefile](./microbench/json_example/Makefile) to compile.
 
 The first step is the creation the [BenchParameters class](./microbench/workloads/bench_parameters.h).
+The class stores the range of keys and parameters each of epoch: prefill, warm up and test.
 
 ```c++
     BenchParameters benchParameters;
@@ -85,7 +70,7 @@ Set the range of keys.
 Create the [Parameters class](./microbench/workloads/parameters.h) for benchmarking (test).
 
 ```c++
-    Parameters test;
+    Parameters *test;
 ```
 
 We will need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
@@ -93,11 +78,11 @@ We will need to set the [stop condition](./microbench/workloads/stop_condition/s
 First, let's create and set a stop condition: [Timer](./microbench/workloads/stop_condition/impls/timer.h) with 10 second (10000 millis).
 
 ```c++
-    StopCondition * stopCondition = new Timer(10000);
+    StopCondition *stopCondition = new Timer(10000);
     test.setStopCondition(stopCondition);
 ```
 
-The next step is the setup a workload.
+The next step is to configure the workload.
 
 The workload consists of 4 types of entities:
 + Distribution — a distribution of a random variable
@@ -115,11 +100,11 @@ Let's create a standard workload with Zipf distribution.
 
 At first create the DistributionBuilder and DataMapBuilder.
 ```c++
-    DistributionBuilder * distributionBuilder 
+    DistributionBuilder *distributionBuilder 
             = (new ZipfDistributionBuilder())
                     ->setAlpha(1.0);
 
-    DataMapBuilder * dataMapBuilder 
+    DataMapBuilder *dataMapBuilder 
             = new ArrayDataMapBuilder();
 ```
 
@@ -133,7 +118,7 @@ The next step is to create the ArgsGeneratorBuilder.
 
 The last step is to create the ThreadLoopBuilder. 
 We create a DefaultThreadLoop with the probability 0.1 (10%) of calling the insertion and remove operation
-and set our ArgsGeneratorBuilder
+and set our ArgsGeneratorBuilder.
 ```c++
     ThreadLoopBuilder *threadLoopBuilder
             = (new DefaultThreadLoopBuilder())
@@ -142,9 +127,17 @@ and set our ArgsGeneratorBuilder
                     ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 ```
 
-Now set the ThreadLoop class to Parameters with the number of threads with this load
+Now set the ThreadLoop class to Parameters with the number of threads with this load.
+
+Also, as the third parameter, you can specify the cores to which threads should bind (-1 without binding).
+In our case, the first two threads will not be bound to any core, the 3-th and 4-th threads will bound to fisrt core, 
+the 5-th thread will bound to second core, and so on
+(The first CPU on the system corresponds to a cpu value of 0, the next CPU corresponds to a cpu value of 1, and so on.).
 ```c++
-    test.addThreadLoopBuilder(*threadLoopBuilder, 8);
+    test->addThreadLoopBuilder(
+            threadLoopBuilder, 8,
+            new int[8]{-1, -1, 0, 0, 1, 2, 3, 3}
+    );
 ```
 
 Specify the test parameters in the benchParameters and create a default prefill (fill the data structure in half):
@@ -160,3 +153,17 @@ Convert parameters to json format and output:
 
     out << json.dump(4);
 ```
+
+
+[//]: # (# Troubleshooting)
+[//]: # ()
+[//]: # (If something breaks after the launch, or there is such a problem:)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (PAPI ERROR: thread 0 unable to add event PAPI_L2_DCM: Permission level does not permit operation)
+[//]: # (```)
+[//]: # (then the following can help:)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (sudo sysctl kernel.perf_event_paranoid=1)
+[//]: # (```)

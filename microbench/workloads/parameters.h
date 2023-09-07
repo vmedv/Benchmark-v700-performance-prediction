@@ -62,9 +62,7 @@ struct ThreadLoopSettings {
 void to_json(nlohmann::json &j, const ThreadLoopSettings &s) {
     j["quantity"] = s.quantity;
     j["threadLoopBuilder"] = *s.threadLoopBuilder;
-    if (s.pin == nullptr) {
-        j["pin"] = nullptr;
-    } else {
+    if (s.pin != nullptr) {
         for (size_t i = 0; i < s.quantity; ++i) {
             j["pin"].push_back(s.pin[i]);
         }
@@ -156,7 +154,6 @@ public:
 
     void toJson(nlohmann::json &j) const {
         j["numThreads"] = numThreads;
-        j["pin"] = pin;
         j["stopCondition"] = *stopCondition;
         for (ThreadLoopSettings *tls: threadLoopBuilders) {
             j["threadLoopBuilders"].push_back(*tls);
@@ -166,9 +163,10 @@ public:
     void fromJson(const nlohmann::json &j) {
         stopCondition = getStopConditionFromJson(j["stopCondition"]);
 
-
-        for (const auto &i: j["threadLoopBuilders"]) {
-            addThreadLoopBuilder(new ThreadLoopSettings(i));
+        if (j.contains("threadLoopBuilders")) {
+            for (const auto &i: j["threadLoopBuilders"]) {
+                addThreadLoopBuilder(new ThreadLoopSettings(i));
+            }
         }
     }
 
@@ -207,7 +205,7 @@ public:
 
     ~Parameters() {
         delete stopCondition;
-        for (ThreadLoopSettings *tls : threadLoopBuilders) {
+        for (ThreadLoopSettings *tls: threadLoopBuilders) {
             delete tls;
         }
     }

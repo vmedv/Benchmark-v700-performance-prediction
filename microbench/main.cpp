@@ -204,7 +204,7 @@ void execute(globals_t *g, Parameters *parameters) {
     std::thread **threads = new std::thread *[MAX_THREADS_POW2];
     ThreadLoop **threadLoops = parameters->getWorkload(g, g->rngs);
 
-    std::cout << "pinning threads...\n";
+    std::cout << "binding threads...\n";
     binding_setCustom(parameters->getPin());
     bindThreads(parameters->getNumThreads());
 

@@ -1,7 +1,6 @@
 {
     "prefill": {
         "numThreads": 1,
-        "pin": "",
         "stopCondition": {
             "commonOperationLimit": 1024,
             "stopConditionType": 1
@@ -14,12 +13,13 @@
                         "argsGeneratorType": 0,
                         "dataMapBuilder": {
                             "dataMapType": 0,
-                            "id": 4
+                            "id": 3
                         },
                         "distributionBuilder": {
                             "distributionType": 0
                         }
                     },
+                    "number_of_attempts": 10000000,
                     "threadLoopType": 2
                 }
             }
@@ -27,29 +27,38 @@
     },
     "range": 2048,
     "test": {
-        "numThreads": 8,
-        "pin": "",
+        "numThreads": 10,
         "stopCondition": {
             "stopConditionType": 0,
             "workTime": 10000
         },
         "threadLoopBuilders": [
             {
+                "pin": [
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    1,
+                    2,
+                    3,
+                    3
+                ],
                 "quantity": 8,
                 "threadLoopBuilder": {
                     "argsGeneratorBuilder": {
                         "argsGeneratorType": 0,
                         "dataMapBuilder": {
                             "dataMapType": 1,
-                            "id": 2
+                            "id": 1
                         },
                         "distributionBuilder": {
                             "alpha": 1.0,
                             "distributionType": 1
                         }
                     },
-                    "delRatio": 0.1,
                     "insRatio": 0.1,
+                    "remRatio": 0.1,
                     "rqRatio": 0.0,
                     "threadLoopType": 0
                 }
@@ -58,11 +67,9 @@
     },
     "warmUp": {
         "numThreads": 0,
-        "pin": "",
         "stopCondition": {
             "stopConditionType": 0,
             "workTime": 5000
-        },
-        "threadLoopBuilders": []
+        }
     }
 }

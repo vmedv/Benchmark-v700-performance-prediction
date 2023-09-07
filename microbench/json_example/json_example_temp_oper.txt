@@ -1,7 +1,6 @@
 {
     "prefill": {
         "numThreads": 1,
-        "pin": "",
         "stopCondition": {
             "commonOperationLimit": 1024,
             "stopConditionType": 1
@@ -28,7 +27,6 @@
     "range": 2048,
     "test": {
         "numThreads": 8,
-        "pin": "",
         "stopCondition": {
             "stopConditionType": 0,
             "workTime": 10000
@@ -78,11 +76,9 @@
     },
     "warmUp": {
         "numThreads": 0,
-        "pin": "",
         "stopCondition": {
             "stopConditionType": 0,
             "workTime": 5000
-        },
-        "threadLoopBuilders": []
+        }
     }
 }

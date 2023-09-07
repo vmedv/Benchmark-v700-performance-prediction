@@ -60,7 +60,7 @@ void ThreadLoop::executeRangeQuery(const K &leftKey, const K &rightKey) {
 
 template<typename K>
 bool ThreadLoop::executeContains(const K &key) {
-    return 0;
+    return false;
 }
 
 template<typename K>
