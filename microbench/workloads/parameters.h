@@ -24,7 +24,7 @@ struct ThreadLoopSettings {
     ThreadLoopSettings(const nlohmann::json &j) {
         quantity = j["quantity"];
         pin = new int[quantity];
-        if (j["pin"] != nullptr) {
+        if (j.contains("pin")) {
             std::copy(std::begin(j["pin"]), std::end(j["pin"]), pin);
         } else {
             pin = nullptr;
@@ -74,7 +74,7 @@ void to_json(nlohmann::json &j, const ThreadLoopSettings &s) {
 void from_json(const nlohmann::json &j, ThreadLoopSettings &s) {
     s.quantity = j["quantity"];
     s.pin = new int[s.quantity];
-    if (j["pin"] != nullptr) {
+    if (j.contains("pin")) {
         std::copy(std::begin(j["pin"]), std::end(j["pin"]), s.pin);
     } else {
         std::fill(s.pin, s.pin + s.quantity, -1);
