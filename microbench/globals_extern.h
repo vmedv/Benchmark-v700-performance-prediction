@@ -114,22 +114,22 @@ std::string indented_title(const std::string &title,
 }
 
 template<typename T>
-std::string indented_title_with_data(const std::string &title, const T &t,
+std::string indented_title_with_data(const std::string &title, const T &data,
                                      size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
     return std::string(indents * indentLength, ' ') + title + ":"
            + (title.size() + indents * indentLength < lineLength
               ? std::string(lineLength - title.size() - indents * indentLength, ' ')
               : "\t")
-           + std::to_string(t) + "\n";
+           + std::to_string(data) + "\n";
 }
 
-std::string indented_title_with_str_data(const std::string &title, const std::string &t,
+std::string indented_title_with_str_data(const std::string &title, const std::string &data,
                                          size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
     return std::string(indents * indentLength, ' ') + title + ":"
            + (title.size() + indents * indentLength < lineLength
               ? std::string(lineLength - title.size() - indents * indentLength, ' ')
               : "\t")
-           + t + "\n";
+           + data + "\n";
 }
 
 std::string toStringStage(const std::string &stageName) {

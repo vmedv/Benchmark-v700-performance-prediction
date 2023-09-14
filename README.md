@@ -19,9 +19,19 @@ The project has the following structure:
 └── tools
 ```
 
-The main folders to pay attention to are [ds](./ds) and [microbench](./microbench/). The first one stands for data structures - all available for benchmarking data structures are stored there. The latter stands for launching benchmarks and there you can specify many arguments, in particular, [different workloads](./WORKLOADS.md).
+The main folders to pay attention to are [ds](./ds) and [microbench](./microbench/). 
+The first one stands for data structures - all available for benchmarking data structures are stored there. 
+The latter stands for launching benchmarks and there you can specify many arguments, 
+in particular, [different workloads](./WORKLOADS.md).  
 
-Before launching benchmarks for different data structures --- it's necessary to build the project and it can be done with the following command:
+##### NOTE 
+**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
+
+
+
+Before launching benchmarks for different data structures --- 
+it's necessary to build the project and it can be done with the following command:
 
 ```shell
 cd setbench/microbench
@@ -36,12 +46,23 @@ After setting up the project, you can launch benchmarks. Commands to launch have
 ```shell
 cd setbench/microbench
 
-LD_PRELOAD=../lib/libjemalloc.so ./bin/<data_structure_name>.debra <bench_args>
+<memory allocator> ./bin/<data_structure_name>.debra <bench_args>
 ```
 
-Example:
+[//]: # (FROM SETBENCH WIKI: )
+You can use `LD_PRELOAD` to load different memory allocators.
+(Using a scalable allocator is crucial in evaluating concurrent data structures.)
+SetBench includes JEMalloc, TCMalloc, Hoard, Supermalloc and Mimalloc libraries in /lib.
+(Recently, my recommendations have been to use JEMalloc or Mimalloc---whichever performs better. :))
+
+[//]: # (For instance, you can plug JEMalloc into the above example, instead of the default allocator, by running:)
+
+**NOTE: I now STRONGLY recommend using mimalloc https://github.com/microsoft/mimalloc 
+instead of jemalloc for all of your experiments in concurrent data structures!!**
+
+#### Example:
 ```shell
-LD_PRELOAD=../lib/libjemalloc.so ./bin/aksenov_splaylist_64.debra -json-file json_example.txt -result-file result_example.txt 
+LD_PRELOAD=../lib/libmimalloc.so ./bin/aksenov_splaylist_64.debra -json-file json_example.txt -result-file result_example.txt 
 ```
 
 ## Benchmark arguments
@@ -95,6 +116,11 @@ There are builders to create each type of entity:
 [ArgsGeneratorBuilder](./microbench/workloads/args_generators/args_generator_builder.h),
 [DistributionBuilder](./microbench/workloads/distributions/distribution_builder.h),
 [DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h).
+
+**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
+
+[//]: # (**How to add new workloads is described [here]&#40;./ADDING_NEW_WORKLOAD.md&#41;.**)
 
 Let's create a standard workload with Zipf distribution.
 
