@@ -17,7 +17,7 @@ To recap, the key entites are:
 + [ThreadLoop](./microbench/workloads/thread_loops/thread_loop.h) — the logic for interacting with a data structure.
 
 
-<a id="bench_uml">![bench_uml.pdf](bench_uml.pdf)</a>
+<a id="bench_uml">![bench_uml.png](./bench_uml.png)</a>
 
 
 There are builders each type of entity:
