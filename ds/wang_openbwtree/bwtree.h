@@ -194,6 +194,7 @@ static void dummy(const char*, ...) {}
  * class BwTreeBase - Base class of BwTree that stores some common members
  */
 class BwTreeBase {
+protected:
   // This is the presumed size of cache line
   static constexpr size_t CACHE_LINE_SIZE = 64;
 
