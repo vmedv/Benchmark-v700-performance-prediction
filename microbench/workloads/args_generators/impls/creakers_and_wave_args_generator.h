@@ -362,6 +362,12 @@ class CreakersAndWavePrefillArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     DataMapBuilder *dataMapBuilder = new ArrayDataMapBuilder();
 
 public:
+    CreakersAndWavePrefillArgsGeneratorBuilder() {}
+
+    CreakersAndWavePrefillArgsGeneratorBuilder(CreakersAndWaveArgsGeneratorBuilder * builder) {
+        setParametersByBuilder(builder);
+    }
+
     CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(CreakersAndWaveArgsGeneratorBuilder * builder) {
         creakersSize = builder->getCreakersSize();
         waveSize = builder->getWaveSize();

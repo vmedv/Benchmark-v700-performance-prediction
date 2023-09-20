@@ -108,9 +108,8 @@ extern std::atomic_bool ___validateops;
 #endif
 
 std::string indented_title(const std::string &title,
-                           size_t indents = 1, size_t lineLength = 28, size_t indentLength = 2) {
-    return std::string(indents * indentLength, ' ') + title + ":"
-           + "\n";
+                           size_t indents = 1, size_t indentLength = 2) {
+    return std::string(indents * indentLength, ' ') + title + ":\n";
 }
 
 template<typename T>
