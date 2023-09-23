@@ -135,8 +135,8 @@ rlu_thread_data_t * rlu_tdata = NULL;
     tid = __tid; \
     binding_bindThread(tid); \
     test_type garbage = 0; \
-    test_type * rqResultKeys = new test_type[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
-    test_type * rqResultValues = new test_type[parameters->RQSIZE+MAX_KEYS_PER_NODE]; \
+    test_type * rqResultKeys = new test_type[1 + g->KEY_MAX - g->KEY_MIN]; \
+    test_type * rqResultValues = new test_type[1 + g->KEY_MAX - g->KEY_MIN]; \
     __RLU_INIT_THREAD; \
     __RCU_INIT_THREAD; \
     g->dsAdapter->initThread(tid); \
