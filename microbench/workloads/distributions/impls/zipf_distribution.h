@@ -9,24 +9,24 @@
 #include <cassert>
 #include "random_xoshiro256p.h"
 #include "plaf.h"
-#include "workloads/distributions/distribution.h"
+#include "distributions/distribution.h"
 
 class ZipfDistribution : public MutableDistribution {
 private:
     PAD;
-    Random64 &rng;
+    Random64 *rng;
     double area;
     double alpha;
     PAD;
 public:
 
-    ZipfDistribution(Random64 &_rng, double _alpha = 1.0, size_t _range = 0)
+    ZipfDistribution(Random64 *_rng, double _alpha = 1.0, size_t _maxkey = 0)
             : rng(_rng), alpha(_alpha) {
-        setRange(_range);
+        setMaxKey(_maxkey);
     }
 
-    void setRange(size_t range) override {
-        ++range;
+    void setMaxKey(size_t maxKey) override {
+        --maxKey;
         if (alpha == 1.0) {
             area = log(range);
         } else {
@@ -47,6 +47,11 @@ public:
             zipf_value = (size_t) pow(s * (1.0 - alpha) + 1.0, 1.0 / (1.0 - alpha));
         }
         return zipf_value - 1;
+    }
+
+    size_t next(size_t _maxKey) override {
+        setMaxKey(_maxKey);
+        return next();
     }
 
     ~ZipfDistribution() override = default;

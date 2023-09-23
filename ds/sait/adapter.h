@@ -15,6 +15,12 @@ using namespace std;
 
 #include "../../gsat/ds/sait/sait.h"
 
+// PARAMETERS BEGIN
+constexpr int LEAF_SIZE = 4;
+constexpr int64_t MIN_REBUILD_BOUND = 225;
+constexpr double REBUILD_FACTOR = 0.75;
+// PARAMETERS END
+
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
 #define DATA_STRUCTURE_T SAIT<K, V, ClearPolicy::kRoot>
 
@@ -31,7 +37,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, 4, 225, 0.75))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, LEAF_SIZE, MIN_REBUILD_BOUND, REBUILD_FACTOR))
     { }
 
     ~ds_adapter() {

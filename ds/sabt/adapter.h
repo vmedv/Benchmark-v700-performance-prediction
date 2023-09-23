@@ -15,9 +15,11 @@ using namespace std;
 
 #include "../../gsat/ds/sabt/sabt.h"
 
-#ifndef BTREE_FACTOR
-#define BTREE_FACTOR 8
-#endif
+// PARAMETERS BEGIN
+constexpr int BTREE_FACTOR = 16;
+constexpr int64_t MIN_REBUILD_BOUND = 250;
+constexpr double REBUILD_FACTOR = 1;
+// PARAMETERS END
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
 #define DATA_STRUCTURE_T SABT<K, V, BTREE_FACTOR, ClearPolicy::kRoot>
@@ -35,7 +37,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, 250, 1))
+            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, MIN_REBUILD_BOUND, REBUILD_FACTOR))
     { }
 
     ~ds_adapter() {

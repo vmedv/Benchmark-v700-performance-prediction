@@ -1,0 +1,16 @@
+key=10000
+values=[0.0, 0.0, 0.0]
+avg_val=0.0
+
+key=100000
+values=[0.0, 0.0, 0.0]
+avg_val=0.0
+
+key=1000000
+values=[0.0, 0.0, 0.0]
+avg_val=0.0
+
+key=5000000
+values=[0.0, 0.0, 0.0]
+avg_val=0.0
+
