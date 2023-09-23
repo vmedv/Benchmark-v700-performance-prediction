@@ -1,3 +1,4 @@
+import abc
 import argparse
 from pathlib import Path
 import multiprocessing
@@ -14,7 +15,7 @@ DEFAULT_OUTPUT_DIR_NAME = "plotter-output"
 DEFAULT_TIMEOUT = 90
 
 COLOR_PALETTE = sns.color_palette()
-DS = ["btree", "sabt", "ist", "sait", "salt", "sast", "splay_tree"]
+DS = ["redis_zset", "redist_sabt", "redis_sait", "redis_salt"]
 
 LOG_FILE = "log.txt"
 
@@ -29,19 +30,21 @@ OUT_FORMAT = "txt"
 
 # Operations stats:
 TOTAL_FIND = "total-find"
+TOTAL_RQ = "total-rq"
 TOTAL_INSERTS = "total-inserts"
 TOTAL_DELETES = "total-deletes"
 TOTAL_UPDATES = "total-updates"
 TOTAL_OPS = "total-ops"
 
-OPERATIONS_STATS = {TOTAL_FIND, TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS}
+OPERATIONS_STATS = {TOTAL_FIND, TOTAL_RQ, TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS}
 
 # Throughput stats:
 THROUGHPUT_FIND = "find-throughput"
+THROUGHPUT_RQ = "rq-throughput"
 THROUGHPUT_UPDATE = "update-throughput"
 THROUGHPUT_TOTAL = "total-throughput"
 
-THROUGHPUT_STATS = {THROUGHPUT_FIND, THROUGHPUT_UPDATE, THROUGHPUT_TOTAL}
+THROUGHPUT_STATS = {THROUGHPUT_FIND, THROUGHPUT_RQ, THROUGHPUT_UPDATE, THROUGHPUT_TOTAL}
 
 # Depth stats:
 TOTAL_KEY_DEPTH = "total-key-depth"
@@ -53,7 +56,7 @@ DEPTH_STATS = {TOTAL_KEY_DEPTH, KEY_DEPTH}
 TOTAL_KEY_SEARCH = "total-key-search"
 ITER_STATS = {TOTAL_KEY_SEARCH}
 
-ONLY_INS_DEL_STATS = {TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, TOTAL_OPS, THROUGHPUT_UPDATE, THROUGHPUT_TOTAL}
+ONLY_INS_DEL_STATS = {TOTAL_INSERTS, TOTAL_DELETES, TOTAL_UPDATES, THROUGHPUT_UPDATE}
 
 
 ### Supported prefill strategies ###
@@ -83,7 +86,7 @@ def get_label_by_stat(stat):
         return "stat"
 
 
-class StatAggregator:
+class StatAggregator(abc.ABC):
     def __init__(self, **kwargs):
         self.ds = kwargs["ds"]
         assert self.ds is not None
@@ -94,21 +97,21 @@ class StatAggregator:
         self.logger = kwargs["logger"]
         assert self.logger is not None
 
+    @abc.abstractmethod
     def extract(self, keys_cnt, log):
         """Extract stat from log."""
-        pass
 
+    @abc.abstractmethod
     def aggregate(self):
         """Aggregate all extracted stat."""
-        pass
 
+    @abc.abstractmethod
     def plot(self, ax):
         """Plot aggregated stat to specific ax."""
-        pass
 
+    @abc.abstractmethod
     def out(self, output_dir):
         """Create file in the output_dir about all extracted stat"""
-        pass
 
 
 class AvgStatAggregator(StatAggregator):
@@ -157,6 +160,9 @@ class TotalFindAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
         super().__init__("total_find", **kwargs)
 
+class TotalRqAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("total_rq", **kwargs)
 
 class TotalInsertsAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
@@ -183,6 +189,9 @@ class ThroughputFindAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
         super().__init__("find_throughput", **kwargs)
 
+class ThroughputRqAggregator(AvgStatAggregator):
+    def __init__(self, **kwargs):
+        super().__init__("rq_throughput", **kwargs)
 
 class ThroughputUpdateAggregator(AvgStatAggregator):
     def __init__(self, **kwargs):
@@ -221,15 +230,17 @@ class TotalKeySearchAggregator(AvgStatAggregator):
 
 AGGREGATOR_BY_STAT = {
     TOTAL_FIND: TotalFindAggregator,
+    TOTAL_RQ: TotalRqAggregator,
     TOTAL_INSERTS: TotalInsertsAggregator,
     TOTAL_DELETES: TotalDeletesAggregator,
     TOTAL_UPDATES: TotalUpdatesAggregator,
     TOTAL_OPS: TotalOpsAggregator,
 
     THROUGHPUT_FIND: ThroughputFindAggregator,
+    THROUGHPUT_RQ: ThroughputRqAggregator,
     THROUGHPUT_UPDATE: ThroughputUpdateAggregator,
     THROUGHPUT_TOTAL: ThroughputTotalAggregator,
-    
+
     TOTAL_KEY_DEPTH: TotalKeyDepthAggregator,
     KEY_DEPTH: KeyDepthAggregator,
 
@@ -278,7 +289,7 @@ def create_logger(name, log_file):
     return logger
 
 
-def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
+def task(top_dir, ip, dp, rp, fp, workload, workload_name, stats, args):
     log_file = top_dir / LOG_FILE
     logger_prefix = f"{to_file_name(workload_name)} - {ip}/{dp}/{fp}"
 
@@ -293,7 +304,7 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
     for ds in args.ds:
         for key, prefill_size in zip(args.key, args.prefill_size):
             for _ in range(args.avg):
-                run_command = f"./bin/{ds}.debra -{workload} -insdel {ip} {dp} "\
+                run_command = f"./bin/{ds}.debra -{workload} -insdel {ip} {dp} -rq {rp} "\
                               f"-k {key} -prefillsize {prefill_size} -t {args.time} "\
                               f"-nwork {args.nwork} -nprefill {args.nprefill} {PREFILL_STRATEGY_MAPPER[args.prefill_strategy]}"
                 if args.non_shuffle:
@@ -337,7 +348,7 @@ def task(top_dir, ip, dp, fp, workload, workload_name, stats, args):
             stats_info[stat][ds].aggregate()
 
     for stat, aggregators_dict in stats_info.items():
-        title = f"stat: {stat} | workload: {workload_name} | i={ip} d={dp} f={fp}"
+        title = f"stat: {stat} | workload: {workload_name} | i={ip} d={dp} rq={rp} f={fp}"
         plot_all(stat, title, aggregators_dict.values(), top_dir, args.fig_size)
 
     ds_dict = {}
@@ -370,14 +381,14 @@ def start(args):
         args.color = get_colors(args.ds)
 
     tasks = []
-    for insdel in args.insdel:
-        ip, dp = map(float, insdel.split("/"))
-        fp = round(1 - ip - dp, 2)
+    for insdelrq in args.insdelrq:
+        ip, dp, rp = map(float, insdelrq.split("/"))
+        fp = round(1 - ip - dp - rp, 2)
         for workload, workload_name in zip(args.workload, args.workload_name):
-            top_dir = args.output_dir / to_file_name(workload_name) / to_file_name(insdel)
+            top_dir = args.output_dir / to_file_name(workload_name) / to_file_name(insdelrq)
             top_dir.mkdir(parents=True, exist_ok=True)
-            stats = [stat for stat in args.stat if not (fp == 1 and stat in ONLY_INS_DEL_STATS)]
-            tasks.append((top_dir, ip, dp, fp, workload, workload_name, stats, args))
+            stats = [stat for stat in args.stat if not ((rp + fp == 1) and stat in ONLY_INS_DEL_STATS)]
+            tasks.append((top_dir, ip, dp, rp, fp, workload, workload_name, stats, args))
 
     print("START PLOTTING")
 
@@ -419,7 +430,7 @@ def check_args(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="""
-        Program for plotting setbench benchmarks' results.
+        Script for plotting setbench benchmarks' results.
 
         Can launch benchmarks in multiple threads (--nprocess) to produce result faster.
     """)
@@ -437,7 +448,7 @@ if __name__ == "__main__":
     setbench_group.add_argument("--ds", nargs="+", required=True, action="extend", help="Data structures to benchmark")
     setbench_group.add_argument("--workload", nargs="+", required=True, action="extend", help="Workloads' params to benchmark")
     setbench_group.add_argument("--workload-name", nargs="*", action="extend", help="Specifies workloads' names (used together with --workload)")
-    setbench_group.add_argument("--insdel", nargs="+", required=True, help="inserts + deletes + finds = 1. If insdel==0.3/0.3 then inserts == 0.3, deletes == 0.3 and finds == 0.4")
+    setbench_group.add_argument("--insdelrq", nargs="+", required=True, help="inserts + deletes + rq + finds = 1. If insdelrq==0.3/0.3/0.3 then inserts == 0.3, deletes == 0.3, rq == 0.3 and finds == 0.1")
     setbench_group.add_argument("-k", "--key", nargs="+", required=True, type=int, action="extend", help="Stands for -k setbench arg")
     setbench_group.add_argument("-ps", "--prefill-size", nargs="+", required=True, type=int, action="extend", help="Stands for -prefillsize setbench arg")
     setbench_group.add_argument("-t", "--time", required=True, type=int, help="How long to run each benchmark? (ms) Stands for -t setbench arg")
