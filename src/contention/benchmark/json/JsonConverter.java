@@ -6,17 +6,17 @@ import contention.benchmark.json.serializers.BuilderSerializer;
 import contention.benchmark.json.serializers.DataMapBuilderSerializer;
 import contention.benchmark.workload.BenchParameters;
 import contention.benchmark.workload.distributions.abstractions.MutableDistributionBuilder;
+import contention.benchmark.workload.args.generators.abstractions.ArgsGeneratorBuilder;
 import contention.benchmark.workload.thread.loops.abstractions.ThreadLoopBuilder;
 import contention.benchmark.workload.data.map.abstractions.DataMapBuilder;
 import contention.benchmark.workload.distributions.abstractions.DistributionBuilder;
-import contention.benchmark.workload.key.generators.abstractions.KeyGeneratorBuilder;
 import contention.benchmark.workload.stop.condition.StopCondition;
 
 public class JsonConverter {
     private JsonConverter(){}
     private static final Gson gson = new GsonBuilder()
             .registerTypeAdapter(ThreadLoopBuilder.class, new BuilderSerializer<ThreadLoopBuilder>())
-            .registerTypeAdapter(KeyGeneratorBuilder.class, new BuilderSerializer<KeyGeneratorBuilder>())
+            .registerTypeAdapter(ArgsGeneratorBuilder.class, new BuilderSerializer<ArgsGeneratorBuilder>())
             .registerTypeAdapter(DistributionBuilder.class, new BuilderSerializer<DistributionBuilder>())
             .registerTypeAdapter(MutableDistributionBuilder.class, new BuilderSerializer<MutableDistributionBuilder>())
             .registerTypeAdapter(StopCondition.class, new BuilderSerializer<StopCondition>())

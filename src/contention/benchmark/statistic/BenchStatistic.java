@@ -1,6 +1,6 @@
 package contention.benchmark.statistic;
 
-import static contention.benchmark.tools.StringFormat.formatDouble;
+import static contention.benchmark.tools.StringFormat.*;
 
 public class BenchStatistic {
     public double throughput;
@@ -18,86 +18,57 @@ public class BenchStatistic {
     public long prefillSize;
 
     public String toString() {
-        //        int finalSize = dataStructure.size();
-        //        curBenchStats.finalSize = finalSize;
+        return toString(1);
+    }
+
+    public String toString(int indents) {
         StringBuilder stringBuilder = new StringBuilder()
-//                .append("Benchmark statistics")
-                .append("  Average traversal length: \t")
-                .append((double) commonStatistic.nodesTraversed / (double) commonStatistic.getCount)
-                .append("\n")
-                .append("  Struct Modifications:     \t")
-                .append(commonStatistic.structMods)
-                .append("\n")
-                .append("  Throughput (ops/s):       \t")
-                .append(throughput)
-                .append("\n")
-                .append("  Elapsed time (s):         \t")
-                .append(elapsedTime)
-                .append("\n")
-                .append("  Operations:               \t")
-                .append(commonStatistic.total)
-                .append("\t( 100 %)")
-                .append("\n")
-                .append("    effective updates:     \t")
-                .append(commonStatistic.numAdd + commonStatistic.numRemove
-                        + commonStatistic.numAddAll + commonStatistic.numRemoveAll)
-                .append("\t( ")
-                .append(formatDouble(((double) (commonStatistic.numAdd + commonStatistic.numRemove
-                        + commonStatistic.numAddAll + commonStatistic.numRemoveAll) * 100)
-                        / (double) commonStatistic.total))
-                .append(" %)")
-                .append("\n")
-                .append("    |--add successful:     \t")
-                .append(commonStatistic.numAdd)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numAdd / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    |--remove succ.:       \t")
-                .append(commonStatistic.numRemove)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numRemove / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    |--addAll succ.:       \t")
-                .append(commonStatistic.numAddAll)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numAddAll / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    |--removeAll succ.:    \t")
-                .append(commonStatistic.numRemoveAll)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numRemoveAll / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    size successful:       \t")
-                .append(commonStatistic.numSize)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numSize / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    contains succ.:        \t")
-                .append(commonStatistic.numContains)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.numContains / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("    unsuccessful ops:      \t")
-                .append(commonStatistic.failures)
-                .append("\t( ")
-                .append(formatDouble(((double) commonStatistic.failures / (double) commonStatistic.total) * 100))
-                .append(" %)")
-                .append("\n")
-                .append("  Final size:              \t")
-                .append(finalSize)
-                .append("\n");
+                .append(indentedTitleWithData("Average traversal length",
+                        (double) commonStatistic.nodesTraversed / (double) commonStatistic.getCount, indents))
+                .append(indentedTitleWithData("Struct Modifications", commonStatistic.structMods, indents))
+                .append(indentedTitleWithData("Throughput (ops/s)", throughput, indents))
+                .append(indentedTitleWithData("Elapsed time (s)", elapsedTime, indents))
+                .append(indentedTitleWithDataPercent("Operations", commonStatistic.total, 1, indents))
+                .append(indentedTitleWithDataPercent("effective updates",
+                        commonStatistic.numAdd + commonStatistic.numRemove
+                                + commonStatistic.numAddAll + commonStatistic.numRemoveAll,
+                        ((double) (commonStatistic.numAdd + commonStatistic.numRemove
+                                + commonStatistic.numAddAll + commonStatistic.numRemoveAll))
+                                / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("|--add successful",
+                        commonStatistic.numAdd,
+                        ((double) commonStatistic.numAdd / (double) commonStatistic.total),
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("|--remove succ.",
+                        commonStatistic.numRemove,
+                        (double) commonStatistic.numRemove / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("|--addAll succ.",
+                        commonStatistic.numAddAll,
+                        (double) commonStatistic.numAddAll / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("|--removeAll succ.",
+                        commonStatistic.numRemoveAll,
+                        (double) commonStatistic.numRemoveAll / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("size successful",
+                        commonStatistic.numSize,
+                        (double) commonStatistic.numSize / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("contains succ.",
+                        commonStatistic.numContains,
+                        (double) commonStatistic.numContains / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithDataPercent("unsuccessful ops",
+                        commonStatistic.numContains,
+                        (double) commonStatistic.numContains / (double) commonStatistic.total,
+                        indents + 1))
+                .append(indentedTitleWithData("Final size", finalSize, indents));
 
         if (numNodes != -1) {
             stringBuilder
-                    .append("  #nodes (inc. deleted): \t")
-                    .append(numNodes)
-                    .append("\n");
+                    .append(indentedTitleWithData("#nodes (inc. deleted)", numNodes, indents));
         }
 
         return stringBuilder.toString();

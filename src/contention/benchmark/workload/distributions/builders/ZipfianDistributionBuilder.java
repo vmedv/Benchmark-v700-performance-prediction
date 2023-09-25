@@ -2,8 +2,8 @@ package contention.benchmark.workload.distributions.builders;
 
 import contention.benchmark.workload.distributions.abstractions.MutableDistributionBuilder;
 import contention.benchmark.workload.distributions.impls.ZipfDistribution;
-import contention.benchmark.workload.distributions.abstractions.Distribution;
-import contention.benchmark.workload.distributions.abstractions.MutableDistribution;
+
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class ZipfianDistributionBuilder implements MutableDistributionBuilder {
     public double alpha = 1.0;
@@ -24,11 +24,9 @@ public class ZipfianDistributionBuilder implements MutableDistributionBuilder {
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
+    public StringBuilder toStringBuilder(int indents) {
         return new StringBuilder()
-//                .append("")
-                .append("  alpha:                   \t")
-                .append(alpha)
-                .append("\n");
+                .append(indentedTitleWithData("Type", "Zipfian", indents))
+                .append(indentedTitleWithData("alpha", alpha, indents));
     }
 }

@@ -1,9 +1,9 @@
 package contention.benchmark.workload.stop.condition;
 
-import contention.benchmark.workload.Parameters;
-
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class Timer implements StopCondition {
 //    private long startTime;
@@ -21,10 +21,13 @@ public class Timer implements StopCondition {
         this.workTime = workTime;
     }
 
+    public void setWorkTime(long workTime) {
+        this.workTime = workTime;
+    }
+
     @Override
-    public void start(Parameters parameters) {
+    public void start(int numThreads) {
         stop = new AtomicBoolean(false);
-//        startTime = System.currentTimeMillis();
         java.util.Timer timer = new java.util.Timer();
         timer.schedule(new TimerTask() {
             @Override
@@ -34,24 +37,15 @@ public class Timer implements StopCondition {
         }, workTime);
     }
 
-
-//    public void waitStopCondition() {
-//        try {
-//            Thread.sleep(workTime);
-//            stop.set(true);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-
     @Override
     public boolean isStopped(int id) {
         return stop.get();
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        //TODO toStringBuilder()
-        return new StringBuilder();
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder()
+                .append(indentedTitleWithData("Type", "Timer", indents))
+                .append(indentedTitleWithData("Work time", workTime, indents));
     }
 }

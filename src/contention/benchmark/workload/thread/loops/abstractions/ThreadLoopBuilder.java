@@ -16,8 +16,13 @@ public abstract class ThreadLoopBuilder {
 
     public abstract ThreadLoopBuilder init(int range);
 
-    public abstract ThreadLoop build(int threadNum, DataStructure<Integer> dataStructure,
+    public abstract ThreadLoop build(int threadId, DataStructure<Integer> dataStructure,
                                      Method[] methods, StopCondition stopCondition);
 
-    public abstract StringBuilder toStringBuilder();
+    public StringBuilder toStringBuilder() {
+        return toStringBuilder(1);
+    }
+
+    public abstract StringBuilder toStringBuilder(int indents);
+
 }

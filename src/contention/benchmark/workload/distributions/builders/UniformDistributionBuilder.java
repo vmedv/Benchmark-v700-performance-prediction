@@ -2,8 +2,8 @@ package contention.benchmark.workload.distributions.builders;
 
 import contention.benchmark.workload.distributions.abstractions.MutableDistributionBuilder;
 import contention.benchmark.workload.distributions.impls.UniformDistribution;
-import contention.benchmark.workload.distributions.abstractions.Distribution;
-import contention.benchmark.workload.distributions.abstractions.MutableDistribution;
+
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class UniformDistributionBuilder implements MutableDistributionBuilder {
     @Override
@@ -17,8 +17,7 @@ public class UniformDistributionBuilder implements MutableDistributionBuilder {
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        //TODO toStringBuilder
-        return new StringBuilder("Uniform Distribution");
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder(indentedTitleWithData("Type", "Uniform", indents));
     }
 }

@@ -2,11 +2,12 @@ package contention.benchmark.workload.distributions.builders;
 
 import contention.benchmark.workload.distributions.abstractions.DistributionBuilder;
 import contention.benchmark.workload.distributions.impls.SkewedUniformDistribution;
-import contention.benchmark.workload.distributions.abstractions.Distribution;
+
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class SkewedUniformDistributionBuilder implements DistributionBuilder {
     public double hotSize = 0;
-    public double hotProb = 0;
+    public double hotRatio = 0;
 
     public DistributionBuilder hotDistBuilder = new UniformDistributionBuilder();
     public DistributionBuilder coldDistBuilder = new UniformDistributionBuilder();
@@ -16,8 +17,8 @@ public class SkewedUniformDistributionBuilder implements DistributionBuilder {
         return this;
     }
 
-    public SkewedUniformDistributionBuilder setHotProb(double hotProb) {
-        this.hotProb = hotProb;
+    public SkewedUniformDistributionBuilder setHotRatio(double hotRatio) {
+        this.hotRatio = hotRatio;
         return this;
     }
 
@@ -43,15 +44,17 @@ public class SkewedUniformDistributionBuilder implements DistributionBuilder {
     public SkewedUniformDistribution build(int range) {
         return new SkewedUniformDistribution(
                 getHotLength(range),
-                hotProb,
+                hotRatio,
                 hotDistBuilder.build(getHotLength(range)),
                 coldDistBuilder.build(getColdLength(range))
         );
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        //TODO toStringBuilder
-        return new StringBuilder();
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder()
+                .append(indentedTitleWithData("Type", "Skewed Uniform", indents))
+                .append(indentedTitleWithData("Hot size", hotSize, indents))
+                .append(indentedTitleWithData("Hot ratio", hotRatio, indents));
     }
 }

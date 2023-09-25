@@ -20,7 +20,7 @@ import contention.benchmark.statistic.BenchStatistic;
 import contention.benchmark.statistic.STMStatistics;
 import contention.benchmark.statistic.ThreadStatistic;
 
-import static contention.benchmark.tools.StringFormat.formatDouble;
+import static contention.benchmark.tools.StringFormat.*;
 
 /**
  * Synchrobench-java, a benchmark to evaluate the implementations of
@@ -123,24 +123,22 @@ public class Test {
     @SuppressWarnings("unchecked")
     public void instanciateAbstraction(String benchName) {
         try {
-            Class<CompositionalMap<Integer, Integer>> benchClass = (Class<CompositionalMap<Integer, Integer>>) Class
-                    .forName(benchName);
-            Constructor<CompositionalMap<Integer, Integer>> c = benchClass
-                    .getConstructor();
+            Class<CompositionalMap<Integer, Integer>> benchClass =
+                    (Class<CompositionalMap<Integer, Integer>>) Class.forName(benchName);
+            Constructor<CompositionalMap<Integer, Integer>> c = benchClass.getConstructor();
             methods = benchClass.getDeclaredMethods();
 
             if (CompositionalIntSet.class.isAssignableFrom(benchClass)) {
                 dataStructure = new IntSetDataStructure((CompositionalIntSet) c.newInstance());
-//                setBench = (CompositionalIntSet) c.newInstance();
+
                 benchType = Type.INTSET;
             } else if (CompositionalMap.class.isAssignableFrom(benchClass)) {
                 dataStructure = new MapDataStructure<>(c.newInstance());
 
-//                mapBench = (CompositionalMap<Integer, Integer>) c.newInstance();
-                benchType = benchType != null ? benchType : Type.MAP;
+                benchType = Type.MAP;
             } else if (CompositionalSortedSet.class.isAssignableFrom(benchClass)) {
                 dataStructure = new SortedSetDataStructure<>((CompositionalSortedSet<Integer>) c.newInstance());
-//                sortedBench = (CompositionalSortedSet<Integer>) c.newInstance();
+
                 benchType = Type.SORTEDSET;
             }
 
@@ -150,34 +148,14 @@ public class Test {
         }
     }
 
-
-    /**
-     * Creates as many threads as requested
-     */
-//    private void initThreads() {
-////        KeyGenerator[] keygens = keyGeneratorBuilder.generateKeyGenerators();
-//
-//        threads = new Thread[parameters.numThreads];
-//        threadLoops = new ThreadLoop[parameters.numThreads];
-//
-//        for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-//            threadLoops[threadNum] = parameters.getWorkload(threadNum, dataStructure, methods);
-//
-//            threads[threadNum] = new Thread(threadLoops[threadNum]);
-//        }
-//
-//    }
-
     /**
      * Creates as many threads as requested
      */
     private Pair<Thread[], ThreadLoop[]> initThreads(Parameters parameters) {
+        ThreadLoop[] threadLoops = parameters.getWorkload(dataStructure, methods);
         Thread[] threads = new Thread[parameters.numThreads];
-        ThreadLoop[] threadLoops = new ThreadLoop[parameters.numThreads];
 
         for (int threadNum = 0; threadNum < parameters.numThreads; threadNum++) {
-            threadLoops[threadNum] = (ThreadLoop) parameters.getWorkload(threadNum, dataStructure, methods);
-
             threads[threadNum] = new Thread(threadLoops[threadNum]);
         }
 
@@ -263,18 +241,9 @@ public class Test {
 //        Thread.sleep(parameters.afterFillRelaxMilliseconds);
 
         startTime = System.currentTimeMillis();
-        parameters.stopCondition.start(parameters);
+        parameters.stopCondition.start(parameters.numThreads);
         for (Thread thread : threads)
             thread.start();
-
-//        try {
-//            Thread.sleep(milliseconds);
-//        } finally {
-//            for (ThreadLoop threadLoop : threadLoops)
-//                threadLoop.stopThread();
-//        }
-//        for (Thread thread : threads)
-//            thread.join();
 
         for (Thread thread : threads) {
             if (parameters.maxAwaitTime == 0) {
@@ -309,7 +278,8 @@ public class Test {
     }
 
     public static Parameters parseCommandLine(String[] args) {
-        return Parameters.parse(args);
+//        return Parameters.parse(args);
+        return null;
     }
 
     private void initAndExecute(Parameters parameters) throws InterruptedException {
@@ -341,13 +311,12 @@ public class Test {
             printStage("WarmUp stage");
             initAndExecute(parameters.warmUp);
 
-            if (parameters.test.detailedStats)
+            if (parameters.detailedStats)
                 recordPreliminaryStats();
             resetStats();
             long size = dataStructure.size();
 
             Thread.sleep(parameters.afterWarmUpDuration);
-
 
             printStage("Test stage");
             initAndExecute(parameters.test);
@@ -358,7 +327,7 @@ public class Test {
             }
 
             printBasicStats(size);
-            if (parameters.test.detailedStats)
+            if (parameters.detailedStats)
                 printDetailedStats();
 
             firstIteration = false;
@@ -404,20 +373,20 @@ public class Test {
         ParseArgument args = new ParseArgument(rowArgs);
         Test test;
 
-        BenchParameters parameters = new BenchParameters();
+        BenchParameters benchParameters = new BenchParameters();
         boolean needInit = true;
         String resultStatisticFileName = null;
 
         while (args.hasNext()) {
             switch (args.getCurrent()) {
                 case "-without-init" -> needInit = false;
-                case "-prefill" -> parameters.prefill = parseJsonFile(args.getNext());
-                case "-warm-up" -> parameters.warmUp = parseJsonFile(args.getNext());
-                case "-test" -> parameters.test = parseJsonFile(args.getNext());
-                case "-range" -> parameters.range = Integer.parseInt(args.getNext());
-                case "-iter" -> parameters.iterations = Integer.parseInt(args.getNext());
-                case "-create-default-prefill" -> parameters.createDefaultPrefill();
-                case "-json-file" -> parameters = JsonConverter.fromJson(readJsonFile(args.getNext()));
+                case "-prefill" -> benchParameters.prefill = parseJsonFile(args.getNext());
+                case "-warm-up" -> benchParameters.warmUp = parseJsonFile(args.getNext());
+                case "-test" -> benchParameters.test = parseJsonFile(args.getNext());
+                case "-range" -> benchParameters.range = Integer.parseInt(args.getNext());
+                case "-iter" -> benchParameters.iterations = Integer.parseInt(args.getNext());
+                case "-create-default-prefill" -> benchParameters.createDefaultPrefill();
+                case "-json-file" -> benchParameters = JsonConverter.fromJson(readJsonFile(args.getNext()));
                 case "-result-file" -> resultStatisticFileName = args.getNext();
                 default -> System.err.println("Unexpected option: " + args.getCurrent() + ". Ignoring...");
             }
@@ -425,16 +394,16 @@ public class Test {
         }
 
         if (needInit) {
-            parameters.init();
+            benchParameters.init();
         }
 
-        test = new Test(parameters);
+        test = new Test(benchParameters);
 
         printHeader();
         printStage("Prefill parameters");
         test.printParams(test.parameters.prefill);
 
-        if (parameters.warmUp.numThreads != 0) {
+        if (benchParameters.warmUp.numThreads != 0) {
             printStage("WarmUp parameters");
             test.printParams(test.parameters.warmUp);
         } else {
@@ -465,22 +434,15 @@ public class Test {
             }
         }
 
-        parameters.test = Parameters.parse(args);
+//        parameters.test = Parameters.parse(args);
 
-//        assert (testParameters.range >= testParameters.size);
-//        if (parameters.range != 2 * parameters.size)
-//            System.err
-//                    .println("Note that the value range is not twice "
-//                            + "the initial size, thus the size expectation varies at runtime.");
     }
 
     /**
      * Print a 80 character line filled with the same marker character
-     *
-     * @param ch the marker character
      */
-    private static void printLine(char ch) {
-        System.out.println(String.valueOf(ch).repeat(79));
+    private static void printLine() {
+        System.out.println(String.valueOf('-').repeat(79));
     }
 
     /**
@@ -489,17 +451,14 @@ public class Test {
     private static void printHeader() {
         String header = "Synchrobench-java\n"
                 + "A benchmark-suite to evaluate synchronization techniques";
-        printLine('-');
+        printLine();
         System.out.println(header);
-        printLine('-');
+        printLine();
         System.out.println();
     }
 
     private static void printStage(String stageName) {
-        printLine('-');
-        System.out.println(stageName);
-        printLine('-');
-        System.out.println();
+        System.out.println(getStringStage(stageName));
     }
 
     /**
@@ -510,7 +469,7 @@ public class Test {
                 + "java synchrobench.benchmark.Test [options] [-- stm-specific options]\n\n"
                 + "Options:\n"
                 + "\t-v            -- print detailed statistics (default: "
-                + parameters.test.detailedStats
+//                + parameters.test.detailedStats
                 + ")\n"
                 + "\t-t thread-num -- set the number of threads (default: "
                 + parameters.test.numThreads
@@ -718,35 +677,22 @@ public class Test {
         numStarts = STMStatistics.getTotalStarts() - numStarts;
         numAborts = STMStatistics.getTotalAborts() - numAborts;
 
-        numCommitsReadOnly = STMStatistics.getNumCommitsReadOnly()
-                - numCommitsReadOnly;
-        numCommitsElastic = STMStatistics.getNumCommitsElastic()
-                - numCommitsElastic;
+        numCommitsReadOnly = STMStatistics.getNumCommitsReadOnly() - numCommitsReadOnly;
+        numCommitsElastic = STMStatistics.getNumCommitsElastic() - numCommitsElastic;
         numCommitsUpdate = STMStatistics.getNumCommitsUpdate() - numCommitsUpdate;
 
-        numAbortsBetweenSuccessiveReads = STMStatistics
-                .getNumAbortsBetweenSuccessiveReads()
-                - numAbortsBetweenSuccessiveReads;
-        numAbortsBetweenReadAndWrite = STMStatistics
-                .getNumAbortsBetweenReadAndWrite()
-                - numAbortsBetweenReadAndWrite;
-        numAbortsExtendOnRead = STMStatistics.getNumAbortsExtendOnRead()
-                - numAbortsExtendOnRead;
-        numAbortsWriteAfterRead = STMStatistics.getNumAbortsWriteAfterRead()
-                - numAbortsWriteAfterRead;
-        numAbortsLockedOnWrite = STMStatistics.getNumAbortsLockedOnWrite()
-                - numAbortsLockedOnWrite;
-        numAbortsLockedBeforeRead = STMStatistics.getNumAbortsLockedBeforeRead()
-                - numAbortsLockedBeforeRead;
-        numAbortsLockedBeforeElasticRead = STMStatistics
-                .getNumAbortsLockedBeforeElasticRead()
-                - numAbortsLockedBeforeElasticRead;
-        numAbortsLockedOnRead = STMStatistics.getNumAbortsLockedOnRead()
-                - numAbortsLockedOnRead;
-        numAbortsInvalidCommit = STMStatistics.getNumAbortsInvalidCommit()
-                - numAbortsInvalidCommit;
-        numAbortsInvalidSnapshot = STMStatistics.getNumAbortsInvalidSnapshot()
-                - numAbortsInvalidSnapshot;
+        numAbortsBetweenSuccessiveReads =
+                STMStatistics.getNumAbortsBetweenSuccessiveReads() - numAbortsBetweenSuccessiveReads;
+        numAbortsBetweenReadAndWrite = STMStatistics.getNumAbortsBetweenReadAndWrite() - numAbortsBetweenReadAndWrite;
+        numAbortsExtendOnRead = STMStatistics.getNumAbortsExtendOnRead() - numAbortsExtendOnRead;
+        numAbortsWriteAfterRead = STMStatistics.getNumAbortsWriteAfterRead() - numAbortsWriteAfterRead;
+        numAbortsLockedOnWrite = STMStatistics.getNumAbortsLockedOnWrite() - numAbortsLockedOnWrite;
+        numAbortsLockedBeforeRead = STMStatistics.getNumAbortsLockedBeforeRead() - numAbortsLockedBeforeRead;
+        numAbortsLockedBeforeElasticRead =
+                STMStatistics.getNumAbortsLockedBeforeElasticRead() - numAbortsLockedBeforeElasticRead;
+        numAbortsLockedOnRead = STMStatistics.getNumAbortsLockedOnRead() - numAbortsLockedOnRead;
+        numAbortsInvalidCommit = STMStatistics.getNumAbortsInvalidCommit() - numAbortsInvalidCommit;
+        numAbortsInvalidSnapshot = STMStatistics.getNumAbortsInvalidSnapshot() - numAbortsInvalidSnapshot;
 
         assert (numAborts == (numAbortsBetweenSuccessiveReads
                 + numAbortsBetweenReadAndWrite + numAbortsExtendOnRead
@@ -761,133 +707,78 @@ public class Test {
         statSize = STMStatistics.getStatSize() - statSize;
         txDurationSum = STMStatistics.getSumCommitingTxTime() - txDurationSum;
 
-        printLine('-');
-        System.out.println("TM statistics");
-        printLine('-');
+        printStage("TM statistics");
 
-        System.out.println("  Commits:                  \t" + numCommits);
-        System.out
-                .println("  |--regular read only  (%) \t"
-                        + numCommitsReadOnly
-                        + "\t( "
-                        + formatDouble(((double) numCommitsReadOnly / (double) numCommits) * 100)
-                        + " %)");
-        System.out
-                .println("  |--elastic (%)            \t"
-                        + numCommitsElastic
-                        + "\t( "
-                        + formatDouble(((double) numCommitsElastic / (double) numCommits) * 100)
-                        + " %)");
-        System.out
-                .println("  |--regular update (%)     \t"
-                        + numCommitsUpdate
-                        + "\t( "
-                        + formatDouble(((double) numCommitsUpdate / (double) numCommits) * 100)
-                        + " %)");
-        System.out.println("  Starts:                   \t" + numStarts);
-        System.out.println("  Aborts:                   \t" + numAborts
-                + "\t( 100 %)");
-        System.out
-                .println("  |--between succ. reads:   \t"
-                        + (numAbortsBetweenSuccessiveReads)
-                        + "\t( "
-                        + formatDouble(((double) (numAbortsBetweenSuccessiveReads) * 100)
-                        / (double) numAborts) + " %)");
-        System.out
-                .println("  |--between read & write:  \t"
-                        + numAbortsBetweenReadAndWrite
-                        + "\t( "
-                        + formatDouble(((double) numAbortsBetweenReadAndWrite / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--extend upon read:      \t"
-                        + numAbortsExtendOnRead
-                        + "\t( "
-                        + formatDouble(((double) numAbortsExtendOnRead / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--write after read:      \t"
-                        + numAbortsWriteAfterRead
-                        + "\t( "
-                        + formatDouble(((double) numAbortsWriteAfterRead / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--locked on write:       \t"
-                        + numAbortsLockedOnWrite
-                        + "\t( "
-                        + formatDouble(((double) numAbortsLockedOnWrite / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--locked before read:    \t"
-                        + numAbortsLockedBeforeRead
-                        + "\t( "
-                        + formatDouble(((double) numAbortsLockedBeforeRead / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--locked before eread:   \t"
-                        + numAbortsLockedBeforeElasticRead
-                        + "\t( "
-                        + formatDouble(((double) numAbortsLockedBeforeElasticRead / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--locked on read:        \t"
-                        + numAbortsLockedOnRead
-                        + "\t( "
-                        + formatDouble(((double) numAbortsLockedOnRead / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--invalid commit:        \t"
-                        + numAbortsInvalidCommit
-                        + "\t( "
-                        + formatDouble(((double) numAbortsInvalidCommit / (double) numAborts) * 100)
-                        + " %)");
-        System.out
-                .println("  |--invalid snapshot:      \t"
-                        + numAbortsInvalidSnapshot
-                        + "\t( "
-                        + formatDouble(((double) numAbortsInvalidSnapshot / (double) numAborts) * 100)
-                        + " %)");
-        System.out.println("  Read set size on avg.:    \t"
-                + formatDouble(readSetSizeSum / statSize));
-        System.out.println("  Write set size on avg.:   \t"
-                + formatDouble(writeSetSizeSum / statSize));
-        System.out.println("  Tx time-to-commit on avg.:\t"
-                + formatDouble((double) txDurationSum / numCommits)
-                + " microsec");
-        System.out.println("  Number of elastic reads       " + elasticReads);
-        System.out
-                .println("  Number of reads in RO prefix  " + readsInROPrefix);
+        StringBuilder stats = new StringBuilder()
+                .append(indentedTitleWithData("Commits", numCommits))
+                .append(indentedTitleWithDataPercent("|--regular read only (%)",
+                        numCommitsReadOnly, (double) numCommitsReadOnly / (double) numCommits))
+                .append(indentedTitleWithDataPercent("|--elastic (%)",
+                        numCommitsElastic, (double) numCommitsElastic / (double) numCommits))
+                .append(indentedTitleWithDataPercent("|--regular update (%)",
+                        numCommitsUpdate, (double) numCommitsUpdate / (double) numCommits))
+                .append(indentedTitleWithData("Starts", numStarts))
+                .append(indentedTitleWithDataPercent("|--Aborts", numAborts, 1))
+                .append(indentedTitleWithDataPercent("|--between succ. read",
+                        numAbortsBetweenSuccessiveReads,
+                        (double) numAbortsBetweenSuccessiveReads / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--between read & write",
+                        numAbortsBetweenReadAndWrite,
+                        (double) numAbortsBetweenReadAndWrite / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--extend upon read",
+                        numAbortsExtendOnRead, (double) numAbortsExtendOnRead / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--write after read",
+                        numAbortsWriteAfterRead, (double) numAbortsWriteAfterRead / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--locked on write",
+                        numAbortsLockedOnWrite, (double) numAbortsLockedOnWrite / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--locked before read",
+                        numAbortsLockedBeforeRead, (double) numAbortsLockedBeforeRead / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--locked before eread",
+                        numAbortsLockedBeforeElasticRead,
+                        (double) numAbortsLockedBeforeElasticRead / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--locked on read",
+                        numAbortsLockedOnRead, (double) numAbortsLockedOnRead / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--invalid commit",
+                        numAbortsInvalidCommit, (double) numAbortsInvalidCommit / (double) numAborts))
+                .append(indentedTitleWithDataPercent("|--invalid snapshot",
+                        numAbortsInvalidSnapshot, (double) numAbortsInvalidSnapshot / (double) numAborts))
+                .append(indentedTitleWithData("Read set size on avg.", readSetSizeSum / statSize))
+                .append(indentedTitleWithData("Write set size on avg.", writeSetSizeSum / statSize))
+                .append(indentedTitleWithData("Tx time-to-commit on avg.",
+                        formatDouble((double) txDurationSum / statSize) + " microsec"))
+                .append(indentedTitleWithData("Number of elastic reads", elasticReads))
+                .append(indentedTitleWithData("Number of reads in RO prefix", readsInROPrefix));
+
+        System.out.println(stats);
     }
 
     /**
      * Print the iteration statistics on the standard output
      */
     private void printIterationStats() {
-        printLine('-');
-        System.out.println("Iteration statistics");
-        printLine('-');
+        printStage("Iteration statistics");
 
         int n = parameters.iterations;
-        System.out.println("  Iterations:                 \t" + n);
+        System.out.println(indentedTitleWithData("Iterations", n));
         double sum = 0;
         for (int i = 0; i < n; i++) {
             sum += ((throughput[i] / 1024) / 1024);
         }
-        System.out.println("  Total throughput (mebiops/s): " + sum);
+        System.out.println(indentedTitleWithData("Total throughput (mebiops/s)", sum));
         double mean = sum / n;
-        System.out.println("  |--Mean:                    \t" + mean);
+        System.out.println(indentedTitleWithData("|--Mean", mean));
         double temp = 0;
         for (int i = 0; i < n; i++) {
             double diff = ((throughput[i] / 1024) / 1024) - mean;
             temp += diff * diff;
         }
         double var = temp / n;
-        System.out.println("  |--Variance:                \t" + var);
+        System.out.println(indentedTitleWithData("|--Variance", var));
         double stdevp = java.lang.Math.sqrt(var);
-        System.out.println("  |--Standard deviation pop:  \t" + stdevp);
+        System.out.println(indentedTitleWithData("|--Standard deviation pop", stdevp));
         double sterr = stdevp / java.lang.Math.sqrt(n);
-        System.out.println("  |--Standard error:          \t" + sterr);
-        System.out.println("  |--Margin of error (95% CL):\t" + (sterr * 1.96));
+        System.out.println(indentedTitleWithData("|--Standard error", sterr));
+        System.out.println(indentedTitleWithData("|--Margin of error (95% CL)", (sterr * 1.96)));
     }
 
 

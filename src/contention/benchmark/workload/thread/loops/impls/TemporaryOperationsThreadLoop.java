@@ -1,9 +1,9 @@
 package contention.benchmark.workload.thread.loops.impls;
 
 import contention.abstractions.DataStructure;
-import contention.benchmark.workload.key.generators.abstractions.KeyGenerator;
+import contention.benchmark.workload.args.generators.abstractions.ArgsGenerator;
 import contention.benchmark.workload.thread.loops.abstractions.ThreadLoop;
-import contention.benchmark.workload.thread.loops.parameters.TemporaryOperationsThreadLoopParameters;
+import contention.benchmark.workload.thread.loops.parameters.RatioThreadLoopParameters;
 import contention.benchmark.workload.stop.condition.StopCondition;
 
 import java.lang.reflect.Method;
@@ -11,10 +11,11 @@ import java.util.Random;
 import java.util.Vector;
 
 public class TemporaryOperationsThreadLoop extends ThreadLoop {
-    private final KeyGenerator keygen;
+    private final ArgsGenerator argsGenerator;
     private long time;
     private int pointer;
-    private final TemporaryOperationsThreadLoopParameters parameters;
+    private final int stagesNumber;
+    private final int[] stagesDurations;
 
     /**
      * The random number
@@ -22,37 +23,33 @@ public class TemporaryOperationsThreadLoop extends ThreadLoop {
     protected Random rand = new Random();
     private final double[][] cdf;
 
-    public TemporaryOperationsThreadLoop(int myThreadNum, DataStructure<Integer> dataStructure,
-//                                         CompositionalMap<Integer, Integer> bench,
+    public TemporaryOperationsThreadLoop(int threadId, DataStructure<Integer> dataStructure,
                                          Method[] methods, StopCondition stopCondition,
-                                         KeyGenerator keygen, TemporaryOperationsThreadLoopParameters parameters) {
-        super(myThreadNum, dataStructure, methods, stopCondition);
-        this.keygen = keygen;
+                                         int stagesNumber, int[] stagesDurations,
+                                         RatioThreadLoopParameters[] ratios,
+                                         ArgsGenerator argsGenerator) {
+        super(threadId, dataStructure, methods, stopCondition);
+        this.argsGenerator = argsGenerator;
         this.time = 0;
         this.pointer = 0;
-        this.parameters = parameters;
+        this.stagesNumber = stagesNumber;
+        this.stagesDurations = stagesDurations;
 
-        this.cdf = new double[parameters.tempOperCount][4];
+        this.cdf = new double[stagesNumber][4];
 
-        for (int i = 0; i < parameters.tempOperCount; i++) {
+        for (int i = 0; i < stagesNumber; i++) {
             cdf[i][0] = 0;//parameters.numWriteAlls;
-            cdf[i][1] = parameters.numInserts[i];
-            cdf[i][2] = cdf[i][1] + parameters.numErases[i];
+            cdf[i][1] = cdf[i][0] + ratios[i].insertRatio;
+            cdf[i][2] = cdf[i][1] + ratios[i].removeRatio;
             cdf[i][3] = cdf[i][2];// + parameters.numSnapshots;
         }
     }
 
-    public TemporaryOperationsThreadLoop(int myThreadNum, DataStructure<Integer> dataStructure,
-                                         Method[] methods, StopCondition stopCondition,
-                                         TemporaryOperationsThreadLoopParameters parameters) {
-        this(myThreadNum, dataStructure, methods, stopCondition, parameters.keyGeneratorBuilder.build(), parameters);
-    }
-
     private void update_pointer() {
-        if (time >= parameters.opTimes[pointer]) {
+        if (time >= stagesDurations[pointer]) {
             time = 0;
             ++pointer;
-            if (pointer >= parameters.tempOperCount) {
+            if (pointer >= stagesNumber) {
                 pointer = 0;
             }
         }
@@ -67,7 +64,7 @@ public class TemporaryOperationsThreadLoop extends ThreadLoop {
         if (coin < cdf[pointer][0]) { // 1. should we run a writeAll operation?
             // todo something very strange
 
-            int key = keygen.nextGet();
+            int key = argsGenerator.nextGet();
 
             // init a collection
             Vector<Integer> vec = new Vector<Integer>(key);
@@ -75,20 +72,17 @@ public class TemporaryOperationsThreadLoop extends ThreadLoop {
 
             removeAll(vec);
         } else if (coin < cdf[pointer][1]) { // 2. should we run an insert
-            int key = keygen.nextInsert();
+            int key = argsGenerator.nextInsert();
             insert(key);
         } else if (coin < cdf[pointer][2]) { // 3. should we run a remove
-            int key = keygen.nextRemove();
+            int key = argsGenerator.nextRemove();
             remove(key);
         } else if (coin < cdf[pointer][3]) { // 4. should we run a readAll operation?
             size();
         } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
-            int key = keygen.nextGet();
+            int key = argsGenerator.nextGet();
             get(key);
-        } //else {
-//                sleep(Parameters.sleepTime);
-        // warmup для определения sleepTime
-//            }
+        }
     }
 
 

@@ -4,6 +4,8 @@ import contention.benchmark.workload.data.map.abstractions.DataMap;
 import contention.benchmark.workload.data.map.abstractions.DataMapBuilder;
 import contention.benchmark.workload.data.map.impls.ArrayDataMap;
 
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
+
 public class ArrayDataMapBuilder extends DataMapBuilder {
     transient public int range;
 
@@ -23,8 +25,7 @@ public class ArrayDataMapBuilder extends DataMapBuilder {
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        //TODO toStringBuilder
-        return new StringBuilder("ArrayDataMap");
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder(indentedTitleWithData("Type", "ArrayDataMap", indents));
     }
 }

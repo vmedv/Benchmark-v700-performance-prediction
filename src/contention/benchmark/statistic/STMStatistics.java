@@ -355,7 +355,7 @@ public class STMStatistics {
 	}
 
 	public static String getDetailedStatistics() {
-		StringBuilder sb = new StringBuilder("");
+		StringBuilder sb = new StringBuilder();
 		addStat("Starts                        ", getTotalStarts(), sb);
 		addStat("Commits                       ", getTotalCommits(), sb);
 		addStat("Commits (%)                   ",

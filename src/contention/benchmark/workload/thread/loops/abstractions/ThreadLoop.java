@@ -16,7 +16,7 @@ public abstract class ThreadLoop implements Runnable {
     /**
      * The number of the current thread
      */
-    protected final int myThreadNum;
+    protected final int threadId;
     /**
      * The pool of methods that can run
      */
@@ -26,32 +26,10 @@ public abstract class ThreadLoop implements Runnable {
      */
     protected volatile boolean stop = false;
     public ThreadStatistic stats = new ThreadStatistic();
-//    public long numAdd = 0;
-//    public long numRemove = 0;
-//    public long numAddAll = 0;
-//    public long numRemoveAll = 0;
-//    public long numSize = 0;
-//    public long numContains = 0;
-    /**
-     * The counter of the false-returning operations
-     */
-//    public long failures = 0;
-    /**
-     * The counter of the thread operations
-     */
-//    public long total = 0;
-    /**
-     * The counter of aborts
-     */
-//    public long aborts = 0;
-//
-//    public long getCount;
-//    public long nodesTraversed;
-//    public long structMods;
 
-    protected ThreadLoop(int myThreadNum, DataStructure<Integer> dataStructure,
+    protected ThreadLoop(int threadId, DataStructure<Integer> dataStructure,
                                  Method[] methods, StopCondition stopCondition) {
-        this.myThreadNum = myThreadNum;
+        this.threadId = threadId;
         this.methods = methods;
         this.dataStructure = dataStructure;
         this.stopCondition = stopCondition;
@@ -63,16 +41,12 @@ public abstract class ThreadLoop implements Runnable {
         stop = true;
     }
 
-//    public void setStructMods(long structMods) {
-//        this.stats.structMods = structMods;
-//    }
-
     public void printDataStructure() {
         System.out.println(dataStructure.toString());
     }
 
     public void run() {
-        while (!stopCondition.isStopped(myThreadNum)) {
+        while (!stopCondition.isStopped(threadId)) {
             step();
             stats.total++;
 
@@ -83,7 +57,7 @@ public abstract class ThreadLoop implements Runnable {
         this.stats.getCount = CompositionalMap.counts.get().getCount;
         this.stats.nodesTraversed = CompositionalMap.counts.get().nodesTraversed;
         this.stats.structMods = CompositionalMap.counts.get().structMods;
-        System.out.println("Thread #" + myThreadNum + " finished.");
+        System.out.println("Thread #" + threadId + " finished.");
     }
 
     public Integer insert(int key) {

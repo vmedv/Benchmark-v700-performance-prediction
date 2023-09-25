@@ -7,7 +7,11 @@ public abstract class DataMapBuilder {
     public abstract DataMapBuilder init(int range);
     public abstract DataMap build();
 
-    public abstract StringBuilder toStringBuilder();
+    public StringBuilder toStringBuilder() {
+        return toStringBuilder(1);
+    }
+
+    public abstract StringBuilder toStringBuilder(int indents);
 
     private DataMap dataMap;
 

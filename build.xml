@@ -9,7 +9,7 @@
     <property name="dist" value="dist"/>
     <property name="benchname" value="compositional-deucestm-${version}"/>
 
-    <target name="init">
+    <target name="init1">
         <mkdir dir="${bin}"/>
     </target>
 
@@ -57,7 +57,7 @@
         </javac>
     </target>
 
-    <target name="compile" depends="init,compileJava7,compileJava8">
+    <target name="compile" depends="init1,compileJava7,compileJava8">
 
 <!--        <fail message="Unsupported Java version: ${ant.java.version}. Make sure that the Java version is 1.6 or greater.">-->
 <!--            <condition>-->

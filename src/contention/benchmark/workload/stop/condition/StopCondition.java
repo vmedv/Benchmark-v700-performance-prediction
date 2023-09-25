@@ -1,12 +1,15 @@
 package contention.benchmark.workload.stop.condition;
 
-import contention.benchmark.workload.Parameters;
-
 public interface StopCondition {
 
-    void start(Parameters parameters);
+    void start(int numThreads);
 
     boolean isStopped(int id);
 
-    StringBuilder toStringBuilder();
+    default StringBuilder toStringBuilder() {
+        return toStringBuilder(1);
+    }
+
+    StringBuilder toStringBuilder(int indents);
+
 }

@@ -2,24 +2,25 @@ package contention.benchmark.workload.thread.loops.builders;
 
 import contention.abstractions.DataStructure;
 import contention.benchmark.workload.stop.condition.StopCondition;
-import contention.benchmark.workload.key.generators.builders.DefaultKeyGeneratorBuilder;
+import contention.benchmark.workload.args.generators.builders.DefaultArgsGeneratorBuilder;
 import contention.benchmark.workload.thread.loops.abstractions.ThreadLoopBuilder;
-import contention.benchmark.workload.thread.loops.abstractions.ThreadLoop;
 import contention.benchmark.workload.thread.loops.impls.DefaultThreadLoop;
-import contention.benchmark.workload.thread.loops.parameters.DefaultThreadLoopParameters;
-import contention.benchmark.workload.key.generators.abstractions.KeyGeneratorBuilder;
+import contention.benchmark.workload.thread.loops.parameters.RatioThreadLoopParameters;
+import contention.benchmark.workload.args.generators.abstractions.ArgsGeneratorBuilder;
 
 import java.lang.reflect.Method;
 
-public class DefaultThreadLoopBuilder extends ThreadLoopBuilder {
-    public DefaultThreadLoopParameters parameters = new DefaultThreadLoopParameters();
+import static contention.benchmark.tools.StringFormat.indentedTitle;
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
-    public KeyGeneratorBuilder keyGeneratorBuilder = new DefaultKeyGeneratorBuilder();
+public class DefaultThreadLoopBuilder extends ThreadLoopBuilder {
+    public RatioThreadLoopParameters parameters = new RatioThreadLoopParameters();
+
+    public ArgsGeneratorBuilder argsGeneratorBuilder = new DefaultArgsGeneratorBuilder();
 
 
     public DefaultThreadLoopBuilder setWriteRatio(double writeRatio) {
-        parameters.insertRatio = writeRatio / 2;
-        parameters.removeRatio = writeRatio / 2;
+        parameters.setWriteRatio(writeRatio);
         return this;
     }
 
@@ -43,28 +44,30 @@ public class DefaultThreadLoopBuilder extends ThreadLoopBuilder {
         return this;
     }
 
-    public DefaultThreadLoopBuilder setKeyGeneratorBuilder(KeyGeneratorBuilder keyGeneratorBuilder) {
-        this.keyGeneratorBuilder = keyGeneratorBuilder;
+    public DefaultThreadLoopBuilder setKeyGeneratorBuilder(ArgsGeneratorBuilder argsGeneratorBuilder) {
+        this.argsGeneratorBuilder = argsGeneratorBuilder;
         return this;
     }
 
     @Override
     public DefaultThreadLoopBuilder init(int range) {
-        keyGeneratorBuilder.init(range);
+        argsGeneratorBuilder.init(range);
         return this;
     }
 
     @Override
-    public DefaultThreadLoop build(int threadNum, DataStructure<Integer> dataStructure,
-                            Method[] methods, StopCondition stopCondition) {
-        return new DefaultThreadLoop(threadNum, dataStructure, methods, stopCondition,
-                keyGeneratorBuilder.build(), parameters);
+    public DefaultThreadLoop build(int threadId, DataStructure<Integer> dataStructure,
+                                   Method[] methods, StopCondition stopCondition) {
+        return new DefaultThreadLoop(threadId, dataStructure, methods, stopCondition,
+                parameters, argsGeneratorBuilder.build());
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        return parameters.toStringBuilder()
-                .append("  KeyGenerator:            \t")
-                .append(keyGeneratorBuilder.toStringBuilder());
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder()
+                .append(indentedTitleWithData("Type", "Default", indents))
+                .append(parameters.toStringBuilder(indents))
+                .append(indentedTitle("ArgsGenerator", indents))
+                .append(argsGeneratorBuilder.toStringBuilder(indents + 1));
     }
 }

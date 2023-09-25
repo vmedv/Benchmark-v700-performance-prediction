@@ -1,35 +1,35 @@
 package contention.benchmark.workload.stop.condition;
 
-import contention.benchmark.workload.Parameters;
+import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class OperationCounter implements StopCondition {
     private Counter[] counters;
 
-//    private AtomicInteger barrier;
-
-
     /**
-     * the limit for each thread
+     * the limit for all thread
      */
     public long commonOperationLimit;
 
     public OperationCounter() {
     }
 
-
     public OperationCounter(long commonOperationLimit) {
         this.commonOperationLimit = commonOperationLimit;
     }
 
+    public OperationCounter setCommonOperationLimit(long commonOperationLimit) {
+        this.commonOperationLimit = commonOperationLimit;
+        return this;
+    }
+
     @Override
-    public void start(Parameters parameters) {
-        long operationLimit = commonOperationLimit / parameters.numThreads;
-        long remainder = commonOperationLimit % parameters.numThreads;
+    public void start(int numThreads) {
+        long operationLimit = commonOperationLimit / numThreads;
+        long remainder = commonOperationLimit % numThreads;
 
-//        barrier = new AtomicInteger(parameters.numThreads);
-        counters = new Counter[parameters.numThreads];
+        counters = new Counter[numThreads];
 
-        for (int i = 0; i < parameters.numThreads; i++) {
+        for (int i = 0; i < numThreads; i++) {
             counters[i] = new Counter(operationLimit + (--remainder >= 0 ? 1 : 0));
         }
     }
@@ -40,12 +40,13 @@ public class OperationCounter implements StopCondition {
     }
 
     @Override
-    public StringBuilder toStringBuilder() {
-        //TODO toStringBuilder
-        return new StringBuilder();
+    public StringBuilder toStringBuilder(int indents) {
+        return new StringBuilder()
+                .append(indentedTitleWithData("Type", "OperationCounter", indents))
+                .append(indentedTitleWithData("Common operation limit", commonOperationLimit, indents));
     }
 
-    private class Counter {
+    private static class Counter {
         long operCount;
 
         public Counter(long operCount) {
@@ -53,13 +54,6 @@ public class OperationCounter implements StopCondition {
         }
 
         public boolean stop() {
-//            operCount++;
-//            if (operCount >= operationLimit) {
-//                barrier.incrementAndGet();
-//                return true;
-//            }
-//            return false;
-
             return --operCount < 0;
         }
     }
