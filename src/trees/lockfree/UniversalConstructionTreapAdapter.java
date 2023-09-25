@@ -1,15 +1,15 @@
-package kotlin.rivals.treap.persistent;
+package trees.lockfree;
 
 import contention.abstractions.CompositionalIntSet;
-import rivals.treap.persistent.PersistentTreap;
+import rivals.treap.concurrent.UniversalConstructionTreap;
 
 import java.util.Collection;
 
-public class PersistentTreapAdapter implements CompositionalIntSet {
-    private final PersistentTreap<Integer> set;
+public class UniversalConstructionTreapAdapter implements CompositionalIntSet {
+    private final UniversalConstructionTreap<Integer> set;
 
-    public PersistentTreapAdapter() {
-        set = new PersistentTreap<>();
+    public UniversalConstructionTreapAdapter() {
+        set = new UniversalConstructionTreap<>();
     }
 
     @Override
