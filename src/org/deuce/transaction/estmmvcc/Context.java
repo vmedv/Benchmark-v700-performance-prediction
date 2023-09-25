@@ -6,11 +6,9 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import org.deuce.transaction.TransactionException;
 import org.deuce.transaction.estmmvcc.field.ReadFieldAccess.Field;
 import org.deuce.transaction.estmmvcc.field.ReadFieldAccess.Field.Type;
-import org.deuce.transaction.estmmvcc.ReadSet;
-import org.deuce.transaction.estmmvcc.WriteSet;
 import org.deuce.transform.Exclude;
 
-import contention.benchmark.Statistics;
+import contention.benchmark.statistic.STMStatistics;
 
 
 /**
@@ -113,7 +111,7 @@ final public class Context implements org.deuce.transaction.Context {
 		return threadId;
 	}
 
-	public final Statistics getStatistics() {
+	public final STMStatistics getStatistics() {
 		return null;//stats;
 	}
 	

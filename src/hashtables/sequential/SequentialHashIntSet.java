@@ -4,7 +4,6 @@ import java.util.Collection;
 import java.util.Random;
 
 import contention.abstractions.CompositionalIntSet;
-import contention.abstractions.Parameters;
 
 /**
  * Sequential hash table implementation of integer set
