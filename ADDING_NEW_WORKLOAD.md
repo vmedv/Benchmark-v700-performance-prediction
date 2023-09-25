@@ -210,9 +210,9 @@ and [builder](./microbench/workloads/data_maps/builders/array_data_map_builder.h
 
 ### Distribution
 
-The `SkewedUniformDistribution` depends on two variables `hotSize` and `hotProb`. 
+The `SkewedUniformDistribution` depends on two variables `hotSize` and `hotRatio`. 
 The range is divided into two interval: 
-the random variable returns from first interval with `hotProb%` probability and from second with `100 - hotProb%`;
+the random variable returns from first interval with `hotRatio%` probability and from second with `100 - hotRatio%`;
 the size of first interval is `range * hotSize`, the size of second if `range * (1 - hotSize). 
 The random variable in intervals chooses uniformly. 
 

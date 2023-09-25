@@ -13,15 +13,25 @@
 struct BenchParameters {
     size_t range;
 
-    Parameters * test;
-    Parameters * prefill;
-    Parameters * warmUp;
+    Parameters *test;
+    Parameters *prefill;
+    Parameters *warmUp;
 
     BenchParameters() {
         range = 2048;
         test = new Parameters();
         prefill = new Parameters();
         warmUp = new Parameters();
+    }
+
+    BenchParameters &createDefaultPrefill(size_t threadNum) {
+        prefill = (new Parameters())
+                ->setStopCondition(new OperationCounter(range / 2))
+                ->addThreadLoopBuilder(
+                        new PrefillInsertThreadLoopBuilder(),
+                        threadNum
+                );
+        return *this;
     }
 
     BenchParameters &createDefaultPrefill() {
@@ -31,7 +41,7 @@ struct BenchParameters {
                 new PrefillInsertThreadLoopBuilder(),
                 1
         );
-        return *this;
+        return createDefaultPrefill(1);
     }
 
     BenchParameters &setRange(size_t _range) {

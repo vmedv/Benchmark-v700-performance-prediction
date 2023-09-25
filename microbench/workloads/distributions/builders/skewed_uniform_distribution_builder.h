@@ -19,7 +19,7 @@ DistributionBuilder *getDistributionFromJson(const nlohmann::json &j);
 struct SkewedUniformDistributionBuilder : public DistributionBuilder {
     PAD;
     double hotSize = 0;
-    double hotProb = 0;
+    double hotRatio = 0;
 
     DistributionBuilder *hotDistBuilder = new UniformDistributionBuilder();
     DistributionBuilder *coldDistBuilder = new UniformDistributionBuilder();
@@ -30,8 +30,8 @@ struct SkewedUniformDistributionBuilder : public DistributionBuilder {
         return this;
     }
 
-    SkewedUniformDistributionBuilder *setHotProb(double _hotProb) {
-        hotProb = _hotProb;
+    SkewedUniformDistributionBuilder *setHotRatio(double _hotRatio) {
+        hotRatio = _hotRatio;
         return this;
     }
 
@@ -58,21 +58,21 @@ struct SkewedUniformDistributionBuilder : public DistributionBuilder {
                 rng,
                 hotDistBuilder->build(rng, getHotLength(range)),
                 coldDistBuilder->build(rng, getColdLength(range)),
-                hotProb, getHotLength(range)
+                hotRatio, getHotLength(range)
         );
     }
 
     void toJson(nlohmann::json &j) const override {
         j["distributionType"] = DistributionType::SKEWED_UNIFORM;
         j["hotSize"] = hotSize;
-        j["hotProb"] = hotProb;
+        j["hotRatio"] = hotRatio;
         j["hotDistBuilder"] = *hotDistBuilder;
         j["coldDistBuilder"] = *coldDistBuilder;
     }
 
     void fromJson(const nlohmann::json &j) override {
         hotSize = j["hotSize"];
-        hotProb = j["hotProb"];
+        hotRatio = j["hotRatio"];
 
         hotDistBuilder = getDistributionFromJson(j["hotDistBuilder"]);
         coldDistBuilder = getDistributionFromJson(j["coldDistBuilder"]);
@@ -81,7 +81,7 @@ struct SkewedUniformDistributionBuilder : public DistributionBuilder {
     std::string toString(size_t indents = 1) override {
         return indented_title_with_str_data("Type", "Skewed Uniform", indents)
                + indented_title_with_data("HOT SIZE", hotSize, indents)
-               + indented_title_with_data("HOT PROB", hotProb, indents);
+               + indented_title_with_data("HOT RATIO", hotRatio, indents);
     }
 
     ~SkewedUniformDistributionBuilder() override {

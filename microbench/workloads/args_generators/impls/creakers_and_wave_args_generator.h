@@ -106,6 +106,17 @@ class CreakersAndWaveArgsGenerator : public ArgsGenerator<K> {
         return dataMap->get(index);
     };
 
+    K waveShift(std::atomic<size_t> *waveEdge) {
+        size_t localWaveEdge = *waveEdge;
+        size_t newWaveEdge;
+        if (localWaveEdge == 0) {
+            newWaveEdge = creakersBegin - 1;
+        } else {
+            newWaveEdge = localWaveEdge - 1;
+        }
+        waveEdge->compare_exchange_weak(localWaveEdge, newWaveEdge);
+        return dataMap->get(newWaveEdge);
+    }
 public:
     CreakersAndWaveArgsGenerator(Random64 &rng, double creakersRatio, size_t creakersBegin,
                                  std::atomic<size_t> *waveBegin,
@@ -132,28 +143,13 @@ public:
         return value;
     }
 
+
     K nextInsert() override {
-        size_t localWaveBegin = *waveBegin;
-        size_t newWaveBegin;
-        if (localWaveBegin == 0) {
-            newWaveBegin = creakersBegin - 1;
-        } else {
-            newWaveBegin = localWaveBegin - 1;
-        }
-        waveBegin->compare_exchange_weak(localWaveBegin, newWaveBegin);
-        return dataMap->get(newWaveBegin);
+        return waveShift(waveBegin);
     }
 
     K nextRemove() override {
-        size_t localWaveEnd = *waveEnd;
-        size_t newWaveEnd;
-        if (localWaveEnd == 0) {
-            newWaveEnd = creakersBegin - 1;
-        } else {
-            newWaveEnd = localWaveEnd - 1;
-        }
-        waveEnd->compare_exchange_weak(localWaveEnd, newWaveEnd);
-        return dataMap->get(newWaveEnd);
+        return waveShift(waveEnd);
     }
 
     std::pair<K, K> nextRange() override {
@@ -302,11 +298,11 @@ public:
 
     CreakersAndWaveArgsGenerator<K> *build(Random64 &_rng) override {
         return new CreakersAndWaveArgsGenerator<K>(_rng, creakersRatio, creakersBegin,
-                waveBegin,
-                waveEnd,
-                creakersDistBuilder->build(_rng, creakersLength),
-                waveDistBuilder->build(_rng),
-                dataMapBuilder->getOrBuild());
+                                                   waveBegin,
+                                                   waveEnd,
+                                                   creakersDistBuilder->build(_rng, creakersLength),
+                                                   waveDistBuilder->build(_rng),
+                                                   dataMapBuilder->getOrBuild());
     }
 
     void toJson(nlohmann::json &j) const override {
@@ -355,7 +351,6 @@ class CreakersAndWavePrefillArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     size_t prefillLength;
     PAD;
 
-
     double creakersSize = 0;
     double waveSize = 0;
 
@@ -364,11 +359,11 @@ class CreakersAndWavePrefillArgsGeneratorBuilder : public ArgsGeneratorBuilder {
 public:
     CreakersAndWavePrefillArgsGeneratorBuilder() {}
 
-    CreakersAndWavePrefillArgsGeneratorBuilder(CreakersAndWaveArgsGeneratorBuilder * builder) {
+    CreakersAndWavePrefillArgsGeneratorBuilder(CreakersAndWaveArgsGeneratorBuilder *builder) {
         setParametersByBuilder(builder);
     }
 
-    CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(CreakersAndWaveArgsGeneratorBuilder * builder) {
+    CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(CreakersAndWaveArgsGeneratorBuilder *builder) {
         creakersSize = builder->getCreakersSize();
         waveSize = builder->getWaveSize();
         dataMapBuilder = builder->getDataMapBuilder();

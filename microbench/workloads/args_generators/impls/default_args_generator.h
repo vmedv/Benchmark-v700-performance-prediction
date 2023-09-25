@@ -40,7 +40,12 @@ public:
     }
 
     std::pair<K, K> nextRange() {
-        return {next(), next()};
+        K left = nextGet();
+        K right = nextGet();
+        if (left > right) {
+            std::swap(left, right);
+        }
+        return {left, right};
     }
 
     ~DefaultArgsGenerator() {

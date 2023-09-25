@@ -38,7 +38,7 @@ class TemporarySkewedArgsGenerator : public ArgsGenerator<K> {
     PAD;
     size_t *setBegins;
     PAD;
-    size_t setCount;
+    size_t setNumber;
     size_t range;
 
     void update_pointer() {
@@ -52,7 +52,7 @@ class TemporarySkewedArgsGenerator : public ArgsGenerator<K> {
                 time = 0;
                 isRelaxTime = false;
                 ++pointer;
-                if (pointer >= setCount) {
+                if (pointer >= setNumber) {
                     pointer = 0;
                 }
             }
@@ -79,11 +79,11 @@ class TemporarySkewedArgsGenerator : public ArgsGenerator<K> {
     }
 
 public:
-    TemporarySkewedArgsGenerator(size_t setCount, size_t range,
+    TemporarySkewedArgsGenerator(size_t setNumber, size_t range,
                                  long long *hotTimes, long long *relaxTimes, size_t *setBegins,
                                  Distribution **hotDists, Distribution *relaxDist, DataMap<K> *dataMap)
             : hotDists(hotDists), relaxDist(relaxDist), dataMap(dataMap), hotTimes(hotTimes), relaxTimes(relaxTimes),
-              setBegins(setBegins), setCount(setCount), range(range), time(0), pointer(0), isRelaxTime(false) {}
+              setBegins(setBegins), setNumber(setNumber), range(range), time(0), pointer(0), isRelaxTime(false) {}
 
     K nextGet() override {
         return next();
@@ -207,7 +207,7 @@ public:
     setHotSizeAndRatio(const size_t index, const double _hotSize, const double _hotRatio) {
         assert(index < setNumber);
         hotDistBuilders[index]->setHotSize(_hotSize);
-        hotDistBuilders[index]->setHotProb(_hotRatio);
+        hotDistBuilders[index]->setHotRatio(_hotRatio);
         return this;
     }
 
@@ -219,7 +219,7 @@ public:
 
     TemporarySkewedArgsGeneratorBuilder *setHotRatio(const size_t index, const double _hotRatio) {
         assert(index < setNumber);
-        hotDistBuilders[index]->setHotProb(_hotRatio);
+        hotDistBuilders[index]->setHotRatio(_hotRatio);
         return this;
     }
 

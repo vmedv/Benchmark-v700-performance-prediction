@@ -53,8 +53,8 @@ public:
         for (size_t i = 0; i < _stagesNumber; ++i) {
             cdf[i] = new double[3];
             cdf[i][0] = ratios[i]->INS_RATIO;
-            cdf[i][1] = ratios[i]->REM_RATIO;
-            cdf[i][2] = ratios[i]->RQ_RATIO;
+            cdf[i][1] = cdf[i][0] + ratios[i]->REM_RATIO;
+            cdf[i][2] = cdf[i][1] + ratios[i]->RQ_RATIO;
         }
     }
 
@@ -118,9 +118,9 @@ struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setRemRatio(const size_t index, double delRatio) {
+    TemporaryOperationThreadLoopBuilder *setRemRatio(const size_t index, double remRatio) {
         assert(index < stagesNumber);
-        ratios[index]->REM_RATIO = delRatio;
+        ratios[index]->REM_RATIO = remRatio;
         return this;
     }
 
