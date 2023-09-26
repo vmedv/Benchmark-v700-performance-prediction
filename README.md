@@ -75,7 +75,7 @@ LD_PRELOAD=../lib/libmimalloc.so ./bin/aksenov_splaylist_64.debra -json-file jso
 [Example of configuring launch parameters](./microbench/json_example/json_example.cpp).
 Use [Makefile](./microbench/json_example/Makefile) to compile.
 
-The first step is the creation the [BenchParameters class](./microbench/workloads/bench_parameters.h).
+The first step is to create the [BenchParameters class](./microbench/workloads/bench_parameters.h).
 The class stores the range of keys and parameters each of epoch: prefill, warm up and test.
 
 ```c++
@@ -94,7 +94,7 @@ Create the [Parameters class](./microbench/workloads/parameters.h) for benchmark
     Parameters *test;
 ```
 
-We will need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
+Now, we need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
 
 First, let's create and set a stop condition: [Timer](./microbench/workloads/stop_condition/impls/timer.h) with 10 second (10000 millis).
 
@@ -124,7 +124,7 @@ There are builders to create each type of entity:
 
 Let's create a standard workload with Zipf distribution.
 
-At first create the DistributionBuilder and DataMapBuilder.
+At first, we create the DistributionBuilder and DataMapBuilder.
 ```c++
     DistributionBuilder *distributionBuilder 
             = (new ZipfDistributionBuilder())
@@ -156,8 +156,8 @@ and set our ArgsGeneratorBuilder.
 Now set the ThreadLoop class to Parameters with the number of threads with this load.
 
 Also, as the third parameter, you can specify the cores to which threads should bind (-1 without binding).
-In our case, the first two threads will not be bound to any core, the 3-th and 4-th threads will bound to fisrt core, 
-the 5-th thread will bound to second core, and so on
+In our case, the first two threads will not be bound to any core, the 3-th and 4-th threads will bound to the fisrt core, 
+the 5-th thread will bound to the second core, and so on
 (The first CPU on the system corresponds to a cpu value of 0, the next CPU corresponds to a cpu value of 1, and so on.).
 ```c++
     test->addThreadLoopBuilder(

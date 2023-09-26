@@ -1,6 +1,6 @@
 # Software Design
 
-In [Figure](#bench_uml) we manage the complexity of our more flexible benchmark through a top-down design.
+[Figure](#bench_uml) shows our flexible benchmark suite through a top-down design.
 Each thread (gray box) is assigned its own ThreadLoop.
 Each ThreadLoop, in turn, is assigned a set of configurations,
 which correspond to the operations it will run (light blue box).
@@ -12,7 +12,7 @@ or distribution among its blue boxes, and even for a read-only DataMap to be sha
 [//]: # (The workload consists of 4 types of entities:)
 To recap, the key entites are:
 + [Distribution](./microbench/workloads/distributions/distribution.h) — a distribution of a random variable
-+ [DataMap](./microbench/workloads/data_maps/data_map.h) — for converting a distribution's output into a key
++ [DataMap](./microbench/workloads/data_maps/data_map.h) — converts a distribution's output into a key
 + [ArgsGenerator](./microbench/workloads/args_generators/args_generator.h) — creates operands for an operation
 + [ThreadLoop](./microbench/workloads/thread_loops/thread_loop.h) — the logic for interacting with a data structure.
 
@@ -36,24 +36,26 @@ There is also a [StopCondition](./microbench/workloads/stop_condition/stop_condi
 ### DataMap
 
 The [DataMap](./microbench/workloads/data_maps/data_map.h) is used by an ArgsGenerator
-to translate an index into a key or value. The `get` function take an `index` and return the corresponding key or value.
+to translate an index into a key or a value. The `get` function takes an `index` and returns the corresponding key or value.
 
 ##### NOTES
-The [DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h) exists the `getOrBuild` function.
-If it is the first calling, the function creates the new DataMap object and returns pointer to that,
+The [DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h) provides the `getOrBuild` function.
+If it is the first call, the function creates the new DataMap object and returns a pointer to that,
 else it returns the pointer to last created object. Thus, different ArgsGenerators can work with one DataMap.  
 The `getOrBuild` function does not need to be overridden. 
 
 
-Also, the json representation of DataMapBuilder exist object id, 
-so the `getOrBuild` function the DataMapBuilder with the same id will return a pointer to the same object.  
+Also, the json representation of DataMapBuilder has object id, 
+so the `getOrBuild` of the DataMapBuilder called with the same id will return a pointer to the same object.
 The id is set automatically.
+
+of the DataMapBuilder called with the same id will return a pointer to the same object.
 
 [//]: # (This function creates the new object if)
 
 ### Distribution
 
-The [Distribution](./microbench/workloads/distributions/distribution.h) simulate some random variable.
+The [Distribution](./microbench/workloads/distributions/distribution.h) simulates some random variable.
 
 It is important to note that it generates some value from a distribution 
 that later is translated into an appropriate key or value by an ArgsGenerator. 
@@ -87,7 +89,7 @@ The [ThreadLoop](./microbench/workloads/thread_loops/thread_loop.h) decides whic
 It is initialized for each thread separately and uses the described ArgsGenerators. 
 Threads are not required to use the same ThreadLoop implementation. 
 ThreadLoop has only one main method `step` 
-that explains how to choose an operation and perform it during the main phase.
+that explains how to choose an operation and perform it during the running phase.
 The method `step` is called in a conditional loop by the `run` method.
 A programmer can override `run` when more complicated logic is needed.
 
@@ -101,7 +103,7 @@ This is important for the benchmark in order to compare different data structure
 The [StopCondition](./microbench/workloads/stop_condition/stop_condition.h) determines the workload operating time.
 The `isStopped` method is called by ThreadLoop before each execution of the `step` method, 
 and returns `false` if the ThreadLoop should continue and `true` if the ThreadLoop should terminate.  
-The countdown begins after calling the `start` function. After completion the `clean` method is called. 
+The countdown begins after calling the `start` function. Its completion the `clean` method is called. 
 The purpose of the `clean` method is to free the resources that the StopCondition may have acquired after it started.  
 In contrast to other entities, StopCondition does not have builders, so it is converted to json format on its own.
 

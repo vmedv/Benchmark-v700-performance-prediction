@@ -101,7 +101,7 @@ The `builders` and `impls` folders contain the corresponding implementations.
 The `<entity>_json_convector.h` file is the file is an auxiliary json convector. 
 
 ### The interface implementation
-The first part is the implementation of Entity:
+The first part is the implementation of an Entity:
 ```c++
 class ExampleEntity : public Entity {
     *EntityFields*
@@ -115,8 +115,8 @@ public:
 };
 ```
 
-### The implementation of builder
-The second is the implementation of EntityBuilder:
+### The implementation of a builder
+The second part is the implementation of an EntityBuilder:
 ```c++
 class ExampleEntityBuilder : public EntityBuilder {
     *rawParameters*
@@ -169,9 +169,9 @@ For convenient conversion to a string representation, use the
 from [globals_extern.h](microbench/globals_extern.h). 
 
 
-### The Adding the new entity builder to enum and json_convector 
+### Adding the new entity builder to enum and json_convector 
 
-The last part is adding the new Entity to the `EntityType` enum in the `<entity>_builder.h` file:
+The last part is to add the new Entity to the `EntityType` enum in the `<entity>_builder.h` file:
 ```c++
 enum class EntityType {
 ..., EXAMPLE_ENTITY
@@ -210,10 +210,10 @@ and [builder](./microbench/workloads/data_maps/builders/array_data_map_builder.h
 
 ### Distribution
 
-The `SkewedUniformDistribution` depends on two variables `hotSize` and `hotRatio`. 
+The `SkewedUniformDistribution` depends on two variables `hotSize` and `hotRatio`, which take values from 0 to 1. 
 The range is divided into two interval: 
-the random variable returns from first interval with `hotRatio%` probability and from second with `100 - hotRatio%`;
-the size of first interval is `range * hotSize`, the size of second if `range * (1 - hotSize). 
+the random variable returns from first interval with `hotRatio` probability and from second with `1 - hotRatio`;
+the size of first interval is `range * hotSize`, the size of second if `range * (1 - hotSize)`. 
 The random variable in intervals chooses uniformly. 
 
 The [implementation](./microbench/workloads/distributions/impls/skewed_uniform_distribution.h)
@@ -229,8 +229,7 @@ All other read operations are performed on the rest of the set.
 All other update operations are performed on the rest of the set.
 + `inter%` of keys are in the intersection of the working sets of read and update operations.
 
-The implementation and builder are in one [file](./microbench/workloads/args_generators/impls/skewed_sets_args_generator.h)
-of `SkewedSetsArgsGenerator`.
+The implementation and builder are presented in [SkewedSetsArgsGenerator file](./microbench/workloads/args_generators/impls/skewed_sets_args_generator.h).
 
 ### TreadLoop
 
@@ -239,15 +238,13 @@ The `DefaultThreadLoop` selects the next operation with some fixed probability. 
 + `ue%` of operations are remove operations;
 + while `100 - ui - ue%` of operations are get operations.
 
-The implementation and builder are in one [file](./microbench/workloads/thread_loops/impls/default_thread_loop.h)
-of `DefaultThreadLoop`.
+The implementation and builder are presented in [DefaultThreadLoop file](./microbench/workloads/thread_loops/impls/default_thread_loop.h).
 
 ### StopCondition
 
 The `Timer` accepts a `workTime` parameter in milliseconds, and the `isStopped` method returns true during that time.
 
-The implementation is in one [file](./microbench/workloads/stop_condition/impls/timer.h) of `Timer`.
-
+The implementation are presented in [Timer file](./microbench/workloads/stop_condition/impls/timer.h)
 
 
 [//]: # (## Example)
