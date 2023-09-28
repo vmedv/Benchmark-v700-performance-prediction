@@ -29,7 +29,7 @@ application {
 
 tasks.register('toJson', JavaExec) {
     dependsOn 'classes'
-    main = 'contention.benchmark.json.JsonTest'
+    main = 'contention.benchmark.json.JsonExample'
     classpath = sourceSets.main.runtimeClasspath
 }
 

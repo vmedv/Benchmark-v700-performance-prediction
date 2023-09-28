@@ -162,31 +162,13 @@ public class Test {
         return new Pair<>(threads, threadLoops);
     }
 
-    /**
-     * Constructor sets up the benchmark by reading parameters and creating
-     * threads
-     *
-     * @param args the arguments of the command-line
-     */
-    public Test(String[] args) throws InterruptedException {
-        printHeader();
-        try {
-            parseCommandLineParameters(args);
-        } catch (Exception e) {
-            System.err.println("Cannot parse parameters.");
-            e.printStackTrace();
-        }
-        instanciateAbstraction(parameters.benchClassName);
-        this.throughput = new double[parameters.iterations];
-    }
-
 
     /**
      * The instance of the benchmark
      */
-    public Test(BenchParameters parameters) {
+    public Test(BenchParameters parameters, String dataStructureClassName) {
         this.parameters = parameters;
-        instanciateAbstraction(parameters.benchClassName);
+        instanciateAbstraction(dataStructureClassName);
         this.throughput = new double[parameters.iterations];
         this.benchStatistics = new BenchStatistic[parameters.iterations];
     }
@@ -196,49 +178,8 @@ public class Test {
      *
      * @throws InterruptedException
      */
-//    private void execute(int milliseconds, boolean maint) throws InterruptedException {
-//        long startTime;
-//        fill(parameters.range, parameters.size);
-//        Thread.sleep(parameters.afterFillRelaxMilliseconds);
-//
-//        startTime = System.currentTimeMillis();
-//        for (Thread thread : threads)
-//            thread.start();
-//
-////        try {
-////            Thread.sleep(milliseconds);
-////        } finally {
-////            for (ThreadLoop threadLoop : threadLoops)
-////                threadLoop.stopThread();
-////        }
-////        for (Thread thread : threads)
-////            thread.join();
-//
-//        for (Thread thread : threads) {
-//            if (parameters.maxAwaitTime == 0) {
-//                thread.join();
-//            } else {
-//                long awaitTime = Math.max(1, parameters.maxAwaitTime + startTime - System.currentTimeMillis());
-//                System.out.println("Await time: " + awaitTime);
-//                thread.join(awaitTime);
-//                if (thread.isAlive()) {
-//                    System.err.println("The thread " + thread.getName()
-//                            + " was not terminated after the expiration of time. The max await time is "
-//                            + parameters.maxAwaitTime + " millis. "
-//                            + "The thread will be interrupted. ");
-//                    thread.interrupt();
-//
-//                }
-//            }
-//        }
-//
-//        long endTime = System.currentTimeMillis();
-//        elapsedTime = ((double) (endTime - startTime)) / 1000.0;
-//    }
     private void execute(Parameters parameters, Thread[] threads) throws InterruptedException {
         long startTime;
-//        fill(parameters.range, parameters.size);
-//        Thread.sleep(parameters.afterFillRelaxMilliseconds);
 
         startTime = System.currentTimeMillis();
         parameters.stopCondition.start(parameters.numThreads);
@@ -275,11 +216,6 @@ public class Test {
 
     public static Parameters parseJson(String jsonParameters) {
         return JsonConverter.fromJson(jsonParameters, Parameters.class);
-    }
-
-    public static Parameters parseCommandLine(String[] args) {
-//        return Parameters.parse(args);
-        return null;
     }
 
     private void initAndExecute(Parameters parameters) throws InterruptedException {
@@ -337,8 +273,6 @@ public class Test {
         if (parameters.iterations > 1) {
             printIterationStats();
         }
-
-//        assert dataStructure.size() == 0 : "Warmup corrupted the data structure, rerun with -W 0.";
     }
 
 
@@ -374,18 +308,19 @@ public class Test {
         Test test;
 
         BenchParameters benchParameters = new BenchParameters();
-        boolean needInit = true;
         String resultStatisticFileName = null;
+        boolean createDefaultPrefill = false;
+        String dataStructureClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
 
         while (args.hasNext()) {
             switch (args.getCurrent()) {
-                case "-without-init" -> needInit = false;
+                case "-data-structure", "-ds" -> dataStructureClassName = args.getNext();
                 case "-prefill" -> benchParameters.prefill = parseJsonFile(args.getNext());
                 case "-warm-up" -> benchParameters.warmUp = parseJsonFile(args.getNext());
                 case "-test" -> benchParameters.test = parseJsonFile(args.getNext());
                 case "-range" -> benchParameters.range = Integer.parseInt(args.getNext());
                 case "-iter" -> benchParameters.iterations = Integer.parseInt(args.getNext());
-                case "-create-default-prefill" -> benchParameters.createDefaultPrefill();
+                case "-create-default-prefill" -> createDefaultPrefill = true;
                 case "-json-file" -> benchParameters = JsonConverter.fromJson(readJsonFile(args.getNext()));
                 case "-result-file" -> resultStatisticFileName = args.getNext();
                 default -> System.err.println("Unexpected option: " + args.getCurrent() + ". Ignoring...");
@@ -393,25 +328,33 @@ public class Test {
             args.next();
         }
 
-        if (needInit) {
-            benchParameters.init();
+        if (createDefaultPrefill) {
+            benchParameters.createDefaultPrefill();
         }
 
-        test = new Test(benchParameters);
+        benchParameters.init();
+
+        test = new Test(benchParameters, dataStructureClassName);
 
         printHeader();
-        printStage("Prefill parameters");
-        test.printParams(test.parameters.prefill);
 
-        if (benchParameters.warmUp.numThreads != 0) {
-            printStage("WarmUp parameters");
-            test.printParams(test.parameters.warmUp);
-        } else {
-            printStage("Without WarmUp");
-        }
-
-        printStage("Test parameters");
-        test.printParams(test.parameters.test);
+        printStage("Benchmark parameters");
+        System.out.print(indentedTitleWithData("Data Structure", dataStructureClassName));
+        System.out.println(benchParameters.toStringBuilder());
+//
+//
+//        printStage("Prefill parameters");
+//        test.printParams(test.parameters.prefill);
+//
+//        if (benchParameters.warmUp.numThreads != 0) {
+//            printStage("WarmUp parameters");
+//            test.printParams(test.parameters.warmUp);
+//        } else {
+//            printStage("Without WarmUp");
+//        }
+//
+//        printStage("Test parameters");
+//        test.printParams(test.parameters.test);
 
         test.run();
 
@@ -434,7 +377,6 @@ public class Test {
             }
         }
 
-//        parameters.test = Parameters.parse(args);
 
     }
 

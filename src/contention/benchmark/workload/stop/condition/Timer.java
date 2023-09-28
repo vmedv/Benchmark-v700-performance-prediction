@@ -6,16 +6,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class Timer implements StopCondition {
-//    private long startTime;
-
-//    private long endTime;
-
     private AtomicBoolean stop;
 
     public long workTime;
 
-    public Timer() {
-    }
+    public Timer() {}
 
     public Timer(long workTime) {
         this.workTime = workTime;

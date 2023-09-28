@@ -10,6 +10,13 @@ public class RatioThreadLoopParameters {
             snapshotsRatio = 0;
 
 
+    public RatioThreadLoopParameters() {}
+
+    public RatioThreadLoopParameters(double insertRatio, double removeRatio) {
+        this.insertRatio = insertRatio;
+        this.removeRatio = removeRatio;
+    }
+
     public RatioThreadLoopParameters setInsertRatio(double insertRatio) {
         this.insertRatio = insertRatio;
         return this;

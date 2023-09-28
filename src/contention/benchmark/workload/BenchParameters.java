@@ -15,9 +15,6 @@ public class BenchParameters {
     public long betweenIterationsDuration = 100;
 
 
-    public String benchClassName = "skiplists.lockfree.NonBlockingFriendlySkipListMap";
-
-
     public Parameters test;
     public Parameters prefill;
     public Parameters warmUp;
@@ -88,11 +85,6 @@ public class BenchParameters {
         return this;
     }
 
-    public BenchParameters setBenchClassName(String benchClassName) {
-        this.benchClassName = benchClassName;
-        return this;
-    }
-
     public BenchParameters setTest(Parameters test) {
         this.test = test;
         return this;
@@ -131,18 +123,18 @@ public class BenchParameters {
             result.append(getStringStage("Without prefill"));
         } else {
             result.append(getStringStage("Prefill parameters"))
-                    .append(prefill.toStringBuilder(indents + 1));
+                    .append(prefill.toStringBuilder(indents));
         }
 
         if (warmUp.numThreads == 0) {
             result.append(getStringStage("Without WarmUp"));
         } else {
             result.append(getStringStage("WarmUp parameters"))
-                    .append(warmUp.toStringBuilder(indents + 1));
+                    .append(warmUp.toStringBuilder(indents));
         }
 
         result.append(getStringStage("Test parameters"))
-                .append(test.toStringBuilder(indents + 1));
+                .append(test.toStringBuilder(indents));
 
         return result;
     }

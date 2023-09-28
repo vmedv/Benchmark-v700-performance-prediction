@@ -44,7 +44,7 @@ public class DefaultThreadLoopBuilder extends ThreadLoopBuilder {
         return this;
     }
 
-    public DefaultThreadLoopBuilder setKeyGeneratorBuilder(ArgsGeneratorBuilder argsGeneratorBuilder) {
+    public DefaultThreadLoopBuilder setArgsGeneratorBuilder(ArgsGeneratorBuilder argsGeneratorBuilder) {
         this.argsGeneratorBuilder = argsGeneratorBuilder;
         return this;
     }

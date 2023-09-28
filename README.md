@@ -1,157 +1,260 @@
-# Тестирование на новых рабочих нагрузках
+# Java Synchrobench
 
-## Запуск бенчмарка
+Synchrobench is a micro-benchmark suite used to evaluate synchronization
+techniques on data structures. Synchrobench is written in C/java and Java and
+currently includes arrays, binary trees, hash tables, linked lists, queues and
+skip lists that are synchronized with copy-on-write, locks, read-modify-write,
+read-copy-update and transactional memory. A non-synchronized version of these
+data structures is proposed in each language as a baseline to measure the
+performance gain on multi-(/many-)core machines.
 
+## Data structures in Java
+
+The Java version of synchrobench (synchrobench-java) provides variants of the
+algorithms presented in these papers:
+- V. Aksenov, V. Gramoli, P. Kuznetsov, A. Malova, S. Ravi. A Concurrency-Optimal Binary Search Tree.
+  In Euro-Par, 2017. arXiv:1705.02851
+- V. Gramoli, P. Kuznetsov, S. Ravi, D. Shang. A Concurrency-Optimal List-Based Set. arXiv:1502.01633, 2015.
+- K. Sagonas and K. Winblad. Contention Adapting Search Trees. In ISPDC 2015.
+- V. Gramoli and R. Guerraoui. Reusable Concurrent Data Types. In ECOOP 2014.
+- D. Drachsler, M. Vechev and E. Yahav. Practical concurrent binary search
+  trees via logical ordering. In PPoPP, pages 343–356, 2014.
+- V. Gramoli and R. Guerraoui. Democratizing Transactional Programming. CACM
+  57(1):86-93, 2014.
+- T. Crain, V. Gramoli and M. Raynal. A contention-friendly search tree. In
+  Euro-Par, pages 229–240, 2013.
+- T. Crain, V. Gramoli and M. Raynal. No hot spot non-blocking skip list. In
+  ICDCS, 2013.
+- T. Crain, V. Gramoli and M. Raynal. A contention-friendly methodology for
+  search structures. Technical Report RR-1989, INRIA, 2012.
+- F. Ellen, P. Fatourou, E. Ruppert and F. van Breugel. Non-blocking binary
+  search trees. In PODC, pages 131–140, 2010.
+- N. G. Bronson, J. Casper, H. Chafi and K. Olukotun. A practical
+  concurrent binary search tree. In PPoPP, 2010.
+- P. Felber, V. Gramoli and R. Guerraoui. Elastic Transactions. In DISC 2009.
+- C. Click. A lock-free hash table. Personal communication. 2007.
+- M. M. Michael and M. L. Scott. Simple, fast, and practical non-blocking and
+  blocking concurrent queue algorithms. In PODC, 1996.  
+  Please check the copyright notice of each implementation.
+
+## Synchronizations
+
+The Java-like algorithms are synchronized with copy-on-write wrappers,
+read-modify-write using exclusively compare-and-swap, transactional memory
+in their software forms using bytecode instrumentation, locks.
+
+The transactional memory algorithm used here is E-STM presented in:
+- P. Felber, V. Gramoli, and R. Guerraoui. Elastic transactions. In DISC, pages
+  93–108, 2009.
+
+Other Transactional Memory implemenations can be tested with Synchrobench
+in Java, by adding the DeuceSTM-based libraries in the directory:
+synchrobench-java/src/org/deuce/transaction/  
+The transactional memories that were tested successfully with synchrobench in
+Java are E-STM, LSA, PSTM, SwissTM and TL2 as presented in:
+- P. Felber, V. Gramoli, and R. Guerraoui. Elastic transactions. In DISC, pages
+  93–108, 2009.
+- T. Riegel, P. Felber, and C. Fetzer. A lazy snapshot algorithm with eager
+  validation. In DISC, 2006.
+- V. Gramoli and R. Guerraoui. Reusable Concurrent Data Types. In ECOOP 2014
+- A. Dragojevic, R. Guerraoui, M. Kapalka. Stretching transactional memory. In
+  PLDI, p.155-165, 2009.
+- D. Dice, O. Shalev and N. Shavit. Transactional locking II. In DISC, 2006.
+
+
+[//]: # (# SETUP)
+
+[//]: # (The project has the following structure:)
+
+[//]: # (```shell)
+
+[//]: # (./src)
+
+[//]: # (├── arrays)
+
+[//]: # (├── contention)
+
+[//]: # (├── hashtables)
+
+[//]: # (├── kotlin)
+
+[//]: # (├── linkedlists)
+
+[//]: # (├── org)
+
+[//]: # (├── queues)
+
+[//]: # (├── skiplists)
+
+[//]: # (└── trees)
+
+[//]: # (```)
+
+[//]: # (The main folders to pay attention to are [ds]&#40;./ds&#41; and [microbench]&#40;./microbench/&#41;. )
+[//]: # (The first one stands for data structures - all available for benchmarking data structures are stored there. )
+[//]: # (The latter stands for launching benchmarks and there you can specify many arguments, )
+[//]: # (in particular, [different workloads]&#40;./WORKLOADS.md&#41;.  )
+
+##### NOTE
+**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
+
+
+
+[//]: # (Before launching benchmarks for different data structures --- )
+[//]: # (it's necessary to build the project, and it can be done with the following command:)
+
+[//]: # (```shell)
+[//]: # ()
+[//]: # (cd setbench/microbench)
+[//]: # (make -j)
+[//]: # (```)
+
+
+# LAUNCH
+
+Build and launch occurs using Gradle.
+Commands to launch have the following pattern:
+
+```shell
+./gradlew run --args='<bench_args>'
 ```
-java -cp <bin_folder> contention.benchmark.Test <workload_type> <parameters> 
+
+## Benchmark arguments
+
++ `-data-structure <data_structure_class_name>` or `-ds <data_structure_class_name>` — data structure class name;
++ `-json-file <file_name>` — file with launch parameters in the json format
+  ([BenchParameters](./src/contention/benchmark/workload/BenchParameters.java), [example](./src/contention/benchmark/json/JsonExample.java));
++ `-result-file <file_name>` — file to output the results in the json format (optional);
++ `-iter <number of iterations>` — the number of benchmarking (default 1).
+
+Benchmarking stages can also be specified separately:
+
++ `-range` — key range;
++ `-prefill <file_name>` — file with prefill stage parameters in json format;
++ `-test <file_name>` — file with test stage parameters in json format;
++ `-warm-up <file_name>` — file with warm up stage parameters in json format;
++ `-create-default-prefill` — create a default prefill (fill the data structure in half) (optional).
+
+#### Example:
+```shell
+./gradlew run --args='-ds skiplists.lockfree.NonBlockingFriendlySkipListMap -json-file json_example.txt -result-file result_example.txt'
 ```
 
-Пример:
+# Configuring Launch Parameters
+
+[Example of configuring launch parameters](./src/contention/benchmark/json/JsonExample.java).
+Use `./gradlew toJson` to run.
+
+The first step is to create the [BenchParameters class](./src/contention/benchmark/workload/BenchParameters.java).
+The class stores the range of keys and parameters each of epoch: prefill, warm up and test.
+
+```java
+    BenchParameters benchParameters = new BenchParameters();
 ```
-java -cp bin contention.benchmark.Test -skewed-sets 
-    -b trees.lockbased.LockBasedStanfordTreeMap
-    -rp 0.9 -rs 0.1 -wp 0.9 -ws 0.2 -inter 0.05 -i 5 -d 5 -rq 0 
-    --range 100000 --size 50000 --prefill-thread-nums 8 --thread-nums 8 --duration 10000 
+
+Set the range of keys.
+
+```java
+    benchParameters.setRange(2048);
 ```
 
-## Виды рабочих нагрузок
+Create the [Parameters class](./src/contention/benchmark/workload/Parameters.java) for benchmarking (test).
 
-### Стандартная 
+```java
+    Parameters test = new Parameters();
+```
 
-Стандартная рабочая нагрузка, где есть лишь одно распределение ключей на все виды операций. 
-Для его вызова, аргумент `workload_type` необходимо оставить пустым и указать `distibution_type`.
+Now, we need to set the [stop condition](./src/contention/benchmark/workload/stop/condition/StopCondition.java) and workloads.
 
-### Skewed sets
+First, let's create and set a stop condition: [Timer](./src/contention/benchmark/workload/stop/condition/Timer.java) with 10 second (10000 millis).
 
-Аргумент для вызова — `-skewed-sets`
+```java
+    StopCondition stopCondition = new Timer(10000);
+    test.setStopCondition(stopCondition);
+```
 
-Для запросов чтения и записи используются разные распределения.
+The next step is to configure the workload.
 
-Примечания:
-+ Во время предварительного заполнения, сначала заполняется множество горячего чтения, а после все остальное с равномерным распределением.
-Для классического заполнения, где ключи для вставки и удаления генерируются так же, как и при обычной работе, нужно дописать параметр `-write-prefill-only`. 
-+ На данном этапе реализации используются только `skewed-sets` распределения 
+The workload consists of 4 types of entities:
++ Distribution — a distribution of a random variable
++ DataMap — for converting a distribution's output into a key
++ ArgsGenerator — creates operands for an operation
++ ThreadLoop — the logic for interacting with a data structure.
 
-[//]: # (При использовании скошенных распределений, )
-[//]: # (для контролирования пересечения "горячих" данных для операций чтения и записи )
+There are builders to create each type of entity:
+[ThreadLoopBuilder](./src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
+[ArgsGeneratorBuilder](./src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
+[DistributionBuilder](./src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
+[DataMapBuilder](./src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
 
-### Temporary skewed
+**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
 
-Аргумент для вызова — `-temporary-skewed` или `-temp-skewed`
+Let's create a standard workload with Zipfian distribution.
 
-На каждый временной промежуток своё распределение ключей. 
-Есть два типа временных промежутка:
-1. Горячее время — когда элементы из какого-то подмножество
-вызывается чаще остальных
-2. Время отдыха — когда элементы вызываются равновероятно
+At first, we create the DistributionBuilder and DataMapBuilder.
+```java
+    DistributionBuilder distributionBuilder = new ZipfianDistributionBuilder().setAlpha(1.0);
 
-Примечание:
-+ На данном этапе реализации используются только `skewed-sets` распределения
+    DataMapBuilder dataMapBuilder = new ArrayDataMapBuilder();
+```
 
-### Сreakers and wave
+The next step is to create the ArgsGeneratorBuilder.
+```java
+    ArgsGeneratorBuilder argsGeneratorBuilder =
+            new DefaultArgsGeneratorBuilder()
+                    .setDistributionBuilder(distributionBuilder)
+                    .setDataMapBuilder(dataMapBuilder);
+```
 
-Аргумент для вызова — `-creakers-and-wave`
+The last step is to create the ThreadLoopBuilder.
+We create a DefaultThreadLoop with the probability 0.1 (10%) of calling the insertion and remove operation
+and set our ArgsGeneratorBuilder.
+```java
+    ThreadLoopBuilder threadLoopBuilder =
+            new DefaultThreadLoopBuilder()
+                    .setInsRatio(0.1)
+                    .setRemRatio(0.1)
+                    .setArgsGeneratorBuilder(argsGeneratorBuilder);
+```
 
-Есть два типа данных: старички и волна.  
-Старички (creakers) — данные, которые запрашиваются редко, но на постоянной основе.  
-Волна (wave) — данные, где новые элементы запрашиваются очень часто, 
-но со временем их востребованность падает, после чего и вовсе удаляются.
+Now set the ThreadLoop class to Parameters with the number of threads with this load.
 
-Примечание: 
-+ Параметр `-prefillsize` игнорируется. В структуру заполняются старички и первая волна.
-+ В случае, если данные удаляются сначала логически и со временем физически, 
-тестирующий должен подобрать значение количества ключей `N` так, 
-чтобы элемент был гарантировано удалён физически за `N` запросов.
-Иначе велика вероятность, что данные из `wave` станут теми же старичками, 
-и суть рабочей нагрузки пропадёт.
+[//]: # (Also, as the third parameter, you can specify the cores to which threads should bind &#40;-1 without binding&#41;.)
+[//]: # (In our case, the first two threads will not be bound to any core, the 3-th and 4-th threads will bound to the fisrt core, )
+[//]: # (the 5-th thread will bound to the second core, and so on)
+[//]: # (&#40;The first CPU on the system corresponds to a cpu value of 0, the next CPU corresponds to a cpu value of 1, and so on.&#41;.)
+```java
+    test.addThreadLoopBuilder(threadLoopBuilder, 8);
+```
 
+Specify the test parameters in the benchParameters and create a default prefill (fill the data structure in half):
+```java
+    benchParameters.setTest(test).createDefaultPrefill();
+```
 
+Convert parameters to json format and output:
+```java
+    String json = JsonConverter.toJson(benchParameters);
 
-## Параметры
+    try (PrintWriter out = new PrintWriter("json_example.txt", StandardCharsets.UTF_8)) {
+        out.print(json);
+        System.out.println("Successfully written data to the file");
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+```
 
-### Обозначения
-
-+ `<p>` — целое число принимающее значение [0, 100]
-+ `<n>` — целое число принимающее значение [0, +∞] 
-+ `<f>` — дробное число принимающее значение [0, 1]
-+ `<d>` — дробное число принимающее значение [0, +∞]
-
-[//]: # (+ `<p>` —)
-
-[//]: # ($+\infty$+∞)
-
-
-### Общие параметры 
-//TODO это параметры setbench
-+ `-i <f>` — процентное соотношение операций insert
-+ `-d <f>` — процентное соотношение операций delete
-+ `-insdel <f1> <f2>` — процентное соотношение операций insert и delete. 
-Равносильно `-i <f1> -d <f2>` 
-+ `-rq <>` — todo наверное связано с запросами на промежутке
-+ `-rqsize <>` —
-+ `-k <n>` — количество ключей 
-+ `-nrq <>` —
-+ `-nwork <n>` — количество потоков
-+ `-nprefill <n>` — количество выделенных потоков для предварительного заполнения 
-+ `-prefill-insert` — заполнение контейнера посредством операций insert 
-+ `-prefill-mixed` —
-+ `-prefill-hybrid-min-ms <>` —
-+ `-prefill-hybrid-max-ms <>` —
-+ `-prefillsize <n>` — количество ключей для заполнения 
-+ `-t <n>` — время работы бенчамрка в миллисекундах 
-+ `-pin <....>` — 
-
-### Стандартная рабочая нагрузка
-
-+ `<dist_type>` — распределение, 
-которое будет использоваться в стандартной рабочей нагрузке.
-
-  
-### Skewed sets
-
-+ `-rs <f>` — размер "горячих" данных для чтения в соотношении ко всему множеству ключей
-+ `-ws <f>` — аналогично для операции записи
-+ `-rp <f>` — вероятность чтения "горячих" данных
-+ `-wp <f>` — аналогично для операции записи
-+ `-inter <f>` — размер пересечения "горячих" данных для чтения и записи
-в соотношении ко всему множеству ключей. Важное условие: `inter <= rs` и `inter <= ws`
-+ `-write-prefill-only` — меняет тип генерации ключей для предварительного заполнения. 
-
-### Temporary skewed
-
-+ `-set-count <n>` — количество подмножеств / распределений, зависимых от времени
-+ `-ht <n>` — горячее время по умолчанию (указывается в количествах итераций):
-если горячее время после определенного временного промежутка не будет явно указано,
-то будет использовано значение этого параметра
-+ `-rt <n>` — время отдыха по умолчанию (указывается в количествах итераций): 
-если время отдыха после определенного горячего временного промежутка не будет явно указано, 
-то будет использовано значение этого параметра
-+ `-si <n> <f>` — размер горячих данных из `n-ого` подмножества 
-в соотношении ко всему множеству ключей
-+ `-pi <n> <f>` — вероятность обращения к горячим данным из `n-ого` подмножества
-в соотношении ко всему множеству ключей
-+ `-hti <n1> <n2>` — время работы с горячими данными из `n1-ого` подмножества
-+ `-rti <n1> <n2>` — время отдыха после работы с горячими данными из `n1-ого` подмножества
-
-### Creakers and wave
-
-+ `-gs <f>` || `-cs <f>` — размер подмножества старичков 
-в соотношении ко всему множеству ключей
-+ `-gp <f>` || `-cp <f>` — вероятность чтения из множества старичков
-+ `-ws <f>` — размер волны в соотношении ко всему множеству ключей
-+ `-g-age <n>` || `-c-age <n>` — возраст старичков. 
-Перед началом тестирования, будет произведено `n` запросов чтения 
-из множества старичков
-+ `-g-dist <dist_type>` || `-c-dist <dist_type>` — распределение ключей 
-для множества старичков. 
-(Пока доступно только равномерное распределение)
-+ `-w-dist <dist_type>` — распределение ключей
-для множества волны. (Пока доступно только распределение Ципфа)
-
-
-### Распределения
-
-+ `-dist-zipf <d>` — распределение Ципфа с параметром `d`
-+ `-dist-uniform` — равномерное распределение
-+ `-dist-skewed-uniform ...` — скошенное распределение
-
+[//]: # (# Troubleshooting)
+[//]: # ()
+[//]: # (If something breaks after the launch, or there is such a problem:)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (PAPI ERROR: thread 0 unable to add event PAPI_L2_DCM: Permission level does not permit operation)
+[//]: # (```)
+[//]: # (then the following can help:)
+[//]: # ()
+[//]: # (```shell)
+[//]: # (sudo sysctl kernel.perf_event_paranoid=1)
+[//]: # (```)
