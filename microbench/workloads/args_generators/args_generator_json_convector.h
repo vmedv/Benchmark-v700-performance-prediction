@@ -10,6 +10,7 @@
 #include "args_generator_builder.h"
 #include "workloads/args_generators/impls/default_args_generator.h"
 #include "workloads/args_generators/impls/skewed_sets_args_generator.h"
+#include "workloads/args_generators/impls/skewed_insert_args_generator.h"
 #include "workloads/args_generators/impls/creakers_and_wave_args_generator.h"
 #include "workloads/args_generators/impls/temporary_skewed_args_generator.h"
 #include "workloads/args_generators/impls/leafs_handshake_args_generator.h"
@@ -35,6 +36,9 @@ ArgsGeneratorBuilder *getArgsGeneratorFromJson(const nlohmann::json &j) {
             break;
         case ArgsGeneratorType::LEAFS_HANDSHAKE:
             argsGeneratorBuilder = new LeafsHandshakeArgsGeneratorBuilder();
+            break;
+        case ArgsGeneratorType::SKEWED_INSERT:
+            argsGeneratorBuilder = new SkewedInsertArgsGeneratorBuilder();
             break;
     }
     argsGeneratorBuilder->fromJson(j);
