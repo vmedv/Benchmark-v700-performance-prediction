@@ -20,7 +20,7 @@ using namespace std;
 #endif
 
 #define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
-#define DATA_STRUCTURE_T SABT<K, V, BTREE_FACTOR>
+#define DATA_STRUCTURE_T SABT<K, V, BTREE_FACTOR, ClearPolicy::kRoot>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
