@@ -44,15 +44,7 @@ public:
           min_rebuild_bound_(min_rebuild_bound),
           rebuild_factor_(rebuild_factor),
           root_(nullptr) {
-        NodeBuilder node_builder;
-        node_builder.SetLeftBound(left_bound_);
-        node_builder.SetRightBound(right_bound_);
-        node_builder.SetCapacity(leaf_size_);
-        node_builder.SetRebuildBound(min_rebuild_bound_);
-        node_builder.SetRepSize(0);
-        node_builder.SetApproximateSize(0);
-        root_ = node_builder.Build();
-
+        root_ = CreateRoot();
         Check(left_bound_ < right_bound_);
         Check(leaf_size_ > 0);
         Check(min_rebuild_bound_ > 1);
@@ -407,6 +399,9 @@ private:
         }
 
         auto [result, _] = BuildIdealTree(scores, member_data, pac, 0, at, node->GetLeftBound(), node->GetRightBound());
+        if (!result && root_ == node) {
+            result = CreateRoot();
+        }
 
         delete[] pac;
         delete[] member_data;
@@ -544,6 +539,17 @@ private:
         }
 
         return count;
+    }
+
+    Node* CreateRoot() const {
+        NodeBuilder node_builder;
+        node_builder.SetLeftBound(left_bound_);
+        node_builder.SetRightBound(right_bound_);
+        node_builder.SetCapacity(leaf_size_);
+        node_builder.SetRebuildBound(min_rebuild_bound_);
+        node_builder.SetRepSize(0);
+        node_builder.SetApproximateSize(0);
+        return node_builder.Build();
     }
 
 private:
