@@ -5,7 +5,6 @@
 #ifndef SETBENCH_DATA_MAP_JSON_CONVECTOR_H
 #define SETBENCH_DATA_MAP_JSON_CONVECTOR_H
 
-
 #include "json/single_include/nlohmann/json.hpp"
 #include "data_map_builder.h"
 #include "workloads/data_maps/builders/id_data_map_builder.h"
@@ -13,15 +12,16 @@
 
 std::map<size_t, DataMapBuilder*> dataMapBuilders;
 
-DataMapBuilder *getDataMapFromJson(const nlohmann::json &j) {
+DataMapBuilder* getDataMapFromJson(const nlohmann::json& j) {
     size_t id = j["id"];
 
     auto dataMapsBuilderById = dataMapBuilders.find(id);
-    if (dataMapsBuilderById != dataMapBuilders.end())
+    if (dataMapsBuilderById != dataMapBuilders.end()) {
         return dataMapsBuilderById->second;
+    }
 
     DataMapType type = j["dataMapType"];
-    DataMapBuilder * dataMapBuilder;
+    DataMapBuilder* dataMapBuilder;
     switch (type) {
         case DataMapType::ID:
             dataMapBuilder = new IdDataMapBuilder();
@@ -34,7 +34,14 @@ DataMapBuilder *getDataMapFromJson(const nlohmann::json &j) {
     }
     dataMapBuilder->fromJson(j);
     dataMapBuilders.insert({id, dataMapBuilder});
+    DataMapBuilder::id_counter = std::max(DataMapBuilder::id_counter, id + 1);
     return dataMapBuilder;
 }
 
-#endif //SETBENCH_DATA_MAP_JSON_CONVECTOR_H
+void deleteDataMapBuilders() {
+    for (auto it : dataMapBuilders) {
+        delete it.second;
+    }
+}
+
+#endif  // SETBENCH_DATA_MAP_JSON_CONVECTOR_H

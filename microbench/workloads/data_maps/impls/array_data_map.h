@@ -13,14 +13,7 @@ private:
     long long *data;
 public:
 
-    ArrayDataMap(size_t range) {
-        data = new long long[range];
-        for (size_t i = 0; i < range; i++) {
-            data[i] = i + 1;
-        }
-
-        std::random_shuffle(data, data + range - 1);
-    }
+    ArrayDataMap(long long int *data) : data(data) {}
 
     long long get(size_t index) override {
         return data[index];

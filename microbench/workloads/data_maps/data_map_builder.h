@@ -12,33 +12,24 @@
 typedef long long K;
 
 //template<typename K>
-class DataMapBuilder {
-    static size_t idCounter;
-    DataMap<K> *dataMap = nullptr;
-public:
-    size_t id = idCounter++;
+struct DataMapBuilder {
+    static size_t id_counter;
+
+    const size_t id = id_counter++;
 
     virtual DataMapBuilder *init(size_t range) = 0;
 
     virtual DataMap<K> *build() = 0;
-
-    DataMap<K> *getOrBuild() {
-        if (dataMap == nullptr) {
-            dataMap = build();
-        }
-        return dataMap;
-    }
 
     virtual std::string toString(size_t indents = 1) = 0;
 
     virtual void toJson(nlohmann::json &j) const = 0;
 
     virtual void fromJson(const nlohmann::json &j) = 0;
-
     virtual ~DataMapBuilder() = default;
 };
 
-size_t DataMapBuilder::idCounter = 0;
+size_t DataMapBuilder::id_counter = 0;
 
 void to_json(nlohmann::json &j, const DataMapBuilder &s) {
     s.toJson(j);

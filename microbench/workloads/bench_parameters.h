@@ -24,6 +24,8 @@ struct BenchParameters {
         warmUp = new Parameters();
     }
 
+    BenchParameters(const BenchParameters &p) = default;
+
     BenchParameters &createDefaultPrefill(size_t threadNum) {
         prefill = (new Parameters())
                 ->setStopCondition(new OperationCounter(range / 2))
@@ -88,6 +90,12 @@ struct BenchParameters {
                + test->toString(indents + 1);
     }
 
+    ~BenchParameters() {
+        delete test;
+        delete prefill;
+        delete warmUp;
+        deleteDataMapBuilders();
+    }
 };
 
 void to_json(nlohmann::json &json, const BenchParameters &s) {

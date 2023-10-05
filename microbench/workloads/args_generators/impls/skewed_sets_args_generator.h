@@ -59,7 +59,7 @@ public:
     ~SkewedSetsArgsGenerator() override {
         delete readDist;
         delete writeDist;
-//        delete dataMap; //TODO may deleted twice
+        delete dataMap;
     };
 
 
@@ -125,7 +125,7 @@ public:
                 range, writeSetBegins,
                 readDistBuilder->build(_rng, range),
                 writeDistBuilder->build(_rng, range),
-                dataMapBuilder->getOrBuild()
+                dataMapBuilder->build()
         );
     }
 

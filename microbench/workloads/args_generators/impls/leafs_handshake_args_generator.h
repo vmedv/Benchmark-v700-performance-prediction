@@ -68,11 +68,11 @@ public:
 
     std::pair<K, K> nextRange() {
         setbench_error("Unsupported operation -- nextRange")
-//        return {nextGet(), nextGet()};
     }
 
     ~LeafsHandshakeArgsGenerator() {
-        //TODO delete DataMap
+        delete readData;
+        delete removeData;
         delete readDistribution;
         delete insertDistribution;
         delete removeDistribution;
@@ -144,8 +144,8 @@ public:
                                                   readDistBuilder->build(_rng, range),
                                                   insertDistBuilder->build(_rng),
                                                   removeDistBuilder->build(_rng, range),
-                                                  readDataMapBuilder->getOrBuild(),
-                                                  removeDataMapBuilder->getOrBuild());
+                                                  readDataMapBuilder->build(),
+                                                  removeDataMapBuilder->build());
     }
 
     void toJson(nlohmann::json &j) const override {

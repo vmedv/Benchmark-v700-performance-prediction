@@ -8,6 +8,7 @@
 #include "workloads/args_generators/args_generator.h"
 
 #include "globals_extern.h"
+#include "errors.h"
 
 template<typename K>
 class SkewedInsertArgsGenerator : public ArgsGenerator<K> {
@@ -51,7 +52,7 @@ public:
 
     ~SkewedInsertArgsGenerator() override {
         delete distribution;
-//        delete dataMap; //TODO may deleted twice
+        delete dataMap;
     };
 
 
@@ -101,7 +102,7 @@ public:
         return new SkewedInsertArgsGenerator<K>(
                 range, skewedLength,
                 distBuilder->build(_rng, range - skewedLength),
-                dataMapBuilder->getOrBuild()
+                dataMapBuilder->build()
         );
     }
 

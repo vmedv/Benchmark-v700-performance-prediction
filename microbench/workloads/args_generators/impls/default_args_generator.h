@@ -49,8 +49,8 @@ public:
     }
 
     ~DefaultArgsGenerator() {
-        //TODO delete DataMap
         delete distribution;
+        delete data;
     }
 };
 
@@ -89,7 +89,7 @@ public:
     }
 
     DefaultArgsGenerator<K> *build(Random64 &_rng) override {
-        return new DefaultArgsGenerator<K>(dataMapBuilder->getOrBuild(),
+        return new DefaultArgsGenerator<K>(dataMapBuilder->build(),
                                            distributionBuilder->build(_rng, range));
     }
 

@@ -250,9 +250,7 @@ void execute(globals_t *g, Parameters *parameters) {
 #if defined TIME_IS_UP
     DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################" << std::endl);
-    COUTATOMIC("################################## TIME IS UP #################################" << std::endl);
-    COUTATOMIC("###############################################################################" << std::endl);
+    COUTATOMIC(toStringBigStage("TIME IS UP"))
     COUTATOMIC(std::endl);
 
     const long MAX_NAPPING_MILLIS = (parameters->MAXKEY > 5e7 ? 120000 : 30000);
@@ -335,9 +333,7 @@ void run(globals_t *g) {
 
     DEBUG_PRINT_ARENA_STATS;
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################" << std::endl)
-    COUTATOMIC("################################ BEGIN RUNNING ################################" << std::endl)
-    COUTATOMIC("###############################################################################" << std::endl)
+    COUTATOMIC(toStringBigStage("BEGIN RUNNING"))
     COUTATOMIC(std::endl);
 
     /**
@@ -415,9 +411,7 @@ void run(globals_t *g) {
     execute(g, g->benchParameters->test);
 
     COUTATOMIC(std::endl);
-    COUTATOMIC("###############################################################################" << std::endl);
-    COUTATOMIC("################################# END RUNNING #################################" << std::endl);
-    COUTATOMIC("###############################################################################" << std::endl);
+    COUTATOMIC(toStringBigStage("END RUNNING"))
     COUTATOMIC(std::endl);
 
     COUTATOMIC(((g->elapsedMillis + g->elapsedMillisNapping) / 1000.) << "s" << std::endl);
@@ -575,14 +569,15 @@ void printOutput(globals_t *g, bool detailStats = true) {
 #endif
 }
 
-void parseJsonFile(const std::string &fileName, BenchParameters &benchParameters) {
+BenchParameters * parseJsonFile(const std::string &fileName) {
     std::ifstream fin;
     fin.open(fileName);
 
     nlohmann::json j = nlohmann::json::parse(fin);
-    benchParameters = j;
+    BenchParameters * benchParameters = new BenchParameters(j);
 
     fin.close();
+    return benchParameters;
 }
 
 template<typename T>
@@ -602,7 +597,7 @@ int main(int argc, char **argv) {
 
     std::cout << "binary=" << argv[0] << std::endl;
 
-    BenchParameters benchParameters;
+    BenchParameters * benchParameters;
 
     ParseArgument args = ParseArgument(argc, argv).next();
     bool resultStatisticToFile = false;
@@ -611,7 +606,7 @@ int main(int argc, char **argv) {
 
     while (args.hasNext()) {
         if (strcmp(args.getCurrent(), "-json-file") == 0) {
-            parseJsonFile(args.getNext(), benchParameters);
+            benchParameters = parseJsonFile(args.getNext());
         } else if (strcmp(args.getCurrent(), "-result-file") == 0) {
             resultStatisticToFile = true;
             resultStatisticFileName = args.getNext();
@@ -636,15 +631,19 @@ int main(int argc, char **argv) {
     PRINTS(MAX_THREADS_POW2)
     PRINTS(CPU_FREQ_GHZ)
 
-    benchParameters.init();
+    benchParameters->init();
 
     std::cout << std::endl;
 
-    std::cout << benchParameters.toString();
+    COUTATOMIC(toStringBigStage("BENCH PARAMETERS"))
 
     std::cout << std::endl;
 
-    globals_t *g = new globals_t(&benchParameters);
+    std::cout << benchParameters->toString();
+
+    std::cout << std::endl;
+
+    globals_t *g = new globals_t(benchParameters);
 
     g->programExecutionStartTime = std::chrono::high_resolution_clock::now();
 

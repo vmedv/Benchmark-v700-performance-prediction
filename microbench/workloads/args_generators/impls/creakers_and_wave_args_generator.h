@@ -171,7 +171,7 @@ public:
     ~CreakersAndWaveArgsGenerator() override {
         delete creakersDist;
         delete waveDist;
-//        delete dataMap; //TODO may deleted twice
+        delete dataMap;
     };
 };
 
@@ -208,7 +208,7 @@ public:
     }
 
     ~CreakersAndWavePrefillArgsGenerator() override {
-//        delete dataMap; //TODO may deleted twice
+        delete dataMap;
     };
 };
 
@@ -302,7 +302,7 @@ public:
                                                    waveEnd,
                                                    creakersDistBuilder->build(_rng, creakersLength),
                                                    waveDistBuilder->build(_rng),
-                                                   dataMapBuilder->getOrBuild());
+                                                   dataMapBuilder->build());
     }
 
     void toJson(nlohmann::json &j) const override {
@@ -342,7 +342,7 @@ public:
         delete waveEnd;
         delete creakersDistBuilder;
         delete waveDistBuilder;
-//        delete dataMapBuilder; //TODO may delete twice
+//        delete dataMapBuilder;
     };
 };
 
@@ -394,7 +394,7 @@ public:
 
     CreakersAndWavePrefillArgsGenerator<K> *build(Random64 &_rng) override {
         return new CreakersAndWavePrefillArgsGenerator<K>(_rng, waveBegin, prefillLength,
-                                                          dataMapBuilder->getOrBuild());
+                                                          dataMapBuilder->build());
     }
 
     void toJson(nlohmann::json &j) const override {
@@ -419,7 +419,7 @@ public:
     }
 
     ~CreakersAndWavePrefillArgsGeneratorBuilder() override {
-//        delete dataMapBuilder; //TODO may delete twice
+//        delete dataMapBuilder;
     };
 };
 

@@ -135,4 +135,12 @@ std::string toStringStage(const std::string &stageName) {
     return std::string(80, '-') + "\n" + stageName + "\n" + std::string(80, '-') + "\n";
 }
 
-#endif    /* GLOBALS_EXTERN_H */
+std::string toStringBigStage(const std::string& stageName) {
+    size_t size = (78 - stageName.size()) / 2;
+    return std::string(80, '#') + "\n" +
+           std::string(78 - size * 2 - stageName.size() == 0 ? size : size + 1, '#')
+           + ' ' + stageName + ' ' + std::string(size, '#') + "\n"
+           + std::string(80, '#') + "\n";
+}
+
+#endif /* GLOBALS_EXTERN_H */
