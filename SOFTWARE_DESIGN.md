@@ -38,18 +38,17 @@ There is also a [StopCondition](./microbench/workloads/stop_condition/stop_condi
 The [DataMap](./microbench/workloads/data_maps/data_map.h) is used by an ArgsGenerator
 to translate an index into a key or a value. The `get` function takes an `index` and returns the corresponding key or value.
 
-##### NOTES
-The [DataMapBuilder](./microbench/workloads/data_maps/data_map_builder.h) provides the `getOrBuild` function.
-If it is the first call, the function creates the new DataMap object and returns a pointer to that,
-else it returns the pointer to last created object. Thus, different ArgsGenerators can work with one DataMap.  
-The `getOrBuild` function does not need to be overridden. 
+##### NOTE
 
+[//]: # (The [DataMapBuilder]&#40;./microbench/workloads/data_maps/data_map_builder.h&#41; provides the `getOrBuild` function.)
+[//]: # (If it is the first call, the function creates the new DataMap object and returns a pointer to that,)
+[//]: # (else it returns the pointer to last created object. Thus, different ArgsGenerators can work with one DataMap.  )
+[//]: # (The `getOrBuild` function does not need to be overridden. )
 
-Also, the json representation of DataMapBuilder has object id, 
-so the `getOrBuild` of the DataMapBuilder called with the same id will return a pointer to the same object.
+The json representation of DataMapBuilder has an object id.
+So converting from json with the same id will return a pointer to the same DataMapBuilder.
+Thus, different ArgsGenerators can work with one DataMap.
 The id is set automatically.
-
-of the DataMapBuilder called with the same id will return a pointer to the same object.
 
 [//]: # (This function creates the new object if)
 

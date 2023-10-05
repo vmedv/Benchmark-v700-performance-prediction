@@ -26,6 +26,7 @@ struct DataMapBuilder {
     virtual void toJson(nlohmann::json &j) const = 0;
 
     virtual void fromJson(const nlohmann::json &j) = 0;
+
     virtual ~DataMapBuilder() = default;
 };
 
