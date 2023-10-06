@@ -569,15 +569,17 @@ void printOutput(globals_t *g, bool detailStats = true) {
 #endif
 }
 
-BenchParameters * parseJsonFile(const std::string &fileName) {
+
+template<typename T>
+T *parseJsonFile(const std::string &fileName) {
     std::ifstream fin;
     fin.open(fileName);
 
     nlohmann::json j = nlohmann::json::parse(fin);
-    BenchParameters * benchParameters = new BenchParameters(j);
+    T *t = new T(j);
 
     fin.close();
-    return benchParameters;
+    return t;
 }
 
 template<typename T>
@@ -597,27 +599,62 @@ int main(int argc, char **argv) {
 
     std::cout << "binary=" << argv[0] << std::endl;
 
-    BenchParameters * benchParameters;
+    BenchParameters *benchParameters = new BenchParameters();
+    Parameters *test = nullptr;
+    Parameters *warmUp = nullptr;
+    Parameters *prefill = nullptr;
+    long long range = -1;
 
     ParseArgument args = ParseArgument(argc, argv).next();
-    bool resultStatisticToFile = false;
     bool detailStats = false;
+    bool createDefaultPrefill = false;
+    bool resultStatisticToFile = false;
     std::string resultStatisticFileName;
 
     while (args.hasNext()) {
         if (strcmp(args.getCurrent(), "-json-file") == 0) {
-            benchParameters = parseJsonFile(args.getNext());
+            delete benchParameters;
+            benchParameters = parseJsonFile<BenchParameters>(args.getNext());
         } else if (strcmp(args.getCurrent(), "-result-file") == 0) {
             resultStatisticToFile = true;
             resultStatisticFileName = args.getNext();
         } else if (strcmp(args.getCurrent(), "-detail-stats") == 0) {
             detailStats = true;
+        } else if (strcmp(args.getCurrent(), "-prefill") == 0) {
+            prefill = parseJsonFile<Parameters>(args.getNext());
+        } else if (strcmp(args.getCurrent(), "-warm-up") == 0) {
+            warmUp = parseJsonFile<Parameters>(args.getNext());
+        } else if (strcmp(args.getCurrent(), "-test") == 0) {
+            test = parseJsonFile<Parameters>(args.getNext());
+        } else if (strcmp(args.getCurrent(), "-range") == 0) {
+            range = atoll(args.getNext());
+        } else if (strcmp(args.getCurrent(), "-create-default-prefill") == 0) {
+            createDefaultPrefill = true;
         } else {
-            std::cout << "Unexpected option: " << args.getCurrent() << "\nindex: " << args.pointer << std::endl;
+            std::cerr << "Unexpected option: " << args.getCurrent() << "\nindex: " << args.pointer <<". Ignoring..."<< std::endl;
         }
         args.next();
     }
 
+    if (prefill != nullptr) {
+        benchParameters->setPrefill(prefill);
+    }
+    if (test != nullptr) {
+        benchParameters->setTest(test);
+    }
+    if (warmUp != nullptr) {
+        benchParameters->setWarmUp(warmUp);
+    }
+    if (range != -1) {
+        benchParameters->setRange(range);
+    }
+    if (createDefaultPrefill) {
+        if (prefill == nullptr) {
+            benchParameters->createDefaultPrefill();
+        } else {
+            std::cerr<<"WARNING: The \'-prefill\' argument was already specified. Ignoring...\n";
+        }
+    }
 
     // print used args
     PRINTS(DS_TYPENAME)
@@ -630,6 +667,8 @@ int main(int argc, char **argv) {
     PRINTS(POOL)
     PRINTS(MAX_THREADS_POW2)
     PRINTS(CPU_FREQ_GHZ)
+
+    std::cout<<"\ninitialization of parameters...\n";
 
     benchParameters->init();
 

@@ -67,8 +67,21 @@ LD_PRELOAD=../lib/libmimalloc.so ./bin/aksenov_splaylist_64.debra -json-file jso
 
 ## Benchmark arguments
 
-+ `-json-file <file_name>` — file with launch parameters in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_exampl/json_example.cpp))
-+ `-result-file <file_name>` — file to output the results in the json format (optional)
++ `-json-file <file_name>` — file with launch parameters in the json format ([BenchParameters](./microbench/workloads/bench_parameters.h), [example](microbench/json_exampl/json_example.cpp));
++ `-result-file <file_name>` — file to output the results in the json format (optional).
+
+Benchmarking parameters can also be specified separately
+(a new `BenchParameters` will be created with the specified parameters)
+or additionally 
+(the parameters specified in `-json-file` will be overwritten):
+
++ `-range` — key range;
++ `-prefill <file_name>` — file with prefill stage parameters in json format;
++ `-test <file_name>` — file with test stage parameters in json format;
++ `-warm-up <file_name>` — file with warm up stage parameters in json format;
++ `-create-default-prefill` — create a default prefill: fill the data structure in half 
+(ignored if `-prefill` argument was already specified).
+
 
 # Configuring Launch Parameters
 
