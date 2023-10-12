@@ -3,7 +3,7 @@ package contention.benchmark.workload.stop.condition;
 import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class OperationCounter implements StopCondition {
-    private Counter[] counters;
+    transient private Counter[] counters;
 
     /**
      * the limit for all thread

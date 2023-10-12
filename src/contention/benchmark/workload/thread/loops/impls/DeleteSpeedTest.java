@@ -29,12 +29,12 @@ public class DeleteSpeedTest extends ThreadLoop {
         long startNanoTime = System.nanoTime();
 
         for (int i = lastLayer; i < vertices.size(); i++) {
-            remove(vertices.get(i));
+            executeRemove(vertices.get(i));
         }
 
 //        while (!bench.isEmpty());
         // TODO The isEmpty() method includes logically removed nodes, when the size() does not
-        while (size() > 0);
+        while (executeSize() > 0);
 
         long endTime = System.currentTimeMillis();
         long endNanoTime = System.nanoTime();
@@ -76,7 +76,7 @@ public class DeleteSpeedTest extends ThreadLoop {
             int nextVert = (next.left + next.right) / 2;
 
             vertices.add(nextVert);
-            insert(nextVert);
+            executeInsert(nextVert);
 //            bench.putIfAbsent(nextVert, nextVert);
 
             if (next.left == next.right) {
@@ -90,7 +90,7 @@ public class DeleteSpeedTest extends ThreadLoop {
         for (int i = 0, deg = 1; i + deg < size; deg <<= 1) {
             for (int j = 0; j < deg; j++) {
 //                bench.remove(vertices.get(i + j));
-                remove(vertices.get(i + j));
+                executeRemove(vertices.get(i + j));
             }
             i += deg;
             lastLayer = i;

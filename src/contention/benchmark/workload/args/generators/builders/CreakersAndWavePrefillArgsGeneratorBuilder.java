@@ -10,8 +10,8 @@ import static contention.benchmark.tools.StringFormat.indentedTitle;
 import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
 
 public class CreakersAndWavePrefillArgsGeneratorBuilder implements ArgsGeneratorBuilder {
-    private int waveBegin;
-    private int prefillLength;
+    transient private int waveBegin;
+    transient private int prefillLength;
 
     public double creakersSize = 0;
     public double waveSize = 0;

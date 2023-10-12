@@ -32,7 +32,7 @@ public class TemporaryOperationsThreadLoopBuilder extends ThreadLoopBuilder {
         return this;
     }
 
-    public TemporaryOperationsThreadLoopBuilder setStagesDuration(int index, int stagesDuration) {
+    public TemporaryOperationsThreadLoopBuilder setStageDuration(int index, int stagesDuration) {
         assert (index < stagesNumber);
 
         stagesDurations[index] = stagesDuration;

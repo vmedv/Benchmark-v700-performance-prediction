@@ -1,7 +1,7 @@
 package contention.benchmark.workload;
 
-import contention.benchmark.workload.thread.loops.builders.DefaultThreadLoopBuilder;
 import contention.benchmark.workload.stop.condition.OperationCounter;
+import contention.benchmark.workload.thread.loops.builders.PrefillInsertThreadLoopBuilder;
 
 import static contention.benchmark.tools.StringFormat.getStringStage;
 import static contention.benchmark.tools.StringFormat.indentedTitleWithData;
@@ -36,7 +36,10 @@ public class BenchParameters {
     public BenchParameters createDefaultPrefill(int threadNum) {
         prefill = new Parameters()
                 .setStopCondition(new OperationCounter(range / 2))
-                .addThreadLoopBuilder(new DefaultThreadLoopBuilder().setRemoveRatio(0).setInsertRatio(1), threadNum);
+                .addThreadLoopBuilder(
+                        new PrefillInsertThreadLoopBuilder(),
+                        threadNum
+                );
         return this;
     }
 

@@ -70,18 +70,18 @@ public class TemporaryOperationsThreadLoop extends ThreadLoop {
             Vector<Integer> vec = new Vector<Integer>(key);
             vec.add(key / 2); // accepts duplicate
 
-            removeAll(vec);
+            executeRemoveAll(vec);
         } else if (coin < cdf[pointer][1]) { // 2. should we run an insert
             int key = argsGenerator.nextInsert();
-            insert(key);
+            executeInsert(key);
         } else if (coin < cdf[pointer][2]) { // 3. should we run a remove
             int key = argsGenerator.nextRemove();
-            remove(key);
+            executeRemove(key);
         } else if (coin < cdf[pointer][3]) { // 4. should we run a readAll operation?
-            size();
+            executeSize();
         } else { //if (coin < cdf[3]) { // 5. then we should run a readSome operation
             int key = argsGenerator.nextGet();
-            get(key);
+            executeGet(key);
         }
     }
 

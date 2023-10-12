@@ -60,7 +60,7 @@ public abstract class ThreadLoop implements Runnable {
         System.out.println("Thread #" + threadId + " finished.");
     }
 
-    public Integer insert(int key) {
+    public Integer executeInsert(int key) {
         Integer result;
         if ((result = dataStructure.insert(key)) == null) {
             stats.numAdd++;
@@ -70,7 +70,7 @@ public abstract class ThreadLoop implements Runnable {
         return result;
     }
 
-    public Integer remove(int key) {
+    public Integer executeRemove(int key) {
         Integer result;
         if ((result = dataStructure.remove(key)) != null) {
             stats.numRemove++;
@@ -80,7 +80,7 @@ public abstract class ThreadLoop implements Runnable {
         return result;
     }
 
-    public Integer get(int key) {
+    public Integer executeGet(int key) {
         Integer result;
         if ((result = dataStructure.get(key)) != null) {
             stats.numContains++;
@@ -90,7 +90,7 @@ public abstract class ThreadLoop implements Runnable {
         return result;
     }
 
-    public boolean removeAll(Collection<Integer> c) {
+    public boolean executeRemoveAll(Collection<Integer> c) {
         boolean result = false;
         try {
             result = dataStructure.removeAll(c);
@@ -106,7 +106,7 @@ public abstract class ThreadLoop implements Runnable {
         return result;
     }
 
-    public int size() {
+    public int executeSize() {
         stats.numSize++;
         return dataStructure.size();
     }

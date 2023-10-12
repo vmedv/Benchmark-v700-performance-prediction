@@ -71,7 +71,7 @@ public class DeleteLeafsWorkload extends ThreadLoop {
         switch (workloadEpoch) {
             case ADD -> {
                 int key = vertices.get(curIndex++);
-                insert(key);
+                executeInsert(key);
 
                 if (curIndex >= vertices.size()) {
                     workloadEpoch = WorkloadEpoch.DELETE_INTERNAL;
@@ -80,7 +80,7 @@ public class DeleteLeafsWorkload extends ThreadLoop {
             }
             case DELETE_INTERNAL -> {
                 int key = vertices.get(curIndex++);
-                remove(key);
+                executeRemove(key);
 
                 if (curIndex >= lastLayer) {
                     workloadEpoch = WorkloadEpoch.DELETE_LEAF;
@@ -89,7 +89,7 @@ public class DeleteLeafsWorkload extends ThreadLoop {
             }
             case DELETE_LEAF -> {
                 int key = vertices.get(curIndex++);
-                remove(key);
+                executeRemove(key);
 
                 if (curIndex >= vertices.size()) {
                     workloadEpoch = WorkloadEpoch.ADD;
@@ -101,7 +101,7 @@ public class DeleteLeafsWorkload extends ThreadLoop {
 
     public void prefill(AtomicInteger prefillSize) {
         for (int key : vertices) {
-            insert(key);
+            executeInsert(key);
         }
     }
 
