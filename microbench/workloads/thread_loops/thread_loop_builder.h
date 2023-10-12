@@ -32,15 +32,11 @@ struct ThreadLoopBuilder {
 
 void to_json(nlohmann::json &j, const ThreadLoopBuilder &s) {
     s.toJson(j);
-    assert(j["threadLoopType"] != nullptr);
+    assert(j.contains("ClassName"));
 }
 
 void from_json(const nlohmann::json &j, ThreadLoopBuilder &s) {
     s.fromJson(j);
 }
-
-enum class ThreadLoopType {
-    DEFAULT, TEMPORARY_OPERATION, PREFILL_INSERT
-};
 
 #endif //SETBENCH_THREAD_LOOP_BUILDER_H

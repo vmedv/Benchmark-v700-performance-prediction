@@ -7,23 +7,23 @@
 
 #include "distribution_builder.h"
 #include "workloads/distributions/builders/uniform_distribution_builder.h"
-#include "workloads/distributions/builders/zipf_distribution_builder.h"
+#include "workloads/distributions/builders/zipfian_distribution_builder.h"
 #include "workloads/distributions/builders/skewed_uniform_distribution_builder.h"
+#include "errors.h"
 
 DistributionBuilder *getDistributionFromJson(const nlohmann::json &j) {
-    DistributionType type = j["distributionType"];
-    DistributionBuilder * distributionBuilder;
-    switch (type) {
-        case DistributionType::UNIFORM:
-            distributionBuilder = new UniformDistributionBuilder();
-            break;
-        case DistributionType::ZIPF:
-            distributionBuilder = new ZipfDistributionBuilder();
-            break;
-        case DistributionType::SKEWED_UNIFORM:
-            distributionBuilder = new SkewedUniformDistributionBuilder();
-            break;
+    std::string className = j["ClassName"];
+    DistributionBuilder *distributionBuilder;
+    if (className == "UniformDistributionBuilder") {
+        distributionBuilder = new UniformDistributionBuilder();
+    } else if (className == "ZipfDistributionBuilder") {
+        distributionBuilder = new ZipfianDistributionBuilder();
+    } else if (className == "SkewedUniformDistributionBuilder") {
+        distributionBuilder = new SkewedUniformDistributionBuilder();
+    } else {
+        setbench_error("JSON PARSER: Unknown class name DistributionBuilder -- " + className)
     }
+
     distributionBuilder->fromJson(j);
     return distributionBuilder;
 }

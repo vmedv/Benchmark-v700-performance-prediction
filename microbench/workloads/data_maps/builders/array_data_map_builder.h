@@ -32,7 +32,7 @@ public:
     }
 
     void toJson(nlohmann::json& j) const override {
-        j["dataMapType"] = DataMapType::ARRAY;
+        j["ClassName"] = "ArrayDataMapBuilder";
     }
 
     void fromJson(const nlohmann::json& j) override {

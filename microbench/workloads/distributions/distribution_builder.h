@@ -28,15 +28,11 @@ struct MutableDistributionBuilder : public DistributionBuilder {
 
 void to_json(nlohmann::json &j, const DistributionBuilder &s) {
     s.toJson(j);
-    assert(j["distributionType"] != nullptr);
+    assert(j.contains("ClassName"));
 }
 
 void from_json(const nlohmann::json &j, DistributionBuilder &s) {
     s.fromJson(j);
 }
-
-enum class DistributionType {
-    UNIFORM, ZIPF, SKEWED_UNIFORM
-};
 
 #endif //SETBENCH_DISTRIBUTION_BUILDER_H

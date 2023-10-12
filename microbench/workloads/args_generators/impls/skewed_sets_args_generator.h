@@ -130,22 +130,22 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::SKEWED_SETS;
-        j["readDistribution"] = *readDistBuilder;
-        j["readDistribution"] = *writeDistBuilder;
+        j["ClassName"] = "SkewedSetsArgsGeneratorBuilder";
+        j["readDistBuilder"] = *readDistBuilder;
+        j["writeDistBuilder"] = *writeDistBuilder;
         j["intersection"] = intersection;
-        j["dataMap"] = *dataMapBuilder;
+        j["dataMapBuilder"] = *dataMapBuilder;
     }
 
     void fromJson(const nlohmann::json &j) override {
         readDistBuilder = dynamic_cast<SkewedUniformDistributionBuilder *>(
-                getDistributionFromJson(j["readDistribution"])
+                getDistributionFromJson(j["readDistBuilder"])
         );
         writeDistBuilder = dynamic_cast<SkewedUniformDistributionBuilder *>(
-                getDistributionFromJson(j["writeDistribution"])
+                getDistributionFromJson(j["writeDistBuilder"])
         );
         intersection = j["intersection"];
-        dataMapBuilder = getDataMapFromJson(j["dataMap"]);
+        dataMapBuilder = getDataMapFromJson(j["dataMapBuilder"]);
     }
 
     std::string toString(size_t indents) override {

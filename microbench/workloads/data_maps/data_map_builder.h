@@ -35,15 +35,11 @@ size_t DataMapBuilder::id_counter = 0;
 void to_json(nlohmann::json &j, const DataMapBuilder &s) {
     s.toJson(j);
     j["id"] = s.id;
-    assert(j["dataMapType"] != nullptr);
+    assert(j.contains("ClassName"));
 }
 
 void from_json(const nlohmann::json &j, DataMapBuilder &s) {
     s.fromJson(j);
 }
-
-enum class DataMapType {
-    ID, ARRAY, HASH
-};
 
 #endif //SETBENCH_DATA_MAP_BUILDER_H

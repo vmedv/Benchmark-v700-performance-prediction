@@ -2,8 +2,8 @@
 // Created by Ravil Galiev on 16.08.2023.
 //
 
-#ifndef SETBENCH_TEMPORARY_OPERATION_THREAD_LOOP_H
-#define SETBENCH_TEMPORARY_OPERATION_THREAD_LOOP_H
+#ifndef SETBENCH_TEMPORARY_OPERATIONS_THREAD_LOOP_H
+#define SETBENCH_TEMPORARY_OPERATIONS_THREAD_LOOP_H
 
 #include "workloads/thread_loops/thread_loop.h"
 #include "workloads/thread_loops/ratio_thread_loop_parameters.h"
@@ -82,14 +82,14 @@ public:
 #include "default_thread_loop.h"
 
 
-struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
+struct TemporaryOperationsThreadLoopBuilder : public ThreadLoopBuilder {
     size_t stagesNumber = 0;
     size_t *stagesDurations;
     RatioThreadLoopParameters **ratios;
 
     ArgsGeneratorBuilder *argsGeneratorBuilder = new DefaultArgsGeneratorBuilder();
 
-    TemporaryOperationThreadLoopBuilder *setStagesNumber(const size_t _stagesNumber) {
+    TemporaryOperationsThreadLoopBuilder *setStagesNumber(const size_t _stagesNumber) {
         stagesNumber = _stagesNumber;
         ratios = new RatioThreadLoopParameters *[_stagesNumber];
         stagesDurations = new size_t[_stagesNumber];
@@ -101,52 +101,52 @@ struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setStageDuration(const size_t index, size_t stageDuration) {
+    TemporaryOperationsThreadLoopBuilder *setStageDuration(const size_t index, size_t stageDuration) {
         assert(index < stagesNumber);
         stagesDurations[index] = stageDuration;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setStagesDurations(size_t *_stagesDurations) {
+    TemporaryOperationsThreadLoopBuilder *setStagesDurations(size_t *_stagesDurations) {
         stagesDurations = _stagesDurations;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setInsRatio(const size_t index, double insRatio) {
+    TemporaryOperationsThreadLoopBuilder *setInsRatio(const size_t index, double insRatio) {
         assert(index < stagesNumber);
         ratios[index]->INS_RATIO = insRatio;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setRemRatio(const size_t index, double remRatio) {
+    TemporaryOperationsThreadLoopBuilder *setRemRatio(const size_t index, double remRatio) {
         assert(index < stagesNumber);
         ratios[index]->REM_RATIO = remRatio;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setRqRatio(const size_t index, double rqRatio) {
+    TemporaryOperationsThreadLoopBuilder *setRqRatio(const size_t index, double rqRatio) {
         assert(index < stagesNumber);
         ratios[index]->RQ_RATIO = rqRatio;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setRatios(const size_t index, RatioThreadLoopParameters *ratio) {
+    TemporaryOperationsThreadLoopBuilder *setRatios(const size_t index, RatioThreadLoopParameters *ratio) {
         assert(index < stagesNumber);
         ratios[index] = ratio;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setRatios(RatioThreadLoopParameters **_ratios) {
+    TemporaryOperationsThreadLoopBuilder *setRatios(RatioThreadLoopParameters **_ratios) {
         ratios = _ratios;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *setArgsGeneratorBuilder(ArgsGeneratorBuilder *_argsGeneratorBuilder) {
+    TemporaryOperationsThreadLoopBuilder *setArgsGeneratorBuilder(ArgsGeneratorBuilder *_argsGeneratorBuilder) {
         argsGeneratorBuilder = _argsGeneratorBuilder;
         return this;
     }
 
-    TemporaryOperationThreadLoopBuilder *init(int range) override {
+    TemporaryOperationsThreadLoopBuilder *init(int range) override {
         ThreadLoopBuilder::init(range);
         argsGeneratorBuilder->init(range);
         return this;
@@ -160,7 +160,7 @@ struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["threadLoopType"] = ThreadLoopType::TEMPORARY_OPERATION;
+        j["ClassName"] = "TemporaryOperationsThreadLoopBuilder";
         j["stagesNumber"] = stagesNumber;
         for (size_t i = 0; i < stagesNumber; ++i) {
             j["ratios"].push_back(*ratios[i]);
@@ -208,7 +208,7 @@ struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
         return result;
     }
 
-    ~TemporaryOperationThreadLoopBuilder() override {
+    ~TemporaryOperationsThreadLoopBuilder() override {
         delete stagesDurations;
         delete[] ratios;
         delete argsGeneratorBuilder;
@@ -216,4 +216,4 @@ struct TemporaryOperationThreadLoopBuilder : public ThreadLoopBuilder {
 };
 
 
-#endif //SETBENCH_TEMPORARY_OPERATION_THREAD_LOOP_H
+#endif //SETBENCH_TEMPORARY_OPERATIONS_THREAD_LOOP_H

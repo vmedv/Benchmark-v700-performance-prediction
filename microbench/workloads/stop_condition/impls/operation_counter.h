@@ -62,7 +62,7 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["stopConditionType"] = StopConditionType::OPERATION_COUNTER;
+        j["ClassName"] = "OperationCounter";
         j["commonOperationLimit"] = commonOperationLimit;
     }
 

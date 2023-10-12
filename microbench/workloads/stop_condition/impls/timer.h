@@ -54,7 +54,7 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["stopConditionType"] = StopConditionType::TIMER;
+        j["ClassName"] = "Timer";
         j["workTime"] = workTime;
     }
 

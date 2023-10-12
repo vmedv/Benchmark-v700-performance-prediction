@@ -104,7 +104,7 @@ Set the range of keys.
 Create the [Parameters class](./microbench/workloads/parameters.h) for benchmarking (test).
 
 ```c++
-    Parameters *test;
+    Parameters *test = new Parameters();
 ```
 
 Now, we need to set the [stop condition](./microbench/workloads/stop_condition/stop_condition.h) and workloads.
@@ -140,7 +140,7 @@ Let's create a standard workload with Zipf distribution.
 At first, we create the DistributionBuilder and DataMapBuilder.
 ```c++
     DistributionBuilder *distributionBuilder 
-            = (new ZipfDistributionBuilder())
+            = (new ZipfianDistributionBuilder())
                     ->setAlpha(1.0);
 
     DataMapBuilder *dataMapBuilder 

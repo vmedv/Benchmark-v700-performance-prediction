@@ -29,15 +29,12 @@ struct ArgsGeneratorBuilder {
 
 void to_json(nlohmann::json &j, const ArgsGeneratorBuilder &s) {
     s.toJson(j);
-    assert(j["argsGeneratorType"] != nullptr);
+    assert(j.contains("ClassName"));
+//    assert(j["argsGeneratorType"] != nullptr);
 }
 
 void from_json(const nlohmann::json &j, ArgsGeneratorBuilder &s) {
     s.fromJson(j);
 }
-
-enum class ArgsGeneratorType {
-    DEFAULT, SKEWED_SETS, TEMPORARY_SKEWED, CREAKERS_AND_WAVE, CREAKERS_AND_WAVE_PREFILL, LEAFS_HANDSHAKE, SKEWED_INSERT
-};
 
 #endif //SETBENCH_ARGS_GENERATOR_BUILDER_H

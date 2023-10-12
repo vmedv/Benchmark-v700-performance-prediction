@@ -9,10 +9,11 @@
 #include "data_map_builder.h"
 #include "workloads/data_maps/builders/id_data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
+#include "errors.h"
 
-std::map<size_t, DataMapBuilder*> dataMapBuilders;
+std::map<size_t, DataMapBuilder *> dataMapBuilders;
 
-DataMapBuilder* getDataMapFromJson(const nlohmann::json& j) {
+DataMapBuilder *getDataMapFromJson(const nlohmann::json &j) {
     size_t id = j["id"];
 
     auto dataMapsBuilderById = dataMapBuilders.find(id);
@@ -20,18 +21,18 @@ DataMapBuilder* getDataMapFromJson(const nlohmann::json& j) {
         return dataMapsBuilderById->second;
     }
 
-    DataMapType type = j["dataMapType"];
-    DataMapBuilder* dataMapBuilder;
-    switch (type) {
-        case DataMapType::ID:
-            dataMapBuilder = new IdDataMapBuilder();
-            break;
-        case DataMapType::ARRAY:
+    std::string className = j["ClassName"];
+    DataMapBuilder *dataMapBuilder;
+    if (className == "IdDataMapBuilder") {
+        dataMapBuilder = new IdDataMapBuilder();
+    } else if (className == "ArrayDataMapBuilder") {
             dataMapBuilder = new ArrayDataMapBuilder();
-            break;
-        case DataMapType::HASH:
-            break;
+    } else if (className == "HashDataMapBuilder") {
+
+    } else {
+        setbench_error("JSON PARSER: Unknown class name DataMapBuilder -- " + className)
     }
+
     dataMapBuilder->fromJson(j);
     dataMapBuilders.insert({id, dataMapBuilder});
     DataMapBuilder::id_counter = std::max(DataMapBuilder::id_counter, id + 1);
@@ -39,7 +40,7 @@ DataMapBuilder* getDataMapFromJson(const nlohmann::json& j) {
 }
 
 void deleteDataMapBuilders() {
-    for (auto it : dataMapBuilders) {
+    for (auto it: dataMapBuilders) {
         delete it.second;
     }
 }

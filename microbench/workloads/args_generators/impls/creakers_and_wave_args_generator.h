@@ -214,7 +214,7 @@ public:
 
 #include "workloads/args_generators/args_generator_builder.h"
 #include "workloads/distributions/builders/uniform_distribution_builder.h"
-#include "workloads/distributions/builders/zipf_distribution_builder.h"
+#include "workloads/distributions/builders/zipfian_distribution_builder.h"
 #include "workloads/data_maps/data_map_builder.h"
 #include "workloads/data_maps/builders/array_data_map_builder.h"
 #include "workloads/distributions/distribution_json_convector.h"
@@ -238,7 +238,7 @@ class CreakersAndWaveArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     double waveSize = 0;
 
     DistributionBuilder *creakersDistBuilder = new UniformDistributionBuilder();
-    MutableDistributionBuilder *waveDistBuilder = new ZipfDistributionBuilder();
+    MutableDistributionBuilder *waveDistBuilder = new ZipfianDistributionBuilder();
 
     DataMapBuilder *dataMapBuilder = new ArrayDataMapBuilder();
 
@@ -306,22 +306,22 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::CREAKERS_AND_WAVE;
+        j["ClassName"] = "CreakersAndWaveArgsGeneratorBuilder";
         j["creakersRatio"] = creakersRatio;
         j["creakersSize"] = creakersSize;
         j["waveSize"] = waveSize;
-        j["creakersDistribution"] = *creakersDistBuilder;
-        j["waveDistribution"] = *waveDistBuilder;
-        j["dataMap"] = *dataMapBuilder;
+        j["creakersDistBuilder"] = *creakersDistBuilder;
+        j["waveDistBuilder"] = *waveDistBuilder;
+        j["dataMapBuilder"] = *dataMapBuilder;
     }
 
     void fromJson(const nlohmann::json &j) override {
         creakersRatio = j["creakersRatio"];
         creakersSize = j["creakersSize"];
         waveSize = j["waveSize"];
-        creakersDistBuilder = getDistributionFromJson(j["creakersDistribution"]);
-        waveDistBuilder = getMutableDistributionFromJson(j["waveDistribution"]);
-        dataMapBuilder = getDataMapFromJson(j["dataMap"]);
+        creakersDistBuilder = getDistributionFromJson(j["creakersDistBuilder"]);
+        waveDistBuilder = getMutableDistributionFromJson(j["waveDistBuilder"]);
+        dataMapBuilder = getDataMapFromJson(j["dataMapBuilder"]);
     }
 
     std::string toString(size_t indents) override {
@@ -398,16 +398,16 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::CREAKERS_AND_WAVE_PREFILL;
+        j["ClassName"] = "CreakersAndWaveArgsGeneratorBuilder";
         j["creakersSize"] = creakersSize;
         j["waveSize"] = waveSize;
-        j["dataMap"] = *dataMapBuilder;
+        j["dataMapBuilder"] = *dataMapBuilder;
     }
 
     void fromJson(const nlohmann::json &j) override {
         creakersSize = j["creakersSize"];
         waveSize = j["waveSize"];
-        dataMapBuilder = getDataMapFromJson(j["dataMap"]);
+        dataMapBuilder = getDataMapFromJson(j["dataMapBuilder"]);
     }
 
     std::string toString(size_t indents) override {

@@ -22,7 +22,7 @@ struct UniformDistributionBuilder : public MutableDistributionBuilder {
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["distributionType"] = DistributionType::UNIFORM;
+        j["ClassName"] = "UniformDistributionBuilder";
     }
 
     void fromJson(const nlohmann::json &j) override {

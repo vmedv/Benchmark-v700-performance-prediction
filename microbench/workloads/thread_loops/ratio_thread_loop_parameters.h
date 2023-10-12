@@ -45,15 +45,17 @@ struct RatioThreadLoopParameters {
 };
 
 void to_json(nlohmann::json &j, const RatioThreadLoopParameters &s) {
-    j["insRatio"] = s.INS_RATIO;
-    j["remRatio"] = s.REM_RATIO;
+    j["insertRatio"] = s.INS_RATIO;
+    j["removeRatio"] = s.REM_RATIO;
     j["rqRatio"] = s.RQ_RATIO;
 }
 
 void from_json(const nlohmann::json &j, RatioThreadLoopParameters &s) {
-    s.INS_RATIO = j["insRatio"];
-    s.REM_RATIO = j["remRatio"];
-    s.RQ_RATIO = j["rqRatio"];
+    s.INS_RATIO = j["insertRatio"];
+    s.REM_RATIO = j["removeRatio"];
+    if (j.contains("rqRatio")) {
+        s.RQ_RATIO = j["rqRatio"];
+    }
 }
 
 #endif //SETBENCH_RATIO_THREAD_LOOP_PARAMETERS_H

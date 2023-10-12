@@ -2,8 +2,8 @@
 // Created by Ravil Galiev on 30.08.2022.
 //
 
-#ifndef SETBENCH_ZIPF_DISTRIBUTION_BUILDER_H
-#define SETBENCH_ZIPF_DISTRIBUTION_BUILDER_H
+#ifndef SETBENCH_ZIPFIAN_DISTRIBUTION_BUILDER_H
+#define SETBENCH_ZIPFIAN_DISTRIBUTION_BUILDER_H
 
 #include <algorithm>
 #include <cassert>
@@ -13,12 +13,12 @@
 #include "workloads/distributions/distribution_builder.h"
 #include "workloads/distributions/impls/zipf_distribution.h"
 
-struct ZipfDistributionBuilder : public MutableDistributionBuilder {
+struct ZipfianDistributionBuilder : public MutableDistributionBuilder {
     PAD;
     double alpha = 1;
     PAD;
 
-    ZipfDistributionBuilder *setAlpha(double _alpha) {
+    ZipfianDistributionBuilder *setAlpha(double _alpha) {
         alpha = _alpha;
         return this;
     }
@@ -32,7 +32,7 @@ struct ZipfDistributionBuilder : public MutableDistributionBuilder {
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["distributionType"] = DistributionType::ZIPF;
+        j["ClassName"] = "ZipfianDistributionBuilder";
         j["alpha"] = alpha;
     }
 
@@ -45,8 +45,8 @@ struct ZipfDistributionBuilder : public MutableDistributionBuilder {
         + indented_title_with_data("alpha", alpha, indents);
     };
 
-    ~ZipfDistributionBuilder() override = default;
+    ~ZipfianDistributionBuilder() override = default;
 };
 
 
-#endif //SETBENCH_ZIPF_DISTRIBUTION_BUILDER_H
+#endif //SETBENCH_ZIPFIAN_DISTRIBUTION_BUILDER_H

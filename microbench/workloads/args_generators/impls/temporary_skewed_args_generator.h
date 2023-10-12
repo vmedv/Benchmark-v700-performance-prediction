@@ -322,20 +322,20 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::TEMPORARY_SKEWED;
+        j["ClassName"] = "TemporarySkewedArgsGeneratorBuilder";
         j["setNumber"] = setNumber;
         j["defaultHotTime"] = defaultHotTime;
         j["defaultRelaxTime"] = defaultRelaxTime;
         for (size_t i = 0; i < setNumber; ++i) {
-            j["hotDistributions"].push_back(*hotDistBuilders[i]);
+            j["hotDistBuilders"].push_back(*hotDistBuilders[i]);
             j["hotTimes"].push_back(hotTimes[i]);
             j["relaxTimes"].push_back(relaxTimes[i]);
             if (manualSettingSetBegins) {
                 j["setBegins"].push_back(setBegins[i]);
             }
         }
-        j["relaxDistribution"] = *relaxDistBuilder;
-        j["dataMap"] = *dataMapBuilder;
+        j["relaxDistBuilder"] = *relaxDistBuilder;
+        j["dataMapBuilder"] = *dataMapBuilder;
         j["manualSettingSetBegins"] = manualSettingSetBegins;
     }
 
@@ -353,11 +353,11 @@ public:
             std::copy(std::begin(j["setBegins"]), std::end(j["setBegins"]), setBegins);
         }
 
-        relaxDistBuilder = getDistributionFromJson(j["relaxDistribution"]);
-        dataMapBuilder = getDataMapFromJson(j["dataMap"]);
+        relaxDistBuilder = getDistributionFromJson(j["relaxDistBuilder"]);
+        dataMapBuilder = getDataMapFromJson(j["dataMapBuilder"]);
 
         size_t i = 0;
-        for (const auto &j_i: j["hotDistributions"]) {
+        for (const auto &j_i: j["hotDistBuilders"]) {
             hotDistBuilders[i] = dynamic_cast<SkewedUniformDistributionBuilder *>(
                     getDistributionFromJson(j_i)
             );

@@ -21,13 +21,13 @@ class DefaultThreadLoop : public ThreadLoop {
 public:
     DefaultThreadLoop(globals_t *_g, Random64 &_rng, size_t _threadId, StopCondition *_stopCondition, size_t _RQ_RANGE,
                       ArgsGenerator<K> *_argsGenerator,
-                      RatioThreadLoopParameters *threadLoopParameters)
+                      RatioThreadLoopParameters &threadLoopParameters)
             : ThreadLoop(_g, _threadId, _stopCondition, _RQ_RANGE),
               rng(_rng), argsGenerator(_argsGenerator) {
         cdf = new double[3];
-        cdf[0] = threadLoopParameters->INS_RATIO;
-        cdf[1] = cdf[0] + threadLoopParameters->REM_RATIO;
-        cdf[2] = cdf[1] + threadLoopParameters->RQ_RATIO;
+        cdf[0] = threadLoopParameters.INS_RATIO;
+        cdf[1] = cdf[0] + threadLoopParameters.REM_RATIO;
+        cdf[2] = cdf[1] + threadLoopParameters.RQ_RATIO;
     }
 
     void step() override {
@@ -56,22 +56,22 @@ public:
 
 //template<typename K>
 struct DefaultThreadLoopBuilder : public ThreadLoopBuilder {
-    RatioThreadLoopParameters *parameters = new RatioThreadLoopParameters();
+    RatioThreadLoopParameters parameters;
 
     ArgsGeneratorBuilder *argsGeneratorBuilder = new DefaultArgsGeneratorBuilder();
 
     DefaultThreadLoopBuilder *setInsRatio(double insRatio) {
-        parameters->INS_RATIO = insRatio;
+        parameters.INS_RATIO = insRatio;
         return this;
     }
 
     DefaultThreadLoopBuilder *setRemRatio(double delRatio) {
-        parameters->REM_RATIO = delRatio;
+        parameters.REM_RATIO = delRatio;
         return this;
     }
 
     DefaultThreadLoopBuilder *setRqRatio(double rqRatio) {
-        parameters->RQ_RATIO = rqRatio;
+        parameters.RQ_RATIO = rqRatio;
         return this;
     }
 
@@ -94,32 +94,27 @@ struct DefaultThreadLoopBuilder : public ThreadLoopBuilder {
     }
 
     void toJson(nlohmann::json &json) const override {
-        json["threadLoopType"] = ThreadLoopType::DEFAULT;
-        json["insRatio"] = parameters->INS_RATIO;
-        json["remRatio"] = parameters->REM_RATIO;
-        json["rqRatio"] = parameters->RQ_RATIO;
+        json["ClassName"] = "DefaultThreadLoopBuilder";
+        json["parameters"] = parameters;
         json["argsGeneratorBuilder"] = *argsGeneratorBuilder;
     }
 
 
     void fromJson(const nlohmann::json &j) override {
-        parameters->INS_RATIO = j["insRatio"];
-        parameters->REM_RATIO = j["remRatio"];
-        parameters->RQ_RATIO = j["rqRatio"];
+        parameters = j["parameters"];
         argsGeneratorBuilder = getArgsGeneratorFromJson(j["argsGeneratorBuilder"]);
     }
 
     std::string toString(size_t indents = 1) override {
         return indented_title_with_str_data("Type", "Default", indents)
-               + indented_title_with_data("INS_RATIO", parameters->INS_RATIO, indents)
-               + indented_title_with_data("REM_RATIO", parameters->REM_RATIO, indents)
-               + indented_title_with_data("RQ_RATIO", parameters->RQ_RATIO, indents)
+               + indented_title_with_data("INS_RATIO", parameters.INS_RATIO, indents)
+               + indented_title_with_data("REM_RATIO", parameters.REM_RATIO, indents)
+               + indented_title_with_data("RQ_RATIO", parameters.RQ_RATIO, indents)
                + indented_title("Args generator", indents)
                + argsGeneratorBuilder->toString(indents + 1);
     }
 
     ~DefaultThreadLoopBuilder() override {
-        delete parameters;
         delete argsGeneratorBuilder;
     };
 };

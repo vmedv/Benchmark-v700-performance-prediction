@@ -28,15 +28,12 @@ struct StopCondition {
 
 void to_json(nlohmann::json &j, const StopCondition &s) {
     s.toJson(j);
-    assert(j["stopConditionType"] != nullptr);
+    assert(j.contains("ClassName"));
+//    assert(j["stopConditionType"] != nullptr);
 }
 
 void from_json(const nlohmann::json &j, StopCondition &s) {
     s.fromJson(j);
 }
-
-enum class StopConditionType {
-    TIMER, OPERATION_COUNTER
-};
 
 #endif //SETBENCH_STOP_CONDITION_H

@@ -19,7 +19,7 @@ struct IdDataMapBuilder : public DataMapBuilder {
     };
 
     void toJson(nlohmann::json& j) const override {
-        j["dataMapType"] = DataMapType::ID;
+        j["ClassName"] = "IdDataMapBuilder";
     }
 
     void fromJson(const nlohmann::json& j) override {

@@ -63,7 +63,7 @@ struct SkewedUniformDistributionBuilder : public DistributionBuilder {
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["distributionType"] = DistributionType::SKEWED_UNIFORM;
+        j["ClassName"] = "OperationCounter";
         j["hotSize"] = hotSize;
         j["hotRatio"] = hotRatio;
         j["hotDistBuilder"] = *hotDistBuilder;

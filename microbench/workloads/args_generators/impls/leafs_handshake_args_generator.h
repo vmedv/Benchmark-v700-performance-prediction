@@ -95,7 +95,7 @@ private:
     size_t range;
 
     DistributionBuilder *readDistBuilder = new UniformDistributionBuilder();
-    MutableDistributionBuilder *insertDistBuilder = new ZipfDistributionBuilder();
+    MutableDistributionBuilder *insertDistBuilder = new ZipfianDistributionBuilder();
     DistributionBuilder *removeDistBuilder = new UniformDistributionBuilder();
 
     DataMapBuilder *readDataMapBuilder = new IdDataMapBuilder();
@@ -149,7 +149,7 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::LEAFS_HANDSHAKE;
+        j["ClassName"] = "LeafsHandshakeArgsGeneratorBuilder";
         j["readDistBuilder"] = *readDistBuilder;
         j["insertDistBuilder"] = *insertDistBuilder;
         j["removeDistBuilder"] = *removeDistBuilder;

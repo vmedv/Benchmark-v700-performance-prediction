@@ -94,7 +94,7 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::DEFAULT;
+        j["ClassName"] = "DefaultArgsGeneratorBuilder";
         j["distributionBuilder"] = *distributionBuilder;
         j["dataMapBuilder"] = *dataMapBuilder;
     }

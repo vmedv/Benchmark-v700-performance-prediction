@@ -54,10 +54,10 @@ public:
 //template<typename K>
 struct PrefillInsertThreadLoopBuilder : public ThreadLoopBuilder {
     ArgsGeneratorBuilder *argsGeneratorBuilder = new DefaultArgsGeneratorBuilder();
-    size_t number_of_attempts = 10e+6;
+    size_t numberOfAttempts = 10e+6;
 
     PrefillInsertThreadLoopBuilder *setNumberOfAttempts(size_t _numberOfAttempts) {
-        number_of_attempts = _numberOfAttempts;
+        numberOfAttempts = _numberOfAttempts;
         return this;
     }
 
@@ -75,25 +75,25 @@ struct PrefillInsertThreadLoopBuilder : public ThreadLoopBuilder {
 //    template<typename K>
     ThreadLoop *build(globals_t *_g, Random64 &_rng, size_t _threadId, StopCondition *_stopCondition) override {
         return new PrefillInsertThreadLoop(_g, _rng, _threadId, _stopCondition, this->RQ_RANGE,
-                                           argsGeneratorBuilder->build(_rng), number_of_attempts);
+                                           argsGeneratorBuilder->build(_rng), numberOfAttempts);
     }
 
     void toJson(nlohmann::json &json) const override {
-        json["threadLoopType"] = ThreadLoopType::PREFILL_INSERT;
-        json["number_of_attempts"] = number_of_attempts;
+        json["ClassName"] = "PrefillInsertThreadLoopBuilder";
+        json["numberOfAttempts"] = numberOfAttempts;
         json["argsGeneratorBuilder"] = *argsGeneratorBuilder;
     }
 
     void fromJson(const nlohmann::json &j) override {
-        if (j.contains("number_of_attempts")) {
-            number_of_attempts = j["number_of_attempts"];
+        if (j.contains("numberOfAttempts")) {
+            numberOfAttempts = j["numberOfAttempts"];
         }
         argsGeneratorBuilder = getArgsGeneratorFromJson(j["argsGeneratorBuilder"]);
     }
 
     std::string toString(size_t indents = 1) override {
         return indented_title_with_str_data("Type", "Prefill Insert", indents)
-               + indented_title_with_data("Number of attempts", number_of_attempts, indents)
+               + indented_title_with_data("Number of attempts", numberOfAttempts, indents)
                + indented_title("Args generator", indents)
                + argsGeneratorBuilder->toString(indents + 1);
     }

@@ -13,7 +13,6 @@
 template<typename K>
 class SkewedInsertArgsGenerator : public ArgsGenerator<K> {
 //    PAD;
-    size_t range;
     size_t skewedLength;
     size_t insertedNumber;
     Distribution *distribution;
@@ -23,9 +22,8 @@ class SkewedInsertArgsGenerator : public ArgsGenerator<K> {
 
 public:
 
-    SkewedInsertArgsGenerator(size_t range, size_t skewedLength,
-                              Distribution *distribution, DataMap <K> *dataMap)
-            : range(range), insertedNumber(0), skewedLength(skewedLength),
+    SkewedInsertArgsGenerator(size_t skewedLength, Distribution *distribution, DataMap <K> *dataMap)
+            : insertedNumber(0), skewedLength(skewedLength),
               distribution(distribution), dataMap(dataMap) {}
 
     K nextGet() override {
@@ -33,7 +31,7 @@ public:
     }
 
     K nextInsert() override {
-        K value = 0;
+        K value;
         if (insertedNumber < skewedLength) {
             value = dataMap->get(insertedNumber++);
         } else {
@@ -100,14 +98,14 @@ public:
 
     SkewedInsertArgsGenerator<K> *build(Random64 &_rng) override {
         return new SkewedInsertArgsGenerator<K>(
-                range, skewedLength,
+                skewedLength,
                 distBuilder->build(_rng, range - skewedLength),
                 dataMapBuilder->build()
         );
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["argsGeneratorType"] = ArgsGeneratorType::SKEWED_INSERT;
+        j["ClassName"] = "SkewedInsertArgsGeneratorBuilder";
         j["distributionBuilder"] = *distBuilder;
         j["skewedSize"] = skewedSize;
         j["dataMapBuilder"] = *dataMapBuilder;

@@ -1,85 +1,3 @@
-[//]: # (# Implementing a new Workload)
-
-[//]: # (## Software Design)
-
-[//]: # (In [Figure]&#40;#bench_uml&#41; we manage the complexity of our more flexible benchmark through a top-down design. )
-
-[//]: # (Each thread &#40;gray box&#41; is assigned its own ThreadLoop. )
-
-[//]: # (Each ThreadLoop, in turn, is assigned a set of configurations,)
-
-[//]: # (which correspond to the operations it will run &#40;light blue box&#41;.)
-
-[//]: # (Each operation generates its arguments via a set of PRNGs, distributions over those PRNGs,)
-
-[//]: # (and mapping functions for converting the output of a distribution into a key or value. )
-
-[//]: # (Note that for simplicity, we depict a tree, but it is possible for a ThreadLoop to share a PRNG, DataMap,)
-
-[//]: # (or distribution among its blue boxes, and even for a read-only DataMap to be shared among ThreadLoops.)
-
-[//]: # ()
-[//]: # ([//]: # &#40;The workload consists of 4 types of entities:&#41;)
-[//]: # (To recap, the key entites are:)
-
-[//]: # (+ [Distribution]&#40;./microbench/workloads/distributions/distribution.h&#41; — a distribution of a random variable)
-
-[//]: # (+ [DataMap]&#40;./microbench/workloads/data_maps/data_map.h&#41; — for converting a distribution's output into a key)
-
-[//]: # (+ [ArgsGenerator]&#40;./microbench/workloads/args_generators/args_generator.h&#41; — creates operands for an operation)
-
-[//]: # (+ [ThreadLoop]&#40;./microbench/workloads/thread_loops/thread_loop.h&#41; — the logic for interacting with a data structure.)
-
-[//]: # ()
-[//]: # ()
-[//]: # (<a id="bench_uml">![bench_uml.pdf]&#40;bench_uml.pdf&#41;</a>)
-
-[//]: # ()
-[//]: # ()
-[//]: # (There are builders each type of entity:)
-
-[//]: # ([ThreadLoopBuilder]&#40;./microbench/workloads/thread_loops/thread_loop_builder.h&#41;,)
-
-[//]: # ([ArgsGeneratorBuilder]&#40;./microbench/workloads/args_generators/args_generator_builder.h&#41;,)
-
-[//]: # ([DistributionBuilder]&#40;./microbench/workloads/distributions/distribution_builder.h&#41;,)
-
-[//]: # ([DataMapBuilder]&#40;./microbench/workloads/data_maps/data_map_builder.h&#41;.)
-
-[//]: # ()
-[//]: # (There is also a [StopCondition]&#40;./microbench/workloads/stop_condition/stop_condition.h&#41;)
-
-[//]: # (– a condition in which the load stops working.)
-
-[//]: # ()
-[//]: # ([//]: # &#40;It will be described later.&#41;)
-[//]: # ()
-[//]: # (### DataMap )
-
-[//]: # ()
-[//]: # (The [DataMap]&#40;./microbench/workloads/data_maps/data_map.h&#41; is used by an ArgsGenerator)
-
-[//]: # (to translate an index into a key or value. The `get` function take an `index` and return the corresponding key or value. )
-
-[//]: # ()
-[//]: # (*NOTE:* The [DataMapBuilder]&#40;./microbench/workloads/data_maps/data_map_builder.h&#41; exists the `getOrBuild` function.)
-
-[//]: # (If it is the first calling, the function creates the new DataMap object and returns that,)
-
-[//]: # (else it returns the last created object. Thus, different ArgsGenerators can work with one DataMap. )
-
-[//]: # ()
-[//]: # (Also, the json representation of DataMapBuilder exist object id)
-
-[//]: # ()
-[//]: # (This function creates the new object if  )
-
-[//]: # ()
-[//]: # (### Distribution )
-
-[//]: # ()
-[//]: # ([Distribution]&#40;./microbench/workloads/distributions/distribution.h&#41;)
-
 # The adding entity
 
 The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).
@@ -139,8 +57,11 @@ public:
     }
     
     void toJson(nlohmann::json &j) const override {
-        // necessary for converting from json file to class
-        j["entityType"] = EntityType::EXAMPLE_ENTITY;
+        /**
+         * The name of the class. 
+         * Necessary for converting from json file to class
+         */
+        j["ClassName"] = "ExampleEntityBuilder";
         
         *converting raw parameters to json format*
     }
@@ -157,6 +78,10 @@ public:
 };
 ```
 
+#### Note
+
+Do not forget to specify the class name in the `j["ClassName"]`.
+
 #### Tools 
 
 To convert to json format, the [nlohmann::json](https://github.com/nlohmann/json) implementation is used.
@@ -171,23 +96,27 @@ from [globals_extern.h](microbench/globals_extern.h).
 
 ### Adding the new entity builder to enum and json_convector 
 
-The last part is to add the new Entity to the `EntityType` enum in the `<entity>_builder.h` file:
+The last part is to extend the `getEntityFromJson` function in the `<entity>_json_convector.h` file 
+using the class name you specified earlier in `j["ClassName"]`:
 ```c++
-enum class EntityType {
-..., EXAMPLE_ENTITY
-};
-```
-And expand `getEntityFromJson` function in the `<entity>_json_convector.h` file:
-```c++
-EntityBuilder *getEntityFromJson(const nlohmann::json &j) {
-    EntityType type = j["entityType"];
-    EntityBuilder * entityBuilder;
-    switch (type) {
-        case EntityType::EXAMPLE_ENTITY:
-            entityBuilder = new ExampleEntityBuilder();
-            break;
-        case {...}
-    }    
+EntityBuilder *getEntityFromJson(const nlohmann::json &j) {    
+    std::string className = j["ClassName"];
+    StopCondition *stopCondition;
+    if (className == "Timer") {
+        stopCondition = new Timer();
+        
+    std::string className = j["ClassName"];
+    EntityBuilder *entityBuilder;
+    
+    
+    if (className == "ExampleEntityBuilder") {
+        entityBuilder = new ExampleEntityBuilder();
+    } else if (...) {
+        ...
+    } else {    
+        setbench_error("JSON PARSER: Unknown class name StopCondition -- " + className)
+    }
+    
     entityBuilder->fromJson(j);
     return entityBuilder;
 }

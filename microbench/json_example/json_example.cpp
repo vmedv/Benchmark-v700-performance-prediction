@@ -13,6 +13,9 @@
 #include "workloads/thread_loops/impls/default_thread_loop.h"
 #include "workloads/bench_parameters.h"
 
+#include "workloads/distributions/builders/skewed_uniform_distribution_builder.h"
+
+
 typedef long long ll;
 
 //g++ -I. -I../common -I.. json_test2.cpp -o b.out
@@ -21,7 +24,7 @@ typedef long long ll;
 ArgsGeneratorBuilder *getDefaultArgsGeneratorBuilder() {
     return (new DefaultArgsGeneratorBuilder())
             ->setDistributionBuilder(
-                    (new ZipfDistributionBuilder())
+                    (new ZipfianDistributionBuilder())
                             ->setAlpha(1.0)
             )
             ->setDataMapBuilder(
@@ -61,7 +64,7 @@ ThreadLoopBuilder *getDefaultThreadLoopBuilder(ArgsGeneratorBuilder *argsGenerat
 }
 
 ThreadLoopBuilder *getTemporaryOperationThreadLoopBuilder(ArgsGeneratorBuilder *argsGeneratorBuilder) {
-    return (new TemporaryOperationThreadLoopBuilder())
+    return (new TemporaryOperationsThreadLoopBuilder())
             ->setStagesNumber(3)
             ->setStagesDurations(new size_t[3]{1000, 2000, 3000})
             ->setRatios(0, new RatioThreadLoopParameters(0.1, 0.1, 0))
@@ -87,7 +90,7 @@ int main() {
      * Create the Parameters class for benchmarking (test).
      */
 
-    Parameters *test;
+    Parameters *test = new Parameters();
 
     /**
      * We will need to set the stop condition and workloads.
