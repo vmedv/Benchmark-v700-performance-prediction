@@ -77,22 +77,6 @@ __thread int tid = 0;
 #include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
 #include "tree_stats.h"
 
-#define DS_ADAPTER_T ds_adapter<test_type, test_type, RECLAIM<>, ALLOC<>, POOL<> >
-
-#ifndef INSERT_FUNC
-#define INSERT_FUNC insertIfAbsent
-#endif
-
-#ifdef RQ_SNAPCOLLECTOR
-#define RQ_SNAPCOLLECTOR_OBJECT_TYPES , SnapCollector<node_t<test_type, test_type>, test_type>, SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper, ReportItem, CompactReportItem
-#define RQ_SNAPCOLLECTOR_OBJ_SIZES <<" SnapCollector="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>))<<" NodeWrapper="<<(sizeof(SnapCollector<node_t<test_type, test_type>, test_type>::NodeWrapper))<<" ReportItem="<<(sizeof(ReportItem))<<" CompactReportItem="<<(sizeof(CompactReportItem))
-#else
-#define RQ_SNAPCOLLECTOR_OBJECT_TYPES
-#define RQ_SNAPCOLLECTOR_OBJ_SIZES
-#endif
-
-#define KEY_TO_VALUE(key) key /* note: hack to turn a key into a pointer */
-#define VALUE_TYPE void *
 
 #ifdef USE_RCU
 #include "eer_prcu_impl.h"
@@ -130,61 +114,6 @@ rlu_thread_data_t * rlu_tdata = NULL;
 #define DEINIT_ALL \
     __RLU_DEINIT_ALL; \
     __RCU_DEINIT_ALL;
-
-#define THREAD_MEASURED_PRE \
-    tid = __tid; \
-    binding_bindThread(tid); \
-    test_type garbage = 0; \
-    test_type * rqResultKeys = new test_type[1 + g->KEY_MAX - g->KEY_MIN]; \
-    test_type * rqResultValues = new test_type[1 + g->KEY_MAX - g->KEY_MIN]; \
-    __RLU_INIT_THREAD; \
-    __RCU_INIT_THREAD; \
-    g->dsAdapter->initThread(tid); \
-    papi_create_eventset(tid); \
-    __sync_fetch_and_add(&g->running, 1); \
-    __sync_synchronize(); \
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } \
-    GSTATS_SET(tid, time_thread_start, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
-    papi_start_counters(tid); \
-    int cnt = 0; \
-    int rq_cnt = 0; \
-    DURATION_START(tid);
-
-#define THREAD_MEASURED_POST \
-    __sync_fetch_and_add(&g->running, -1); \
-    DURATION_END(tid, duration_all_ops); \
-    GSTATS_SET(tid, time_thread_terminate, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - g->startTime).count()); \
-    SOFTWARE_BARRIER; \
-    papi_stop_counters(tid); \
-    SOFTWARE_BARRIER; \
-    while (g->running) { SOFTWARE_BARRIER; } \
-    g->dsAdapter->deinitThread(tid); \
-    __RCU_DEINIT_THREAD; \
-    __RLU_DEINIT_THREAD; \
-    delete[] rqResultKeys; \
-    delete[] rqResultValues; \
-    g->garbage += garbage;
-
-#define THREAD_PREFILL_PRE \
-    tid = __tid; \
-    binding_bindThread(tid); \
-    test_type garbage = 0; \
-    double insProbability = (parameters->INS_FRAC > 0 ? 100*parameters->INS_FRAC/(parameters->INS_FRAC+parameters->DEL_FRAC) : 50.); \
-    __RLU_INIT_THREAD; \
-    __RCU_INIT_THREAD; \
-    g->dsAdapter->initThread(tid); \
-    __sync_fetch_and_add(&g->running, 1); \
-    while (!g->start) { SOFTWARE_BARRIER; TRACE COUTATOMICTID("waiting to start"<<std::endl); } // wait to start
-
-#define THREAD_PREFILL_POST \
-    __sync_fetch_and_add(&g->running, -1); \
-    SOFTWARE_BARRIER; \
-    while (g->running) { SOFTWARE_BARRIER; } \
-    g->dsAdapter->deinitThread(tid); \
-    __RCU_DEINIT_THREAD; \
-    __RLU_DEINIT_THREAD; \
-    g->garbage += garbage;
-
 
 
 
@@ -237,219 +166,20 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #define RQS_BETWEEN_TIME_CHECKS 10
 #endif
 
-//enum KeyGeneratorDistribution {
-//    UNIFORM, ZIPF, ZIPF_FAST, SKEWED_SETS, TEMPORARY_SKEWED
-//};
-
-struct globals_t {
-    PAD;
-    // const
-    const test_type NO_VALUE;
-    const test_type KEY_MIN; // must be smaller than any key that can be inserted/deleted
-    const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this! (and larger than any key that can be inserted/deleted)
-    const long long PREFILL_INTERVAL_MILLIS;
-    PAD;
-    // write once
-    long elapsedMillis;
-    long long prefillKeySum;
-    long long prefillSize;
-    std::chrono::time_point<std::chrono::high_resolution_clock> programExecutionStartTime;
-    std::chrono::time_point<std::chrono::high_resolution_clock> endTime;
-    PAD;
-    std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
-    long long startClockTicks;
-    PAD;
-    long elapsedMillisNapping;
-    std::chrono::time_point<std::chrono::high_resolution_clock> prefillStartTime;
-    PAD;
-    volatile test_type garbage; // used to prevent optimizing out some code
-    PAD;
-    DS_ADAPTER_T *dsAdapter; // the data structure
-    PAD;
-    KeyGeneratorType keygenType;
-    PAD;
-    KeyGeneratorBuilder<test_type> *keyGeneratorBuilder;
-
-    KeyGenerator<test_type> **keygens;
-    PAD;
-    // We want to prefill with uniform because  Zipf generation is slow for large key ranges (and either way the
-    // probability of a given key being in the data structure is 50%).
-//    KeyGenerator<test_type> *prefillKeygens[MAX_THREADS_POW2];
-    KeyGenerator<test_type> **prefillKeygens;
-    PAD;
-    Random64 rngs[MAX_THREADS_POW2]; // create per-thread random number generators (padded to avoid false sharing)
-//    PAD; // not needed because of padding at the end of rngs
-    volatile bool start;
-    PAD;
-    volatile bool done;
-    PAD;
-    volatile int running; // number of threads that are running
-    PAD;
-    volatile bool debug_print;
-    PAD;
-
-    globals_t(size_t maxkeyToGenerate, KeyGeneratorBuilder<test_type> *_keyGeneratorBuilder)
-            : NO_VALUE(-1), KEY_MIN(0) /*std::numeric_limits<test_type>::min()+1)*/
-            , KEY_MAX(maxkeyToGenerate + 1), PREFILL_INTERVAL_MILLIS(200),
-              keyGeneratorBuilder(_keyGeneratorBuilder),
-              keygenType(_keyGeneratorBuilder->keyGeneratorType) {
-        debug_print = 0;
-//        zipfKeygenData = NULL;
-//        zipfFastKeygenData = NULL;
-        srand(time(0));
-        for (int i = 0; i < MAX_THREADS_POW2; ++i) {
-            rngs[i].setSeed(rand());
-        }
-
-        prefillKeygens = new KeyGenerator<test_type> *[MAX_THREADS_POW2];
-
-        keygens = keyGeneratorBuilder->generateKeyGenerators(maxkeyToGenerate, rngs);
-
-        for (size_t i = 0; i < MAX_THREADS_POW2; ++i) {
-            // (1)
-            prefillKeygens[i] = keygens[i];
-        }
-
-        start = false;
-        done = false;
-        running = 0;
-        dsAdapter = NULL;
-        garbage = 0;
-        prefillKeySum = 0;
-        prefillSize = 0;
-    }
-
-    void enable_debug_print() {
-        debug_print = 1;
-    }
-
-    void disable_debug_print() {
-        debug_print = 0;
-    }
+#include "workloads/bench_parameters.h"
+#include "workloads/thread_loops/thread_loop_impl.h"
 
 #include "globals_t_impl.h"
 #include "statistics.h"
 #include "parse_argument.h"
 
-            // (1) double-free
-            // if (keygens[i]) {
-            //     delete keygens[i];
-            // }
+void bindThreads(int nthreads) {
+    // setup thread pinning/binding
 
-        }
-
-        delete keyGeneratorBuilder;
-    }
-};
-
-
-template<class GlobalsT>
-void thread_timed(GlobalsT *g, int __tid) {
-    THREAD_MEASURED_PRE;
-    int tid = __tid;
-    while (!g->done) {
-        ++cnt;
-        VERBOSE if (cnt && ((cnt % 1000000) == 0)) COUTATOMICTID("op# " << cnt << std::endl);
-        test_type key;
-        double op = g->rngs[tid].next(100000000) / 1000000.;
-        if (op < parameters->INS_FRAC) {
-            key = g->keygens[tid]->next_insert();
-
-            TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
-            if (g->dsAdapter->INSERT_FUNC(tid, key, KEY_TO_VALUE(key)) == g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
-                GSTATS_ADD(tid, key_checksum, key);
-                // GSTATS_ADD(tid, size_checksum, 1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-            }
-            GSTATS_ADD(tid, num_inserts, 1);
-        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC) {
-            key = g->keygens[tid]->next_erase();
-            TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-            if (g->dsAdapter->erase(tid, key) != g->dsAdapter->getNoValue()) {
-                TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
-                GSTATS_ADD(tid, key_checksum, -key);
-                // GSTATS_ADD(tid, size_checksum, -1);
-            } else {
-                TRACE COUTATOMICTID("### completed READ-ONLY" << std::endl);
-            }
-            GSTATS_ADD(tid, num_deletes, 1);
-        } else if (op < parameters->INS_FRAC + parameters->DEL_FRAC + parameters->RQ) {
-            test_type leftKey = g->keygens[tid]->next_range();
-            test_type rightKey = g->keygens[tid]->next_range();
-            if (leftKey > rightKey) {
-                std::swap(leftKey, rightKey);
-            }
-            ++rq_cnt;
-            size_t rqcnt;
-            if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys, rqResultValues))) {
-                garbage += rqResultKeys[0] +
-                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-            }
-            GSTATS_ADD(tid, num_rq, 1);
-
-//            // TODO: make this respect KeyGenerators for non-uniform distributions
-//            uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-//            assert(_key >= 1);
-//            assert(_key <= MAXKEY);
-//            assert(_key <= std::max(1, MAXKEY - RQSIZE));
-//            assert(MAXKEY > RQSIZE || _key == 0);
-//            key = (test_type) _key;
-//            ++rq_cnt;
-//            size_t rqcnt;
-//            if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
-//                                                  (VALUE_TYPE*) rqResultValues))) {
-//                garbage += rqResultKeys[0] +
-//                           rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-//            }
-//            GSTATS_ADD(tid, num_rq, 1);
-        } else {
-            key = g->keygens[tid]->next_read();
-            if (g->dsAdapter->contains(tid, key)) {
-                garbage += key; // prevent optimizing out
-            }
-            GSTATS_ADD(tid, num_searches, 1);
-        }
-        // GSTATS_ADD(tid, num_operations, 1);
-    }
-    THREAD_MEASURED_POST;
-}
-
-template<class GlobalsT>
-void thread_rq(GlobalsT *g, int __tid) {
-    THREAD_MEASURED_PRE;
-    while (!g->done) {
-        test_type leftKey = g->keygens[tid]->next_range();
-        test_type rightKey = g->keygens[tid]->next_range();
-        if (leftKey > rightKey) {
-            std::swap(leftKey, rightKey);
-        }
-
-        size_t rqcnt;
-        if ((rqcnt = g->dsAdapter->rangeQuery(tid, leftKey, rightKey, rqResultKeys,
-                                              rqResultValues))) {
-            garbage += rqResultKeys[0] +
-                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-        }
-//
-//        // TODO: make this respect KeyGenerators for non-uniform distributions
-//        uint64_t _key = g->rngs[tid].next() % std::max(1, MAXKEY - RQSIZE) + 1;
-//        assert(_key >= 1);
-//        assert(_key <= MAXKEY);
-//        assert(_key <= std::max(1, MAXKEY - RQSIZE));
-//        assert(MAXKEY > RQSIZE || _key == 0);
-//        test_type key = (test_type) _key;
-//        size_t rqcnt;
-//        TIMELINE_START(tid);
-//        if ((rqcnt = g->dsAdapter->rangeQuery(tid, key, key + RQSIZE - 1, rqResultKeys,
-//                                              (VALUE_TYPE*) rqResultValues))) {
-//            garbage += rqResultKeys[0] +
-//                       rqResultKeys[rqcnt - 1]; // prevent rqResultValues and count from being optimized out
-//        }
-        TIMELINE_END(tid, "RQThreadOperation");
-        GSTATS_ADD(tid, num_rq, 1);
-        GSTATS_ADD(tid, num_operations, 1);
+    binding_configurePolicy(nthreads);
+    std::cout << "ACTUAL_THREAD_BINDINGS=";
+    for (int i = 0; i < nthreads; ++i) {
+        std::cout << (i ? "," : "") << binding_getActualBinding(i);
     }
     std::cout << std::endl;
 //    if (!binding_isInjectiveMapping(nthreads)) {
