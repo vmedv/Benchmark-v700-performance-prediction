@@ -8,7 +8,7 @@
 #include "workloads/stop_condition/stop_condition.h"
 #include "globals_t.h"
 
-#define VALUE_TYPE void *
+//#define VALUE_TYPE void *
 
 typedef long long K;
 

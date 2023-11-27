@@ -11,6 +11,8 @@ using namespace std;
 
 #define DATA_STRUCTURE_T Zset<K, V>
 
+#define REDIS
+
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
 private:

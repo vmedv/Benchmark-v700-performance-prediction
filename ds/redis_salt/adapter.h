@@ -18,6 +18,8 @@ constexpr double REBUILD_FACTOR = 0.75 /* 0.25 */;
 
 #define DATA_STRUCTURE_T Salt<K, V, CP>
 
+#define REDIS
+
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
 private:

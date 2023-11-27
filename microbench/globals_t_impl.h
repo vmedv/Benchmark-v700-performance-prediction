@@ -7,15 +7,15 @@
 
 typedef long long test_type;
 
-#ifdef REDIS
-    #define VALUE_TYPE test_type
-    #define KEY_TO_VALUE(key) key
-#else
-    #define VALUE_TYPE void *
-    #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
-#endif
-
-#define DS_ADAPTER_T ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >
+//#ifdef REDIS
+//    #define VALUE_TYPE test_type
+//    #define KEY_TO_VALUE(key) key
+//#else
+//    #define VALUE_TYPE void *
+//    #define KEY_TO_VALUE(key) &key /* note: hack to turn a key into a pointer */
+//#endif
+//
+//#define DS_ADAPTER_T ds_adapter<test_type, VALUE_TYPE, RECLAIM<>, ALLOC<>, POOL<> >
 
 //#ifndef INSERT_FUNC
 //#define INSERT_FUNC insertIfAbsent
@@ -25,11 +25,13 @@ typedef long long test_type;
 #include "globals_extern.h"
 #include "workloads/bench_parameters.h"
 #include "adapter.h"
+#include "globals_t.h"
 
 struct globals_t {
     PAD;
     // const
-    void *const NO_VALUE;
+//    void *const NO_VALUE;
+    VALUE_TYPE const NO_VALUE;
     const test_type KEY_MIN; // must be smaller than any key that can be inserted/deleted
     const test_type KEY_MAX; // must be less than std::max(), because the snap collector needs a reserved key larger than this! (and larger than any key that can be inserted/deleted)
     const long long PREFILL_INTERVAL_MILLIS;
