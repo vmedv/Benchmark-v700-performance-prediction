@@ -398,7 +398,7 @@ public:
     }
 
     void toJson(nlohmann::json &j) const override {
-        j["ClassName"] = "CreakersAndWaveArgsGeneratorBuilder";
+        j["ClassName"] = "CreakersAndWavePrefillArgsGeneratorBuilder";
         j["creakersSize"] = creakersSize;
         j["waveSize"] = waveSize;
         j["dataMapBuilder"] = *dataMapBuilder;

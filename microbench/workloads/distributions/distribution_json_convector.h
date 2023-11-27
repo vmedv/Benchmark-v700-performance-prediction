@@ -16,7 +16,7 @@ DistributionBuilder *getDistributionFromJson(const nlohmann::json &j) {
     DistributionBuilder *distributionBuilder;
     if (className == "UniformDistributionBuilder") {
         distributionBuilder = new UniformDistributionBuilder();
-    } else if (className == "ZipfDistributionBuilder") {
+    } else if (className == "ZipfianDistributionBuilder") {
         distributionBuilder = new ZipfianDistributionBuilder();
     } else if (className == "SkewedUniformDistributionBuilder") {
         distributionBuilder = new SkewedUniformDistributionBuilder();
