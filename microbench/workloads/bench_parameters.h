@@ -70,6 +70,11 @@ struct BenchParameters {
         return prefill->getNumThreads() + warmUp->getNumThreads() + test->getNumThreads();
     }
 
+    size_t getMaxThreads() {
+        return std::max(prefill->getNumThreads(),
+                        std::max(warmUp->getNumThreads(), test->getNumThreads()));
+    }
+
     void init() {
         prefill->init(range);
         warmUp->init(range);

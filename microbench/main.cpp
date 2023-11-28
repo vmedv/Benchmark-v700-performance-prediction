@@ -189,7 +189,7 @@ void bindThreads(int nthreads) {
 }
 
 void createDataStructure(globals_t *g) {
-    g->dsAdapter = new DS_ADAPTER_T(g->benchParameters->getTotalThreads(), g->KEY_MIN,
+    g->dsAdapter = new DS_ADAPTER_T(g->benchParameters->getMaxThreads(), g->KEY_MIN,
                                     g->KEY_MAX, g->NO_VALUE,
                                     g->rngs);
 }
