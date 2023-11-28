@@ -661,6 +661,7 @@ int main(int argc, char **argv) {
     PRINTS(FIND_FUNC)
     PRINTS(INSERT_FUNC)
     PRINTS(ERASE_FUNC)
+    PRINTS(GET_FUNC)
     PRINTS(RQ_FUNC)
     PRINTS(RECLAIM)
     PRINTS(ALLOC)

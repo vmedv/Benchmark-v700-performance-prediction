@@ -7,8 +7,8 @@ To run the following implementations of [Redis sorted sets](https://redis.io/doc
 - [redis_sait](../ds/redis_sait/) - self-adjusting IST;
 - [redis_salt](../ds/redis_salt/) - self-adjusting Logarithmic Tree;
 
-please add the following line in [microbench/Makefile](../microbench/Makefile) to build executable with defined flag **REDIS**:
-
-```
-FLAGS += -DREDIS
-```
+[//]: # (please add the following line in [microbench/Makefile]&#40;../microbench/Makefile&#41; to build executable with defined flag **REDIS**:)
+[//]: # ()
+[//]: # (```)
+[//]: # (FLAGS += -DREDIS)
+[//]: # (```)
