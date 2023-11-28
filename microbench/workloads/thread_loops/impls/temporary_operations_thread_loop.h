@@ -73,7 +73,7 @@ public:
             this->executeRangeQuery(keys.first, keys.second);
         } else { // read
             K key = this->argsGenerator->nextGet();
-            this->executeGet(key);
+            this->GET_FUNC(key);
         }
     }
 };
