@@ -1,17 +1,17 @@
-[submodule "common/recordmgr"]
-	path = common/recordmgr
+[submodule "cpp/common/recordmgr"]
+	path = cpp/common/recordmgr
 	url = https://gitlab.com/trbot86/recordmanager.git
-[submodule "tools"]
-	path = tools
+[submodule "cpp/tools"]
+	path = cpp/tools
 	url = https://gitlab.com/trbot86/tools.git
-[submodule "ds/srivastava_abtree_mcs"]
-	path = ds/srivastava_abtree_mcs
+[submodule "cpp/ds/srivastava_abtree_mcs"]
+	path = cpp/ds/srivastava_abtree_mcs
 	url = https://gitlab.com/SrivastavaAnubhav/srivastava_abtree.git
 	branch = mcs-noheightbound
-[submodule "ds/srivastava_abtree_pub"]
-	path = ds/srivastava_abtree_pub
+[submodule "cpp/ds/srivastava_abtree_pub"]
+	path = cpp/ds/srivastava_abtree_pub
 	url = https://gitlab.com/SrivastavaAnubhav/srivastava_abtree.git
 	branch = pub-noheightbound
-[submodule "json"]
-	path = json
+[submodule "cpp/json"]
+	path = cpp/json
 	url = https://github.com/nlohmann/json.git
