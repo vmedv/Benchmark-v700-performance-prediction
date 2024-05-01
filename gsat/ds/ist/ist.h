@@ -46,7 +46,7 @@ public:
               leaf_size_(leaf_size),
               min_rebuild_bound_(min_rebuild_bound),
               rebuild_factor_(rebuild_factor),
-              root_(new Node(left_, right_, leaf_size_, min_rebuild_bound_)) {
+              root_(CreateRoot()) {
         Check(0.5 <= alpha_ && alpha_ < 1)
         Check(left < right)
         Check(leaf_size_ > 0)
@@ -211,6 +211,9 @@ private:
         CollectNonMarked(node, rep, value_data, at);
 
         Node *result = BuildIdealTree(rep, value_data, 0, at, node->left, node->right);
+        if (!result && node == root_) {
+            result = CreateRoot();
+        }
 
         delete[] value_data;
         delete[] rep;
@@ -309,6 +312,10 @@ private:
         Check(total_size <= node->total_asize)
 
         return total_size;
+    }
+
+    Node* CreateRoot() const {
+        return new Node(left_, right_, leaf_size_, min_rebuild_bound_);
     }
 
     const Value no_value_;

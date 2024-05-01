@@ -49,7 +49,9 @@ template<typename K>
 K *ThreadLoop::executeInsert(K &key) {
     TRACE COUTATOMICTID("### calling INSERT " << key << std::endl);
 
-    K *value = (K *) g->dsAdapter->insertIfAbsent(threadId, key, KEY_TO_VALUE(key));
+
+    VALUE_TYPE value = g->dsAdapter->insertIfAbsent(threadId, key, KEY_TO_VALUE(key));
+//    K *value = (K *) g->dsAdapter->insertIfAbsent(threadId, key, KEY_TO_VALUE(key));
 
     if (value == g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed INSERT modification for " << key << std::endl);
@@ -63,13 +65,14 @@ K *ThreadLoop::executeInsert(K &key) {
     GSTATS_ADD(threadId, num_inserts, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
-    return value;
+    return (K *) value;
 }
 
 template<typename K>
 K *ThreadLoop::executeRemove(const K &key) {
     TRACE COUTATOMICTID("### calling ERASE " << key << std::endl);
-    K *value = (K *) g->dsAdapter->erase(this->threadId, key);
+//    K *value = (K *) g->dsAdapter->erase(this->threadId, key);
+    VALUE_TYPE value = g->dsAdapter->erase(this->threadId, key);
 
     if (value != this->g->dsAdapter->getNoValue()) {
         TRACE COUTATOMICTID("### completed ERASE modification for " << key << std::endl);
@@ -83,12 +86,13 @@ K *ThreadLoop::executeRemove(const K &key) {
     GSTATS_ADD(threadId, num_removes, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
-    return value;
+    return (K *) value;
 }
 
 template<typename K>
 K *ThreadLoop::executeGet(const K &key) {
-    K *value = (K *) this->g->dsAdapter->find(this->threadId, key);
+//    K *value = (K *) this->g->dsAdapter->find(this->threadId, key);
+    VALUE_TYPE value = this->g->dsAdapter->find(this->threadId, key);
 
     if (value != this->g->dsAdapter->getNoValue()) {
         garbage += key; // prevent optimizing out
@@ -99,7 +103,7 @@ K *ThreadLoop::executeGet(const K &key) {
     GSTATS_ADD(threadId, num_searches, 1);
     GSTATS_ADD(threadId, num_operations, 1);
 
-    return value;
+    return (K *) value;
 }
 
 template<typename K>

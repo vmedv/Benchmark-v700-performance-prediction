@@ -19,8 +19,8 @@ The project has the following structure:
 └── tools
 ```
 
-The main folders to pay attention to are [ds](./ds) and [microbench](./microbench/). 
-The first one stands for data structures - all available for benchmarking data structures are stored there. 
+The main folders to pay attention to are [ds](./ds) and [microbench](./microbench/).  
+The first one stands for data structures - all available for benchmarking data structures are stored there
 The latter stands for launching benchmarks and there you can specify many arguments, 
 in particular, [different workloads](./WORKLOADS.md).  
 
@@ -31,12 +31,15 @@ in particular, [different workloads](./WORKLOADS.md).
 
 
 Before launching benchmarks for different data structures --- 
-it's necessary to build the project and it can be done with the following command:
+it's necessary to build the project, and it can be done with the following command:
 
 ```shell
 cd setbench/microbench
 make -j
 ```
+
+You can read about the redis implementation in [REDIS](./gsat/REDIS.md) 
+and about other tree implementations in [TREES_IMPLEMENTATION](./gsat/TREES_IMPLEMENTATION.md).
 
 
 # LAUNCH
@@ -206,3 +209,5 @@ Convert parameters to json format and output:
 [//]: # (```shell)
 [//]: # (sudo sysctl kernel.perf_event_paranoid=1)
 [//]: # (```)
+
+

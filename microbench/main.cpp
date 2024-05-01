@@ -189,7 +189,7 @@ void bindThreads(int nthreads) {
 }
 
 void createDataStructure(globals_t *g) {
-    g->dsAdapter = new DS_ADAPTER_T(g->benchParameters->getTotalThreads(), g->KEY_MIN,
+    g->dsAdapter = new DS_ADAPTER_T(g->benchParameters->getMaxThreads(), g->KEY_MIN,
                                     g->KEY_MAX, g->NO_VALUE,
                                     g->rngs);
 }
@@ -661,6 +661,7 @@ int main(int argc, char **argv) {
     PRINTS(FIND_FUNC)
     PRINTS(INSERT_FUNC)
     PRINTS(ERASE_FUNC)
+    PRINTS(GET_FUNC)
     PRINTS(RQ_FUNC)
     PRINTS(RECLAIM)
     PRINTS(ALLOC)

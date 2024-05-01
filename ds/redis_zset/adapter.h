@@ -7,22 +7,11 @@ using namespace std;
 
 #include "errors.h"
 #include "record_manager.h"
-#include "../../gsat/common/adapter_node_handler.h"
+#include "zset.h"
 
-#ifdef USE_TREE_STATS
-#   include "tree_stats.h"
-#endif
+#define DATA_STRUCTURE_T Zset<K, V>
 
-#include "../../gsat/ds/salt/salt.h"
-
-// PARAMETERS BEGIN
-constexpr int LEAF_SIZE = 4;
-constexpr int64_t MIN_REBUILD_BOUND = 225;
-constexpr double REBUILD_FACTOR = 0.75;
-// PARAMETERS END
-
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V>>
-#define DATA_STRUCTURE_T SALT<K, V, ClearPolicy::kRoot>
+#define REDIS
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -37,7 +26,7 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
             : NO_VALUE(VALUE_RESERVED)
-            , ds(new DATA_STRUCTURE_T(VALUE_RESERVED, KEY_MIN, KEY_MAX + 1, LEAF_SIZE, MIN_REBUILD_BOUND, REBUILD_FACTOR))
+            , ds(new DATA_STRUCTURE_T(NO_VALUE))
     { }
 
     ~ds_adapter() {
@@ -49,22 +38,22 @@ public:
     }
 
     void initThread(const int tid) {
-//      ds->initThread(tid);
+        // ds->initThread(tid);
     }
     
     void deinitThread(const int tid) {
-//        ds->deinitThread(tid);
+       // ds->deinitThread(tid);
     }
 
     void warmupEnd() {
     }
 
     V insert(const int tid, const K& key, const V& val) {
-        setbench_error("insert-replace functionality not implemented for this data structure");
+        setbench_error("not implemented");
     }
 
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return ds->Insert(key, val);
+        return ds->InsertIfAbsent(val, key);
     }
 
     V erase(const int tid, const K& key) {
@@ -72,20 +61,20 @@ public:
     }
 
     V find(const int tid, const K& key) {
-        return ds->Find(key);
-    }
-
-    bool contains(const int tid, const K& key) {
-        return ds->Contains(key);
-    }
-
-    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("not implemented");
     }
 
+    bool contains(const int tid, const K& key) {
+        return ds->Count(key, key + 5);
+    }
+
+    int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
+        return ds->GetRange(lo, hi, resultKeys, resultValues);
+    }
+
     void printSummary() {
-//        ds->printDebuggingDetails();
-//        ds->print_inner_structure();
+       // ds->printDebuggingDetails();
+       // ds->print_inner_structure();
     }
 
     bool validateStructure() {
@@ -99,10 +88,6 @@ public:
     }
 
     void printObjectSizes() {
-        std::cout<< "sizes: node=" << (sizeof(typename DATA_STRUCTURE_T::Node)) << std::endl;
+        // std::cout<< "sizes: node=" << (sizeof(typename DATA_STRUCTURE_T::Node)) << std::endl;
     }
-
-#ifdef USE_TREE_STATS
-    ADAPTER_NODE_HANDLER
-#endif
 };
