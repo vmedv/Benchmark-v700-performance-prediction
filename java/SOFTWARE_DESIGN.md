@@ -11,22 +11,22 @@ or distribution among its blue boxes, and even for a read-only DataMap to be sha
 
 [//]: # (The workload consists of 4 types of entities:)
 To recap, the key entites are:
-+ [Distribution](./src/contention/benchmark/workload/distributions/abstractions/Distribution.java) — a distribution of a random variable
-+ [DataMap](./src/contention/benchmark/workload/data/map/abstractions/DataMap.java) — converts a distribution's output into a key
-+ [ArgsGenerator](./src/contention/benchmark/workload/args/generators/abstractions/ArgsGenerator.java) — creates operands for an operation
-+ [ThreadLoop](./src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoop.java) — the logic for interacting with a data structure.
++ [Distribution](src/contention/benchmark/workload/distributions/abstractions/Distribution.java) — a distribution of a random variable
++ [DataMap](src/contention/benchmark/workload/data/map/abstractions/DataMap.java) — converts a distribution's output into a key
++ [ArgsGenerator](src/contention/benchmark/workload/args/generators/abstractions/ArgsGenerator.java) — creates operands for an operation
++ [ThreadLoop](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoop.java) — the logic for interacting with a data structure.
 
 
 <a id="bench_uml">![bench_uml.png](./bench_uml.png)</a>
 
 
 There are builders each type of entity:
-[ThreadLoopBuilder](./src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
-[ArgsGeneratorBuilder](./src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
-[DistributionBuilder](./src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
-[DataMapBuilder](./src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
+[ThreadLoopBuilder](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
+[ArgsGeneratorBuilder](src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
+[DistributionBuilder](src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
+[DataMapBuilder](src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
 
-There is also a [StopCondition](./src/contention/benchmark/workload/stop/condition/StopCondition.java)
+There is also a [StopCondition](src/contention/benchmark/workload/stop/condition/StopCondition.java)
 – a condition in which the load stops working.
 
 [//]: # (It will be described later.)
@@ -35,11 +35,11 @@ There is also a [StopCondition](./src/contention/benchmark/workload/stop/conditi
 
 ### DataMap
 
-The [DataMap](./src/contention/benchmark/workload/data/map/abstractions/DataMap.java) is used by an ArgsGenerator
+The [DataMap](src/contention/benchmark/workload/data/map/abstractions/DataMap.java) is used by an ArgsGenerator
 to translate an index into a key or a value. The `get` function takes an `index` and returns the corresponding key or value.
 
 ##### NOTES
-The [DataMapBuilder](./src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java) provides the `getOrBuild` function.
+The [DataMapBuilder](src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java) provides the `getOrBuild` function.
 If it is the first call, the function creates the new DataMap object and returns a pointer to that,
 else it returns the pointer to last created object. Thus, different ArgsGenerators can work with one DataMap.  
 The `getOrBuild` function does not need to be overridden. 
@@ -55,7 +55,7 @@ of the DataMapBuilder called with the same id will return a pointer to the same 
 
 ### Distribution
 
-The [Distribution](./src/contention/benchmark/workload/distributions/abstractions/Distribution.java) simulates some random variable.
+The [Distribution](src/contention/benchmark/workload/distributions/abstractions/Distribution.java) simulates some random variable.
 
 It is important to note that it generates some value from a distribution 
 that later is translated into an appropriate key or value by an ArgsGenerator. 
@@ -66,7 +66,7 @@ We also provide a MutableDistribution, which can change the random variable in r
 
 ### ArgsGenerator
 
-The [ArgsGenerator](./src/contention/benchmark/workload/args/generators/abstractions/ArgsGenerator.java) is used to generate keys for operations.  
+The [ArgsGenerator](src/contention/benchmark/workload/args/generators/abstractions/ArgsGenerator.java) is used to generate keys for operations.  
 In addition to specializing to the types used by a data structure, an ArgsGenerator can be stateful.  
 This is important when modeling temporal locality: 
 a thread-private ArgsGenerator can use a distribution 
@@ -86,7 +86,7 @@ __Example:__
 
 ### ThreadLoop
 
-The [ThreadLoop](./src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoop.java) decides which operation a thread should execute next. 
+The [ThreadLoop](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoop.java) decides which operation a thread should execute next. 
 It is initialized for each thread separately and uses the described ArgsGenerators. 
 Threads are not required to use the same ThreadLoop implementation. 
 ThreadLoop has only one main method `step` 
@@ -101,7 +101,7 @@ This is important for the benchmark in order to compare different data structure
 
 ### StopCondition
 
-The [StopCondition](./src/contention/benchmark/workload/stop/condition/StopCondition.java) determines the workload operating time.
+The [StopCondition](src/contention/benchmark/workload/stop/condition/StopCondition.java) determines the workload operating time.
 The `isStopped` method is called by ThreadLoop before each execution of the `step` method, 
 and returns `false` if the ThreadLoop should continue and `true` if the ThreadLoop should terminate.  
 The countdown begins after calling the `start` function. 

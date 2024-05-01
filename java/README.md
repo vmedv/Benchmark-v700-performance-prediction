@@ -96,8 +96,8 @@ Java are E-STM, LSA, PSTM, SwissTM and TL2 as presented in:
 [//]: # (in particular, [different workloads]&#40;./WORKLOADS.md&#41;.  )
 
 ##### NOTE
-**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
-**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
+**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 
 
@@ -124,7 +124,7 @@ Commands to launch have the following pattern:
 
 + `-data-structure <data_structure_class_name>` or `-ds <data_structure_class_name>` — data structure class name;
 + `-json-file <file_name>` — file with launch parameters in the json format
-  ([BenchParameters](./src/contention/benchmark/workload/BenchParameters.java), [example](./src/contention/benchmark/json/JsonExample.java));
+  ([BenchParameters](src/contention/benchmark/workload/BenchParameters.java), [example](src/contention/benchmark/json/JsonExample.java));
 + `-result-file <file_name>` — file to output the results in the json format (optional);
 + `-iter <number of iterations>` — the number of benchmarking (default 1).
 
@@ -143,10 +143,10 @@ Benchmarking stages can also be specified separately:
 
 # Configuring Launch Parameters
 
-[Example of configuring launch parameters](./src/contention/benchmark/json/JsonExample.java).
+[Example of configuring launch parameters](src/contention/benchmark/json/JsonExample.java).
 Use `./gradlew toJson` to run.
 
-The first step is to create the [BenchParameters class](./src/contention/benchmark/workload/BenchParameters.java).
+The first step is to create the [BenchParameters class](src/contention/benchmark/workload/BenchParameters.java).
 The class stores the range of keys and parameters each of epoch: prefill, warm up and test.
 
 ```java
@@ -159,15 +159,15 @@ Set the range of keys.
     benchParameters.setRange(2048);
 ```
 
-Create the [Parameters class](./src/contention/benchmark/workload/Parameters.java) for benchmarking (test).
+Create the [Parameters class](src/contention/benchmark/workload/Parameters.java) for benchmarking (test).
 
 ```java
     Parameters test = new Parameters();
 ```
 
-Now, we need to set the [stop condition](./src/contention/benchmark/workload/stop/condition/StopCondition.java) and workloads.
+Now, we need to set the [stop condition](src/contention/benchmark/workload/stop/condition/StopCondition.java) and workloads.
 
-First, let's create and set a stop condition: [Timer](./src/contention/benchmark/workload/stop/condition/Timer.java) with 10 second (10000 millis).
+First, let's create and set a stop condition: [Timer](src/contention/benchmark/workload/stop/condition/Timer.java) with 10 second (10000 millis).
 
 ```java
     StopCondition stopCondition = new Timer(10000);
@@ -183,13 +183,13 @@ The workload consists of 4 types of entities:
 + ThreadLoop — the logic for interacting with a data structure.
 
 There are builders to create each type of entity:
-[ThreadLoopBuilder](./src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
-[ArgsGeneratorBuilder](./src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
-[DistributionBuilder](./src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
-[DataMapBuilder](./src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
+[ThreadLoopBuilder](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
+[ArgsGeneratorBuilder](src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
+[DistributionBuilder](src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
+[DataMapBuilder](src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
 
-**The software design is described in [SOFTWARE_DESIGN](./SOFTWARE_DESIGN.md).**  
-**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](./ADDING_NEW_WORKLOAD.md).**
+**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+**And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 Let's create a standard workload with Zipfian distribution.
 

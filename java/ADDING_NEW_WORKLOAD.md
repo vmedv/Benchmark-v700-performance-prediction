@@ -62,7 +62,7 @@ public class ExampleEntityBuilder implements EntityBuilder {
 #### Tools 
 
 To convert to json format, the [Gson](https://github.com/google/gson) implementation is used.
-Conversion occurs through the [JsonConvector](./src/contention/benchmark/json/JsonConverter.java) class.
+Conversion occurs through the [JsonConvector](src/contention/benchmark/json/JsonConverter.java) class.
 
 Sign parameters that should not be converted to json format using the `transient` modifier.
 
@@ -83,7 +83,7 @@ and initialization occurs during the call to the `start(numThreads)` function.
 The `ArrayDataMap` creates an array filled with values from the entire range of keys and shuffles them randomly. 
 When calling the `get(index)` method, returns the corresponding element from the array.  
 
-The [implementation](./src/contention/benchmark/workload/data/map/impls/ArrayDataMap.java) 
+The [implementation](src/contention/benchmark/workload/data/map/impls/ArrayDataMap.java) 
 and [builder](src/contention/benchmark/workload/data/map/builders/ArrayDataMapBuilder.java) of `ArrayDataMap`.
 
 ### Distribution
@@ -94,8 +94,8 @@ the random variable returns from first interval with `hotRatio` probability and 
 the size of first interval is `range * hotSize`, the size of second if `range * (1 - hotSize)`. 
 The random variable in intervals chooses uniformly. 
 
-The [implementation](./src/contention/benchmark/workload/distributions/impls/SkewedUniformDistribution.java)
-and [builder](./src/contention/benchmark/workload/distributions/builders/SkewedUniformDistributionBuilder.java) of `SkewedUniformDistribution`.
+The [implementation](src/contention/benchmark/workload/distributions/impls/SkewedUniformDistribution.java)
+and [builder](src/contention/benchmark/workload/distributions/builders/SkewedUniformDistributionBuilder.java) of `SkewedUniformDistribution`.
 
 ### ArgsGenerator
 
@@ -107,8 +107,8 @@ All other read operations are performed on the rest of the set.
 All other update operations are performed on the rest of the set.
 + `inter%` of keys are in the intersection of the working sets of read and update operations.
 
-The [implementation](./src/contention/benchmark/workload/args/generators/impls/SkewedSetsArgsGenerator.java)
-and [builder](./src/contention/benchmark/workload/args/generators/builders/SkewedSetsArgsGeneratorBuilder.java) of `SkewedSetsArgsGenerator`.
+The [implementation](src/contention/benchmark/workload/args/generators/impls/SkewedSetsArgsGenerator.java)
+and [builder](src/contention/benchmark/workload/args/generators/builders/SkewedSetsArgsGeneratorBuilder.java) of `SkewedSetsArgsGenerator`.
 
 ### TreadLoop
 
@@ -117,11 +117,11 @@ The `DefaultThreadLoop` selects the next operation with some fixed probability. 
 + `ue%` of operations are remove operations;
 + while `100 - ui - ue%` of operations are get operations.
 
-The [implementation](./src/contention/benchmark/workload/thread/loops/impls/DefaultThreadLoop.java)
-and [builder](./src/contention/benchmark/workload/thread/loops/builders/DefaultThreadLoopBuilder.java) of `DefaultThreadLoop`.
+The [implementation](src/contention/benchmark/workload/thread/loops/impls/DefaultThreadLoop.java)
+and [builder](src/contention/benchmark/workload/thread/loops/builders/DefaultThreadLoopBuilder.java) of `DefaultThreadLoop`.
 
 ### StopCondition
 
 The `Timer` accepts a `workTime` parameter in milliseconds, and the `isStopped` method returns true during that time.
 
-The implementation are presented in [Timer file](./src/contention/benchmark/workload/stop/condition/Timer.java)
+The implementation are presented in [Timer file](src/contention/benchmark/workload/stop/condition/Timer.java)
