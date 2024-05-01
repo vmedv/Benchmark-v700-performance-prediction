@@ -1,0 +1,70 @@
+{
+    "prefill": {
+        "numThreads": 1,
+        "stopCondition": {
+            "commonOperationLimit": 1024,
+            "stopConditionType": 1
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 1,
+                "threadLoopBuilder": {
+                    "argsGeneratorBuilder": {
+                        "argsGeneratorType": 0,
+                        "dataMapBuilder": {
+                            "dataMapType": 0,
+                            "id": 4
+                        },
+                        "distributionBuilder": {
+                            "distributionType": 0
+                        }
+                    },
+                    "threadLoopType": 2
+                }
+            }
+        ]
+    },
+    "range": 2048,
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "stopConditionType": 0,
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "argsGeneratorBuilder": {
+                        "argsGeneratorType": 3,
+                        "creakersDistribution": {
+                            "distributionType": 0
+                        },
+                        "creakersRatio": 0.2,
+                        "creakersSize": 0.1,
+                        "dataMap": {
+                            "dataMapType": 0,
+                            "id": 2
+                        },
+                        "waveDistribution": {
+                            "alpha": 1.0,
+                            "distributionType": 1
+                        },
+                        "waveSize": 0.2
+                    },
+                    "remRatio": 0.1,
+                    "insRatio": 0.1,
+                    "rqRatio": 0.0,
+                    "threadLoopType": 0
+                }
+            }
+        ]
+    },
+    "warmUp": {
+        "numThreads": 0,
+        "stopCondition": {
+            "stopConditionType": 0,
+            "workTime": 5000
+        }
+    }
+}
