@@ -15,17 +15,23 @@ class ZipfDistribution : public MutableDistribution {
 private:
     PAD;
     Random64 &rng;
+    size_t last_range;
     double area;
     double alpha;
     PAD;
 public:
 
     ZipfDistribution(Random64 &_rng, double _alpha = 1.0, size_t _range = 0)
-            : rng(_rng), alpha(_alpha) {
+            : rng(_rng), alpha(_alpha), last_range(_range) {
         setRange(_range);
     }
 
     void setRange(size_t range) override {
+        if (last_range == range)
+            return;
+
+        last_range = range;
+
         ++range;
         if (alpha == 1.0) {
             area = log(range);

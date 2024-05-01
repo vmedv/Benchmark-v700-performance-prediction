@@ -88,7 +88,7 @@ public:
 
     std::vector<ThreadLoopSettings *> threadLoopBuilders;
 
-    Parameters() : numThreads(0), stopCondition(new Timer(5000)) {}
+    Parameters() : numThreads(0), stopCondition(nullptr) {}
 
     Parameters(const Parameters &p) = default;
 
@@ -132,6 +132,10 @@ public:
     }
 
     Parameters *init(int range) {
+        if (stopCondition == nullptr) {
+            stopCondition = new Timer(5000);
+        }
+
         for (ThreadLoopSettings *threadLoopSettings: threadLoopBuilders) {
             threadLoopSettings->threadLoopBuilder->init(range);
         }

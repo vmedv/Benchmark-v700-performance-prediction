@@ -19,9 +19,12 @@ struct BenchParameters {
 
     BenchParameters() {
         range = 2048;
-        test = new Parameters();
-        prefill = new Parameters();
-        warmUp = new Parameters();
+        test = nullptr;
+        prefill = nullptr;
+        warmUp = nullptr;
+//        test = new Parameters();
+//        prefill = new Parameters();
+//        warmUp = new Parameters();
     }
 
     BenchParameters(const BenchParameters &p) = default;
@@ -71,6 +74,15 @@ struct BenchParameters {
     }
 
     void init() {
+        if (test == nullptr) {
+            test = new Parameters();
+        }
+        if (prefill == nullptr) {
+            prefill = new Parameters();
+        }
+        if (warmUp == nullptr) {
+            warmUp = new Parameters();
+        }
         prefill->init(range);
         warmUp->init(range);
         test->init(range);
