@@ -117,7 +117,7 @@ public int nextGet() {
 
 ### ThreadLoop
 
-The [ThreadLoop](microbench/workloads/thread_loops/thread_loop.h) decides which operation a thread should execute next.
+[//]: # (The [ThreadLoop]&#40;microbench/workloads/thread_loops/thread_loop.h&#41; decides which operation a thread should execute next.)  
 The `ThreadLoop` decides which operation a thread should execute next.
 It is initialized for each thread separately and uses the described ArgsGenerators.
 Threads are not required to use the same ThreadLoop implementation.
