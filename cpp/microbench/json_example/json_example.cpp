@@ -15,62 +15,63 @@
 
 #include "workloads/distributions/builders/skewed_uniform_distribution_builder.h"
 
-
 typedef long long ll;
 
-//g++ -I. -I../common -I.. json_test2.cpp -o b.out
-
-
-ArgsGeneratorBuilder *getDefaultArgsGeneratorBuilder() {
+ArgsGeneratorBuilder* getDefaultArgsGeneratorBuilder() {
     return (new DefaultArgsGeneratorBuilder())
-            ->setDistributionBuilder(
-                    (new ZipfianDistributionBuilder())
-                            ->setAlpha(1.0)
-            )
-            ->setDataMapBuilder(
-                    new ArrayDataMapBuilder()
-            );
+        ->setDistributionBuilder((new ZipfianDistributionBuilder())->setAlpha(1.0))
+        ->setDataMapBuilder(new ArrayDataMapBuilder());
 }
 
-ArgsGeneratorBuilder *getTemporarySkewedArgsGeneratorBuilder() {
+ArgsGeneratorBuilder* getTemporarySkewedArgsGeneratorBuilder() {
     return (new TemporarySkewedArgsGeneratorBuilder())
-            ->setSetNumber(5)
-            ->setHotTimes(new long long[5]{1, 2, 3, 4, 5})
-            ->setRelaxTimes(new long long[5]{1, 2, 3, 4, 5})
-            ->setHotSizeAndRatio(0, 0.1, 0.8)
-            ->setHotSizeAndRatio(1, 0.2, 0.7)
-            ->setHotSizeAndRatio(2, 0.3, 0.6)
-            ->setHotSizeAndRatio(3, 0.4, 0.6)
-            ->setHotSizeAndRatio(4, 0.5, 0.7)
-            ->enableManualSettingSetBegins()
-            ->setSetBegins(new double[5]{0, 0.1, 0.2, 0.3, 0.05});
+        ->setSetNumber(5)
+        ->setHotTimes(new long long[5]{1, 2, 3, 4, 5})
+        ->setRelaxTimes(new long long[5]{1, 2, 3, 4, 5})
+        ->setHotSizeAndRatio(0, 0.1, 0.8)
+        ->setHotSizeAndRatio(1, 0.2, 0.7)
+        ->setHotSizeAndRatio(2, 0.3, 0.6)
+        ->setHotSizeAndRatio(3, 0.4, 0.6)
+        ->setHotSizeAndRatio(4, 0.5, 0.7)
+        ->enableManualSettingSetBegins()
+        ->setSetBegins(new double[5]{0, 0.1, 0.2, 0.3, 0.05});
 }
 
-ArgsGeneratorBuilder *getCreakersAndWaveArgsGeneratorBuilder() {
+ArgsGeneratorBuilder* getCreakersAndWaveArgsGeneratorBuilder() {
     return (new CreakersAndWaveArgsGeneratorBuilder())
-            ->setCreakersRatio(0.2)
-            ->setWaveSize(0.2)
-            ->setCreakersSize(0.1)
-            ->setDataMapBuilder(new IdDataMapBuilder());
+        ->setCreakersRatio(0.2)
+        ->setWaveSize(0.2)
+        ->setCreakersSize(0.1)
+        ->setDataMapBuilder(new IdDataMapBuilder());
 }
 
-
-ThreadLoopBuilder *getDefaultThreadLoopBuilder(ArgsGeneratorBuilder *argsGeneratorBuilder) {
+ThreadLoopBuilder* getDefaultThreadLoopBuilder(ArgsGeneratorBuilder* argsGeneratorBuilder) {
     return (new DefaultThreadLoopBuilder())
-            ->setInsRatio(0.1)
-            ->setRemRatio(0.1)
-            ->setRqRatio(0)
-            ->setArgsGeneratorBuilder(argsGeneratorBuilder);
+        ->setInsRatio(0.1)
+        ->setRemRatio(0.1)
+        ->setRqRatio(0)
+        ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 }
 
-ThreadLoopBuilder *getTemporaryOperationThreadLoopBuilder(ArgsGeneratorBuilder *argsGeneratorBuilder) {
+ThreadLoopBuilder* getTemporaryOperationThreadLoopBuilder(ArgsGeneratorBuilder *argsGeneratorBuilder) {
     return (new TemporaryOperationsThreadLoopBuilder())
-            ->setStagesNumber(3)
-            ->setStagesDurations(new size_t[3]{1000, 2000, 3000})
-            ->setRatios(0, new RatioThreadLoopParameters(0.1, 0.1, 0))
-            ->setRatios(1, new RatioThreadLoopParameters(0.2, 0.2, 0))
-            ->setRatios(2, new RatioThreadLoopParameters(0.3, 0.3, 0))
-            ->setArgsGeneratorBuilder(argsGeneratorBuilder);
+        ->setStagesNumber(3)
+        ->setStagesDurations(new size_t[3]{1000, 2000, 3000})
+        ->setRatios(0, new RatioThreadLoopParameters(0.1, 0.1, 0))
+        ->setRatios(1, new RatioThreadLoopParameters(0.2, 0.2, 0))
+        ->setRatios(2, new RatioThreadLoopParameters(0.3, 0.3, 0))
+        ->setArgsGeneratorBuilder(argsGeneratorBuilder);
+}
+
+Parameters* getCreacersAndWavePrefiller(size_t range,
+                                        CreakersAndWaveArgsGeneratorBuilder* argsGeneratorBuilder) {
+    CreakersAndWavePrefillArgsGeneratorBuilder* prefillArgsGeneratorBuilder =
+        new CreakersAndWavePrefillArgsGeneratorBuilder(argsGeneratorBuilder);
+    return (new Parameters())
+        ->addThreadLoopBuilder((new PrefillInsertThreadLoopBuilder())
+                                   ->setArgsGeneratorBuilder(prefillArgsGeneratorBuilder))
+        ->setStopCondition(
+            new OperationCounter(prefillArgsGeneratorBuilder->getPrefillLength(range)));
 }
 
 int main() {
@@ -90,7 +91,7 @@ int main() {
      * Create the Parameters class for benchmarking (test).
      */
 
-    Parameters *test = new Parameters();
+    Parameters* test = new Parameters();
 
     /**
      * We will need to set the stop condition and workloads.
@@ -98,7 +99,7 @@ int main() {
      * First, let's create a stop condition: Timer with 10 second (10000 millis).
      */
 
-    StopCondition *stopCondition = new Timer(10000);
+    StopCondition* stopCondition = new Timer(10000);
 
     /**
      * Setup a workload.
@@ -106,18 +107,21 @@ int main() {
 
     /**
      * in addition to the DefaultArgsGeneratorBuilder,
-     * TemporarySkewedArgsGeneratorBuilder and CreakersAndWaveArgsGeneratorBuilder are also presented
-     * in the corresponding functions
+     * TemporarySkewedArgsGeneratorBuilder and CreakersAndWaveArgsGeneratorBuilder are also
+     * presented in the corresponding functions
      */
-    ArgsGeneratorBuilder *argsGeneratorBuilder
-            = getDefaultArgsGeneratorBuilder();
+    ArgsGeneratorBuilder* argsGeneratorBuilder
+                = getDefaultArgsGeneratorBuilder();
+//                = getCreakersAndWaveArgsGeneratorBuilder();
+//                = getTemporarySkewedArgsGeneratorBuilder();
 
-    /**
-     * in addition to the DefaultThreadLoopBuilder,
-     * TemporaryOperationThreadLoopBuilder is also presented in the corresponding function
-     */
-    ThreadLoopBuilder *threadLoopBuilder
-            = getDefaultThreadLoopBuilder(argsGeneratorBuilder);
+            /**
+             * in addition to the DefaultThreadLoopBuilder,
+             * TemporaryOperationThreadLoopBuilder is also presented in the corresponding function
+             */
+    ThreadLoopBuilder* threadLoopBuilder
+                = getDefaultThreadLoopBuilder(argsGeneratorBuilder);
+//                = getTemporaryOperationThreadLoopBuilder(argsGeneratorBuilder);
 
     /**
      * now add the ThreadLoopBuilders (you can add several different)
@@ -130,9 +134,10 @@ int main() {
             )
             ->setStopCondition(stopCondition);
 
-
     benchParameters.setTest(test)
-            .createDefaultPrefill();
+        .createDefaultPrefill();
+    //        .setPrefill(getCreacersAndWavePrefiller(
+    //            2048, (CreakersAndWaveArgsGeneratorBuilder*)argsGeneratorBuilder));
 
     std::cout << "to json\n";
 
@@ -143,7 +148,6 @@ int main() {
     out << json.dump(4);
 
     std::cout << "end\n";
-
 }
 
 #endif //SETBENCH_JSON_EXAMPLE_CPP

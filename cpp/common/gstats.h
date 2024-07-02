@@ -334,7 +334,7 @@ private:
         } \
     }
 
-#define GSTATS_JSON_AGG(json, agg_granularity_str, type, sid, metrics, num_metrics) { \
+#define GSTATS_JSON_AGG(json, agg_granularity_str, type, sid, metrics, num_metrics, is_total) { \
 /*    template<typename T> \
 //    void to_json(nlohmann::json & json, std::string &agg_granularity_str, gstats_enum_aggregation_function type, \
 //                 const gstats_stat_id sid, stat_metrics<T> *metrics, int num_metrics) { */ \
@@ -369,12 +369,22 @@ private:
                 }\
             }\
             /* print the fields (metrics) */\
-            for (int __i = 0; __i < __lastEmpty; ++__i) {\
+            if (is_total) {\
+                int __i = 0;\
                 if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() ||\
                     metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) {\
-                    json[id_name].push_back(0);\
+                    json[id_name] = 0;\
                 } else {\
-                    json[id_name].push_back(metrics[__i].GSTATS_TYPE_TO_FIELD(type));\
+                    json[id_name] = metrics[__i].GSTATS_TYPE_TO_FIELD(type);\
+                }\
+            } else {\
+                for (int __i = 0; __i < __lastEmpty; ++__i) {\
+                    if (metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::max() ||\
+                        metrics[__i].GSTATS_TYPE_TO_FIELD(type) == std::numeric_limits<T>::min()) {\
+                        json[id_name].push_back(0);\
+                    } else {\
+                        json[id_name].push_back(metrics[__i].GSTATS_TYPE_TO_FIELD(type));\
+                    }\
                 }\
             }\
         }\
@@ -1316,24 +1326,26 @@ public:
         int num_metrics = 0;
         GSTATS_METRICS(output_item, granularity_str, metrics, num_metrics);
 
+        bool is_total = output_item.granularity == TOTAL;
+
         switch (output_item.func) {
-            case FIRST: GSTATS_JSON_AGG(json, granularity_str, FIRST, id, metrics, num_metrics);
+            case FIRST: GSTATS_JSON_AGG(json, granularity_str, FIRST, id, metrics, num_metrics, is_total);
                 break;
-            case COUNT: GSTATS_JSON_AGG(json, granularity_str, COUNT, id, metrics, num_metrics);
+            case COUNT: GSTATS_JSON_AGG(json, granularity_str, COUNT, id, metrics, num_metrics, is_total);
                 break;
-            case MIN: GSTATS_JSON_AGG(json, granularity_str, MIN, id, metrics, num_metrics);
+            case MIN: GSTATS_JSON_AGG(json, granularity_str, MIN, id, metrics, num_metrics, is_total);
                 break;
-            case MAX: GSTATS_JSON_AGG(json, granularity_str, MAX, id, metrics, num_metrics);
+            case MAX: GSTATS_JSON_AGG(json, granularity_str, MAX, id, metrics, num_metrics, is_total);
                 break;
-            case SUM: GSTATS_JSON_AGG(json, granularity_str, SUM, id, metrics, num_metrics);
+            case SUM: GSTATS_JSON_AGG(json, granularity_str, SUM, id, metrics, num_metrics, is_total);
                 break;
-            case AVERAGE: GSTATS_JSON_AGG(json, granularity_str, AVERAGE, id, metrics, num_metrics);
+            case AVERAGE: GSTATS_JSON_AGG(json, granularity_str, AVERAGE, id, metrics, num_metrics, is_total);
                 break;
-            case VARIANCE: GSTATS_JSON_AGG(json, granularity_str, VARIANCE, id, metrics, num_metrics);
+            case VARIANCE: GSTATS_JSON_AGG(json, granularity_str, VARIANCE, id, metrics, num_metrics, is_total);
                 break;
-            case STDEV: GSTATS_JSON_AGG(json, granularity_str, STDEV, id, metrics, num_metrics);
+            case STDEV: GSTATS_JSON_AGG(json, granularity_str, STDEV, id, metrics, num_metrics, is_total);
                 break;
-            case NONE: GSTATS_JSON_AGG(json, granularity_str, NONE, id, metrics, num_metrics);
+            case NONE: GSTATS_JSON_AGG(json, granularity_str, NONE, id, metrics, num_metrics, is_total);
                 break;
             default: setbench_error("should not reach here");
         }

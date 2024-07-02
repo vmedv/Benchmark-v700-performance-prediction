@@ -88,7 +88,8 @@ public:
 
     std::vector<ThreadLoopSettings *> threadLoopBuilders;
 
-    Parameters() : numThreads(0), stopCondition(nullptr) {}
+//    Parameters() : numThreads(0), stopCondition(nullptr) {}
+    Parameters() : numThreads(0), stopCondition(new Timer(5000)) {}
 
     Parameters(const Parameters &p) = default;
 

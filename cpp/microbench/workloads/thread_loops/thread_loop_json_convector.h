@@ -17,7 +17,7 @@ ThreadLoopBuilder *getThreadLoopFromJson(const nlohmann::json &j) {
 
     if (className == "DefaultThreadLoopBuilder") {
         threadLoopBuilder = new DefaultThreadLoopBuilder();
-    } else if (className == "TemporaryOperationThreadLoopBuilder") {
+    } else if (className == "TemporaryOperationsThreadLoopBuilder") {
         threadLoopBuilder = new TemporaryOperationsThreadLoopBuilder();
     } else if (className == "PrefillInsertThreadLoopBuilder") {
         threadLoopBuilder = new PrefillInsertThreadLoopBuilder();

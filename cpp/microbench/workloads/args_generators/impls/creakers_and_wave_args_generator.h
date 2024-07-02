@@ -196,6 +196,14 @@ public:
     }
 
     K nextInsert() override {
+        /**
+             *                       waveBegin           creakersBegin
+             * |_________________________|....................|,,,,,,,,,,,,,,,,,,,,|
+             *                           |<--          prefillLength            -->|
+             * |....| --- wave
+             * |,,,,| --- creakers
+             * |____| --- unused data
+         */
         return dataMap->get(waveBegin + rng.next(prefillLength));
     }
 
@@ -357,13 +365,22 @@ class CreakersAndWavePrefillArgsGeneratorBuilder : public ArgsGeneratorBuilder {
     DataMapBuilder *dataMapBuilder = new ArrayDataMapBuilder();
 
 public:
+    size_t getPrefillLength() const {
+        return prefillLength;
+    }
+
+    size_t getPrefillLength(size_t range) const {
+        return range * creakersSize + range * waveSize;
+    }
+
     CreakersAndWavePrefillArgsGeneratorBuilder() {}
 
     CreakersAndWavePrefillArgsGeneratorBuilder(CreakersAndWaveArgsGeneratorBuilder *builder) {
         setParametersByBuilder(builder);
     }
 
-    CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(CreakersAndWaveArgsGeneratorBuilder *builder) {
+    CreakersAndWavePrefillArgsGeneratorBuilder *setParametersByBuilder(
+                CreakersAndWaveArgsGeneratorBuilder *builder) {
         creakersSize = builder->getCreakersSize();
         waveSize = builder->getWaveSize();
         dataMapBuilder = builder->getDataMapBuilder();

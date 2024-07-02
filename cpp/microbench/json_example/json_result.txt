@@ -1,128 +1,145 @@
 {
-    "average_num_operations_total": [
-        47648380
-    ],
+    "average_num_operations_total": 43678045,
+    "count_limbo_reclamation_event_size_total": 0,
     "first_time_thread_start_by_thread": [
-        528,
-        528,
-        528,
-        529
+        247,
+        227,
+        18931,
+        227,
+        227,
+        227,
+        227,
+        18938
     ],
     "first_time_thread_terminate_by_thread": [
-        10000633,
-        10000633,
-        10000633,
-        10000633
+        10000334,
+        10000334,
+        10008914,
+        10000334,
+        10000334,
+        10000334,
+        10018914,
+        10000334
     ],
-    "max_num_operations_total": [
-        51599682
-    ],
-    "max_time_thread_start_total": [
-        529
-    ],
-    "max_time_thread_terminate_total": [
-        10000633
-    ],
-    "min_num_operations_total": [
-        44179642
-    ],
-    "min_time_thread_start_total": [
-        528
-    ],
-    "min_time_thread_terminate_total": [
-        10000633
-    ],
-    "stdev_num_operations_total": [
-        1997149
-    ],
+    "max_num_operations_total": 62133352,
+    "max_time_thread_start_total": 18938,
+    "max_time_thread_terminate_total": 10018914,
+    "min_num_operations_total": 27811125,
+    "min_time_thread_start_total": 227,
+    "min_time_thread_terminate_total": 10000334,
+    "stdev_num_operations_total": 5787759,
+    "sum_duration_all_ops_total": 0,
+    "sum_limbo_reclamation_event_count_total": 0,
+    "sum_limbo_reclamation_event_size_total": 0,
     "sum_num_fail_inserts_by_thread": [
-        5158470,
-        4538102,
-        4420023,
-        4946131
+        3110576,
+        2942012,
+        1502096,
+        1391103,
+        2711164,
+        2813287,
+        1461029,
+        1557190
     ],
-    "sum_num_fail_inserts_total": [
-        19062726
-    ],
+    "sum_num_fail_inserts_total": 17488457,
     "sum_num_fail_removes_by_thread": [
-        5159322,
-        4538336,
-        4418225,
-        4938705
+        3112176,
+        2944328,
+        1501869,
+        1391502,
+        2709630,
+        2814500,
+        1461860,
+        1555703
     ],
-    "sum_num_fail_removes_total": [
-        19054588
-    ],
+    "sum_num_fail_removes_total": 17491568,
     "sum_num_fail_searches_by_thread": [
-        15483554,
-        13614464,
-        13252222,
-        14826241
+        24855500,
+        23501827,
+        12009614,
+        11122882,
+        21672831,
+        22486260,
+        11688197,
+        12440353
     ],
-    "sum_num_fail_searches_total": [
-        57176481
-    ],
+    "sum_num_fail_searches_total": 139777464,
     "sum_num_inserts_by_thread": [
-        10316797,
-        9079890,
-        8837532,
-        9889901
+        6212648,
+        5875473,
+        3002035,
+        2778746,
+        5415991,
+        5621511,
+        2920472,
+        3112073
     ],
-    "sum_num_inserts_total": [
-        38124120
-    ],
+    "sum_num_inserts_total": 34938949,
     "sum_num_operations_by_thread": [
-        51599682,
-        45390161,
-        44179642,
-        49424036
+        62133352,
+        58758493,
+        30020213,
+        27811125,
+        54175197,
+        56219120,
+        29205477,
+        31101388
     ],
-    "sum_num_operations_total": [
-        190593521
-    ],
+    "sum_num_operations_total": 349424365,
     "sum_num_removes_by_thread": [
-        10322734,
-        9078977,
-        8834653,
-        9879629
+        6216075,
+        5876249,
+        3001588,
+        2779278,
+        5416921,
+        5621933,
+        2920763,
+        3109253
     ],
-    "sum_num_removes_total": [
-        38115993
-    ],
+    "sum_num_removes_total": 34942060,
+    "sum_num_rq_total": 0,
     "sum_num_searches_by_thread": [
-        30960151,
-        27231294,
-        26507457,
-        29654506
+        49704629,
+        47006771,
+        24016590,
+        22253101,
+        43342285,
+        44975676,
+        23364242,
+        24880062
     ],
-    "sum_num_searches_total": [
-        114353408
-    ],
+    "sum_num_searches_total": 279543356,
     "sum_num_successful_inserts_by_thread": [
-        5158327,
-        4541788,
-        4417509,
-        4943770
+        3102072,
+        2933461,
+        1499939,
+        1387643,
+        2704827,
+        2808224,
+        1459443,
+        1554883
     ],
-    "sum_num_successful_inserts_total": [
-        19061394
-    ],
+    "sum_num_successful_inserts_total": 17450492,
     "sum_num_successful_removes_by_thread": [
-        5163412,
-        4540641,
-        4416428,
-        4940924
+        3103899,
+        2931921,
+        1499719,
+        1387776,
+        2707291,
+        2807433,
+        1458903,
+        1553550
     ],
-    "sum_num_successful_removes_total": [
-        19061405
-    ],
+    "sum_num_successful_removes_total": 17450492,
     "sum_num_successful_searches_by_thread": [
-        15476597,
-        13616830,
-        13255235,
-        14828265
+        24849129,
+        23504944,
+        12006976,
+        11130219,
+        21669454,
+        22489416,
+        11676045,
+        12439709
     ],
-    "sum_num_successful_searches_total": [
-        57176927
-    ]
+    "sum_num_successful_searches_total": 139765892
 }

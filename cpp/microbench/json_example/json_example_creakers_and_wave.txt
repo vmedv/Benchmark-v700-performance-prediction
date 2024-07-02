@@ -2,24 +2,24 @@
     "prefill": {
         "numThreads": 1,
         "stopCondition": {
-            "commonOperationLimit": 1024,
-            "stopConditionType": 1
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 614
         },
         "threadLoopBuilders": [
             {
                 "quantity": 1,
                 "threadLoopBuilder": {
+                    "ClassName": "PrefillInsertThreadLoopBuilder",
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 0,
+                        "ClassName": "CreakersAndWavePrefillArgsGeneratorBuilder",
+                        "creakersSize": 0.1,
                         "dataMapBuilder": {
-                            "dataMapType": 0,
-                            "id": 4
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
                         },
-                        "distributionBuilder": {
-                            "distributionType": 0
-                        }
+                        "waveSize": 0.2
                     },
-                    "threadLoopType": 2
+                    "numberOfAttempts": 10000000
                 }
             }
         ]
@@ -28,34 +28,46 @@
     "test": {
         "numThreads": 8,
         "stopCondition": {
-            "stopConditionType": 0,
+            "ClassName": "Timer",
             "workTime": 10000
         },
         "threadLoopBuilders": [
             {
+                "pin": [
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    1,
+                    2,
+                    3,
+                    3
+                ],
                 "quantity": 8,
                 "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 3,
-                        "creakersDistribution": {
-                            "distributionType": 0
+                        "ClassName": "CreakersAndWaveArgsGeneratorBuilder",
+                        "creakersDistBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
                         },
                         "creakersRatio": 0.2,
                         "creakersSize": 0.1,
-                        "dataMap": {
-                            "dataMapType": 0,
-                            "id": 2
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
                         },
-                        "waveDistribution": {
-                            "alpha": 1.0,
-                            "distributionType": 1
+                        "waveDistBuilder": {
+                            "ClassName": "ZipfianDistributionBuilder",
+                            "alpha": 1.0
                         },
                         "waveSize": 0.2
                     },
-                    "remRatio": 0.1,
-                    "insRatio": 0.1,
-                    "rqRatio": 0.0,
-                    "threadLoopType": 0
+                    "parameters": {
+                        "insertRatio": 0.1,
+                        "removeRatio": 0.1,
+                        "rqRatio": 0.0
+                    }
                 }
             }
         ]
@@ -63,7 +75,7 @@
     "warmUp": {
         "numThreads": 0,
         "stopCondition": {
-            "stopConditionType": 0,
+            "ClassName": "Timer",
             "workTime": 5000
         }
     }
