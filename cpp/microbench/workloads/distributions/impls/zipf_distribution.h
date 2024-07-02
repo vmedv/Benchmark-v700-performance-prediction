@@ -22,7 +22,7 @@ private:
 public:
 
     ZipfDistribution(Random64 &_rng, double _alpha = 1.0, size_t _range = 0)
-            : rng(_rng), alpha(_alpha), last_range(_range) {
+            : rng(_rng), alpha(_alpha) {
         setRange(_range);
     }
 

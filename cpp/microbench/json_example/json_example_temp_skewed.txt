@@ -2,24 +2,25 @@
     "prefill": {
         "numThreads": 1,
         "stopCondition": {
-            "commonOperationLimit": 1024,
-            "stopConditionType": 1
+            "ClassName": "OperationCounter",
+            "commonOperationLimit": 1024
         },
         "threadLoopBuilders": [
             {
                 "quantity": 1,
                 "threadLoopBuilder": {
+                    "ClassName": "PrefillInsertThreadLoopBuilder",
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 0,
+                        "ClassName": "DefaultArgsGeneratorBuilder",
                         "dataMapBuilder": {
-                            "dataMapType": 0,
+                            "ClassName": "IdDataMapBuilder",
                             "id": 3
                         },
                         "distributionBuilder": {
-                            "distributionType": 0
+                            "ClassName": "UniformDistributionBuilder"
                         }
                     },
-                    "threadLoopType": 2
+                    "numberOfAttempts": 10000000
                 }
             }
         ]
@@ -28,75 +29,86 @@
     "test": {
         "numThreads": 8,
         "stopCondition": {
-            "stopConditionType": 0,
+            "ClassName": "Timer",
             "workTime": 10000
         },
         "threadLoopBuilders": [
             {
+                "pin": [
+                    -1,
+                    -1,
+                    0,
+                    0,
+                    1,
+                    2,
+                    3,
+                    3
+                ],
                 "quantity": 8,
                 "threadLoopBuilder": {
+                    "ClassName": "DefaultThreadLoopBuilder",
                     "argsGeneratorBuilder": {
-                        "argsGeneratorType": 2,
-                        "dataMap": {
-                            "dataMapType": 1,
-                            "id": 1
+                        "ClassName": "TemporarySkewedArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "ArrayDataMapBuilder",
+                            "id": 0
                         },
                         "defaultHotTime": -1,
                         "defaultRelaxTime": -1,
-                        "hotDistributions": [
+                        "hotDistBuilders": [
                             {
+                                "ClassName": "SkewedUniformDistributionBuilder",
                                 "coldDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "distributionType": 2,
                                 "hotDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "hotProb": 0.8,
+                                "hotRatio": 0.8,
                                 "hotSize": 0.1
                             },
                             {
+                                "ClassName": "SkewedUniformDistributionBuilder",
                                 "coldDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "distributionType": 2,
                                 "hotDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "hotProb": 0.7,
+                                "hotRatio": 0.7,
                                 "hotSize": 0.2
                             },
                             {
+                                "ClassName": "SkewedUniformDistributionBuilder",
                                 "coldDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "distributionType": 2,
                                 "hotDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "hotProb": 0.6,
+                                "hotRatio": 0.6,
                                 "hotSize": 0.3
                             },
                             {
+                                "ClassName": "SkewedUniformDistributionBuilder",
                                 "coldDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "distributionType": 2,
                                 "hotDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "hotProb": 0.6,
+                                "hotRatio": 0.6,
                                 "hotSize": 0.4
                             },
                             {
+                                "ClassName": "SkewedUniformDistributionBuilder",
                                 "coldDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "distributionType": 2,
                                 "hotDistBuilder": {
-                                    "distributionType": 0
+                                    "ClassName": "UniformDistributionBuilder"
                                 },
-                                "hotProb": 0.7,
+                                "hotRatio": 0.7,
                                 "hotSize": 0.5
                             }
                         ],
@@ -108,8 +120,8 @@
                             5
                         ],
                         "manualSettingSetBegins": true,
-                        "relaxDistribution": {
-                            "distributionType": 0
+                        "relaxDistBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
                         },
                         "relaxTimes": [
                             1,
@@ -127,10 +139,11 @@
                         ],
                         "setNumber": 5
                     },
-                    "remRatio": 0.1,
-                    "insRatio": 0.1,
-                    "rqRatio": 0.0,
-                    "threadLoopType": 0
+                    "parameters": {
+                        "insertRatio": 0.1,
+                        "removeRatio": 0.1,
+                        "rqRatio": 0.0
+                    }
                 }
             }
         ]
@@ -138,7 +151,7 @@
     "warmUp": {
         "numThreads": 0,
         "stopCondition": {
-            "stopConditionType": 0,
+            "ClassName": "Timer",
             "workTime": 5000
         }
     }
