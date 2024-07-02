@@ -1,6 +1,6 @@
 # The adding entity
 
-The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).
+The software design is described on the [main page](./../README.md#software-design).  
 
 The workloads are in the folder [./microbench/workloads/](microbench/workloads/).  
 Each entity's folder has the following structure:
@@ -17,6 +17,21 @@ The `<entity>.h` file contains the interface that needs to be implemented,
 `<entity>_builder.h` — the interface of entity builder.
 The `builders` and `impls` folders contain the corresponding implementations.  
 The `<entity>_json_convector.h` file is the file is an auxiliary json convector. 
+
+The key entities are:
++ [Distribution](microbench/workloads/distributions/distribution.h) — a distribution of a random variable;
++ [DataMap](microbench/workloads/data_maps/data_map.h) — converts a distribution's output into a key;
++ [ArgsGenerator](microbench/workloads/args_generators/args_generator.h) — creates operands for an operation;
++ [ThreadLoop](microbench/workloads/thread_loops/thread_loop.h) — the logic for interacting with a data structure.
+
+There are builders each type of entity:
+[ThreadLoopBuilder](microbench/workloads/thread_loops/thread_loop_builder.h),
+[ArgsGeneratorBuilder](microbench/workloads/args_generators/args_generator_builder.h),
+[DistributionBuilder](microbench/workloads/distributions/distribution_builder.h),
+[DataMapBuilder](microbench/workloads/data_maps/data_map_builder.h).
+
+There is also a [StopCondition](microbench/workloads/stop_condition/stop_condition.h)
+– a condition in which the load stops working.
 
 ### The interface implementation
 The first part is the implementation of an Entity:

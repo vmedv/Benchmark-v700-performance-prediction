@@ -1,6 +1,7 @@
 # The adding entity
 
-The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).
+[//]: # (The software design is described in [SOFTWARE_DESIGN]&#40;SOFTWARE_DESIGN.md&#41;.)
+**The software design is described on the [main page](./../README.md#software-design).**
 
 The workloads are in the folder [./src/contention/benchmark/workload/](./src/contention/benchmark/workload/).  
 Each entity's folder has the following structure:
@@ -14,6 +15,21 @@ Each entity's folder has the following structure:
 The `<entity>.java` file contains the interface that needs to be implemented, 
 `<entity>_builder.java` — the interface of entity builder.
 The `builders` and `impls` folders contain the corresponding implementations.  
+
+The key entities are:
++ [Distribution](src/contention/benchmark/workload/distributions/abstractions/Distribution.java) — a distribution of a random variable;
++ [DataMap](src/contention/benchmark/workload/data/map/abstractions/DataMap.java) — converts a distribution's output into a key;
++ [ArgsGenerator](src/contention/benchmark/workload/args/generators/abstractions/ArgsGenerator.java) — creates operands for an operation;
++ [ThreadLoop](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoop.java) — the logic for interacting with a data structure;
+
+There are builders each type of entity:
+[ThreadLoopBuilder](src/contention/benchmark/workload/thread/loops/abstractions/ThreadLoopBuilder.java),
+[ArgsGeneratorBuilder](src/contention/benchmark/workload/args/generators/abstractions/ArgsGeneratorBuilder.java),
+[DistributionBuilder](src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
+[DataMapBuilder](src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
+
+There is also a [StopCondition](src/contention/benchmark/workload/stop/condition/StopCondition.java)
+– a condition in which the load stops working.
 
 ### The interface implementation
 The first part is the implementation of an Entity:

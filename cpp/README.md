@@ -1,9 +1,13 @@
 # SETUP
 
-First of all, it's necessary to clone the repository with submodules:
+[//]: # (First of all, it's necessary to clone the repository with submodules:)
+
+[//]: # (```shell)
+[//]: # (git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules)
+[//]: # (```)
 
 ```shell
-git clone https://gitlab.com/mr_ravil/setbench.git --recurse-submodules
+git clone https://github.com/Mr-Ravil/Benchmark-v700.git --recurse-submodules
 ```
 
 The project has the following structure:
@@ -19,18 +23,19 @@ The project has the following structure:
 └── tools
 ```
 
-The main folders to pay attention to are [ds](cpp/ds) and [microbench](microbench/).  
+The main folders to pay attention to are [ds](ds) and [microbench](microbench/).  
 The first one stands for data structures - all available for benchmarking data structures are stored there
-The latter stands for launching benchmarks and there you can specify many arguments, 
-in particular, [different workloads](WORKLOADS.md).  
+The latter stands for launching benchmarks and there you can specify many arguments.
+
+[//]: # (in particular, [different workloads]&#40;WORKLOADS.md&#41;.  )
 
 ##### NOTE 
-**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+**The software design is described on the [main page](./../README.md#software-design).**  
 **And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 
 
-Before launching benchmarks for different data structures --- 
+Before launching benchmarks for different data structures —
 it's necessary to build the project, and it can be done with the following command:
 
 ```shell
@@ -38,8 +43,8 @@ cd setbench/microbench
 make -j
 ```
 
-You can read about the redis implementation in [REDIS](cpp/gsat/REDIS.md) 
-and about other tree implementations in [TREES_IMPLEMENTATION](cpp/gsat/TREES_IMPLEMENTATION.md).
+You can read about the redis implementation in [REDIS](gsat/REDIS.md) 
+and about other tree implementations in [TREES_IMPLEMENTATION](gsat/TREES_IMPLEMENTATION.md).
 
 
 # LAUNCH
@@ -133,7 +138,8 @@ There are builders to create each type of entity:
 [DistributionBuilder](microbench/workloads/distributions/distribution_builder.h),
 [DataMapBuilder](microbench/workloads/data_maps/data_map_builder.h).
 
-**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+[//]: # (**The software design is described in [SOFTWARE_DESIGN]&#40;SOFTWARE_DESIGN.md&#41;.**  )
+**The software design is described on the [main page](./../README.md#software-design).**  
 **And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 [//]: # (**How to add new workloads is described [here]&#40;./ADDING_NEW_WORKLOAD.md&#41;.**)

@@ -96,7 +96,8 @@ Java are E-STM, LSA, PSTM, SwissTM and TL2 as presented in:
 [//]: # (in particular, [different workloads]&#40;./WORKLOADS.md&#41;.  )
 
 ##### NOTE
-**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+[//]: # (**The software design is described in [SOFTWARE_DESIGN]&#40;SOFTWARE_DESIGN.md&#41;.**  )
+**The software design is described on the [main page](./../README.md#software-design).**  
 **And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 
@@ -188,7 +189,8 @@ There are builders to create each type of entity:
 [DistributionBuilder](src/contention/benchmark/workload/distributions/abstractions/DistributionBuilder.java),
 [DataMapBuilder](src/contention/benchmark/workload/data/map/abstractions/DataMapBuilder.java).
 
-**The software design is described in [SOFTWARE_DESIGN](SOFTWARE_DESIGN.md).**  
+[//]: # (**The software design is described in [SOFTWARE_DESIGN]&#40;SOFTWARE_DESIGN.md&#41;.**  )
+**The software design is described on the [main page](./../README.md#software-design).**  
 **And how to add new workloads is described in [ADDING_NEW_WORKLOAD](ADDING_NEW_WORKLOAD.md).**
 
 Let's create a standard workload with Zipfian distribution.
