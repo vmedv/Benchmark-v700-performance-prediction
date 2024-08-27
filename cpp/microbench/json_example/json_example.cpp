@@ -63,7 +63,7 @@ ThreadLoopBuilder* getTemporaryOperationThreadLoopBuilder(ArgsGeneratorBuilder *
         ->setArgsGeneratorBuilder(argsGeneratorBuilder);
 }
 
-Parameters* getCreacersAndWavePrefiller(size_t range,
+Parameters* getCreakersAndWavePrefiller(size_t range,
                                         CreakersAndWaveArgsGeneratorBuilder* argsGeneratorBuilder) {
     CreakersAndWavePrefillArgsGeneratorBuilder* prefillArgsGeneratorBuilder =
         new CreakersAndWavePrefillArgsGeneratorBuilder(argsGeneratorBuilder);
@@ -136,14 +136,14 @@ int main() {
 
     benchParameters.setTest(test)
         .createDefaultPrefill();
-    //        .setPrefill(getCreacersAndWavePrefiller(
+    //        .setPrefill(getCreakersAndWavePrefiller(
     //            2048, (CreakersAndWaveArgsGeneratorBuilder*)argsGeneratorBuilder));
 
     std::cout << "to json\n";
 
     nlohmann::json json = benchParameters;
 
-    std::ofstream out("json_example.txt");
+    std::ofstream out("example.json");
 
     out << json.dump(4);
 

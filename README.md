@@ -3,6 +3,14 @@
 Benchmark-v700 is an open-source benchmarking framework
 for concurrent data structures in [Java](./java) and [C++](./cpp).
 
+##### Note
+The `C++` version uses submodules, so it's necessary to clone the repository with them:
+
+```shell
+git clone https://github.com/Mr-Ravil/Benchmark-v700.git --recurse-submodules
+```
+
+
 It meets the following requirements:
 + **Modularity:** it should be easy to add new workloads and to reuse existing workloads / code;
 + **Duration:** workloads should be able to run for a fixed number of operations, a fixed time, or infinitely;

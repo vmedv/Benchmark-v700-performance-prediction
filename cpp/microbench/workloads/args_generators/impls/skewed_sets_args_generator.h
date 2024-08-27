@@ -89,7 +89,7 @@ public:
     }
 
     SkewedSetsArgsGeneratorBuilder *setReadHotProb(double _hotProb) {
-        readDistBuilder->setHotSize(_hotProb);
+        readDistBuilder->setHotRatio(_hotProb);
         return this;
     }
 
@@ -99,7 +99,7 @@ public:
     }
 
     SkewedSetsArgsGeneratorBuilder *setWriteHotProb(double _hotProb) {
-        writeDistBuilder->setHotSize(_hotProb);
+        writeDistBuilder->setHotRatio(_hotProb);
         return this;
     }
 

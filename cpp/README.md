@@ -70,7 +70,7 @@ instead of jemalloc for all of your experiments in concurrent data structures!!*
 
 #### Example:
 ```shell
-LD_PRELOAD=../lib/libmimalloc.so ./bin/aksenov_splaylist_64.debra -json-file json_example.txt -result-file result_example.txt 
+LD_PRELOAD=../lib/libmimalloc.so ./bin/aksenov_splaylist_64.debra -json-file json_example/example.json -result-file json_example/result.json 
 ```
 
 ## Benchmark arguments
@@ -197,7 +197,7 @@ Convert parameters to json format and output:
 ```c++
     nlohmann::json json = benchParameters;
 
-    std::ofstream out("json_example.txt");
+    std::ofstream out("example.json");
 
     out << json.dump(4);
 ```

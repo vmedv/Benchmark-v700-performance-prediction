@@ -125,7 +125,7 @@ public class JsonExample {
 
         String json = JsonConverter.toJson(benchParameters);
 
-        try (PrintWriter out = new PrintWriter("json_example.txt", StandardCharsets.UTF_8)) {
+        try (PrintWriter out = new PrintWriter("example.json", StandardCharsets.UTF_8)) {
             out.print(json);
             System.out.println("Successfully written data to the file");
         } catch (IOException e) {

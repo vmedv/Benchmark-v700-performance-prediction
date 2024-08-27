@@ -139,7 +139,7 @@ Benchmarking stages can also be specified separately:
 
 #### Example:
 ```shell
-./gradlew run --args='-ds skiplists.lockfree.NonBlockingFriendlySkipListMap -json-file json_example.txt -result-file result_example.txt'
+./gradlew run --args='-ds skiplists.lockfree.NonBlockingFriendlySkipListMap -json-file example.json -result-file result.json'
 ```
 
 # Configuring Launch Parameters
@@ -240,7 +240,7 @@ Convert parameters to json format and output:
 ```java
     String json = JsonConverter.toJson(benchParameters);
 
-    try (PrintWriter out = new PrintWriter("json_example.txt", StandardCharsets.UTF_8)) {
+    try (PrintWriter out = new PrintWriter("example.json", StandardCharsets.UTF_8)) {
         out.print(json);
         System.out.println("Successfully written data to the file");
     } catch (IOException e) {
