@@ -115,7 +115,7 @@ public:
 
     SkewedSetsArgsGeneratorBuilder *init(size_t _range) override {
         range = _range;
-        dataMapBuilder->init(range);
+//        dataMapBuilder->init(range);
         writeSetBegins = readDistBuilder->getHotLength(range) - range * intersection;
         return this;
     }

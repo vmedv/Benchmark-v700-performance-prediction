@@ -91,7 +91,7 @@ public:
 
     SkewedInsertArgsGeneratorBuilder *init(size_t _range) override {
         range = _range;
-        dataMapBuilder->init(range);
+//        dataMapBuilder->init(range);
         skewedLength = (size_t) (_range * skewedSize);
         return this;
     }

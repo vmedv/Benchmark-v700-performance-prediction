@@ -304,7 +304,7 @@ public:
             }
         }
 
-        dataMapBuilder->init(range);
+//        dataMapBuilder->init(range);
         return this;
     }
 

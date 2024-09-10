@@ -295,7 +295,7 @@ public:
     }
 
     CreakersAndWaveArgsGeneratorBuilder *init(size_t range) override {
-        dataMapBuilder->init(range);
+//        dataMapBuilder->init(range);
         creakersLength = range * creakersSize;
         creakersBegin = range - creakersLength;
         startWaveLength = range * waveSize;
@@ -403,7 +403,7 @@ public:
     }
 
     CreakersAndWavePrefillArgsGeneratorBuilder *init(size_t range) override {
-        dataMapBuilder->init(range);
+//        dataMapBuilder->init(range);
         prefillLength = range * creakersSize + range * waveSize;
         waveBegin = range - prefillLength;
         return this;

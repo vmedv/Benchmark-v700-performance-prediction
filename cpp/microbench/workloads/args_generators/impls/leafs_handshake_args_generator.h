@@ -132,8 +132,8 @@ public:
 
     LeafsHandshakeArgsGeneratorBuilder *init(size_t _range) override {
         range = _range;
-        readDataMapBuilder->init(_range);
-        removeDataMapBuilder->init(_range);
+//        readDataMapBuilder->init(_range);
+//        removeDataMapBuilder->init(_range);
         deletedValue = new std::atomic<size_t>(range / 2);
 
         return this;

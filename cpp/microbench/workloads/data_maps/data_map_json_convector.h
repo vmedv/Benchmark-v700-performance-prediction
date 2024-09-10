@@ -45,4 +45,10 @@ void deleteDataMapBuilders() {
     }
 }
 
+void initDataMapBuilders(size_t range) {
+    for (auto it: dataMapBuilders) {
+        it.second->init(range);
+    }
+}
+
 #endif  // SETBENCH_DATA_MAP_JSON_CONVECTOR_H

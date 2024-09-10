@@ -84,7 +84,7 @@ public:
 
     DefaultArgsGeneratorBuilder *init(size_t _range) override {
         range = _range;
-        dataMapBuilder->init(_range);
+//        dataMapBuilder->init(_range);
         return this;
     }
 
@@ -105,11 +105,19 @@ public:
     }
 
     std::string toString(size_t indents = 1) override {
-        return indented_title_with_str_data("Type", "DEFAULT", indents)
-               + indented_title("Distribution", indents)
-               + distributionBuilder->toString(indents + 1)
-               + indented_title("Data Map", indents)
-               + dataMapBuilder->toString(indents + 1);
+        std::string res;
+        res += indented_title_with_str_data("Type", "DEFAULT", indents);
+        res += indented_title("Distribution", indents);
+        res += distributionBuilder->toString(indents + 1);
+        res += indented_title("Data Map", indents);
+        res += dataMapBuilder->toString(indents + 1);
+return res;
+
+//        return indented_title_with_str_data("Type", "DEFAULT", indents)
+//               + indented_title("Distribution", indents)
+//               + distributionBuilder->toString(indents + 1)
+//               + indented_title("Data Map", indents)
+//               + dataMapBuilder->toString(indents + 1);
     }
 
     ~DefaultArgsGeneratorBuilder() override {
