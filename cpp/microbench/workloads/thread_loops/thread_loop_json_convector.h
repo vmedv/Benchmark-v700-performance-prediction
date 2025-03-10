@@ -6,6 +6,8 @@
 #define SETBENCH_THREAD_LOOP_JSON_CONVECTOR_H
 
 #include "thread_loop_builder.h"
+#include "workloads/thread_loops/impls/seq_thread_loop.h"
+#include "workloads/thread_loops/impls/getonly_thread_loop.h"
 #include "workloads/thread_loops/impls/default_thread_loop.h"
 #include "workloads/thread_loops/impls/prefill_insert_thread_loop.h"
 #include "workloads/thread_loops/impls/temporary_operations_thread_loop.h"
@@ -21,6 +23,10 @@ ThreadLoopBuilder *getThreadLoopFromJson(const nlohmann::json &j) {
         threadLoopBuilder = new TemporaryOperationsThreadLoopBuilder();
     } else if (className == "PrefillInsertThreadLoopBuilder") {
         threadLoopBuilder = new PrefillInsertThreadLoopBuilder();
+    } else if (className == "SeqThreadLoopBuilder") {
+        threadLoopBuilder = new SeqThreadLoopBuilder();
+    } else if (className == "GetThreadLoopBuilder") {
+        threadLoopBuilder = new GetThreadLoopBuilder();
     } else {
         setbench_error("JSON PARSER: Unknown class name ThreadLoopBuilder -- " + className)
     }

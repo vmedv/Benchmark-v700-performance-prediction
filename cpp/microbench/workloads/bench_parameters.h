@@ -117,7 +117,7 @@ void to_json(nlohmann::json& json, const BenchParameters& s) {
 void from_json(const nlohmann::json& json, BenchParameters& s) {
     s.range = json["range"];
     s.test = new Parameters(json["test"]);
-    s.prefill = new Parameters(json["prefill"]);
+    /* s.prefill = new Parameters(json["prefill"]); */
     s.warmUp = new Parameters(json["warmUp"]);
 }
 

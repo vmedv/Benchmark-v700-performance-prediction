@@ -29,8 +29,7 @@ output
 microbench_experiments/example_standard/output
 microbench_experiments/example_standard/output/*
 microbench_experiments/example_standard/output/_gen.sh
-*.csv
-data*.txt
+*.data*.txt
 *.sqlite
 plot*.txt
 output_*.txt
