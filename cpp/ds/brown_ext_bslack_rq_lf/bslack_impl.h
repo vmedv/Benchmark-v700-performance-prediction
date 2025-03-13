@@ -585,11 +585,14 @@ public:
             }
             return result+1;
         }
+
+    public:
         const int getHeight() {
             return getHeight(entry->ptrs[0], 0);
         }
 
-        int getKeyCount(Node<DEGREE,K>* entry) {
+    private:
+        int getKeyCount(Node<DEGREE, K>* entry) {
             if (entry == NULL) return 0;
             if (entry->isLeaf()) return entry->getKeyCount();
             int sum = 0;

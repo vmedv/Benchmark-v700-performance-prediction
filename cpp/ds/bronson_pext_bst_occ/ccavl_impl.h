@@ -191,7 +191,11 @@ private:
     node_t<skey_t, sval_t>* get_child(node_t<skey_t, sval_t>* curr, char dir);
     void setChild(node_t<skey_t, sval_t>* curr, char dir, node_t<skey_t, sval_t>* new_node);
     void waitUntilChangeCompleted(node_t<skey_t, sval_t>* curr, version_t ovl);
+
+public:
     int height(volatile node_t<skey_t, sval_t>* curr);
+
+private:
     sval_t decodeNull(sval_t v);
     sval_t encodeNull(sval_t v);
     sval_t getImpl(node_t<skey_t, sval_t>* tree, skey_t key);
