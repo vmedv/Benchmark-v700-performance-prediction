@@ -1,18 +1,148 @@
-#include <cstdint>
-#include <iostream>
+
 #include <fstream>
+#include <sstream>
+#include <thread>
+#include <cstring>
+#include <ctime>
+#include <thread>
+#include <chrono>
+#include <cassert>
+#include <mutex>
+#include <parallel/algorithm>
+#include <omp.h>
+#include <perftools.h>
+#include <regex>
+
+#include <linux/perf_event.h>
+#include <err.h>
+#include <sys/ioctl.h>
+#include <sys/syscall.h>
+#include <linux/hw_breakpoint.h>
+
+#define MAIN_BENCH
+
+#ifdef PRINT_JEMALLOC_STATS
+#include <jemalloc/jemalloc.h>
+#define DEBUG_PRINT_ARENA_STATS malloc_stats_print(printCallback, NULL, "ag")
+void printCallback(void* nothing, const char* data) {
+    std::cout << data;
+}
+#else
+#define DEBUG_PRINT_ARENA_STATS
+#endif
+
+#include "define_global_statistics.h"
+#include "gstats_global.h"  // include the GSTATS code and macros (crucial this happens after GSTATS_HANDLE_STATS is defined)
+
+
+#ifdef KEY_DEPTH_TOTAL_STAT
+int64_t key_depth_total_sum__;
+int64_t key_depth_total_cnt__;
+#endif
+
+#ifdef KEY_DEPTH_STAT
+int64_t* key_depth_sum__ = nullptr;
+int64_t* key_depth_cnt__ = nullptr;
+#endif
+
+#ifdef KEY_SEARCH_TOTAL_STAT
+int64_t key_search_total_iters_cnt__;
+int64_t key_search_total_cnt__;
+#endif
+
+__thread int tid = 0;
+
+#include "plaf.h"
+
 #include "globals_extern.h"
+#include "json/single_include/nlohmann/json.hpp"
 #include "random_xoshiro256p.h"
-#include "globals_t.h"
+#include "binding.h"
+#include "papi_util_impl.h"
+#include "rq_provider.h"
+
+#include "adapter.h" /* data structure adapter header (selected according to the "ds/..." subdirectory in the -I include paths */
+#include "tree_stats.h"
+
+#ifdef USE_RCU
+#include "eer_prcu_impl.h"
+#define __RCU_INIT_THREAD urcu::registerThread(tid);
+#define __RCU_DEINIT_THREAD urcu::unregisterThread();
+#define __RCU_INIT_ALL urcu::init(TOTAL_THREADS);
+#define __RCU_DEINIT_ALL urcu::deinit(TOTAL_THREADS);
+#else
+#define __RCU_INIT_THREAD
+#define __RCU_DEINIT_THREAD
+#define __RCU_INIT_ALL
+#define __RCU_DEINIT_ALL
+#endif
+
+#ifdef USE_RLU
+#include "rlu.h"
+PAD;
+__thread rlu_thread_data_t* rlu_self;
+PAD;
+rlu_thread_data_t* rlu_tdata = NULL;
+#define __RLU_INIT_THREAD       \
+    rlu_self = &rlu_tdata[tid]; \
+    RLU_THREAD_INIT(rlu_self);
+#define __RLU_DEINIT_THREAD RLU_THREAD_FINISH(rlu_self);
+#define __RLU_INIT_ALL                                   \
+    rlu_tdata = new rlu_thread_data_t[MAX_THREADS_POW2]; \
+    RLU_INIT(RLU_TYPE_FINE_GRAINED, 1);
+#define __RLU_DEINIT_ALL \
+    RLU_FINISH();        \
+    delete[] rlu_tdata;
+#else
+#define __RLU_INIT_THREAD
+#define __RLU_DEINIT_THREAD
+#define __RLU_INIT_ALL
+#define __RLU_DEINIT_ALL
+#endif
+
+#define INIT_ALL    \
+    __RCU_INIT_ALL; \
+    __RLU_INIT_ALL;
+#define DEINIT_ALL    \
+    __RLU_DEINIT_ALL; \
+    __RCU_DEINIT_ALL;
+
+GSTATS_DECLARE_ALL_STAT_IDS;
+#ifdef GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF
+GSTATS_HANDLE_STATS_BROWN_EXT_IST_LF(__DECLARE_STAT_ID);
+#endif
+#ifdef GSTATS_HANDLE_STATS_POOL_NUMA
+GSTATS_HANDLE_STATS_POOL_NUMA(__DECLARE_STAT_ID);
+#endif
+#ifdef GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS
+GSTATS_HANDLE_STATS_RECLAIMERS_WITH_EPOCHS(__DECLARE_STAT_ID);
+#endif
+#ifdef GSTATS_HANDLE_STATS_USER
+GSTATS_HANDLE_STATS_USER(__DECLARE_STAT_ID);
+#endif
+// Create storage for the CONTENTS of gstats counters (for MAX_THREADS_POW2 threads)
+GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
+// Create storage for the IDs of all global counters defined in define_global_statistics.h
+
+#define TIMING_START(s)                                      \
+    std::cout << "timing_start " << s << "..." << std::endl; \
+    GSTATS_TIMER_RESET(tid, timer_duration);
+#define TIMING_STOP                                                                           \
+    std::cout << "timing_elapsed " << (GSTATS_TIMER_SPLIT(tid, timer_duration) / 1000000000.) \
+              << "s" << std::endl;
+#ifndef OPS_BETWEEN_TIME_CHECKS
+#define OPS_BETWEEN_TIME_CHECKS 100
+#endif
+#ifndef RQS_BETWEEN_TIME_CHECKS
+#define RQS_BETWEEN_TIME_CHECKS 10
+#endif
+
+#include "workloads/bench_parameters.h"
+#include "workloads/thread_loops/thread_loop_impl.h"
+
 #include "globals_t_impl.h"
-#include "papi_util.h"
-#include "server_clock.h"
 #include "statistics.h"
 #include "parse_argument.h"
-#include "workloads/bench_parameters.h"
-#include "debugprinting.h"
-#include "adapter.h"
-#include "plaf.h"
 
 template <typename T>
 T* ParseJsonFile(const std::string& file_name) {
@@ -270,5 +400,8 @@ int main(int argc, char** argv) {
     } else {
         COUTATOMIC(toStringStage("Without Prefill stage"))
     }
+
+    PRINTSN(DS_TYPENAME);
+    std::cout << "  TREE HEIGHT: " << g->dsAdapter->getHeight() << std::endl;
 
 }

@@ -69,6 +69,7 @@ extern std::atomic_bool ___validateops;
 #define XSTR(x) #x
 #define PRINTI(name) { std::cout<<#name<<"="<<name<<std::endl; }
 #define PRINTS(name) { std::cout<<#name<<"="<<STR(name)<<std::endl; }
+#define PRINTSN(name) { std::cout<<#name<<"="<<STR(name); }
 #endif
 
 #define _EVAL(a) a

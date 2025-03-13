@@ -1,5 +1,5 @@
 {
-    "range": 32768,
+    "range": 1048576,
     "test": {
         "numThreads": 4,
         "stopCondition": {
