@@ -51,6 +51,7 @@
 #ifndef HOWLEY_H
 #define HOWLEY_H
 
+#include <cstddef>
 #include "record_manager.h"
 
 #define USE_PADDING
@@ -223,6 +224,17 @@ public:
     
     RecMgr * debugGetRecMgr() {
         return recmgr;
+    }
+
+    size_t getHeight() {
+        return getHeight(get_root());
+    }
+
+    size_t getHeight(node_t<skey_t, sval_t>* n) {
+        if (n->left == NULL_NODEPTR && n->right == NULL_NODEPTR) return 0;
+        if (n->left == NULL_NODEPTR) return 1 + getHeight(n->right);
+        if (n->right == NULL_NODEPTR) return 1 + getHeight(n->left);
+        return 1 + std::max(getHeight(n->left), getHeight(n->right));
     }
 };
 

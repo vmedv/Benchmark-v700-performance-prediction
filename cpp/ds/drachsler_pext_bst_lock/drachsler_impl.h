@@ -43,6 +43,7 @@
 #define DANA_H
 
 #include <pthread.h>
+#include <algorithm>
 #include "record_manager.h"
 
 #define FIELDS_ORDER
@@ -187,6 +188,17 @@ public:
 
     RecMgr * debugGetRecMgr() {
         return recmgr;
+    }
+
+    size_t getHeight() {
+        return getHeight(get_root());
+    }
+
+    size_t getHeight(node_t<skey_t, sval_t>* n) {
+        if (n->left == NULL && n->right == NULL) return 0;
+        if (n->left == NULL) return 1 + getHeight(n->right);
+        if (n->right == NULL) return 1 + getHeight(n->left);
+        return 1 + std::max(getHeight(n->left), getHeight(n->right));
     }
 };
 

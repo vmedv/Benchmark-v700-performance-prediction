@@ -94,6 +94,10 @@ public:
         return ds->getHeight();
     }
 
+    int getSize() {
+        return ds->getSize();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:

@@ -91,7 +91,12 @@ public:
     }
 
     int getHeight() {
-        return tree->height(tree->get_root());
+        // return tree->height(tree->get_root());
+        return tree->getHeight();
+    }
+
+    size_t getSize() {
+        return tree->getSize();
     }
 
 #ifdef USE_TREE_STATS

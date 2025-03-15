@@ -87,6 +87,10 @@ public:
         ds->debugGetRecMgr()->debugGCSingleThreaded();
     }
 
+    size_t getHeight() {
+        return ds->getHeight();
+    }
+
 #ifdef USE_TREE_STATS
     class NodeHandler {
     public:

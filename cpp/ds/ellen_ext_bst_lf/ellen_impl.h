@@ -33,6 +33,8 @@
 #ifndef ELLEN_H
 #define ELLEN_H
 
+#include <algorithm>
+#include <cstddef>
 #include "record_manager.h"
 
 #define STATE_CLEAN 0
@@ -193,6 +195,17 @@ public:
     RecMgr * debugGetRecMgr() {
         return recmgr;
     }    
+
+    size_t getHeight() {
+        return getHeight(get_root());
+    }
+
+    size_t getHeight(node_t<skey_t, sval_t>* n) {
+        if (n->left == NULL && n->right == NULL) return 0;
+        if (n->left == NULL) return 1 + getHeight(n->right);
+        if (n->right == NULL) return 1 + getHeight(n->left);
+        return 1 + std::max(getHeight(n->left), getHeight(n->right));
+    } 
 };
 
 template <typename skey_t, typename sval_t, class RecMgr>

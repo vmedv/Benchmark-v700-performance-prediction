@@ -89,7 +89,7 @@ public:
         ds->debugGetRecMgr()->debugGCSingleThreaded();
     }
 
-    size_t size() {
+    size_t getSize() {
         return ds->sequentialSize();
     }
 

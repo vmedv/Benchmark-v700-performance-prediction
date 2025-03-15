@@ -30,6 +30,7 @@
 #ifndef CCAVL_H
 #define CCAVL_H
 
+#include <algorithm>
 #include "record_manager.h"
 
 //#if  (INDEX_STRUCT == IDX_CCAVL_SPIN)
@@ -194,6 +195,15 @@ private:
 
 public:
     int height(volatile node_t<skey_t, sval_t>* curr);
+    int getHeight() {
+        return getHeight(get_root());
+    }
+    int getHeight(node_t<skey_t, sval_t>* n) {
+        if (n->left == NULL && n ->right == NULL) return 0;
+        if (n->left == NULL) return 1 + getHeight(n->right);
+        if (n->right == NULL) return 1 + getHeight(n->left);
+        return 1 + std::max(getHeight(n->left), getHeight(n->right));
+    }
 
 private:
     sval_t decodeNull(sval_t v);
