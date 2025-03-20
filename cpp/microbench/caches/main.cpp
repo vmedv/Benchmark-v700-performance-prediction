@@ -2,6 +2,7 @@
 // Created by Ravil Galiev on 27.07.2023.
 //
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -629,13 +630,6 @@ void printOutput(globals_t* g, bool detailStats = true) {
     delete[] key_depth_cnt__;
 #endif
     papi_print_counters(totalAll);
-    auto j = papi_to_json(totalAll);
-    std::stringstream fn;
-    fn << "cache-measurements/";
-    fn << STRINGIFY(DS_TYPENAME);
-    fn << "_cache.json";
-    writeJsonFile(fn.str(), j);
-    papi_to_csv(STRINGIFY(DS_TYPENAME), totalAll);
 #ifdef USE_TREE_STATS
     if (treeStats)
         delete treeStats;
@@ -683,6 +677,8 @@ int main(int argc, char** argv) {
     bool createDefaultPrefill = false;
     bool resultStatisticToFile = false;
     std::string resultStatisticFileName;
+    bool cacheDump = false;
+    std::string cacheCSV;
 
     while (args.hasNext()) {
         if (strcmp(args.getCurrent(), "-json-file") == 0) {
@@ -691,6 +687,9 @@ int main(int argc, char** argv) {
         } else if (strcmp(args.getCurrent(), "-result-file") == 0) {
             resultStatisticToFile = true;
             resultStatisticFileName = args.getNext();
+        } else if (strcmp(args.getCurrent(), "-cache-file") == 0) {
+            cacheDump = true;
+            cacheCSV = args.getNext();
         } else if (strcmp(args.getCurrent(), "-detail-stats") == 0) {
             detailStats = true;
         } else if (strcmp(args.getCurrent(), "-prefill") == 0) {
@@ -801,6 +800,28 @@ int main(int argc, char** argv) {
         nlohmann::json json;
         GSTATS_JSON(json);
         writeJsonFile(resultStatisticFileName, json);
+    }
+
+    if (cacheDump) {
+        std::ofstream csv;
+        if (std::filesystem::exists(cacheCSV)) {
+            csv.open(cacheCSV, std::ios_base::out | std::ios_base::app);
+        } else {
+            csv.open(cacheCSV);
+            csv << "dist, mode, threads, ds,";
+            PapiHeaderToStream(csv);
+            csv << "\n";
+        }
+        if (std::getenv("DIST") == nullptr) {
+            std::cerr << "env var broken";
+            return 1;
+        }
+        csv << std::getenv("DIST") << "," 
+            << std::getenv("MODE") << "," 
+            << std::getenv("THREADS") << "," 
+            << STRINGIFY(DS_TYPENAME) << ",";
+        PapiToStream(csv);
+        csv << "\n";
     }
 
     printUptimeStampForPERF("MAIN_END");

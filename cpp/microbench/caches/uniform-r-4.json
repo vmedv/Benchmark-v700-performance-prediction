@@ -1,0 +1,28 @@
+{
+    "range": 16777216,
+    "test": {
+        "numThreads": 1,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 1000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 4,
+                "threadLoopBuilder": {
+                    "ClassName": "GetThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "DefaultArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "distributionBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}

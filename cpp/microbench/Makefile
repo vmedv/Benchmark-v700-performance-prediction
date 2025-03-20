@@ -192,23 +192,23 @@ $(foreach ds,$(DATA_STRUCTURES), \
 )
 
 
-define create-target-sds-reclaim =
-$(1).$(2): dir_guard
-	$(GPP) ./tree_stats.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) $(LDFLAGS)
-sds-reclaim: $(1).$(2)
+define create-target-caches-ds-reclaim =
+caches.$(1).$(2): dir_guard
+	$(GPP) ./caches/main.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) $(LDFLAGS)
+caches-ds-reclaim: caches.$(1).$(2)
 endef
 
-define create-target-openbwtree-sds-reclaim =
-$(1).$(2): dir_guard
-	$(GPP) ./tree_stats.cpp ../ds/$(1)/bwtree.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) -Wno-invalid-offsetof $(LDFLAGS) -latomic
-sds-reclaim: $(1).$(2)
+define create-target-openbwtree-caches-ds-reclaim =
+caches.$(1).$(2): dir_guard
+	$(GPP) ./caches/main.cpp ../ds/$(1)/bwtree.cpp -o $(bin_dir)/$(1).$(2) -I../ds/$(1) -DDS_TYPENAME=$(1) -DRECLAIM_TYPE=$(2) $(FLAGS) -Wno-invalid-offsetof $(LDFLAGS) -latomic
+caches-ds-reclaim: caches.$(1).$(2)
 endef
 
 $(foreach ds,$(DATA_STRUCTURES), \
 	$(foreach reclaim,$(RECLAIMERS), \
 		$(if $(filter wang_openbwtree,$(ds)), \
-			$(eval $(call create-target-openbwtree-sds-reclaim,$(ds),$(reclaim))), \
-			$(eval $(call create-target-sds-reclaim,$(ds),$(reclaim))) \
+			$(eval $(call create-target-openbwtree-caches-ds-reclaim,$(ds),$(reclaim))), \
+			$(eval $(call create-target-caches-ds-reclaim,$(ds),$(reclaim))) \
 		) \
 	) \
 )

@@ -8,17 +8,12 @@
 
 int all_cpu_counters[] = {
 #ifdef USE_PAPI
-    PAPI_L1_DCM,  PAPI_L1_TCM, PAPI_L2_DCM, PAPI_L2_TCM, PAPI_L2_DCH, PAPI_L2_DCA,  PAPI_L2_DCR,
-    PAPI_L3_TCM,  PAPI_L3_DCA, PAPI_L3_DCR, PAPI_L3_TCA, PAPI_L3_TCR, PAPI_TOT_CYC, PAPI_REF_CYC,
-    PAPI_TOT_INS, PAPI_CA_SNP, PAPI_CA_SHR, PAPI_CA_CLN, PAPI_CA_INV, PAPI_CA_ITV, PAPI_L3_LDM
+    PAPI_L1_DCM, PAPI_L2_TCM, PAPI_L3_TCM, PAPI_LD_INS
 #endif
 };
 std::string all_cpu_counters_strings[] = {
 #ifdef USE_PAPI
-    "PAPI_L1_DCM",  "PAPI_L1_TCM",  "PAPI_L2_DCM",  "PAPI_L2_TCM", "PAPI_L2_DCH", "PAPI_L2_DCA",
-    "PAPI_L2_DCR",  "PAPI_L3_TCM",  "PAPI_L3_DCA",  "PAPI_L3_DCR", "PAPI_L3_TCA", "PAPI_L3_TCR",
-    "PAPI_TOT_CYC", "PAPI_REF_CYC", "PAPI_TOT_INS", "PAPI_CA_SNP", "PAPI_CA_SHR", "PAPI_CA_CLN",
-    "PAPI_CA_INV",  "PAPI_CA_ITV", "PAPI_L3_LDM"
+    "PAPI_L1_DCM", "PAPI_L2_TCM", "PAPI_L3_TCM", "PAPI_LD_INS"
 #endif
 };
 #ifdef USE_PAPI
@@ -184,7 +179,7 @@ nlohmann::json papi_to_json(long long num_operations) {
 }
 
 void papi_to_csv(const char* ds, long long ops) {
-/* #ifdef USE_PAPI */
+#ifdef USE_PAPI
     std::ofstream csv("cache-measurements/caches.csv", std::ios_base::out | std::ios_base::app);
     csv << ds << ",";
     csv << ops << ",";
@@ -199,8 +194,34 @@ void papi_to_csv(const char* ds, long long ops) {
         j++;
     }
     csv << "\n";
-/* #endif */
+#endif
 }
 
+void PapiHeaderToStream(std::ostream& out) {
+#ifdef USE_PAPI
+    for (std::size_t idx = 0; idx < nall_cpu_counters; ++idx) {
+        out << all_cpu_counters_strings[idx];
+        if (idx < nall_cpu_counters - 1) {
+            out << ",";
+        }
+    }
+#endif
+}
+
+void PapiToStream(std::ostream& out) {
+#ifdef USE_PAPI
+    int i, j;
+    for (i = j = 0; i < nall_cpu_counters; i++) {
+        int c = all_cpu_counters[i];
+        if (PAPI_query_event(c) == PAPI_OK) {
+            out << counter_values[j];
+        }
+        if (i < nall_cpu_counters - 1) {
+            out << ",";
+        }
+        j++;
+    }
+#endif
+}
 
 #endif

@@ -42,7 +42,7 @@ private:
 
         if (!node->left && !node->right) {
             s.insert(node->key);
-            cout << "Leaf: " << node->key << endl;
+            // cout << "Leaf: " << node->key << endl;
             return make_tuple(true, node->key);
         }
 
@@ -60,7 +60,7 @@ private:
         int leftSum, rightSum;
         tie(leftValid, leftSum) = validateHelper(node->left, depth + 1);
         tie(rightValid, rightSum) = validateHelper(node->right, depth + 1);
-        std::cout << depth << " " << leftSum << " " << rightSum << endl;
+        // std::cout << depth << " " << leftSum << " " << rightSum << endl;
         return make_tuple(leftValid && rightValid, leftSum + rightSum);
     }
 
@@ -117,7 +117,7 @@ public:
         bool valid;
         K sumOfKeys;
         tie(valid, sumOfKeys) = validateHelper(ds->getRoot(), 0);
-        cout << sumOfKeys - minkey - maxkey << endl;
+        // cout << sumOfKeys - minkey - maxkey << endl;
         return valid;
     }
     void printObjectSizes() {

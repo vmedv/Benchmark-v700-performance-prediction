@@ -1,0 +1,36 @@
+{
+    "range": 16777216,
+    "test": {
+        "numThreads": 8,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 1000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 8,
+                "threadLoopBuilder": {
+                    "ClassName": "GetThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "DefaultArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "distributionBuilder": {
+                            "ClassName": "SkewedUniformDistributionBuilder",
+                            "coldDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotDistBuilder": {
+                                "ClassName": "UniformDistributionBuilder"
+                            },
+                            "hotSize": 0.125,
+                            "hotRatio": 0.5
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}
