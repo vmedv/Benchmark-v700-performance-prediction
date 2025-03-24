@@ -4,13 +4,16 @@
         "numThreads": 1,
         "stopCondition": {
             "ClassName": "Timer",
-            "workTime": 1000
+            "workTime": 10000
         },
         "threadLoopBuilders": [
             {
                 "quantity": 1,
+                "pin": [
+                    0
+                ],
                 "threadLoopBuilder": {
-                    "ClassName": "DefaultThreadLoopBuilder",
+                    "ClassName": "GetThreadLoopBuilder",
                     "argsGeneratorBuilder": {
                         "ClassName": "DefaultArgsGeneratorBuilder",
                         "dataMapBuilder": {
@@ -28,11 +31,6 @@
                             "hotSize": 0.125,
                             "hotRatio": 0.5
                         }
-                    },
-                    "parameters": {
-                        "insertRatio": 0.0,
-                        "removeRatio": 0.0,
-                        "rqRatio": 0.0
                     }
                 }
             }

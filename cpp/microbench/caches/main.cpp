@@ -176,6 +176,8 @@ GSTATS_DECLARE_STATS_OBJECT(MAX_THREADS_POW2);
 #define STRING(VAR) #VAR
 #define STRINGIFY(x) STRING(x)
 
+std::size_t DS_height;
+
 #include "workloads/bench_parameters.h"
 #include "workloads/thread_loops/thread_loop_impl.h"
 
@@ -458,6 +460,7 @@ void run(globals_t* g) {
      */
 
     std::cout << toStringStage("Test stage");
+    DS_height = g->dsAdapter->getHeight();
     std::cout << STRINGIFY(DS_TYPENAME) << "  ST_HEIGHT  " << g->dsAdapter->getHeight() << std::endl;
 
     SOFTWARE_BARRIER;
@@ -810,17 +813,28 @@ int main(int argc, char** argv) {
             csv.open(cacheCSV);
             csv << "dist, mode, threads, ds,";
             PapiHeaderToStream(csv);
+            csv << "GETS, SUCC_GETS, FAIL_GETS, INS, SUCC_INS, FAIL_INS, UPD, SUCC_UPD, FAIL_UPD, REM, SUCC_REM, FAIL_REM, HEIGHT";
             csv << "\n";
         }
-        if (std::getenv("DIST") == nullptr) {
-            std::cerr << "env var broken";
-            return 1;
-        }
+        auto stats = getStatistic(g->elapsedMillis);
         csv << std::getenv("DIST") << "," 
             << std::getenv("MODE") << "," 
             << std::getenv("THREADS") << "," 
             << STRINGIFY(DS_TYPENAME) << ",";
         PapiToStream(csv);
+        csv << stats.totalGets << ","
+            << stats.totalSuccessfulGets << ","
+            << stats.totalFailGets << ","
+            << stats.totalInserts << ","
+            << stats.totalSuccessfulInserts << ","
+            << stats.totalFailInserts << ","
+            << stats.totalUpdates << ","
+            << stats.totalSuccessfulUpdates << ","
+            << stats.totalFailUpdates << ","
+            << stats.totalRemoves << ","
+            << stats.totalSuccessfulRemoves << ","
+            << stats.totalFailRemoves << ",";
+        csv << DS_height;
         csv << "\n";
     }
 

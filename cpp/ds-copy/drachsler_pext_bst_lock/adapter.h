@@ -1,29 +1,25 @@
 /**
- * @TODO: ADD COMMENT HEADER
+ * Implementation of the "logical ordering" BST of Drachsler et al.
+ * This is a heavily modified version of the ASCYLIB implementation.
+ * (See copyright notice in drachsler.h)
+ * The modifications are copyrighted (consistent with the original license)
+ *   by Maya Arbel-Raviv and Trevor Brown, 2018.
  */
 
 #ifndef BST_ADAPTER_H
 #define BST_ADAPTER_H
 
-#ifndef KCAS_TYPE
-    #define KCAS_HTM
-    #define KCAS_TYPE "KCAS_HTM"
-#endif
-
 #include <iostream>
 #include <csignal>
 #include "errors.h"
-#include "record_manager.h"
 #ifdef USE_TREE_STATS
+#   define TREE_STATS_BYTES_AT_DEPTH
 #   include "tree_stats.h"
 #endif
-#include "internal_kcas.h"
+#include "drachsler_impl.h"
 
-
-
-#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, Node<K, V> >
-#define DATA_STRUCTURE_T InternalKCAS<RECORD_MANAGER_T, K, V>
-
+#define RECORD_MANAGER_T record_manager<Reclaim, Alloc, Pool, node_t<K,V>>
+#define DATA_STRUCTURE_T drachsler<K, V, RECORD_MANAGER_T>
 
 template <typename K, typename V, class Reclaim = reclaimer_debra<K>, class Alloc = allocator_new<K>, class Pool = pool_none<K>>
 class ds_adapter {
@@ -38,15 +34,14 @@ public:
                const V& VALUE_RESERVED,
                Random64 * const unused2)
     : NO_VALUE(VALUE_RESERVED)
-    , ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MIN, KEY_MAX))
-    { }
-
+    , ds(new DATA_STRUCTURE_T(NUM_THREADS, KEY_MIN, KEY_MAX, NO_VALUE, 0 /* unused */))
+    {}
     ~ds_adapter() {
         delete ds;
     }
 
     V getNoValue() {
-        return 0;
+        return NO_VALUE;
     }
 
     void initThread(const int tid) {
@@ -57,40 +52,33 @@ public:
     }
 
     V insert(const int tid, const K& key, const V& val) {
-        setbench_error("insert-replace functionality not implemented for this data structure");
+        return ds->bst_insert(tid, key, val, false);
     }
-
     V insertIfAbsent(const int tid, const K& key, const V& val) {
-        return ds->insertIfAbsent(tid, key, val);
+        return ds->bst_insert(tid, key, val, true);
     }
-
     V erase(const int tid, const K& key) {
-        return ds->erase(tid, key);
+        return ds->bst_remove(tid, key);
     }
-
     V find(const int tid, const K& key) {
-        setbench_error("find functionality not implemented for this data structure");
+        return ds->bst_contains(tid, key);
     }
-
     bool contains(const int tid, const K& key) {
-        return ds->contains(tid, key);
+        return ds->bst_contains(tid, key) != getNoValue();
     }
     int rangeQuery(const int tid, const K& lo, const K& hi, K * const resultKeys, V * const resultValues) {
         setbench_error("not implemented");
     }
     void printSummary() {
-        ds->printDebuggingDetails();
+        auto recmgr = ds->debugGetRecMgr();
+        recmgr->printStatus();
     }
     bool validateStructure() {
-#ifdef USE_TREE_STATS
-	return ds->validate();
-#endif
-	return true;
+        return true;
     }
-
     void printObjectSizes() {
         std::cout<<"sizes: node="
-                 <<(sizeof(Node<K, V>))
+                 <<(sizeof(node_t<K,V>))
                  <<std::endl;
     }
     // try to clean up: must only be called by a single thread as part of the test harness!
@@ -98,14 +86,10 @@ public:
         ds->debugGetRecMgr()->debugGCSingleThreaded();
     }
 
-    int getHeight() {
-        return ds->getHeight(ds->getRoot());
-    }
-
 #ifdef USE_TREE_STATS
-class NodeHandler {
+    class NodeHandler {
     public:
-        typedef Node<K, V> * NodePtrType;
+        typedef node_t<K,V> * NodePtrType;
         K minKey;
         K maxKey;
 
@@ -122,8 +106,8 @@ class NodeHandler {
         public:
             ChildIterator(NodePtrType _node) {
                 node = _node;
-                leftDone = node->left == NULL;
-                rightDone = node->right  == NULL;
+                leftDone = (node->left == NULL);
+                rightDone = (node->right == NULL);
             }
             bool hasNext() {
                 return !(leftDone && rightDone);
@@ -135,20 +119,20 @@ class NodeHandler {
                 }
                 if (!rightDone) {
                     rightDone = true;
-                    return  node->right;
+                    return node->right;
                 }
                 setbench_error("ERROR: it is suspected that you are calling ChildIterator::next() without first verifying that it hasNext()");
             }
         };
 
         bool isLeaf(NodePtrType node) {
-            return node->left == NULL && node->right == NULL;
+            return (node->left == NULL) && (node->right == NULL);
         }
         size_t getNumChildren(NodePtrType node) {
-            if (isLeaf(node)) return 0;
-            return node->left != NULL + node->right != NULL;
+            return (node->left != NULL) + (node->right != NULL);
         }
         size_t getNumKeys(NodePtrType node) {
+            if (node->mark) return 0;
             if (node->key == minKey || node->key == maxKey) return 0;
             return 1;
         }
@@ -159,9 +143,10 @@ class NodeHandler {
         ChildIterator getChildIterator(NodePtrType node) {
             return ChildIterator(node);
         }
+        static size_t getSizeInBytes(NodePtrType node) { return sizeof(*node); }
     };
     TreeStats<NodeHandler> * createTreeStats(const K& _minKey, const K& _maxKey) {
-        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->getRoot(), true);
+        return new TreeStats<NodeHandler>(new NodeHandler(_minKey, _maxKey), ds->get_root()->left, true);
     }
 #endif
 };

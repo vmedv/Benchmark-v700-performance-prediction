@@ -4,11 +4,17 @@
         "numThreads": 4,
         "stopCondition": {
             "ClassName": "Timer",
-            "workTime": 1000
+            "workTime": 10000
         },
         "threadLoopBuilders": [
             {
                 "quantity": 4,
+                "pin": [
+                    0,
+                    1,
+                    2,
+                    3
+                ],
                 "threadLoopBuilder": {
                     "ClassName": "GetThreadLoopBuilder",
                     "argsGeneratorBuilder": {

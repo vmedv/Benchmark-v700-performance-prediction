@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-TRIALS=1
+TRIALS=2
 
 structs=(
   "aksenov_splaylist_64" 
@@ -39,7 +39,7 @@ do
     do
       for THREADS in "${threads[@]}"
       do 
-        for it in {1..$((TRIALS))}
+        for it in $(seq 1 $TRIALS);
         do
           DIST="$DIST" MODE="$MODE" THREADS="$THREADS" DS="$DS" bash -c 'LIBPFM_FORCE_PMU=amd64 LD_PRELOAD=../../lib/libmimalloc.so \
           ../bin/${DS}.debra -create-default-prefill -json-file ${DIST}-${MODE}-${THREADS}.json -cache-file out.csv'
