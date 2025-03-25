@@ -811,9 +811,9 @@ int main(int argc, char** argv) {
             csv.open(cacheCSV, std::ios_base::out | std::ios_base::app);
         } else {
             csv.open(cacheCSV);
-            csv << "dist, mode, threads, ds,";
+            csv << "dist,mode,threads,ds,";
             PapiHeaderToStream(csv);
-            csv << "GETS, SUCC_GETS, FAIL_GETS, INS, SUCC_INS, FAIL_INS, UPD, SUCC_UPD, FAIL_UPD, REM, SUCC_REM, FAIL_REM, HEIGHT";
+            csv << ",GETS,SUCC_GETS,FAIL_GETS,INS,SUCC_INS,FAIL_INS,UPD,SUCC_UPD,FAIL_UPD,REM,SUCC_REM,FAIL_REM,HEIGHT";
             csv << "\n";
         }
         auto stats = getStatistic(g->elapsedMillis);
@@ -822,6 +822,7 @@ int main(int argc, char** argv) {
             << std::getenv("THREADS") << "," 
             << STRINGIFY(DS_TYPENAME) << ",";
         PapiToStream(csv);
+        csv << ","
         csv << stats.totalGets << ","
             << stats.totalSuccessfulGets << ","
             << stats.totalFailGets << ","
