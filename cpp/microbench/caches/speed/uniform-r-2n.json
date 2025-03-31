@@ -1,0 +1,61 @@
+{
+    "range": 16777216,
+    "test": {
+        "numThreads": 2,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 2,
+                "pin": [
+                    0,
+                    24
+                ],
+                "threadLoopBuilder": {
+                    "ClassName": "GetThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "DefaultArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "distributionBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "warmUp": {
+        "numThreads": 2,
+        "stopCondition": {
+            "ClassName": "Timer",
+            "workTime": 10000
+        },
+        "threadLoopBuilders": [
+            {
+                "quantity": 2,
+                "pin": [
+                    0,
+                    24
+                ],
+                "threadLoopBuilder": {
+                    "ClassName": "GetThreadLoopBuilder",
+                    "argsGeneratorBuilder": {
+                        "ClassName": "DefaultArgsGeneratorBuilder",
+                        "dataMapBuilder": {
+                            "ClassName": "IdDataMapBuilder",
+                            "id": 1
+                        },
+                        "distributionBuilder": {
+                            "ClassName": "UniformDistributionBuilder"
+                        }
+                    }
+                }
+            }
+        ]
+    }
+}

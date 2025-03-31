@@ -822,7 +822,7 @@ int main(int argc, char** argv) {
             << std::getenv("THREADS") << "," 
             << STRINGIFY(DS_TYPENAME) << ",";
         PapiToStream(csv);
-        csv << ","
+        csv << ",";
         csv << stats.totalGets << ","
             << stats.totalSuccessfulGets << ","
             << stats.totalFailGets << ","
